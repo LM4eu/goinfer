@@ -30,6 +30,11 @@ func ExecuteTaskHandler(c echo.Context) error {
 	if ok {
 		prompt = v.(string)
 	}
+	var instruction = ""
+	v, ok = m["instruction"]
+	if ok {
+		instruction = "\n\n" + v.(string)
+	}
 	exists, task, err := files.ReadTask(path)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err)
@@ -37,6 +42,7 @@ func ExecuteTaskHandler(c echo.Context) error {
 	if !exists {
 		return c.JSON(http.StatusBadRequest, err)
 	}
+	task.Template = strings.Replace(task.Template, "{instruction}", instruction, 1)
 	if state.IsInfering {
 		fmt.Println("An inference query is already running")
 		return c.NoContent(http.StatusAccepted)

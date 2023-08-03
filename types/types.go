@@ -4,11 +4,11 @@ type InferenceParams struct {
 	Threads           int     `json:"threads,omitempty" yaml:"threads,omitempty"`
 	Tokens            int     `json:"tokens,omitempty" yaml:"tokens,omitempty"`
 	TopK              int     `json:"topK,omitempty" yaml:"topK,omitempty"`
-	TopP              float64 `json:"topP,omitempty" yaml:"topP,omitempty"`
-	Temperature       float64 `json:"temp,omitempty" yaml:"temp,omitempty"`
-	FrequencyPenalty  float64 `json:"freqPenalty,omitempty" yaml:"freqPenalty,omitempty"`
-	PresencePenalty   float64 `json:"presPenalty,omitempty" yaml:"presPenalty,omitempty"`
-	TailFreeSamplingZ float64 `json:"tfs,omitempty" yaml:"tfs,omitempty"`
+	TopP              float32 `json:"topP,omitempty" yaml:"topP,omitempty"`
+	Temperature       float32 `json:"temp,omitempty" yaml:"temp,omitempty"`
+	FrequencyPenalty  float32 `json:"freqPenalty,omitempty" yaml:"freqPenalty,omitempty"`
+	PresencePenalty   float32 `json:"presPenalty,omitempty" yaml:"presPenalty,omitempty"`
+	TailFreeSamplingZ float32 `json:"tfs,omitempty" yaml:"tfs,omitempty"`
 	StopPrompts       string  `json:"stop,omitempty" yaml:"stop,omitempty"`
 }
 

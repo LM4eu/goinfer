@@ -14,6 +14,9 @@ func LoadModel(model string, params llama.ModelOptions) error {
 	if state.IsVerbose {
 		fmt.Println("Loading model", mpath)
 	}
+	if state.IsModelLoaded {
+		state.Lm.Free()
+	}
 	lm, err := llama.New(
 		mpath,
 		llama.SetContext(params.ContextSize),

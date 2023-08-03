@@ -40,27 +40,27 @@ func parseInferParams(m echo.Map) (string, string, types.InferenceParams, error)
 	topP := lm.DefaultInferenceParams.TopP
 	v, ok = m["topP"]
 	if ok {
-		topP = v.(float64)
+		topP = float32(v.(float64))
 	}
 	temp := lm.DefaultInferenceParams.Temperature
 	v, ok = m["temp"]
 	if ok {
-		temp = v.(float64)
+		temp = float32(v.(float64))
 	}
 	freqPenalty := lm.DefaultInferenceParams.FrequencyPenalty
 	v, ok = m["frequencyPenalty"]
 	if ok {
-		freqPenalty = v.(float64)
+		freqPenalty = float32(v.(float64))
 	}
 	presPenalty := lm.DefaultInferenceParams.PresencePenalty
 	v, ok = m["presencePenalty"]
 	if ok {
-		presPenalty = v.(float64)
+		presPenalty = float32(v.(float64))
 	}
 	tfs := lm.DefaultInferenceParams.TailFreeSamplingZ
 	v, ok = m["tfs"]
 	if ok {
-		tfs = v.(float64)
+		tfs = float32(v.(float64))
 	}
 	stop := lm.DefaultInferenceParams.StopPrompts
 	v, ok = m["stop"]

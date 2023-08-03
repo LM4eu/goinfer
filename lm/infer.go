@@ -9,8 +9,8 @@ import (
 
 	llama "github.com/go-skynet/go-llama.cpp"
 	"github.com/synw/altiplano/goinfer/state"
-	"github.com/synw/altiplano/goinfer/ws"
 	"github.com/synw/altiplano/goinfer/types"
+	"github.com/synw/altiplano/goinfer/ws"
 )
 
 func onToken(token string, i int) {
@@ -60,7 +60,7 @@ func Infer(prompt string, template string, params types.InferenceParams) (types.
 		llama.SetTopP(params.TopP),
 		llama.SetTemperature(params.Temperature),
 		llama.SetStopWords(params.StopPrompts),
-		llama.SetFrequencyPenalty(float64(params.FrequencyPenalty)),
+		llama.SetFrequencyPenalty(params.FrequencyPenalty),
 		llama.SetPresencePenalty(params.PresencePenalty),
 	)
 	state.IsInfering = false

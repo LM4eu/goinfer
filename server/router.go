@@ -10,6 +10,7 @@ import (
 
 func RunServer(origins []string) {
 	e := echo.New()
+	e.HideBanner = true
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "${method} ${status} ${uri}  ${latency_human} ${remote_ip} ${error}\n",
 	}))

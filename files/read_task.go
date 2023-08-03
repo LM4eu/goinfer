@@ -54,15 +54,15 @@ func convertTask(m map[string]interface{}) (types.Task, error) {
 					case "topK":
 						ip.TopK = v.(int)
 					case "topP":
-						ip.TopP = v.(float64)
+						ip.TopP = float32(v.(float64))
 					case "temp":
-						ip.Temperature = v.(float64)
+						ip.Temperature = float32(v.(float64))
 					case "freqPenalty":
-						ip.FrequencyPenalty = v.(float64)
+						ip.FrequencyPenalty = float32(v.(float64))
 					case "presPenalty":
-						ip.PresencePenalty = v.(float64)
+						ip.PresencePenalty = float32(v.(float64))
 					case "tfs":
-						ip.TailFreeSamplingZ = v.(float64)
+						ip.TailFreeSamplingZ = float32(v.(float64))
 					case "stop":
 						ip.StopPrompts = v.(string)
 					}
