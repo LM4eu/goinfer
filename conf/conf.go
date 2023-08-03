@@ -12,6 +12,7 @@ import (
 
 type GoInferConf struct {
 	ModelsDir string
+	TasksDir  string
 	Origins   []string
 }
 
@@ -24,9 +25,11 @@ func InitConf() GoInferConf {
 		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
 	md := viper.GetString("models_dir")
+	td := viper.GetString("tasks_dir")
 	or := viper.GetStringSlice("origins")
 	return GoInferConf{
 		ModelsDir: md,
+		TasksDir:  td,
 		Origins:   or,
 	}
 }
@@ -37,6 +40,7 @@ func Create() {
 		"models_dir": "",
 		"origins":    []string{"http://localhost:5173", "http://localhost:5143"},
 		"api_key":    generateRandomKey(),
+		"tasks_dir":  "./tasks",
 	}
 	jsonString, _ := json.MarshalIndent(data, "", "    ")
 	os.WriteFile("goinfer.config.json", jsonString, os.ModePerm)

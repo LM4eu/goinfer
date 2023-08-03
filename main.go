@@ -31,6 +31,7 @@ func main() {
 	}
 	conf := conf.InitConf()
 	state.ModelsDir = conf.ModelsDir
+	state.TasksDir = conf.TasksDir
 	/*if len(*loadModel) > 0 {
 		mpath := filepath.Join(lm.ModelsDir, *loadModel)
 		fmt.Println("Loading model " + mpath)

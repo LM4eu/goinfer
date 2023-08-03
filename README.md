@@ -1,6 +1,6 @@
 # Goinfer
 
-Inference server for local language models
+Inference server for local language models. Based on [Llama.cpp](https://github.com/ggerganov/llama.cpp)
 
 - Load models api
 - Run inference requests api
