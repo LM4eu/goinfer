@@ -8,9 +8,9 @@ import (
 	"time"
 
 	llama "github.com/go-skynet/go-llama.cpp"
-	"github.com/synw/altiplano/goinfer/state"
-	"github.com/synw/altiplano/goinfer/types"
-	"github.com/synw/altiplano/goinfer/ws"
+	"github.com/synw/goinfer/state"
+	"github.com/synw/goinfer/types"
+	"github.com/synw/goinfer/ws"
 )
 
 func onToken(token string, i int) {

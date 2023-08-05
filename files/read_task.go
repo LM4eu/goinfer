@@ -7,9 +7,9 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/synw/altiplano/goinfer/lm"
-	"github.com/synw/altiplano/goinfer/state"
-	"github.com/synw/altiplano/goinfer/types"
+	"github.com/synw/goinfer/lm"
+	"github.com/synw/goinfer/state"
+	"github.com/synw/goinfer/types"
 )
 
 func keyExists(m map[string]interface{}, key string) bool {

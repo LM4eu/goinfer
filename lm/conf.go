@@ -2,7 +2,7 @@ package lm
 
 import (
 	llama "github.com/go-skynet/go-llama.cpp"
-	"github.com/synw/altiplano/goinfer/types"
+	"github.com/synw/goinfer/types"
 )
 
 var DefaultInferenceParams = types.InferenceParams{

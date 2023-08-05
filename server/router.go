@@ -38,5 +38,6 @@ func RunServer(origins []string) {
 	tas.GET("/tree", ReadTasksHandler)
 	tas.POST("/read", ReadTaskHandler)
 	tas.POST("/execute", ExecuteTaskHandler)
+	tas.POST("/save", SaveTaskHandler)
 	e.Start(":5143")
 }

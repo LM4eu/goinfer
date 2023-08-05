@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	"github.com/synw/altiplano/goinfer/state"
+	"github.com/synw/goinfer/state"
 )
 
 var clients = make(map[*websocket.Conn]bool)

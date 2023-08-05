@@ -6,12 +6,12 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/synw/altiplano/goinfer/lm"
-	"github.com/synw/altiplano/goinfer/state"
-	"github.com/synw/altiplano/goinfer/types"
+	"github.com/synw/goinfer/lm"
+	"github.com/synw/goinfer/state"
+	"github.com/synw/goinfer/types"
 )
 
-func parseInferParams(m echo.Map) (string, string, types.InferenceParams, error) {
+func ParseInferParams(m echo.Map) (string, string, types.InferenceParams, error) {
 	v, ok := m["prompt"]
 	if !ok {
 		return "", "", types.InferenceParams{}, errors.New("provide a prompt")
@@ -94,7 +94,7 @@ func InferHandler(c echo.Context) error {
 		return err
 	}
 
-	prompt, template, params, err := parseInferParams(m)
+	prompt, template, params, err := ParseInferParams(m)
 	if err != nil {
 		panic(err)
 	}

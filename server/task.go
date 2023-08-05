@@ -7,9 +7,10 @@ import (
 
 	"github.com/go-skynet/go-llama.cpp"
 	"github.com/labstack/echo/v4"
-	"github.com/synw/altiplano/goinfer/files"
-	"github.com/synw/altiplano/goinfer/lm"
-	"github.com/synw/altiplano/goinfer/state"
+	"github.com/synw/goinfer/files"
+	"github.com/synw/goinfer/lm"
+	"github.com/synw/goinfer/state"
+	"github.com/synw/goinfer/types"
 )
 
 func ExecuteTaskHandler(c echo.Context) error {
@@ -95,4 +96,54 @@ func ReadTasksHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 	return c.JSON(http.StatusOK, tasks)
+}
+
+func SaveTaskHandler(c echo.Context) error {
+	m := echo.Map{}
+	if err := c.Bind(&m); err != nil {
+		return err
+	}
+	var name string
+	v, ok := m["name"]
+	if ok {
+		name = v.(string)
+	}
+	var model string
+	v, ok = m["model"]
+	if ok {
+		model = v.(string)
+	}
+	var template string
+	v, ok = m["template"]
+	if ok {
+		template = v.(string)
+	}
+	var ctx float32
+	v, ok = m["ctx"]
+	if ok {
+		ctx = float32(v.(float64))
+	}
+	modelConf := types.ModelConf{
+		Ctx: int(ctx),
+	}
+	var rawInferParams map[string]interface{}
+	v, ok = m["inferParams"]
+	if ok {
+		rawInferParams = v.(map[string]interface{})
+		rawInferParams["template"] = template
+	}
+	rawInferParams["prompt"] = ""
+	_, _, inferParams, err := ParseInferParams(rawInferParams)
+	if err != nil {
+		return err
+	}
+	task := types.Task{
+		Name:        name,
+		Model:       model,
+		Template:    template,
+		ModelConf:   modelConf,
+		InferParams: inferParams,
+	}
+	files.SaveTask(task)
+	return c.NoContent(http.StatusCreated)
 }

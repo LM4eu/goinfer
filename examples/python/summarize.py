@@ -3,8 +3,8 @@ import requests
 
 URL = "https://www.emencia.com/news/2023/04/26/logique-contractuelle-des-structures-de-donnees-dans-django-ninja/"
 MODEL = "nous-hermes-llama-2-7b.ggmlv3.q4_K_M"
-TEMPLATE = "### Instruction: {prompt}\n\n### Response: (answer in french)"
-PROMPT = "summarize this text:"
+TEMPLATE = "### Instruction: {prompt}\n\n### Response:"
+PROMPT = "résume ce texte:"
 
 downloaded = trafilatura.fetch_url(URL)
 

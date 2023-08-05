@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	llama "github.com/go-skynet/go-llama.cpp"
-	"github.com/synw/altiplano/goinfer/state"
+	"github.com/synw/goinfer/state"
 )
 
 func LoadModel(model string, params llama.ModelOptions) error {

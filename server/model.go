@@ -7,9 +7,9 @@ import (
 
 	llama "github.com/go-skynet/go-llama.cpp"
 	"github.com/labstack/echo/v4"
-	"github.com/synw/altiplano/goinfer/files"
-	"github.com/synw/altiplano/goinfer/lm"
-	"github.com/synw/altiplano/goinfer/state"
+	"github.com/synw/goinfer/files"
+	"github.com/synw/goinfer/lm"
+	"github.com/synw/goinfer/state"
 )
 
 func parseModelParams(m echo.Map) (string, llama.ModelOptions, error) {

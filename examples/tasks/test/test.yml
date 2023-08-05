@@ -1,0 +1,20 @@
+name: test/test.yml
+model: mamba-gpt-3b-v3.ggmlv3.q8_0
+template: |-
+    <s>[INST] <<SYS>>
+    You are a helpful, respectful and honest assistant. Always answer as helpfully as possible
+
+    If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.
+    <</SYS>>
+
+    {prompt} [/INST]
+modelConf:
+    ctx: 1024
+inferParams:
+    threads: 4
+    tokens: 923
+    topK: 40
+    topP: 0.95
+    temp: 0.2
+    tfs: 1
+    stop: </end>

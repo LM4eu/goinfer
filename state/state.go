@@ -3,7 +3,7 @@ package state
 import (
 	llama "github.com/go-skynet/go-llama.cpp"
 
-	"github.com/synw/altiplano/goinfer/types"
+	"github.com/synw/goinfer/types"
 )
 
 // the language model instance

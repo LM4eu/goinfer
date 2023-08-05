@@ -2,9 +2,9 @@
 
 Inference server for local language models. Based on [Llama.cpp](https://github.com/ggerganov/llama.cpp)
 
-- Load models api
-- Run inference requests api
-- Websockets support
+- Switch between models at runtime
+- Run inference queries
+- Websockets and http support
 
 ## Install
 

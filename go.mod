@@ -1,4 +1,4 @@
-module github.com/synw/altiplano/goinfer
+module github.com/synw/goinfer
 
 require (
 	github.com/go-skynet/go-llama.cpp v0.0.0

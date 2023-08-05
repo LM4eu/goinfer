@@ -4,10 +4,10 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/synw/altiplano/goinfer/conf"
-	"github.com/synw/altiplano/goinfer/server"
-	"github.com/synw/altiplano/goinfer/state"
-	"github.com/synw/altiplano/goinfer/ws"
+	"github.com/synw/goinfer/conf"
+	"github.com/synw/goinfer/server"
+	"github.com/synw/goinfer/state"
+	"github.com/synw/goinfer/ws"
 )
 
 func main() {
