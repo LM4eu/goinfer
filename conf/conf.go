@@ -38,15 +38,16 @@ func InitConf() GoInferConf {
 }
 
 // Create : create a config file
-func Create() {
+func Create(modelsDir string) {
+	key := generateRandomKey()
 	data := map[string]interface{}{
-		"models_dir": "",
+		"models_dir": modelsDir,
 		"origins":    []string{"http://localhost:5173", "http://localhost:5143"},
-		"api_key":    generateRandomKey(),
+		"api_key":    key,
 		"tasks_dir":  "./tasks",
 	}
 	jsonString, _ := json.MarshalIndent(data, "", "    ")
-	os.WriteFile("goinfer.config.json", jsonString, os.ModePerm)
+	os.WriteFile("goinfer.config.json", jsonString, os.ModePerm&^0111)
 }
 
 func generateRandomKey() string {

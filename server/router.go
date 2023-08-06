@@ -12,7 +12,7 @@ import (
 //go:embed all:dist
 var embededFiles embed.FS
 
-func RunServer(origins []string, apiKey string) {
+func RunServer(origins []string, apiKey string, localMode bool) {
 	e := echo.New()
 	e.HideBanner = true
 
@@ -32,32 +32,44 @@ func RunServer(origins []string, apiKey string) {
 		AllowCredentials: true,
 	}))
 
-	// api key
-	e.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-		return key == apiKey, nil
-	}))
-
-	// static
-	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
-		Root:       "dist",
-		Index:      "index.html",
-		Browse:     false,
-		HTML5:      true,
-		Filesystem: http.FS(embededFiles),
-	}))
+	if localMode {
+		// static
+		e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+			Root:       "dist",
+			Index:      "index.html",
+			Browse:     false,
+			HTML5:      true,
+			Filesystem: http.FS(embededFiles),
+		}))
+	}
 
 	// inference
 	inf := e.Group("/infer")
+	if !localMode {
+		inf.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+			return key == apiKey, nil
+		}))
+	}
 	inf.POST("", InferHandler)
 	inf.GET("/abort", AbortHandler)
 
 	// models
 	mod := e.Group("/model")
+	if !localMode {
+		mod.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+			return key == apiKey, nil
+		}))
+	}
 	mod.GET("/state", ModelsStateHandler)
 	mod.POST("/load", LoadModelHandler)
 
 	// tasks
 	tas := e.Group("/task")
+	if !localMode {
+		tas.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+			return key == apiKey, nil
+		}))
+	}
 	tas.GET("/tree", ReadTasksHandler)
 	tas.POST("/read", ReadTaskHandler)
 	tas.POST("/execute", ExecuteTaskHandler)

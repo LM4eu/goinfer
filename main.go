@@ -11,34 +11,30 @@ import (
 )
 
 func main() {
-	verbose := flag.Bool("v", false, "verbose mode")
-	noWs := flag.Bool("nows", false, "disable the websockets")
-	var genConf = flag.Bool("conf", false, "generate a config file")
+	quiet := flag.Bool("q", false, "disable the verbose output")
+	local := flag.Bool("local", false, "run in local mode with a gui (default is api mode: no gui and no websockets, api key required)")
+	var genConfModelsDir = flag.String("conf", "", "generate a config file. Provide a models directory absolute path as argument")
 	flag.Parse()
 
-	if *verbose {
-		state.IsVerbose = *verbose
+	if !*quiet {
+		state.IsVerbose = *quiet
 	}
-	if *genConf {
-		conf.Create()
+	if len(*genConfModelsDir) > 0 {
+		conf.Create(*genConfModelsDir)
 		fmt.Println("File goinfer.config.json created")
 		return
 	}
-	if !*noWs {
+	if *local {
 		go ws.RunWs()
 	} else {
 		state.UseWs = false
 	}
+
 	conf := conf.InitConf()
 	state.ModelsDir = conf.ModelsDir
 	state.TasksDir = conf.TasksDir
-	/*if len(*loadModel) > 0 {
-		mpath := filepath.Join(lm.ModelsDir, *loadModel)
-		fmt.Println("Loading model " + mpath)
-		lm.LoadModel(mpath, 512, 0)
-	}*/
-	if *verbose {
+	if state.IsVerbose {
 		fmt.Println("Starting the http server with allowed origins", conf.Origins)
 	}
-	server.RunServer(conf.Origins, conf.ApiKey)
+	server.RunServer(conf.Origins, conf.ApiKey, *local)
 }
