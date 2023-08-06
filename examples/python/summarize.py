@@ -1,10 +1,11 @@
 import trafilatura
 import requests
 
-URL = "https://www.emencia.com/news/2023/04/26/logique-contractuelle-des-structures-de-donnees-dans-django-ninja/"
+URL = "https://152334h.github.io/blog/non-determinism-in-gpt-4/"
 MODEL = "nous-hermes-llama-2-7b.ggmlv3.q4_K_M"
 TEMPLATE = "### Instruction: {prompt}\n\n### Response:"
-PROMPT = "résume ce texte:"
+PROMPT = "summarize this text:"
+#PROMPT = "extract the links from this text:"
 
 downloaded = trafilatura.fetch_url(URL)
 

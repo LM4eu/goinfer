@@ -62,6 +62,7 @@ func Infer(prompt string, template string, params types.InferenceParams) (types.
 		llama.SetStopWords(params.StopPrompts),
 		llama.SetFrequencyPenalty(params.FrequencyPenalty),
 		llama.SetPresencePenalty(params.PresencePenalty),
+		//llama.SetR
 	)
 	state.IsInfering = false
 	if err != nil {

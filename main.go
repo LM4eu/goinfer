@@ -40,5 +40,5 @@ func main() {
 	if *verbose {
 		fmt.Println("Starting the http server with allowed origins", conf.Origins)
 	}
-	server.RunServer(conf.Origins)
+	server.RunServer(conf.Origins, conf.ApiKey)
 }

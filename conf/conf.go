@@ -14,6 +14,7 @@ type GoInferConf struct {
 	ModelsDir string
 	TasksDir  string
 	Origins   []string
+	ApiKey    string
 }
 
 func InitConf() GoInferConf {
@@ -27,10 +28,12 @@ func InitConf() GoInferConf {
 	md := viper.GetString("models_dir")
 	td := viper.GetString("tasks_dir")
 	or := viper.GetStringSlice("origins")
+	ak := viper.GetString("api_key")
 	return GoInferConf{
 		ModelsDir: md,
 		TasksDir:  td,
 		Origins:   or,
+		ApiKey:    ak,
 	}
 }
 
