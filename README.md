@@ -1,10 +1,10 @@
 # Goinfer
 
-Inference server for local language models. Based on [Llama.cpp](https://github.com/ggerganov/llama.cpp)
+Inference server for local ggml language models. Based on [Llama.cpp](https://github.com/ggerganov/llama.cpp)
 
-- Switch between models at runtime
-- Run inference queries
-- Websockets and http support
+- **Multi models**: switch between models at runtime
+- **Inference queries**: http api and websockets support
+- **Tasks**: predefined language model tasks
 
 ## Install
 
@@ -24,21 +24,33 @@ make libbinding.a
 
 ## Configure
 
-Create a config `goinfer.config.json` file at the root:
+Create a config file at the root:
+
+```bash
+./goinfer -conf /absolute/path/to/models/directory
+```
+
+Provide an absolute path to your ggml models directory
+
+This will create a `goinfer.config.json` file:
 
 ```json
 {
-  "models_dir": "/home/me/path/to/models/dir",
-  "origins": [
-    "http://localhost:5173",
-    "http://localhost:3000",
-  ]
+    "api_key": "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465",
+    "models_dir": "/home/me/my/lm/models",
+    "tasks_dir": "./tasks",
+    "origins": [
+        "http://localhost:5173",
+        "http://localhost:5143"
+    ]
 }
 ```
 
 Parameters:
 
+- `api_key`: *string* **required**: the api key used for the api server mode (see below)
 - `models_dir` *string* **required**: the absolute path to the models directory
+- `tasks_dir` *string* **required**: path to the tasks folder
 - `origins` *[]string*: a list of authorized CORS urls
 
 ## Run
@@ -49,16 +61,26 @@ Parameters:
 ./goinfer
 ```
 
+Open `http://localhost:5143` to have the gui
+
 ### From source
 
 ```bash
 go run main.go
 ```
 
-### Options
+## Options
 
-- `-v`: run in verbose mode
-- `-nows`: disable the websockets
+### Verbosity
+
+- `-q`: disable the verbose output
+
+### Mode
+
+The server can run in api only mode (default): it will use the api key provided in the
+config file. Or it can run in local mode, providing a gui and a websockets support.
+
+- `-local`: run in local mode with a gui
 
 ## Api
 
