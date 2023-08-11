@@ -58,7 +58,7 @@ Parameters:
 ### Binary
 
 ```bash
-./goinfer
+./goinfer -local
 ```
 
 Open `http://localhost:5143` to have the gui
@@ -66,7 +66,7 @@ Open `http://localhost:5143` to have the gui
 ### From source
 
 ```bash
-go run main.go
+go run main.go -local
 ```
 
 ## Options
@@ -78,7 +78,8 @@ go run main.go
 ### Mode
 
 The server can run in api only mode (default): it will use the api key provided in the
-config file. Or it can run in local mode, providing a gui and a websockets support.
+config file. Or it can run in local mode, providing a gui and a websockets support, using
+no api key.
 
 - `-local`: run in local mode with a gui
 
