@@ -57,6 +57,11 @@ func ParseInferParams(m echo.Map) (string, string, types.InferenceParams, error)
 	if ok {
 		presPenalty = float32(v.(float64))
 	}
+	repeatPenalty := lm.DefaultInferenceParams.RepeatPenalty
+	v, ok = m["repeatPenalty"]
+	if ok {
+		repeatPenalty = float32(v.(float64))
+	}
 	tfs := lm.DefaultInferenceParams.TailFreeSamplingZ
 	v, ok = m["tfs"]
 	if ok {
@@ -78,6 +83,7 @@ func ParseInferParams(m echo.Map) (string, string, types.InferenceParams, error)
 		Temperature:       temp,
 		FrequencyPenalty:  freqPenalty,
 		PresencePenalty:   presPenalty,
+		RepeatPenalty:     repeatPenalty,
 		TailFreeSamplingZ: tfs,
 		StopPrompts:       stop,
 	}

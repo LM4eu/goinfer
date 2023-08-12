@@ -27,3 +27,6 @@ var UseWs = true
 
 // tasks
 var TasksDir = "./tasks"
+
+// OpenAi api
+var OpenAiConf types.OpenAiConf

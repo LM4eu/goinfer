@@ -8,19 +8,16 @@ import (
 	"os"
 
 	"github.com/spf13/viper"
+	"github.com/synw/goinfer/types"
 )
 
-type GoInferConf struct {
-	ModelsDir string
-	TasksDir  string
-	Origins   []string
-	ApiKey    string
-}
-
-func InitConf() GoInferConf {
+func InitConf() types.GoInferConf {
 	viper.SetConfigName("goinfer.config")
 	viper.AddConfigPath(".")
 	viper.SetDefault("origins", []string{"localhost"})
+	viper.SetDefault("oai.enable", false)
+	viper.SetDefault("oai.threads", 4)
+	viper.SetDefault("oai.template", "{system}\n\n{prompt}")
 	err := viper.ReadInConfig() // Find and read the config file
 	if err != nil {             // Handle errors reading the config file
 		panic(fmt.Errorf("fatal error config file: %w", err))
@@ -29,11 +26,19 @@ func InitConf() GoInferConf {
 	td := viper.GetString("tasks_dir")
 	or := viper.GetStringSlice("origins")
 	ak := viper.GetString("api_key")
-	return GoInferConf{
+	oaiEnable := viper.GetBool("oai.enable")
+	oaiThreads := viper.GetInt("oai.threads")
+	oaiTemplate := viper.GetString("oai.template")
+	return types.GoInferConf{
 		ModelsDir: md,
 		TasksDir:  td,
 		Origins:   or,
 		ApiKey:    ak,
+		OpenAiConf: types.OpenAiConf{
+			Enable:   oaiEnable,
+			Threads:  oaiThreads,
+			Template: oaiTemplate,
+		},
 	}
 }
 

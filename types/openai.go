@@ -3,7 +3,8 @@ package types
 type OpenAiChatCompletion struct {
 	ID      string         `json:"id"`
 	Object  string         `json:"object"`
-	Created int            `json:"created"`
+	Created int64          `json:"created"`
+	Model   string         `json:"model"`
 	Choices []OpenAiChoice `json:"choices"`
 	Usage   OpenAiUsage    `json:"usage"`
 }
@@ -37,4 +38,10 @@ type OpenAiMessages struct {
 	PresencePenalty  float64         `json:"presence_penalty,omitempty"`
 	FrequencyPenalty float64         `json:"frequency_penalty,omitempty"`
 	LogitBias        map[string]int  `json:"logit_bias,omitempty"`
+}
+
+type OpenAiConf struct {
+	Enable   bool   `json:"enable"`
+	Threads  int    `json:"threads"`
+	Template string `json:"template"`
 }

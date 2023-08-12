@@ -13,6 +13,7 @@ var DefaultInferenceParams = types.InferenceParams{
 	Temperature:       0.2,
 	FrequencyPenalty:  0.0,
 	PresencePenalty:   0.0,
+	RepeatPenalty:     1.0,
 	TailFreeSamplingZ: 1.0,
 	StopPrompts:       "</end>",
 }

@@ -33,8 +33,9 @@ func main() {
 	conf := conf.InitConf()
 	state.ModelsDir = conf.ModelsDir
 	state.TasksDir = conf.TasksDir
+	state.OpenAiConf = conf.OpenAiConf
 	if state.IsVerbose {
 		fmt.Println("Starting the http server with allowed origins", conf.Origins)
 	}
-	server.RunServer(conf.Origins, conf.ApiKey, *local)
+	server.RunServer(conf.Origins, conf.ApiKey, *local, conf.OpenAiConf.Enable)
 }

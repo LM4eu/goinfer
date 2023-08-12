@@ -12,7 +12,7 @@ import (
 //go:embed all:dist
 var embededFiles embed.FS
 
-func RunServer(origins []string, apiKey string, localMode bool) {
+func RunServer(origins []string, apiKey string, localMode bool, enableOai bool) {
 	e := echo.New()
 	e.HideBanner = true
 
@@ -74,5 +74,12 @@ func RunServer(origins []string, apiKey string, localMode bool) {
 	tas.POST("/read", ReadTaskHandler)
 	tas.POST("/execute", ExecuteTaskHandler)
 	tas.POST("/save", SaveTaskHandler)
+
+	if enableOai {
+		// openai api
+		oai := e.Group("/v1")
+		oai.POST("/chat/completions", CreateCompletionHandler)
+	}
+
 	e.Start(":5143")
 }
