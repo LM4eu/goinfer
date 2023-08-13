@@ -44,3 +44,16 @@ type Task struct {
 type ModelConf struct {
 	Ctx int `json:"ctx" yaml:"ctx"`
 }
+
+type MsgType string
+
+const (
+	TokenMsgType  MsgType = "token"
+	SystemMsgType MsgType = "system"
+)
+
+type StreamedMessage struct {
+	Content string  `json:"content"`
+	Num     int     `json:"num"`
+	MsgType MsgType `json:"msg_type"`
+}

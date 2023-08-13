@@ -16,7 +16,12 @@ import (
 )
 
 func sse(token string, i int, c echo.Context, enc *json.Encoder) error {
-	if err := enc.Encode(token); err != nil {
+	msg := types.StreamedMessage{
+		Content: token,
+		Num:     i,
+		MsgType: types.TokenMsgType,
+	}
+	if err := enc.Encode(msg); err != nil {
 		return err
 	}
 	c.Response().Flush()
