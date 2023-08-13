@@ -71,8 +71,6 @@ async function main() {
     const data = await main();
     console.log("Final response:");
     console.log(data);
-    console.log("Json:")
-    console.log(JSON.parse(data))
   } catch (e) {
     throw e
   }

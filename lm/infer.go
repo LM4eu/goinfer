@@ -1,6 +1,7 @@
 package lm
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -11,22 +12,25 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/synw/goinfer/state"
 	"github.com/synw/goinfer/types"
+	"github.com/synw/goinfer/ws"
 )
 
-func sse(token string, i int, c echo.Context) error {
-	c.Response().Write([]byte(token))
+func sse(token string, i int, c echo.Context, enc *json.Encoder) error {
+	if err := enc.Encode(token); err != nil {
+		return err
+	}
 	c.Response().Flush()
 	return nil
 }
 
-func onToken(token string, i int, c echo.Context) {
+func onToken(token string, i int, c echo.Context, enc *json.Encoder) {
 	if state.IsVerbose {
 		fmt.Print(token)
 	}
-	sse(token, i, c)
-	/*if state.UseWs {
-		//ws.SendToken(token, i)
-	}*/
+	sse(token, i, c, enc)
+	if state.UseWs {
+		ws.SendToken(token, i)
+	}
 }
 
 func Infer(prompt string, template string, params types.InferenceParams, c echo.Context) (types.InferenceResult, error) {
@@ -48,6 +52,7 @@ func Infer(prompt string, template string, params types.InferenceParams, c echo.
 	startEmitting := time.Now()
 	var thinkingElapsed time.Duration
 	ntokens := 0
+	enc := json.NewEncoder(c.Response())
 	res, err := state.Lm.Predict(finalPrompt, llama.Debug, llama.SetTokenCallback(func(token string) bool {
 		if ntokens == 0 {
 			startEmitting = time.Now()
@@ -57,7 +62,7 @@ func Infer(prompt string, template string, params types.InferenceParams, c echo.
 				fmt.Println("Emitting")
 			}
 		}
-		onToken(token, ntokens, c)
+		onToken(token, ntokens, c, enc)
 		ntokens++
 		return state.ContinueInferingController
 	}),

@@ -104,7 +104,7 @@ func InferHandler(c echo.Context) error {
 	if err != nil {
 		panic(err)
 	}
-	c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlain)
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	c.Response().WriteHeader(http.StatusOK)
 	res, err := lm.Infer(prompt, template, params, c)
 	if err != nil {
