@@ -52,6 +52,7 @@ func RunServer(origins []string, apiKey string, localMode bool, enableOai bool) 
 	}
 	inf.POST("", InferHandler)
 	inf.GET("/abort", AbortHandler)
+	inf.GET("/sse", SseHandler)
 
 	// models
 	mod := e.Group("/model")

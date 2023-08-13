@@ -8,21 +8,28 @@ import (
 	"time"
 
 	llama "github.com/go-skynet/go-llama.cpp"
+	"github.com/labstack/echo/v4"
 	"github.com/synw/goinfer/state"
 	"github.com/synw/goinfer/types"
-	"github.com/synw/goinfer/ws"
 )
 
-func onToken(token string, i int) {
+func sse(token string, i int, c echo.Context) error {
+	c.Response().Write([]byte(token))
+	c.Response().Flush()
+	return nil
+}
+
+func onToken(token string, i int, c echo.Context) {
 	if state.IsVerbose {
 		fmt.Print(token)
 	}
-	if state.UseWs {
-		ws.SendToken(token, i)
-	}
+	sse(token, i, c)
+	/*if state.UseWs {
+		//ws.SendToken(token, i)
+	}*/
 }
 
-func Infer(prompt string, template string, params types.InferenceParams) (types.InferenceResult, error) {
+func Infer(prompt string, template string, params types.InferenceParams, c echo.Context) (types.InferenceResult, error) {
 	if !state.IsModelLoaded {
 		return types.InferenceResult{}, errors.New("load a model before infering")
 	}
@@ -50,7 +57,7 @@ func Infer(prompt string, template string, params types.InferenceParams) (types.
 				fmt.Println("Emitting")
 			}
 		}
-		onToken(token, ntokens)
+		onToken(token, ntokens, c)
 		ntokens++
 		return state.ContinueInferingController
 	}),

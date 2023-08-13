@@ -94,7 +94,7 @@ func CreateCompletionHandler(c echo.Context) error {
 	if state.LoadedModel != model {
 		lm.LoadModel(model, lm.DefaultModelParams)
 	}
-	res, err := lm.Infer(prompt, template, params)
+	res, err := lm.Infer(prompt, template, params, c)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, err)
 	}

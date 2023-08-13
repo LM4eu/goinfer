@@ -104,16 +104,25 @@ func InferHandler(c echo.Context) error {
 	if err != nil {
 		panic(err)
 	}
-	res, err := lm.Infer(prompt, template, params)
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlain)
+	c.Response().WriteHeader(http.StatusOK)
+	res, err := lm.Infer(prompt, template, params, c)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, err)
 	}
 
-	//fmt.Println("-------- result ----------")
-	//fmt.Println(res)
-	//fmt.Println("--------------------------")
+	fmt.Println("-------- result ----------")
+	fmt.Println(res)
+	fmt.Println("--------------------------")
 
 	return c.JSON(http.StatusOK, res)
+	//return nil
+}
+
+func SseHandler(c echo.Context) error {
+	c.Response().Header().Set(echo.HeaderContentType, "text/event-stream")
+	c.Response().WriteHeader(http.StatusOK)
+	return nil
 }
 
 func AbortHandler(c echo.Context) error {
