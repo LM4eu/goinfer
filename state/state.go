@@ -22,7 +22,7 @@ var ContinueInferingController = true
 var IsInfering = false
 
 // app state
-var IsVerbose = false
+var IsVerbose = true
 var UseWs = true
 
 // tasks

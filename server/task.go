@@ -63,7 +63,7 @@ func ExecuteTaskHandler(c echo.Context) error {
 		})
 	}
 	// exec task
-	res, err := lm.Infer(prompt, task.Template, task.InferParams)
+	res, err := lm.Infer(prompt, task.Template, task.InferParams, c)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, err)
 	}
