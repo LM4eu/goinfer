@@ -12,15 +12,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/synw/goinfer/state"
 	"github.com/synw/goinfer/types"
-	"github.com/synw/goinfer/ws"
 )
 
-func sse(token string, i int, c echo.Context, enc *json.Encoder) error {
-	msg := types.StreamedMessage{
-		Content: token,
-		Num:     i,
-		MsgType: types.TokenMsgType,
-	}
+func streamMsg(msg types.StreamedMessage, c echo.Context, enc *json.Encoder) error {
 	if err := enc.Encode(msg); err != nil {
 		return err
 	}
@@ -28,19 +22,13 @@ func sse(token string, i int, c echo.Context, enc *json.Encoder) error {
 	return nil
 }
 
-func onToken(token string, i int, c echo.Context, enc *json.Encoder) {
-	if state.IsVerbose {
-		fmt.Print(token)
-	}
-	sse(token, i, c, enc)
-	if state.UseWs {
-		ws.SendToken(token, i)
-	}
-}
-
-func Infer(prompt string, template string, params types.InferenceParams, c echo.Context) (types.InferenceResult, error) {
+func Infer(prompt string, template string, params types.InferenceParams, c echo.Context) (types.StreamedMessage, error) {
 	if !state.IsModelLoaded {
-		return types.InferenceResult{}, errors.New("load a model before infering")
+		return types.StreamedMessage{
+			Num:     1,
+			Content: "no model loaded",
+			MsgType: types.ErrorMsgType,
+		}, errors.New("load a model before infering")
 	}
 	state.IsInfering = true
 	state.ContinueInferingController = true
@@ -56,34 +44,61 @@ func Infer(prompt string, template string, params types.InferenceParams, c echo.
 	startThinking := time.Now()
 	startEmitting := time.Now()
 	var thinkingElapsed time.Duration
-	ntokens := 0
+	ntokens := -1
 	enc := json.NewEncoder(c.Response())
 	res, err := state.Lm.Predict(finalPrompt, llama.Debug, llama.SetTokenCallback(func(token string) bool {
-		if ntokens == 0 {
+		if ntokens == -1 {
 			startEmitting = time.Now()
 			thinkingElapsed = time.Since(startThinking)
 			if state.IsVerbose {
 				fmt.Println("Thinking time:", thinkingElapsed)
-				fmt.Println("Emitting")
+				fmt.Println("Emitting ..")
+			}
+			smsg := types.StreamedMessage{
+				Num:     ntokens,
+				Content: "start_emitting",
+				MsgType: types.SystemMsgType,
+				Data: map[string]interface{}{
+					"thinking_time":        thinkingElapsed,
+					"thinking_time_format": thinkingElapsed.String(),
+				},
+			}
+			if params.Stream {
+				streamMsg(smsg, c, enc)
+			}
+		} else {
+			if state.IsVerbose {
+				fmt.Print(token)
+			}
+			if params.Stream {
+				tmsg := types.StreamedMessage{
+					Content: token,
+					Num:     ntokens,
+					MsgType: types.TokenMsgType,
+				}
+				streamMsg(tmsg, c, enc)
 			}
 		}
-		onToken(token, ntokens, c, enc)
 		ntokens++
 		return state.ContinueInferingController
 	}),
-		llama.SetTokens(params.Tokens),
+		llama.SetTokens(params.NPredict),
 		llama.SetThreads(params.Threads),
 		llama.SetTopK(params.TopK),
 		llama.SetTopP(params.TopP),
 		llama.SetTemperature(params.Temperature),
-		llama.SetStopWords(params.StopPrompts),
+		llama.SetStopWords(strings.Join(params.StopPrompts, ",")),
 		llama.SetFrequencyPenalty(params.FrequencyPenalty),
 		llama.SetPresencePenalty(params.PresencePenalty),
 		llama.SetPenalty(params.RepeatPenalty),
 	)
 	state.IsInfering = false
 	if err != nil {
-		return types.InferenceResult{}, err
+		return types.StreamedMessage{
+			Num:     ntokens + 1,
+			Content: "inference error",
+			MsgType: types.ErrorMsgType,
+		}, err
 	}
 	emittingElapsed := time.Since(startEmitting)
 	if state.IsVerbose {
@@ -114,5 +129,13 @@ func Infer(prompt string, template string, params types.InferenceParams, c echo.
 	}
 	state.IsInfering = false
 	state.ContinueInferingController = true
-	return result, nil
+	b, _ := json.Marshal(&result)
+	var _res map[string]interface{}
+	_ = json.Unmarshal(b, &_res)
+	return types.StreamedMessage{
+		Num:     ntokens + 1,
+		Content: "result",
+		MsgType: types.SystemMsgType,
+		Data:    _res,
+	}, nil
 }

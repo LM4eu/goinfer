@@ -51,11 +51,11 @@ func parseParams(m echo.Map) (string, string, string, types.InferenceParams, err
 	}
 	v, ok = m["max_tokens"]
 	if ok {
-		params.Tokens = int(v.(float64))
+		params.NPredict = int(v.(float64))
 	}
 	v, ok = m["stop"]
 	if ok {
-		params.StopPrompts = strings.Join(v.([]string), ",")
+		params.StopPrompts = v.([]string)
 	}
 	v, ok = m["presence_penalty"]
 	if ok {
@@ -86,7 +86,7 @@ func CreateCompletionHandler(c echo.Context) error {
 	if err := c.Bind(&m); err != nil {
 		return err
 	}
-	fmt.Println("COMPLETION", m)
+	//fmt.Println("COMPLETION", m)
 	model, prompt, template, params, err := parseParams(m)
 	if err != nil {
 		panic(err)
@@ -108,7 +108,7 @@ func CreateCompletionHandler(c echo.Context) error {
 				Index: 0,
 				Message: types.OpenAiMessage{
 					Role:    "assistant",
-					Content: res.Text,
+					Content: res.Content,
 				},
 				FinishReason: "stop",
 			},
@@ -116,9 +116,9 @@ func CreateCompletionHandler(c echo.Context) error {
 		Usage: types.OpenAiUsage{
 			PromptTokens:     0,
 			CompletionTokens: 0,
-			TotalTokens:      res.TotalTokens,
+			TotalTokens:      res.Data["total_tokens"].(int),
 		},
 	}
-	fmt.Println("RES", endres)
+	//fmt.Println("RES", endres)
 	return c.JSON(http.StatusOK, endres)
 }

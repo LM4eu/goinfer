@@ -44,33 +44,26 @@ func RunServer(origins []string, apiKey string, localMode bool, enableOai bool) 
 	}
 
 	// inference
-	inf := e.Group("/infer")
-	if !localMode {
-		inf.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-			return key == apiKey, nil
-		}))
-	}
+	inf := e.Group("/completion")
+	inf.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+		return key == apiKey, nil
+	}))
 	inf.POST("", InferHandler)
 	inf.GET("/abort", AbortHandler)
-	inf.GET("/sse", SseHandler)
 
 	// models
 	mod := e.Group("/model")
-	if !localMode {
-		mod.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-			return key == apiKey, nil
-		}))
-	}
+	mod.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+		return key == apiKey, nil
+	}))
 	mod.GET("/state", ModelsStateHandler)
 	mod.POST("/load", LoadModelHandler)
 
 	// tasks
 	tas := e.Group("/task")
-	if !localMode {
-		tas.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-			return key == apiKey, nil
-		}))
-	}
+	tas.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+		return key == apiKey, nil
+	}))
 	tas.GET("/tree", ReadTasksHandler)
 	tas.POST("/read", ReadTaskHandler)
 	tas.POST("/execute", ExecuteTaskHandler)

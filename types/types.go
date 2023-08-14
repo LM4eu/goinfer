@@ -9,16 +9,17 @@ type GoInferConf struct {
 }
 
 type InferenceParams struct {
-	Threads           int     `json:"threads,omitempty" yaml:"threads,omitempty"`
-	Tokens            int     `json:"tokens,omitempty" yaml:"tokens,omitempty"`
-	TopK              int     `json:"topK,omitempty" yaml:"topK,omitempty"`
-	TopP              float32 `json:"topP,omitempty" yaml:"topP,omitempty"`
-	Temperature       float32 `json:"temp,omitempty" yaml:"temp,omitempty"`
-	FrequencyPenalty  float32 `json:"freqPenalty,omitempty" yaml:"freqPenalty,omitempty"`
-	PresencePenalty   float32 `json:"presPenalty,omitempty" yaml:"presPenalty,omitempty"`
-	RepeatPenalty     float32 `json:"repeatPenalty,omitempty" yaml:"repeatPenalty,omitempty"`
-	TailFreeSamplingZ float32 `json:"tfs,omitempty" yaml:"tfs,omitempty"`
-	StopPrompts       string  `json:"stop,omitempty" yaml:"stop,omitempty"`
+	Stream            bool     `json:"stream,omitempty" yaml:"stream,omitempty"`
+	Threads           int      `json:"threads,omitempty" yaml:"threads,omitempty"`
+	NPredict          int      `json:"n_predict,omitempty" yaml:"n_predict,omitempty"`
+	TopK              int      `json:"top_k,omitempty" yaml:"top_k,omitempty"`
+	TopP              float32  `json:"top_p,omitempty" yaml:"top_p,omitempty"`
+	Temperature       float32  `json:"temperature,omitempty" yaml:"temperature,omitempty"`
+	FrequencyPenalty  float32  `json:"frequency_penalty,omitempty" yaml:"frequency_penalty,omitempty"`
+	PresencePenalty   float32  `json:"presence_penalty,omitempty" yaml:"presence_penalty,omitempty"`
+	RepeatPenalty     float32  `json:"repeat_penalty,omitempty" yaml:"repeat_penalty,omitempty"`
+	TailFreeSamplingZ float32  `json:"tfs_z,omitempty" yaml:"tfs_z,omitempty"`
+	StopPrompts       []string `json:"stop,omitempty" yaml:"stop,omitempty"`
 }
 
 type InferenceResult struct {
@@ -50,10 +51,12 @@ type MsgType string
 const (
 	TokenMsgType  MsgType = "token"
 	SystemMsgType MsgType = "system"
+	ErrorMsgType  MsgType = "error"
 )
 
 type StreamedMessage struct {
-	Content string  `json:"content"`
-	Num     int     `json:"num"`
-	MsgType MsgType `json:"msg_type"`
+	Content string                 `json:"content"`
+	Num     int                    `json:"num"`
+	MsgType MsgType                `json:"msg_type"`
+	Data    map[string]interface{} `json:"data,omitempty"`
 }

@@ -23,7 +23,6 @@ var IsInfering = false
 
 // app state
 var IsVerbose = true
-var UseWs = true
 
 // tasks
 var TasksDir = "./tasks"

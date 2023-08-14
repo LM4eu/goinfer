@@ -22,62 +22,71 @@ func ParseInferParams(m echo.Map) (string, string, types.InferenceParams, error)
 	if ok {
 		template = v.(string)
 	}
+	stream := lm.DefaultInferenceParams.Stream
+	v, ok = m["stream"]
+	if ok {
+		stream = v.(bool)
+	}
 	threads := lm.DefaultInferenceParams.Threads
 	v, ok = m["threads"]
 	if ok {
 		threads = int(v.(float64))
 	}
-	tokens := lm.DefaultInferenceParams.Tokens
-	v, ok = m["tokens"]
+	tokens := lm.DefaultInferenceParams.NPredict
+	v, ok = m["n_predict"]
 	if ok {
 		tokens = int(v.(float64))
 	}
 	topK := lm.DefaultInferenceParams.TopK
-	v, ok = m["topK"]
+	v, ok = m["top_k"]
 	if ok {
 		topK = int(v.(float64))
 	}
 	topP := lm.DefaultInferenceParams.TopP
-	v, ok = m["topP"]
+	v, ok = m["top_p"]
 	if ok {
 		topP = float32(v.(float64))
 	}
 	temp := lm.DefaultInferenceParams.Temperature
-	v, ok = m["temp"]
+	v, ok = m["temperature"]
 	if ok {
 		temp = float32(v.(float64))
 	}
 	freqPenalty := lm.DefaultInferenceParams.FrequencyPenalty
-	v, ok = m["frequencyPenalty"]
+	v, ok = m["frequency_penalty"]
 	if ok {
 		freqPenalty = float32(v.(float64))
 	}
 	presPenalty := lm.DefaultInferenceParams.PresencePenalty
-	v, ok = m["presencePenalty"]
+	v, ok = m["presence_penalty"]
 	if ok {
 		presPenalty = float32(v.(float64))
 	}
 	repeatPenalty := lm.DefaultInferenceParams.RepeatPenalty
-	v, ok = m["repeatPenalty"]
+	v, ok = m["repeat_penalty"]
 	if ok {
 		repeatPenalty = float32(v.(float64))
 	}
 	tfs := lm.DefaultInferenceParams.TailFreeSamplingZ
-	v, ok = m["tfs"]
+	v, ok = m["tfs_z"]
 	if ok {
 		tfs = float32(v.(float64))
 	}
 	stop := lm.DefaultInferenceParams.StopPrompts
 	v, ok = m["stop"]
 	if ok {
-		s := v.(string)
+		s := v.([]interface{})
 		if len(s) > 0 {
-			stop = v.(string)
+			stop = make([]string, len(s))
+			for i, v := range s {
+				stop[i] = fmt.Sprint(v)
+			}
 		}
 	}
 	params := types.InferenceParams{
+		Stream:            stream,
 		Threads:           threads,
-		Tokens:            tokens,
+		NPredict:          tokens,
 		TopK:              topK,
 		TopP:              topP,
 		Temperature:       temp,
@@ -104,11 +113,13 @@ func InferHandler(c echo.Context) error {
 	if err != nil {
 		panic(err)
 	}
-	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	c.Response().WriteHeader(http.StatusOK)
+	if params.Stream {
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		c.Response().WriteHeader(http.StatusOK)
+	}
 	res, err := lm.Infer(prompt, template, params, c)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, err)
+		return c.JSON(http.StatusInternalServerError, res)
 	}
 
 	fmt.Println("-------- result ----------")
@@ -117,12 +128,6 @@ func InferHandler(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, res)
 	//return nil
-}
-
-func SseHandler(c echo.Context) error {
-	c.Response().Header().Set(echo.HeaderContentType, "text/event-stream")
-	c.Response().WriteHeader(http.StatusOK)
-	return nil
 }
 
 func AbortHandler(c echo.Context) error {

@@ -3,9 +3,9 @@ model: nous-hermes-llama-2-7b.ggmlv3.q4_K_M
 modelConf:
   - ctx: 512
 inferParams:
-  - topP: 0.2
-  - temp: 0.0
-  - stop: "```"
+  - top_p: 0.2
+  - temperature: 0.0
+  - stop: ["```"]
 template: |-
   You are a javascript code specialist. Below is an instruction that describes a task. Write a response that appropriately completes the request
 

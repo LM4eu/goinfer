@@ -7,7 +7,6 @@ import (
 	"github.com/synw/goinfer/conf"
 	"github.com/synw/goinfer/server"
 	"github.com/synw/goinfer/state"
-	"github.com/synw/goinfer/ws"
 )
 
 func main() {
@@ -23,11 +22,6 @@ func main() {
 		conf.Create(*genConfModelsDir)
 		fmt.Println("File goinfer.config.json created")
 		return
-	}
-	if *local {
-		go ws.RunWs()
-	} else {
-		state.UseWs = false
 	}
 
 	conf := conf.InitConf()

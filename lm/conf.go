@@ -6,8 +6,9 @@ import (
 )
 
 var DefaultInferenceParams = types.InferenceParams{
+	Stream:            false,
 	Threads:           4,
-	Tokens:            512,
+	NPredict:          512,
 	TopK:              40,
 	TopP:              0.95,
 	Temperature:       0.2,
@@ -15,7 +16,7 @@ var DefaultInferenceParams = types.InferenceParams{
 	PresencePenalty:   0.0,
 	RepeatPenalty:     1.0,
 	TailFreeSamplingZ: 1.0,
-	StopPrompts:       "</end>",
+	StopPrompts:       []string{"</s>"},
 }
 
 var DefaultModelParams = llama.ModelOptions{

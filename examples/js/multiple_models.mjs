@@ -28,8 +28,8 @@ async function baseQuery(prompt) {
     body: JSON.stringify({
       prompt: prompt,
       template: template,
-      temp: 0.2,
-      tfs: 1.8,
+      temperature: 0.2,
+      tfs_z: 1.8,
     })
   });
   if (response2.ok) {
