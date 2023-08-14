@@ -123,7 +123,7 @@ func InferHandler(c echo.Context) error {
 	}
 
 	fmt.Println("-------- result ----------")
-	fmt.Println(res)
+	fmt.Println(res.Data)
 	fmt.Println("--------------------------")
 
 	return c.JSON(http.StatusOK, res)

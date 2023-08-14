@@ -43,8 +43,11 @@ func InitConf() types.GoInferConf {
 }
 
 // Create : create a config file
-func Create(modelsDir string) {
-	key := generateRandomKey()
+func Create(modelsDir string, isDefault bool) {
+	key := "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
+	if !isDefault {
+		key = generateRandomKey()
+	}
 	data := map[string]interface{}{
 		"models_dir": modelsDir,
 		"origins":    []string{"http://localhost:5173", "http://localhost:5143"},

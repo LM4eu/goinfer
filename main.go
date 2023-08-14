@@ -12,14 +12,19 @@ import (
 func main() {
 	quiet := flag.Bool("q", false, "disable the verbose output")
 	local := flag.Bool("local", false, "run in local mode with a gui (default is api mode: no gui and no websockets, api key required)")
-	var genConfModelsDir = flag.String("conf", "", "generate a config file. Provide a models directory absolute path as argument")
+	genConfModelsDir := flag.String("conf", "", "generate a config file. Provide a models directory absolute path as argument")
+	genLocalConfModelsDir := flag.String("localconf", "", "generate a config file for local mode usage. Provide a models directory absolute path as argument")
 	flag.Parse()
 
 	if !*quiet {
 		state.IsVerbose = *quiet
 	}
 	if len(*genConfModelsDir) > 0 {
-		conf.Create(*genConfModelsDir)
+		conf.Create(*genConfModelsDir, false)
+		fmt.Println("File goinfer.config.json created")
+		return
+	} else if len(*genLocalConfModelsDir) > 0 {
+		conf.Create(*genLocalConfModelsDir, true)
 		fmt.Println("File goinfer.config.json created")
 		return
 	}
