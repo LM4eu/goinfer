@@ -2,5 +2,5 @@
 goinfer.config.json
 goinfer
 /tasks
-/server/dist
+/server/dist/*
 .pytest_cache
