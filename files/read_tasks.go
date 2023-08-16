@@ -72,7 +72,12 @@ func ReadTasks(rootPath string) ([]*Node, error) {
 		return nil, err
 	}
 
-	data := []*Node{root}[0].Children[0].Children
-
+	ts := []*Node{root}[0]
+	data := ts.Children
+	if len(ts.Children) > 0 {
+		if len(ts.Children[0].Children) > 0 {
+			data = ts.Children[0].Children
+		}
+	}
 	return data, nil
 }
