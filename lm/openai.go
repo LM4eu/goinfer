@@ -13,7 +13,7 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-func streamOpenAiMsg(msg types.OpenAiChatCompletionDeltaResponse, c echo.Context, enc *json.Encoder) error {
+func streamOpenAiMsg(msg types.OpenAiChatMessage, c echo.Context, enc *json.Encoder) error {
 	if err := enc.Encode(msg); err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func InferOpenAi(prompt string, template string, params types.InferenceParams, c
 			fmt.Print(token)
 		}
 		if params.Stream {
-			tmsg := types.OpenAiChatCompletionDeltaResponse{
+			tmsgDetail := types.OpenAiChatCompletionDeltaResponse{
 				ID:      strconv.Itoa(ntokens),
 				Object:  "chat.completion.chunk",
 				Created: time.Now().Unix(),
@@ -53,6 +53,11 @@ func InferOpenAi(prompt string, template string, params types.InferenceParams, c
 						},
 					},
 				},
+			}
+			tmsg := types.OpenAiChatMessage{
+				ID:      strconv.Itoa(ntokens),
+				Text:    token,
+				Details: tmsgDetail,
 			}
 			streamOpenAiMsg(tmsg, c, enc)
 		}

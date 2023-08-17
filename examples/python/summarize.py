@@ -32,6 +32,6 @@ payload = {
    "prompt": f"{PROMPT}\n\n{text}",
    "template": TEMPLATE,
 }
-url = 'http://localhost:5143/infer'
+url = 'http://localhost:5143/completion'
 response = requests.post(url, json=payload)
 print(response.text)

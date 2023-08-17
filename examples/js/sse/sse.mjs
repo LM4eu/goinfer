@@ -27,9 +27,10 @@ async function runInference() {
   const paramDefaults = {
     prompt: prompt,
     template: template,
+    stream: true,
   };
   const completionParams = { ...paramDefaults, prompt };
-  const response = await fetch("http://localhost:5143/infer", {
+  const response = await fetch("http://localhost:5143/completion", {
     method: 'POST',
     body: JSON.stringify(completionParams),
     headers: {
