@@ -9,6 +9,25 @@ type OpenAiChatCompletion struct {
 	Usage   OpenAiUsage    `json:"usage"`
 }
 
+type Delta struct {
+	Role    string `json:"role"`
+	Content string `json:"content,omitempty"`
+}
+
+type DeltaChoice struct {
+	Delta        Delta  `json:"delta"`
+	Index        int    `json:"index"`
+	FinishReason string `json:"finish_reason,omitempty"`
+}
+
+type OpenAiChatCompletionDeltaResponse struct {
+	ID      string        `json:"id"`
+	Object  string        `json:"object"`
+	Created int64         `json:"created"`
+	Model   string        `json:"model"`
+	Choices []DeltaChoice `json:"choices"`
+}
+
 type OpenAiChoice struct {
 	Index        int           `json:"index"`
 	Message      OpenAiMessage `json:"message"`

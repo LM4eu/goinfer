@@ -60,3 +60,10 @@ type StreamedMessage struct {
 	MsgType MsgType                `json:"msg_type"`
 	Data    map[string]interface{} `json:"data,omitempty"`
 }
+
+type ApiType string
+
+const (
+	Llama  ApiType = "llama"
+	OpenAi ApiType = "openai"
+)

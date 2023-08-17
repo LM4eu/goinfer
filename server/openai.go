@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/synw/goinfer/lm"
@@ -36,6 +35,10 @@ func parseParams(m echo.Map) (string, string, string, types.InferenceParams, err
 		} else if role == "user" {
 			prompt = content
 		}
+	}
+	v, ok = m["stream"]
+	if ok {
+		params.Stream = v.(bool)
 	}
 	v, ok = m["temperature"]
 	if ok {
@@ -76,7 +79,7 @@ func parseParams(m echo.Map) (string, string, string, types.InferenceParams, err
 	return model, prompt, template, params, nil
 }
 
-// Create an Openai api for /v1/completion
+// Create an Openai api for /v1/chat/completion
 func CreateCompletionHandler(c echo.Context) error {
 	if state.IsInfering {
 		fmt.Println("An inference query is already running")
@@ -94,31 +97,16 @@ func CreateCompletionHandler(c echo.Context) error {
 	if state.LoadedModel != model {
 		lm.LoadModel(model, lm.DefaultModelParams)
 	}
-	res, err := lm.Infer(prompt, template, params, c)
+	if params.Stream {
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		c.Response().WriteHeader(http.StatusOK)
+	}
+	res, err := lm.InferOpenAi(prompt, template, params, c)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, err)
+		return c.JSON(http.StatusInternalServerError, err)
 	}
-	endres := types.OpenAiChatCompletion{
-		ID:      "0",
-		Object:  "chat.completion",
-		Created: time.Now().Unix(),
-		Model:   model,
-		Choices: []types.OpenAiChoice{
-			{
-				Index: 0,
-				Message: types.OpenAiMessage{
-					Role:    "assistant",
-					Content: res.Content,
-				},
-				FinishReason: "stop",
-			},
-		},
-		Usage: types.OpenAiUsage{
-			PromptTokens:     0,
-			CompletionTokens: 0,
-			TotalTokens:      res.Data["total_tokens"].(int),
-		},
+	if params.Stream {
+		return c.NoContent(http.StatusNoContent)
 	}
-	//fmt.Println("RES", endres)
-	return c.JSON(http.StatusOK, endres)
+	return c.JSON(http.StatusOK, res)
 }
