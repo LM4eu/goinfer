@@ -13,10 +13,20 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-func streamOpenAiMsg(msg types.OpenAiChatMessage, c echo.Context, enc *json.Encoder) error {
+func streamOpenAiMsg(msg types.OpenAiChatCompletionDeltaResponse, c echo.Context, enc *json.Encoder) error {
+	c.Response().Write([]byte("data: "))
 	if err := enc.Encode(msg); err != nil {
 		return err
 	}
+	c.Response().Write([]byte("\n"))
+	c.Response().Flush()
+	return nil
+}
+
+func terminateStream(c echo.Context) error {
+	c.Response().Write([]byte("data: "))
+	c.Response().Write([]byte("[DONE]"))
+	c.Response().Write([]byte("\n\n"))
 	c.Response().Flush()
 	return nil
 }
@@ -38,7 +48,7 @@ func InferOpenAi(prompt string, template string, params types.InferenceParams, c
 			fmt.Print(token)
 		}
 		if params.Stream {
-			tmsgDetail := types.OpenAiChatCompletionDeltaResponse{
+			tmsg := types.OpenAiChatCompletionDeltaResponse{
 				ID:      strconv.Itoa(ntokens),
 				Object:  "chat.completion.chunk",
 				Created: time.Now().Unix(),
@@ -53,11 +63,6 @@ func InferOpenAi(prompt string, template string, params types.InferenceParams, c
 						},
 					},
 				},
-			}
-			tmsg := types.OpenAiChatMessage{
-				ID:      strconv.Itoa(ntokens),
-				Text:    token,
-				Details: tmsgDetail,
 			}
 			streamOpenAiMsg(tmsg, c, enc)
 		}
@@ -74,6 +79,9 @@ func InferOpenAi(prompt string, template string, params types.InferenceParams, c
 		llama.SetPresencePenalty(params.PresencePenalty),
 		llama.SetPenalty(params.RepeatPenalty),
 	)
+	if params.Stream {
+		terminateStream(c)
+	}
 	state.IsInfering = false
 	id := strconv.Itoa(ntokens)
 	endres := types.OpenAiChatCompletion{

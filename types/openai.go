@@ -11,7 +11,7 @@ type OpenAiChatCompletion struct {
 
 type Delta struct {
 	Role    string `json:"role"`
-	Content string `json:"content,omitempty"`
+	Content string `json:"content"`
 }
 
 type DeltaChoice struct {
@@ -28,12 +28,12 @@ type OpenAiChatCompletionDeltaResponse struct {
 	Choices []DeltaChoice `json:"choices"`
 }
 
-type OpenAiChatMessage struct {
+/*type OpenAiChatMessage struct {
 	ID      string                            `json:"id"`
 	Text    string                            `json:"text"`
 	Role    string                            `json:"role"`
 	Details OpenAiChatCompletionDeltaResponse `json:"details"`
-}
+}*/
 
 type OpenAiChoice struct {
 	Index        int           `json:"index"`

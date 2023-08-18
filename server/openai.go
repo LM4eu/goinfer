@@ -101,12 +101,25 @@ func CreateCompletionHandler(c echo.Context) error {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		c.Response().WriteHeader(http.StatusOK)
 	}
+	ctx := c.Request().Context()
+	if ctx.Err() != nil { // If context has an error (e.g., canceled), stop processing
+		fmt.Println("Context error")
+		return c.NoContent(http.StatusNoContent)
+	}
+
 	res, err := lm.InferOpenAi(prompt, template, params, c)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err)
 	}
-	if params.Stream {
-		return c.NoContent(http.StatusNoContent)
-	}
+
+	/*select {
+	case <-notifier:
+		fmt.Println("Notifier end")
+		return nil
+	case <-c.Request().Context().Done(): // Check context.
+		fmt.Println("Request done end")
+		// If it reaches here, this means that context was canceled (a timeout was reached, etc.).
+		return c.JSON(http.StatusOK, res)
+	}*/
 	return c.JSON(http.StatusOK, res)
 }

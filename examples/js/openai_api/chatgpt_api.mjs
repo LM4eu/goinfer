@@ -20,10 +20,11 @@ async function main() {
   //const finalPrompt = template.replace("{prompt}", prompt);
   const res = await api.sendMessage(prompt, {
     onProgress: (partialResponse) => {
-      console.log("Progress:", partialResponse);
-      process.stdout.write(partialResponse.text)
+      //console.log("Progress:", typeof partialResponse, partialResponse);
+      process.stdout.write(partialResponse.delta)
     }
   })
+  console.log("RESP", res)
   return res
 }
 
