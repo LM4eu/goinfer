@@ -15,10 +15,13 @@ Works with the [Infergui](https://github.com/synw/infergui) frontend
     - [Install](https://synw.github.io/goinfer/get_started/install)
     - [Configure](https://synw.github.io/goinfer/get_started/configure)
     - [Run](https://synw.github.io/goinfer/get_started/run)
- - [Api](https://synw.github.io/goinfer/api)
-    - [Models state](https://synw.github.io/goinfer/api/models_state)
-    - [Load model](https://synw.github.io/goinfer/api/load_model)
-    - [Inference](https://synw.github.io/goinfer/api/inference)
-    - [Tasks](https://synw.github.io/goinfer/api/tasks)
+ - [Llama api](https://synw.github.io/goinfer/llama_api)
+    - [Models state](https://synw.github.io/goinfer/llama_api/models_state)
+    - [Load model](https://synw.github.io/goinfer/llama_api/load_model)
+    - [Inference](https://synw.github.io/goinfer/llama_api/inference)
+    - [Tasks](https://synw.github.io/goinfer/llama_api/tasks)
+ - [Openai api](https://synw.github.io/goinfer/openai_api)
+    - [Configure](https://synw.github.io/goinfer/openai_api/configure)
+    - [Endpoints](https://synw.github.io/goinfer/openai_api/endpoints)
 
 </details>
