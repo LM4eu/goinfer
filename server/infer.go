@@ -123,7 +123,9 @@ func InferHandler(c echo.Context) error {
 	}
 
 	fmt.Println("-------- result ----------")
-	fmt.Println(res.Data)
+	for key, value := range res.Data {
+		fmt.Printf("%s: %v\n", key, value)
+	}
 	fmt.Println("--------------------------")
 
 	return c.JSON(http.StatusOK, res)
