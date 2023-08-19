@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "chatgpt": "^5.2.5"
+    "chatgpt": "^5.2.5",
+    "eventsource-parser": "^1.0.0"
   }
 }
