@@ -24,7 +24,7 @@ async function main() {
       process.stdout.write(partialResponse.delta)
     }
   })
-  console.log("RESP", res)
+  console.log("Response:", res)
   return res
 }
 

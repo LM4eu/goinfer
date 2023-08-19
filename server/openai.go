@@ -107,19 +107,27 @@ func CreateCompletionHandler(c echo.Context) error {
 		return c.NoContent(http.StatusNoContent)
 	}
 
-	res, err := lm.InferOpenAi(prompt, template, params, c)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err)
-	}
+	ch := make(chan types.OpenAiChatCompletion)
+	errCh := make(chan error)
+	defer close(ch)
+	defer close(errCh)
 
-	/*select {
-	case <-notifier:
-		fmt.Println("Notifier end")
+	go lm.InferOpenAi(prompt, template, params, c, ch, errCh)
+
+	select {
+	case res, ok := <-ch:
+		if ok {
+			return c.JSON(http.StatusOK, res)
+		}
 		return nil
-	case <-c.Request().Context().Done(): // Check context.
-		fmt.Println("Request done end")
-		// If it reaches here, this means that context was canceled (a timeout was reached, etc.).
-		return c.JSON(http.StatusOK, res)
-	}*/
-	return c.JSON(http.StatusOK, res)
+	case err, ok := <-errCh:
+		if ok {
+			panic(err)
+		}
+		return nil
+	case <-c.Request().Context().Done():
+		fmt.Println("\nRequest canceled")
+		state.ContinueInferingController = false
+		return c.NoContent(http.StatusNoContent)
+	}
 }

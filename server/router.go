@@ -72,6 +72,9 @@ func RunServer(origins []string, apiKey string, localMode bool, enableOai bool) 
 	if enableOai {
 		// openai api
 		oai := e.Group("/v1")
+		oai.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+			return key == apiKey, nil
+		}))
 		oai.POST("/chat/completions", CreateCompletionHandler)
 	}
 

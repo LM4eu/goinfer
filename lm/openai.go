@@ -31,7 +31,14 @@ func terminateStream(c echo.Context) error {
 	return nil
 }
 
-func InferOpenAi(prompt string, template string, params types.InferenceParams, c echo.Context) (types.OpenAiChatCompletion, error) {
+func InferOpenAi(
+	prompt string,
+	template string,
+	params types.InferenceParams,
+	c echo.Context,
+	ch chan<- types.OpenAiChatCompletion,
+	errCh chan<- error,
+) {
 	state.IsInfering = true
 	state.ContinueInferingController = true
 	finalPrompt := strings.Replace(template, "{prompt}", prompt, 1)
@@ -64,7 +71,9 @@ func InferOpenAi(prompt string, template string, params types.InferenceParams, c
 					},
 				},
 			}
-			streamOpenAiMsg(tmsg, c, enc)
+			if state.ContinueInferingController {
+				streamOpenAiMsg(tmsg, c, enc)
+			}
 		}
 		ntokens++
 		return state.ContinueInferingController
@@ -79,7 +88,7 @@ func InferOpenAi(prompt string, template string, params types.InferenceParams, c
 		llama.SetPresencePenalty(params.PresencePenalty),
 		llama.SetPenalty(params.RepeatPenalty),
 	)
-	if params.Stream {
+	if params.Stream && state.ContinueInferingController {
 		terminateStream(c)
 	}
 	state.IsInfering = false
@@ -105,8 +114,10 @@ func InferOpenAi(prompt string, template string, params types.InferenceParams, c
 			TotalTokens:      ntokens,
 		},
 	}
-	if err != nil {
-		return endres, err
+	if state.ContinueInferingController {
+		if err != nil {
+			errCh <- err
+		}
+		ch <- endres
 	}
-	return endres, nil
 }
