@@ -63,11 +63,36 @@ func ExecuteTaskHandler(c echo.Context) error {
 		})
 	}
 	// exec task
-	res, err := lm.Infer(prompt, task.Template, task.InferParams, c)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, err)
+	ch := make(chan types.StreamedMessage)
+	errCh := make(chan types.StreamedMessage)
+	defer close(ch)
+	defer close(errCh)
+
+	go lm.Infer(prompt, task.Template, task.InferParams, c, ch, errCh)
+
+	select {
+	case res, ok := <-ch:
+		if ok {
+			if state.IsVerbose {
+				fmt.Println("-------- result ----------")
+				for key, value := range res.Data {
+					fmt.Printf("%s: %v\n", key, value)
+				}
+				fmt.Println("--------------------------")
+				return c.JSON(http.StatusOK, res)
+			}
+		}
+		return nil
+	case err, ok := <-errCh:
+		if ok {
+			panic(err)
+		}
+		return nil
+	case <-c.Request().Context().Done():
+		fmt.Println("\nRequest canceled")
+		state.ContinueInferingController = false
+		return c.NoContent(http.StatusNoContent)
 	}
-	return c.JSON(http.StatusOK, res)
 }
 
 func ReadTaskHandler(c echo.Context) error {

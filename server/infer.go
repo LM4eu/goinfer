@@ -117,19 +117,39 @@ func InferHandler(c echo.Context) error {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		c.Response().WriteHeader(http.StatusOK)
 	}
-	res, err := lm.Infer(prompt, template, params, c)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, res)
-	}
 
-	fmt.Println("-------- result ----------")
-	for key, value := range res.Data {
-		fmt.Printf("%s: %v\n", key, value)
-	}
-	fmt.Println("--------------------------")
+	ch := make(chan types.StreamedMessage)
+	errCh := make(chan types.StreamedMessage)
+	defer close(ch)
+	defer close(errCh)
 
-	return c.JSON(http.StatusOK, res)
-	//return nil
+	go lm.Infer(prompt, template, params, c, ch, errCh)
+
+	select {
+	case res, ok := <-ch:
+		if ok {
+			if state.IsVerbose {
+				fmt.Println("-------- result ----------")
+				for key, value := range res.Data {
+					fmt.Printf("%s: %v\n", key, value)
+				}
+				fmt.Println("--------------------------")
+			}
+			if !params.Stream {
+				return c.JSON(http.StatusOK, res)
+			}
+		}
+		return nil
+	case err, ok := <-errCh:
+		if ok {
+			panic(err)
+		}
+		return nil
+	case <-c.Request().Context().Done():
+		fmt.Println("\nRequest canceled")
+		state.ContinueInferingController = false
+		return c.NoContent(http.StatusNoContent)
+	}
 }
 
 func AbortHandler(c echo.Context) error {
