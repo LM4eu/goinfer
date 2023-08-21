@@ -2,8 +2,9 @@ import json
 import sseclient
 import requests
 
-KEY = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
+# wget https://huggingface.co/s3nh/mamba-gpt-3b-v3-GGML/resolve/main/mamba-gpt-3b-v3.ggmlv3.q8_0.bin
 MODEL = "mamba-gpt-3b-v3.ggmlv3.q8_0"
+KEY = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
 TEMPLATE = "### Instruction: {prompt}\n\n### Response:"
 PROMPT = "list the planets in the solar system"
 

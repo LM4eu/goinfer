@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 
+// base model:
+// wget https://huggingface.co/s3nh/mamba-gpt-3b-v3-GGML/resolve/main/mamba-gpt-3b-v3.ggmlv3.q8_0.bin
+// fix json task model:
+// wget https://huggingface.co/TheBloke/Nous-Hermes-Llama-2-7B-GGML/resolve/main/nous-hermes-llama-2-7b.ggmlv3.q4_K_M.bin
+const model = "mamba-gpt-3b-v3.ggmlv3.q8_0";
 const apiKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465";
-
+const template = "### Instruction: {prompt}\n\n### Response: (answer in json)\n\n```json";
 
 async function baseQuery(prompt) {
-  const model = "mamba-gpt-3b-v3.ggmlv3.q8_0";
-  const template = "### Instruction: {prompt}\n\n### Response: (answer in json)\n\n```json";
   // load the model
   const response = await fetch(`http://localhost:5143/model/load`, {
     method: 'POST',

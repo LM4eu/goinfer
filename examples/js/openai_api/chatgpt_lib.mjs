@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { ChatGPTAPI } from 'chatgpt'
 
-const apiKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465";
+// wget https://huggingface.co/s3nh/mamba-gpt-3b-v3-GGML/resolve/main/mamba-gpt-3b-v3.ggmlv3.q8_0.bin
 const model = "mamba-gpt-3b-v3.ggmlv3.q8_0";
+const apiKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465";
 //const template = "### Instruction: {prompt}\n\n### Response:";
 const prompt = "List the planets in the solar system";
 

@@ -1,9 +1,10 @@
 import trafilatura
 import requests
 
+# wget https://huggingface.co/s3nh/mamba-gpt-3b-v3-GGML/resolve/main/mamba-gpt-3b-v3.ggmlv3.q8_0.bin
+MODEL = "mamba-gpt-3b-v3.ggmlv3.q8_0"
 KEY = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
 URL = "https://152334h.github.io/blog/non-determinism-in-gpt-4/"
-MODEL = "nous-hermes-llama-2-7b.ggmlv3.q4_K_M"
 TEMPLATE = "### Instruction: {prompt}\n\n### Response:"
 PROMPT = "summarize this text:"
 #PROMPT = "extract the links from this text:"

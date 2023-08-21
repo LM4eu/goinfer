@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// fix json task model:
+// wget https://huggingface.co/TheBloke/Nous-Hermes-Llama-2-7B-GGML/resolve/main/nous-hermes-llama-2-7b.ggmlv3.q4_K_M.bin
 const task = "code/json/fix";
 const prompt = `{a: 1, b: [42,43,],}`;
 const apiKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465";
