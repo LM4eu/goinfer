@@ -1,10 +1,8 @@
 import json
-import sys
 import sseclient
 import requests
 
 KEY = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
-URL = "https://152334h.github.io/blog/non-determinism-in-gpt-4/"
 MODEL = "mamba-gpt-3b-v3.ggmlv3.q8_0"
 TEMPLATE = "### Instruction: {prompt}\n\n### Response:"
 PROMPT = "list the planets in the solar system"
