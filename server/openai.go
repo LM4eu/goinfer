@@ -90,9 +90,9 @@ func CreateCompletionHandler(c echo.Context) error {
 		return err
 	}
 	//fmt.Println("Params:")
-	for p, i := range m {
+	/*for p, i := range m {
 		fmt.Println(p, ":", i)
-	}
+	}*/
 	model, prompt, template, params, err := parseParams(m)
 	if err != nil {
 		panic(err)
