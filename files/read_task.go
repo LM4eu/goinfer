@@ -64,7 +64,12 @@ func convertTask(m map[string]interface{}) (types.Task, error) {
 					case "tfs":
 						ip.TailFreeSamplingZ = float32(v.(float64))
 					case "stop":
-						ip.StopPrompts = v.([]string)
+						s := v.([]interface{})
+						t := []string{}
+						for _, v = range s {
+							t = append(t, v.(string))
+						}
+						ip.StopPrompts = t
 					}
 				}
 			}

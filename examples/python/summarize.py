@@ -1,6 +1,7 @@
 import trafilatura
 import requests
 
+KEY = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
 URL = "https://152334h.github.io/blog/non-determinism-in-gpt-4/"
 MODEL = "nous-hermes-llama-2-7b.ggmlv3.q4_K_M"
 TEMPLATE = "### Instruction: {prompt}\n\n### Response:"
@@ -22,8 +23,9 @@ payload = {
    "model": MODEL,
    "ctx": 4096,
 }
+headers = {'Authorization': f'Bearer {KEY}'}
 url = 'http://localhost:5143/model/load'
-response = requests.post(url, json=payload)
+response = requests.post(url, headers=headers, json=payload)
 if (response.status_code != 204):
   raise Exception(f"Error loading model ${response.content}")
 
@@ -33,5 +35,5 @@ payload = {
    "template": TEMPLATE,
 }
 url = 'http://localhost:5143/completion'
-response = requests.post(url, json=payload)
+response = requests.post(url, headers=headers, json=payload)
 print(response.text)

@@ -1,35 +1,41 @@
 #!/usr/bin/env node
 
+const apiKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465";
+
 
 async function baseQuery(prompt) {
   const model = "mamba-gpt-3b-v3.ggmlv3.q8_0";
-  const template = "### Instruction: {prompt}\n\n### Response: (answer in json)";
+  const template = "### Instruction: {prompt}\n\n### Response: (answer in json)\n\n```json";
   // load the model
   const response = await fetch(`http://localhost:5143/model/load`, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: model
+      model: model,
+      ctx: 4096,
     })
   });
   if (response.status != 204) {
     throw new Error("Can not load model", response)
   }
   // run the inference query
-  const response2 = await fetch(`http://localhost:5143/infer`, {
+  const response2 = await fetch(`http://localhost:5143/completion`, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       prompt: prompt,
       template: template,
-      temperature: 0.2,
-      tfs_z: 1.8,
+      temperature: 0.5,
+      tfs_z: 1.4,
+      stop: ["```"]
     })
   });
   if (response2.ok) {
@@ -47,6 +53,7 @@ async function fixJson(prompt) {
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       task: task,
@@ -55,6 +62,7 @@ async function fixJson(prompt) {
     })
   });
   if (response.ok) {
+    console.log("Resp", response)
     const data = await response.json();
     return data.text
   } else {
@@ -64,17 +72,17 @@ async function fixJson(prompt) {
 
 
 async function main() {
-  const prompt = "list the planets names in the solar system and their distance from the sun in kilometers";
+  const prompt = "list the planets names in the solar system and their distance from the sun in millions of kilometers";
   console.log("Prompt: ", prompt);
   const lmResponse = await baseQuery(prompt);
   console.log("Response:");
   console.log(lmResponse.text);
-  const data = lmResponse.text.replace("```json", "").replace("```", "");
+  const data = lmResponse.text;
   console.log("Validating json");
   try {
-    const res = JSON.parse(data);
+    JSON.parse(data);
     console.log("The json is valid");
-    return res
+    return data
   } catch (e) {
     console.log("Found invalid json with this error:");
     console.log("------------------------")

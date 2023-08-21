@@ -79,13 +79,15 @@ func ExecuteTaskHandler(c echo.Context) error {
 					fmt.Printf("%s: %v\n", key, value)
 				}
 				fmt.Println("--------------------------")
-				return c.JSON(http.StatusOK, res)
+			}
+			if !task.InferParams.Stream {
+				return c.JSON(http.StatusOK, res.Data)
 			}
 		}
 		return nil
 	case err, ok := <-errCh:
 		if ok {
-			panic(err)
+			return c.JSON(http.StatusInternalServerError, err)
 		}
 		return nil
 	case <-c.Request().Context().Done():

@@ -113,6 +113,7 @@ func InferHandler(c echo.Context) error {
 	if err != nil {
 		panic(err)
 	}
+	//fmt.Println("Params", params)
 	if params.Stream {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		c.Response().WriteHeader(http.StatusOK)
@@ -136,7 +137,8 @@ func InferHandler(c echo.Context) error {
 				fmt.Println("--------------------------")
 			}
 			if !params.Stream {
-				return c.JSON(http.StatusOK, res)
+				fmt.Println("Sending res", res.Data)
+				return c.JSON(http.StatusOK, res.Data)
 			}
 		}
 		return nil
