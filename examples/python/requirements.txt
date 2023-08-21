@@ -1,2 +1,3 @@
 trafilatura
 requests
+sseclient-py
