@@ -1,3 +1,4 @@
 trafilatura
 requests
 sseclient-py
+feedparser
