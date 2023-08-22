@@ -83,7 +83,7 @@ func InferOpenAi(
 		llama.SetTopK(params.TopK),
 		llama.SetTopP(params.TopP),
 		llama.SetTemperature(params.Temperature),
-		llama.SetStopWords(strings.Join(params.StopPrompts, ",")),
+		llama.SetStopWords(params.StopPrompts...),
 		llama.SetFrequencyPenalty(params.FrequencyPenalty),
 		llama.SetPresencePenalty(params.PresencePenalty),
 		llama.SetPenalty(params.RepeatPenalty),

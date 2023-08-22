@@ -11,12 +11,17 @@ import (
 
 func main() {
 	quiet := flag.Bool("q", false, "disable the verbose output")
+	debug := flag.Bool("debug", false, "debug mode")
 	local := flag.Bool("local", false, "run in local mode with a gui (default is api mode: no gui and no websockets, api key required)")
 	genConfModelsDir := flag.String("conf", "", "generate a config file. Provide a models directory absolute path as argument")
 	genLocalConfModelsDir := flag.String("localconf", "", "generate a config file for local mode usage. Provide a models directory absolute path as argument")
 	flag.Parse()
 
+	if *debug {
+		state.IsDebug = true
+	}
 	if !*quiet {
+		fmt.Println("Debug mode is on")
 		state.IsVerbose = *quiet
 	}
 	if len(*genConfModelsDir) > 0 {

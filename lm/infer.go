@@ -50,6 +50,15 @@ func Infer(
 		fmt.Println("----------------------------")
 		fmt.Println("Thinking ..")
 	}
+	if state.IsDebug {
+		fmt.Println("Inference params:")
+		jsonData, err := json.MarshalIndent(params, "", "  ")
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+		fmt.Println(string(jsonData))
+	}
 	startThinking := time.Now()
 	startEmitting := time.Now()
 	var thinkingElapsed time.Duration
@@ -98,7 +107,7 @@ func Infer(
 		llama.SetTopK(params.TopK),
 		llama.SetTopP(params.TopP),
 		llama.SetTemperature(params.Temperature),
-		llama.SetStopWords(strings.Join(params.StopPrompts, ",")),
+		llama.SetStopWords(params.StopPrompts...),
 		llama.SetFrequencyPenalty(params.FrequencyPenalty),
 		llama.SetPresencePenalty(params.PresencePenalty),
 		llama.SetPenalty(params.RepeatPenalty),

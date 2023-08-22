@@ -23,6 +23,7 @@ var IsInfering = false
 
 // app state
 var IsVerbose = true
+var IsDebug = false
 
 // tasks
 var TasksDir = "./tasks"

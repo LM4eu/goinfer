@@ -137,7 +137,6 @@ func InferHandler(c echo.Context) error {
 				fmt.Println("--------------------------")
 			}
 			if !params.Stream {
-				fmt.Println("Sending res", res.Data)
 				return c.JSON(http.StatusOK, res.Data)
 			}
 		}
