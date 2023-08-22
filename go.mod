@@ -34,4 +34,6 @@ require (
 
 replace github.com/go-skynet/go-llama.cpp v0.0.0 => ./go-llama.cpp
 
-go 1.19
+go 1.21
+
+toolchain go1.21.0
