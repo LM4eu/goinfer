@@ -4,13 +4,18 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	llama "github.com/go-skynet/go-llama.cpp"
 	"github.com/synw/goinfer/state"
 )
 
 func LoadModel(model string, params llama.ModelOptions) error {
-	mpath := filepath.Join(state.ModelsDir, model+".bin")
+	name := model
+	if !(strings.HasSuffix(name, ".bin")) {
+		name = name + ".bin"
+	}
+	mpath := filepath.Join(state.ModelsDir, name)
 	if state.IsVerbose {
 		fmt.Println("Loading model", mpath)
 	}
