@@ -3,8 +3,10 @@ const { useApi } = require("restmix");
 
 // doc: https://synw.github.io/restmix/ts/postsse
 
-// wget https://huggingface.co/s3nh/mamba-gpt-3b-v3-GGML/resolve/main/mamba-gpt-3b-v3.ggmlv3.q8_0.bin
-const model = "mamba-gpt-3b-v3.ggmlv3.q8_0";
+// in this example we use the model:
+// https://huggingface.co/s3nh/mamba-gpt-3b-v3-GGML/resolve/main/mamba-gpt-3b-v3.ggmlv3.q8_0.bin
+// converted to gguf with Llama.cpp
+const model = "mamba-gpt-3b-v3.gguf.q8_0"
 const apiKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465";
 const template = "### Instruction: {prompt}\n\n### Response:";
 const prompt = "List the planets in the solar system";

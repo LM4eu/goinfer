@@ -2,8 +2,10 @@ import requests
 import feedparser
 
 
-# wget https://huggingface.co/TheBloke/open-llama-7B-v2-open-instruct-GGML/resolve/main/open-llama-7b-v2-open-instruct.ggmlv3.q5_1.bin
-MODEL = "open-llama-7B-open-instruct.ggmlv3.q5_1"
+# in this example we use the model:
+# https://huggingface.co/s3nh/mamba-gpt-3b-v3-GGML/resolve/main/mamba-gpt-3b-v3.ggmlv3.q8_0.bin
+# converted to gguf with Llama.cpp
+MODEL = "mamba-gpt-3b-v3.gguf.q8_0"
 KEY = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
 URL = "https://news.ycombinator.com/rss"
 SYSTEM = (
