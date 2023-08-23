@@ -1,6 +1,6 @@
 # Goinfer
 
-Inference api server for local ggml language models. Based on [Llama.cpp](https://github.com/ggerganov/llama.cpp)
+Inference api server for local gguf language models. Based on [Llama.cpp](https://github.com/ggerganov/llama.cpp)
 
 - **Multi models**: switch between models at runtime
 - **Inference queries**: http api and websockets support
@@ -13,7 +13,7 @@ Download a binary from the releases section (Linux only)
 ## Local usage with a gui
 
 Generate a config file, providing the absolute path to your model's directory,
-where the .bin ggml models are stored:
+where the .bin gguf models are stored:
 
 ```bash
 ./goinfer -localconf /absolute/path/to/my/models/directory
@@ -36,7 +36,7 @@ Open `http://localhost:5143` in a browser to get the gui
 ## Api server usage
 
 Generate a config file, providing the absolute path to your model's directory,
-where the .bin ggml models are stored:
+where the .bin gguf models are stored:
 
 ```bash
 ./goinfer -conf /absolute/path/to/my/models/directory
