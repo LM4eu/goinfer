@@ -160,7 +160,7 @@ func SaveTaskHandler(c echo.Context) error {
 		rawInferParams["template"] = template
 	}
 	rawInferParams["prompt"] = ""
-	_, _, inferParams, err := ParseInferParams(rawInferParams)
+	_, _, _, _, inferParams, err := ParseInferParams(rawInferParams)
 	if err != nil {
 		return err
 	}

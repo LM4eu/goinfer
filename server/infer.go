@@ -11,16 +11,26 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-func ParseInferParams(m echo.Map) (string, string, types.InferenceParams, error) {
+func ParseInferParams(m echo.Map) (string, string, string, int, types.InferenceParams, error) {
 	v, ok := m["prompt"]
 	if !ok {
-		return "", "", types.InferenceParams{}, errors.New("provide a prompt")
+		return "", "", "", lm.DefaultModelParams.ContextSize, types.InferenceParams{}, errors.New("provide a prompt")
 	}
 	prompt := v.(string)
 	template := "{prompt}"
 	v, ok = m["template"]
 	if ok {
 		template = v.(string)
+	}
+	model := ""
+	v, ok = m["model"]
+	if ok {
+		model = v.(string)
+	}
+	ctx := lm.DefaultModelParams.ContextSize
+	v, ok = m["ctx"]
+	if ok {
+		ctx = v.(int)
 	}
 	stream := lm.DefaultInferenceParams.Stream
 	v, ok = m["stream"]
@@ -96,7 +106,7 @@ func ParseInferParams(m echo.Map) (string, string, types.InferenceParams, error)
 		TailFreeSamplingZ: tfs,
 		StopPrompts:       stop,
 	}
-	return prompt, template, params, nil
+	return prompt, template, model, ctx, params, nil
 }
 
 func InferHandler(c echo.Context) error {
@@ -109,9 +119,17 @@ func InferHandler(c echo.Context) error {
 		return err
 	}
 
-	prompt, template, params, err := ParseInferParams(m)
+	prompt, template, model, ctx, params, err := ParseInferParams(m)
 	if err != nil {
 		panic(err)
+	}
+	if model != "" {
+		opts := lm.DefaultModelParams
+		opts.ContextSize = ctx
+		if state.IsDebug {
+			fmt.Println("Loading model with context size of", opts.ContextSize)
+		}
+		lm.LoadModel(model, opts)
 	}
 	//fmt.Println("Params", params)
 	if params.Stream {

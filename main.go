@@ -18,10 +18,10 @@ func main() {
 	flag.Parse()
 
 	if *debug {
+		fmt.Println("Debug mode is on")
 		state.IsDebug = true
 	}
 	if !*quiet {
-		fmt.Println("Debug mode is on")
 		state.IsVerbose = *quiet
 	}
 	if len(*genConfModelsDir) > 0 {
