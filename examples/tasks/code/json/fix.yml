@@ -1,18 +1,19 @@
 name: fix_json
-model: nous-hermes-llama-2-7b.ggmlv3.q4_K_M
 modelConf:
-  - ctx: 512
+  - name: codellama-7b-instruct.Q4_K_M.gguf
+  - ctx: 4096
+  - rope_freq_base: 100000.0
 inferParams:
-  - top_p: 0.2
-  - temperature: 0.0
-  - stop: ["```"]
+  - top_p: 0.35
+  - temperature: 0.2
 template: |-
-  You are a javascript code specialist. Below is an instruction that describes a task. Write a response that appropriately completes the request
-
-  ### Instruction: fix this invalid json:
+  <s> [INST] <<SYS>>
+  You are a javascript coder assistant
+  <</SYS>>
+  Fix this invalid json:
 
   ```json
   {prompt}
-  ```{instruction}  
+  ``` 
 
-  ### Response: (answer in valid json)
+  Important: return only valid json [/INST]
