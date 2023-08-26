@@ -1,10 +1,10 @@
 package lm
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	llama "github.com/go-skynet/go-llama.cpp"
 	"github.com/synw/goinfer/state"
@@ -12,13 +12,7 @@ import (
 
 func LoadModel(model string, params llama.ModelOptions) error {
 	name := model
-	if !(strings.HasSuffix(name, ".bin")) {
-		name = name + ".bin"
-	}
 	mpath := filepath.Join(state.ModelsDir, name)
-	if state.IsVerbose {
-		fmt.Println("Loading model", mpath)
-	}
 	if state.IsModelLoaded {
 		state.Lm.Free()
 	}
@@ -31,8 +25,19 @@ func LoadModel(model string, params llama.ModelOptions) error {
 	if err != nil {
 		return errors.New("can not load model " + model)
 	}
+	if state.IsVerbose || state.IsDebug {
+		fmt.Println("Loaded model", mpath)
+		if state.IsDebug {
+			jsonData, err := json.MarshalIndent(params, "", "  ")
+			if err != nil {
+				fmt.Println("Error:", err)
+				return err
+			}
+			fmt.Println(string(jsonData))
+		}
+	}
 	state.Lm = lm
-	state.ModelConf.Ctx = params.ContextSize
+	state.ModelOptions = params
 	state.IsModelLoaded = true
 	state.LoadedModel = model
 	return nil

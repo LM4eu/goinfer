@@ -36,14 +36,17 @@ type InferenceResult struct {
 
 type Task struct {
 	Name        string          `json:"name" yaml:"name"`
-	Model       string          `json:"model" yaml:"model"`
 	Template    string          `json:"template" yaml:"template"`
 	ModelConf   ModelConf       `json:"modelConf,omitempty" yaml:"modelConf,omitempty"`
 	InferParams InferenceParams `json:"inferParams,omitempty" yaml:"inferParams,omitempty"`
 }
 
 type ModelConf struct {
-	Ctx int `json:"ctx" yaml:"ctx"`
+	Name          string  `json:"name" yaml:"name"`
+	Ctx           int     `json:"ctx,omitempty" yaml:"ctx,omitempty"`
+	FreqRopeBase  float32 `json:"freq_rope_base,omitempty" yaml:"freq_rope_base,omitempty"`
+	FreqRopeScale float32 `json:"freq_rope_scale,omitempty" yaml:"freq_rope_scale,omitempty"`
+	//NGPULayers    int     `json:"n_gpu_layers,omitempty" yaml:"n_gpu_layers,omitempty"`
 }
 
 type MsgType string

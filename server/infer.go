@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,10 +12,10 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-func ParseInferParams(m echo.Map) (string, string, string, int, types.InferenceParams, error) {
+func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.InferenceParams, error) {
 	v, ok := m["prompt"]
 	if !ok {
-		return "", "", "", lm.DefaultModelParams.ContextSize, types.InferenceParams{}, errors.New("provide a prompt")
+		return "", "", types.ModelConf{}, types.InferenceParams{}, errors.New("provide a prompt")
 	}
 	prompt := v.(string)
 	template := "{prompt}"
@@ -22,67 +23,73 @@ func ParseInferParams(m echo.Map) (string, string, string, int, types.InferenceP
 	if ok {
 		template = v.(string)
 	}
-	model := ""
-	v, ok = m["model"]
+	modelConf := state.DefaultModelConf
+	modelConfRaw, ok := m["model"]
 	if ok {
-		model = v.(string)
+		mp := modelConfRaw.(map[string]interface{})
+		for k, v := range mp {
+			if k == "name" {
+				modelConf.Name = v.(string)
+			} else if k == "ctx" {
+				modelConf.Ctx = int(v.(float64))
+			} else if k == "freq_rope_base" {
+				modelConf.FreqRopeBase = float32(v.(float64))
+			} else if k == "freq_rope_scale" {
+				modelConf.FreqRopeScale = float32(v.(float64))
+			}
+		}
 	}
-	ctx := lm.DefaultModelParams.ContextSize
-	v, ok = m["ctx"]
-	if ok {
-		ctx = v.(int)
-	}
-	stream := lm.DefaultInferenceParams.Stream
+	stream := state.DefaultInferenceParams.Stream
 	v, ok = m["stream"]
 	if ok {
 		stream = v.(bool)
 	}
-	threads := lm.DefaultInferenceParams.Threads
+	threads := state.DefaultInferenceParams.Threads
 	v, ok = m["threads"]
 	if ok {
 		threads = int(v.(float64))
 	}
-	tokens := lm.DefaultInferenceParams.NPredict
+	tokens := state.DefaultInferenceParams.NPredict
 	v, ok = m["n_predict"]
 	if ok {
 		tokens = int(v.(float64))
 	}
-	topK := lm.DefaultInferenceParams.TopK
+	topK := state.DefaultInferenceParams.TopK
 	v, ok = m["top_k"]
 	if ok {
 		topK = int(v.(float64))
 	}
-	topP := lm.DefaultInferenceParams.TopP
+	topP := state.DefaultInferenceParams.TopP
 	v, ok = m["top_p"]
 	if ok {
 		topP = float32(v.(float64))
 	}
-	temp := lm.DefaultInferenceParams.Temperature
+	temp := state.DefaultInferenceParams.Temperature
 	v, ok = m["temperature"]
 	if ok {
 		temp = float32(v.(float64))
 	}
-	freqPenalty := lm.DefaultInferenceParams.FrequencyPenalty
+	freqPenalty := state.DefaultInferenceParams.FrequencyPenalty
 	v, ok = m["frequency_penalty"]
 	if ok {
 		freqPenalty = float32(v.(float64))
 	}
-	presPenalty := lm.DefaultInferenceParams.PresencePenalty
+	presPenalty := state.DefaultInferenceParams.PresencePenalty
 	v, ok = m["presence_penalty"]
 	if ok {
 		presPenalty = float32(v.(float64))
 	}
-	repeatPenalty := lm.DefaultInferenceParams.RepeatPenalty
+	repeatPenalty := state.DefaultInferenceParams.RepeatPenalty
 	v, ok = m["repeat_penalty"]
 	if ok {
 		repeatPenalty = float32(v.(float64))
 	}
-	tfs := lm.DefaultInferenceParams.TailFreeSamplingZ
+	tfs := state.DefaultInferenceParams.TailFreeSamplingZ
 	v, ok = m["tfs_z"]
 	if ok {
 		tfs = float32(v.(float64))
 	}
-	stop := lm.DefaultInferenceParams.StopPrompts
+	stop := state.DefaultInferenceParams.StopPrompts
 	v, ok = m["stop"]
 	if ok {
 		s := v.([]interface{})
@@ -106,7 +113,16 @@ func ParseInferParams(m echo.Map) (string, string, string, int, types.InferenceP
 		TailFreeSamplingZ: tfs,
 		StopPrompts:       stop,
 	}
-	return prompt, template, model, ctx, params, nil
+	return prompt, template, modelConf, params, nil
+}
+
+func setModelOptions(modelConf types.ModelConf) error {
+	opts := state.DefaultModelOptions
+	opts.ContextSize = modelConf.Ctx
+	opts.FreqRopeBase = modelConf.FreqRopeBase
+	opts.FreqRopeScale = modelConf.FreqRopeScale
+	state.ModelOptions = opts
+	return nil
 }
 
 func InferHandler(c echo.Context) error {
@@ -119,17 +135,21 @@ func InferHandler(c echo.Context) error {
 		return err
 	}
 
-	prompt, template, model, ctx, params, err := ParseInferParams(m)
+	prompt, template, modelConf, params, err := ParseInferParams(m)
 	if err != nil {
 		panic(err)
 	}
-	if model != "" {
-		opts := lm.DefaultModelParams
-		opts.ContextSize = ctx
+	if modelConf.Name != "" {
+		setModelOptions(modelConf)
+		lm.LoadModel(modelConf.Name, state.ModelOptions)
 		if state.IsDebug {
-			fmt.Println("Loading model with context size of", opts.ContextSize)
+			fmt.Println("Loaded model with params:")
+			jsonData, err := json.MarshalIndent(state.ModelOptions, "", "  ")
+			if err != nil {
+				fmt.Println("Error:", err)
+			}
+			fmt.Println(string(jsonData))
 		}
-		lm.LoadModel(model, opts)
 	}
 	//fmt.Println("Params", params)
 	if params.Stream {
@@ -161,6 +181,7 @@ func InferHandler(c echo.Context) error {
 		return nil
 	case err, ok := <-errCh:
 		if ok {
+			//fmt.Println("ERR", err)
 			panic(err)
 		}
 		return nil

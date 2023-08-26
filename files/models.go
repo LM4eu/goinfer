@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"strings"
 )
 
 func ReadModels(dir string) ([]string, error) {
@@ -24,9 +23,7 @@ func ReadModels(dir string) ([]string, error) {
 	})
 	for _, v := range files {
 		filename := v.Name()
-		if !v.IsDir() && strings.HasSuffix(filename, ".bin") {
-			modelFiles = append(modelFiles, strings.Replace(filename, ".bin", "", 1))
-		}
+		modelFiles = append(modelFiles, filename)
 	}
 	return modelFiles, nil
 }

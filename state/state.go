@@ -13,9 +13,7 @@ var Lm *llama.LLama
 var ModelsDir = ""
 var IsModelLoaded = false
 var LoadedModel = ""
-var ModelConf = types.ModelConf{
-	Ctx: 1024,
-}
+var ModelOptions = DefaultModelOptions
 
 // inference state
 var ContinueInferingController = true

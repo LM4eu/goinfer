@@ -87,6 +87,7 @@ func InferOpenAi(
 		llama.SetFrequencyPenalty(params.FrequencyPenalty),
 		llama.SetPresencePenalty(params.PresencePenalty),
 		llama.SetPenalty(params.RepeatPenalty),
+		llama.SetRopeFreqBase(1e6),
 	)
 	if params.Stream && state.ContinueInferingController {
 		terminateStream(c)
@@ -114,10 +115,11 @@ func InferOpenAi(
 			TotalTokens:      ntokens,
 		},
 	}
+	if err != nil {
+		errCh <- err
+		state.ContinueInferingController = false
+	}
 	if state.ContinueInferingController {
-		if err != nil {
-			errCh <- err
-		}
 		ch <- endres
 	}
 }

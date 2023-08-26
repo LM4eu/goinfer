@@ -19,17 +19,17 @@ func parseModelParams(m echo.Map) (string, llama.ModelOptions, error) {
 		return "", llama.ModelOptions{}, errors.New("provide a model name")
 	}
 	model = v.(string)
-	ctx := lm.DefaultModelParams.ContextSize
+	ctx := state.DefaultModelOptions.ContextSize
 	v, ok = m["ctx"]
 	if ok {
 		ctx = int(v.(float64))
 	}
-	embeddings := lm.DefaultModelParams.Embeddings
+	embeddings := state.DefaultModelOptions.Embeddings
 	v, ok = m["embeddings"]
 	if ok {
 		embeddings = v.(bool)
 	}
-	gpuLayers := lm.DefaultModelParams.NGPULayers
+	gpuLayers := state.DefaultModelOptions.NGPULayers
 	v, ok = m["gpuLayers"]
 	if ok {
 		gpuLayers = v.(int)
@@ -75,6 +75,6 @@ func ModelsStateHandler(c echo.Context) error {
 		"models":        models,
 		"isModelLoaded": state.IsModelLoaded,
 		"loadedModel":   state.LoadedModel,
-		"ctx":           state.ModelConf.Ctx,
+		"ctx":           state.ModelOptions.ContextSize,
 	})
 }

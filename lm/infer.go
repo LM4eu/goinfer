@@ -111,6 +111,8 @@ func Infer(
 		llama.SetFrequencyPenalty(params.FrequencyPenalty),
 		llama.SetPresencePenalty(params.PresencePenalty),
 		llama.SetPenalty(params.RepeatPenalty),
+		llama.SetRopeFreqBase(state.ModelOptions.FreqRopeBase),
+		llama.SetRopeFreqScale(state.ModelOptions.FreqRopeScale),
 	)
 
 	state.IsInfering = false
@@ -149,7 +151,6 @@ func Infer(
 		TokensPerSecond:    tps,
 		TotalTokens:        ntokens,
 	}
-	state.IsInfering = false
 	if state.ContinueInferingController {
 		b, _ := json.Marshal(&result)
 		var _res map[string]interface{}

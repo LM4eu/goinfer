@@ -13,7 +13,7 @@ import (
 )
 
 func parseParams(m echo.Map) (string, string, string, types.InferenceParams, error) {
-	params := lm.DefaultInferenceParams
+	params := state.DefaultInferenceParams
 	v, ok := m["model"]
 	if !ok {
 		return "", "", "", params, errors.New("provide a model")
@@ -98,7 +98,7 @@ func CreateCompletionHandler(c echo.Context) error {
 		panic(err)
 	}
 	if state.LoadedModel != model {
-		lm.LoadModel(model, lm.DefaultModelParams)
+		lm.LoadModel(model, state.DefaultModelOptions)
 	}
 	if params.Stream {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -125,7 +125,8 @@ func CreateCompletionHandler(c echo.Context) error {
 		return nil
 	case err, ok := <-errCh:
 		if ok {
-			panic(err)
+			fmt.Println("ERR", err)
+			//panic(err)
 		}
 		return nil
 	case <-c.Request().Context().Done():

@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-skynet/go-llama.cpp"
 	"github.com/labstack/echo/v4"
 	"github.com/synw/goinfer/files"
 	"github.com/synw/goinfer/lm"
@@ -34,7 +33,7 @@ func ExecuteTaskHandler(c echo.Context) error {
 	var instruction = ""
 	v, ok = m["instruction"]
 	if ok {
-		instruction = "\n\n" + v.(string)
+		instruction = v.(string)
 	}
 	exists, task, err := files.ReadTask(path)
 	if err != nil {
@@ -51,16 +50,16 @@ func ExecuteTaskHandler(c echo.Context) error {
 	// check if the model is loaded
 	loadModel := true
 	if state.IsModelLoaded {
-		if state.LoadedModel == task.Model {
-			if state.ModelConf.Ctx == task.ModelConf.Ctx {
+		if state.LoadedModel == task.ModelConf.Name {
+			if state.ModelOptions.ContextSize == task.ModelConf.Ctx {
 				loadModel = false
 			}
 		}
 	}
 	if loadModel {
-		lm.LoadModel(task.Model, llama.ModelOptions{
-			ContextSize: task.ModelConf.Ctx,
-		})
+		//opts := lm.DefaultModelParams
+		setModelOptions(task.ModelConf)
+		lm.LoadModel(task.ModelConf.Name, state.ModelOptions)
 	}
 	// exec task
 	ch := make(chan types.StreamedMessage)
@@ -151,7 +150,8 @@ func SaveTaskHandler(c echo.Context) error {
 		ctx = float32(v.(float64))
 	}
 	modelConf := types.ModelConf{
-		Ctx: int(ctx),
+		Name: model,
+		Ctx:  int(ctx),
 	}
 	var rawInferParams map[string]interface{}
 	v, ok = m["inferParams"]
@@ -160,13 +160,12 @@ func SaveTaskHandler(c echo.Context) error {
 		rawInferParams["template"] = template
 	}
 	rawInferParams["prompt"] = ""
-	_, _, _, _, inferParams, err := ParseInferParams(rawInferParams)
+	_, _, modelConf, inferParams, err := ParseInferParams(rawInferParams)
 	if err != nil {
 		return err
 	}
 	task := types.Task{
 		Name:        name,
-		Model:       model,
 		Template:    template,
 		ModelConf:   modelConf,
 		InferParams: inferParams,
