@@ -134,24 +134,10 @@ func SaveTaskHandler(c echo.Context) error {
 	if ok {
 		name = v.(string)
 	}
-	var model string
-	v, ok = m["model"]
-	if ok {
-		model = v.(string)
-	}
 	var template string
 	v, ok = m["template"]
 	if ok {
 		template = v.(string)
-	}
-	var ctx float32
-	v, ok = m["ctx"]
-	if ok {
-		ctx = float32(v.(float64))
-	}
-	modelConf := types.ModelConf{
-		Name: model,
-		Ctx:  int(ctx),
 	}
 	var rawInferParams map[string]interface{}
 	v, ok = m["inferParams"]

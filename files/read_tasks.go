@@ -26,7 +26,6 @@ func NewNode(label string, path string) *Node {
 }
 
 func addPath(root *Node, path string) {
-	fmt.Println("ADD", path)
 	parts := strings.Split(path, string(filepath.Separator))
 	current := root
 	prevParts := ""
@@ -56,9 +55,7 @@ func addPath(root *Node, path string) {
 }
 
 func ReadTasks(rootPath string) ([]*Node, error) {
-	fmt.Println("Root path:", rootPath)
 	root := NewNode(filepath.Base(rootPath), "")
-	fmt.Println("Root", root)
 	relRootPath := strings.Replace(rootPath, "./", "", 1)
 
 	err := filepath.WalkDir(rootPath, func(path string, d os.DirEntry, err error) error {
