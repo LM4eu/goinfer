@@ -76,6 +76,7 @@ func RunServer(origins []string, apiKey string, localMode bool, enableOai bool) 
 			return key == apiKey, nil
 		}))
 		oai.POST("/chat/completions", CreateCompletionHandler)
+		oai.GET("/models", OpenAiListModels)
 	}
 
 	e.Start(":5143")

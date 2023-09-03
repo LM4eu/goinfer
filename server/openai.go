@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/synw/goinfer/files"
 	"github.com/synw/goinfer/lm"
 	"github.com/synw/goinfer/state"
 	"github.com/synw/goinfer/types"
@@ -58,7 +60,12 @@ func parseParams(m echo.Map) (string, string, string, types.InferenceParams, err
 	}
 	v, ok = m["stop"]
 	if ok {
-		params.StopPrompts = v.([]string)
+		st := v.([]interface{})
+		stf := []string{}
+		for _, s := range st {
+			stf = append(stf, s.(string))
+		}
+		params.StopPrompts = stf
 	}
 	v, ok = m["presence_penalty"]
 	if ok {
@@ -134,4 +141,34 @@ func CreateCompletionHandler(c echo.Context) error {
 		state.ContinueInferingController = false
 		return c.NoContent(http.StatusNoContent)
 	}
+}
+
+func OpenAiListModels(c echo.Context) error {
+	if state.IsVerbose {
+		fmt.Println("Reading files in:", state.ModelsDir)
+	}
+	models, err := files.ReadModels(state.ModelsDir)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"error": "reading models",
+		})
+	}
+	if state.IsVerbose {
+		fmt.Println("Found models:", models)
+	}
+	endmodels := []types.OpenAiModel{}
+	for _, m := range models {
+		endmodels = append(endmodels,
+			types.OpenAiModel{
+				ID:      m,
+				Object:  "model",
+				Created: time.Now().Unix(),
+				OwnedBy: "",
+			},
+		)
+	}
+	return c.JSON(http.StatusOK, echo.Map{
+		"object": "list",
+		"data":   endmodels,
+	})
 }
