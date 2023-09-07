@@ -15,6 +15,8 @@ import (
 )
 
 func parseParams(m echo.Map) (string, string, string, types.InferenceParams, error) {
+	//fmt.Println("MAP", m)
+	//fmt.Println("---------")
 	params := state.DefaultInferenceParams
 	v, ok := m["model"]
 	if !ok {
@@ -28,6 +30,7 @@ func parseParams(m echo.Map) (string, string, string, types.InferenceParams, err
 	qmsgs := v.([]interface{})
 	prompt := ""
 	template := state.OpenAiConf.Template
+	//fmt.Println("Q>:", qmsgs)
 	for _, m := range qmsgs {
 		el := m.(map[string]interface{})
 		role := el["role"].(string)

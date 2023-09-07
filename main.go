@@ -15,6 +15,7 @@ func main() {
 	local := flag.Bool("local", false, "run in local mode with a gui (default is api mode: no gui and no websockets, api key required)")
 	genConfModelsDir := flag.String("conf", "", "generate a config file. Provide a models directory absolute path as argument")
 	genLocalConfModelsDir := flag.String("localconf", "", "generate a config file for local mode usage. Provide a models directory absolute path as argument")
+	disableApiKey := flag.Bool("disable-api-key", false, "disable the api key")
 	flag.Parse()
 
 	if *debug {
@@ -42,5 +43,5 @@ func main() {
 	if state.IsVerbose {
 		fmt.Println("Starting the http server with allowed origins", conf.Origins)
 	}
-	server.RunServer(conf.Origins, conf.ApiKey, *local, conf.OpenAiConf.Enable)
+	server.RunServer(conf.Origins, conf.ApiKey, *local, conf.OpenAiConf.Enable, *disableApiKey)
 }

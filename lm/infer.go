@@ -13,7 +13,7 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-func streamMsg(msg types.StreamedMessage, c echo.Context, enc *json.Encoder) error {
+func StreamMsg(msg types.StreamedMessage, c echo.Context, enc *json.Encoder) error {
 	c.Response().Write([]byte("data: "))
 	if err := enc.Encode(msg); err != nil {
 		return err
@@ -82,7 +82,7 @@ func Infer(
 				},
 			}
 			if params.Stream && state.ContinueInferingController {
-				streamMsg(smsg, c, enc)
+				StreamMsg(smsg, c, enc)
 			}
 		} else {
 			if state.IsVerbose {
@@ -95,7 +95,7 @@ func Infer(
 					MsgType: types.TokenMsgType,
 				}
 				if state.ContinueInferingController {
-					streamMsg(tmsg, c, enc)
+					StreamMsg(tmsg, c, enc)
 				}
 			}
 		}
@@ -162,7 +162,7 @@ func Infer(
 			Data:    _res,
 		}
 		if params.Stream {
-			streamMsg(endmsg, c, enc)
+			StreamMsg(endmsg, c, enc)
 		}
 		ch <- endmsg
 	}

@@ -20,7 +20,7 @@ func NewNode(label string, path string) *Node {
 	keyCounter++
 	return &Node{
 		Key:   fmt.Sprintf("%d", keyCounter),
-		Label: label,
+		Label: strings.Replace(label, ".yml", "", 1),
 		Path:  path,
 	}
 }
@@ -55,6 +55,7 @@ func addPath(root *Node, path string) {
 }
 
 func ReadTasks(rootPath string) ([]*Node, error) {
+	keyCounter = 0
 	root := NewNode(filepath.Base(rootPath), "")
 	relRootPath := strings.Replace(rootPath, "./", "", 1)
 

@@ -37,8 +37,8 @@ type InferenceResult struct {
 type Task struct {
 	Name        string          `json:"name" yaml:"name"`
 	Template    string          `json:"template" yaml:"template"`
-	ModelConf   ModelConf       `json:"model,omitempty" yaml:"model,omitempty"`
-	InferParams InferenceParams `json:"inferParams,omitempty" yaml:"inferParams,omitempty"`
+	ModelConf   ModelConf       `json:"modelConf" yaml:"modelConf"`
+	InferParams InferenceParams `json:"inferParams" yaml:"inferParams"`
 }
 
 type ModelConf struct {

@@ -105,6 +105,9 @@ func ReadTaskHandler(c echo.Context) error {
 	v, ok := m["path"]
 	if ok {
 		path = v.(string)
+		if !strings.HasSuffix(path, ".yml") {
+			path = path + ".yml"
+		}
 	}
 	exists, task, err := files.ReadTask(path)
 	if err != nil {

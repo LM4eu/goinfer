@@ -17,9 +17,10 @@ func keyExists(m map[string]interface{}, key string) bool {
 
 func convertTask(m map[string]interface{}) (types.Task, error) {
 	task := types.Task{
-		Name:      m["name"].(string),
-		ModelConf: state.DefaultModelConf,
-		Template:  m["template"].(string),
+		Name:        m["name"].(string),
+		ModelConf:   state.DefaultModelConf,
+		Template:    m["template"].(string),
+		InferParams: state.DefaultInferenceParams,
 	}
 	if keyExists(m, "modelConf") {
 		rmc := m["modelConf"].([]interface{})

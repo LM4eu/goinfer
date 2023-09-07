@@ -12,7 +12,7 @@ import (
 //go:embed all:dist
 var embededFiles embed.FS
 
-func RunServer(origins []string, apiKey string, localMode bool, enableOai bool) {
+func RunServer(origins []string, apiKey string, localMode bool, enableOai bool, disableApiKey bool) {
 	e := echo.New()
 	e.HideBanner = true
 
@@ -45,25 +45,32 @@ func RunServer(origins []string, apiKey string, localMode bool, enableOai bool) 
 
 	// inference
 	inf := e.Group("/completion")
-	inf.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-		return key == apiKey, nil
-	}))
+	if !disableApiKey {
+		inf.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+			return key == apiKey, nil
+		}))
+	}
 	inf.POST("", InferHandler)
 	inf.GET("/abort", AbortHandler)
 
 	// models
 	mod := e.Group("/model")
-	mod.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-		return key == apiKey, nil
-	}))
+	if !disableApiKey {
+		mod.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+			return key == apiKey, nil
+		}))
+	}
 	mod.GET("/state", ModelsStateHandler)
 	mod.POST("/load", LoadModelHandler)
+	mod.GET("/unload", UnloadModelHandler)
 
 	// tasks
 	tas := e.Group("/task")
-	tas.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-		return key == apiKey, nil
-	}))
+	if !disableApiKey {
+		tas.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+			return key == apiKey, nil
+		}))
+	}
 	tas.GET("/tree", ReadTasksHandler)
 	tas.POST("/read", ReadTaskHandler)
 	tas.POST("/execute", ExecuteTaskHandler)
@@ -72,9 +79,11 @@ func RunServer(origins []string, apiKey string, localMode bool, enableOai bool) 
 	if enableOai {
 		// openai api
 		oai := e.Group("/v1")
-		oai.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-			return key == apiKey, nil
-		}))
+		if !disableApiKey {
+			oai.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+				return key == apiKey, nil
+			}))
+		}
 		oai.POST("/chat/completions", CreateCompletionHandler)
 		oai.GET("/models", OpenAiListModels)
 	}

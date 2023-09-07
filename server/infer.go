@@ -181,8 +181,13 @@ func InferHandler(c echo.Context) error {
 		return nil
 	case err, ok := <-errCh:
 		if ok {
-			//fmt.Println("ERR", err)
-			panic(err)
+			if params.Stream {
+				enc := json.NewEncoder(c.Response())
+				lm.StreamMsg(err, c, enc)
+				return c.NoContent(http.StatusInternalServerError)
+			} else {
+				return c.JSON(http.StatusInternalServerError, err)
+			}
 		}
 		return nil
 	case <-c.Request().Context().Done():

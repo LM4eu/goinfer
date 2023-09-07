@@ -14,7 +14,7 @@ import (
 
 func parseModelParams(m echo.Map) (string, llama.ModelOptions, error) {
 	var model string
-	v, ok := m["model"]
+	v, ok := m["name"]
 	if !ok {
 		return "", llama.ModelOptions{}, errors.New("provide a model name")
 	}
@@ -50,11 +50,21 @@ func LoadModelHandler(c echo.Context) error {
 	model, params, err := parseModelParams(m)
 	if err != nil {
 		fmt.Println(("error in params:" + err.Error()))
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusBadRequest, echo.Map{
 			"error": "model params",
 		})
 	}
-	lm.LoadModel(model, params)
+	err = lm.LoadModel(model, params)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"error": "error loading model: " + err.Error(),
+		})
+	}
+	return c.NoContent(http.StatusNoContent)
+}
+
+func UnloadModelHandler(c echo.Context) error {
+	lm.UnloadModel()
 	return c.NoContent(http.StatusNoContent)
 }
 

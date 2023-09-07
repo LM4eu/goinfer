@@ -10,12 +10,18 @@ import (
 	"github.com/synw/goinfer/state"
 )
 
-func LoadModel(model string, params llama.ModelOptions) error {
-	name := model
-	mpath := filepath.Join(state.ModelsDir, name)
+func UnloadModel() {
 	if state.IsModelLoaded {
 		state.Lm.Free()
 	}
+	state.IsModelLoaded = false
+	state.LoadedModel = ""
+}
+
+func LoadModel(model string, params llama.ModelOptions) error {
+	name := model
+	mpath := filepath.Join(state.ModelsDir, name)
+	UnloadModel()
 	lm, err := llama.New(
 		mpath,
 		llama.SetContext(params.ContextSize),
