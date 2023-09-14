@@ -2,9 +2,8 @@
 import { createParser } from 'eventsource-parser'
 
 // in this example we use the model:
-// https://huggingface.co/s3nh/mamba-gpt-3b-v3-GGML/resolve/main/mamba-gpt-3b-v3.ggmlv3.q8_0.bin
-// converted to gguf with Llama.cpp
-const model = "mamba-gpt-3b-v3.gguf.q8_0"
+// https://huggingface.co/Aryanne/Mamba-gpt-3B-v4-ggml-and-gguf/resolve/main/q5_1-gguf-mamba-gpt-3B_v4.gguf
+const model = "q5_1-gguf-mamba-gpt-3B_v4.gguf"
 const apiKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465";
 const template = "### Instruction: {prompt}\n\n### Response:";
 const prompt = "List the planets in the solar system";
@@ -41,7 +40,7 @@ async function loadModel() {
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: model
+      name: model
     })
   });
   if (response.status != 204) {
