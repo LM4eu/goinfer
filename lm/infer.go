@@ -88,6 +88,12 @@ func Infer(
 			if state.IsVerbose {
 				fmt.Print(token)
 			}
+			for _, stopToken := range params.StopPrompts {
+				s, _ := strconv.Unquote(stopToken)
+				if token == s {
+					return false
+				}
+			}
 			if params.Stream {
 				tmsg := types.StreamedMessage{
 					Content: token,

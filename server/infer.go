@@ -95,8 +95,8 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 		s := v.([]interface{})
 		if len(s) > 0 {
 			stop = make([]string, len(s))
-			for i, v := range s {
-				stop[i] = fmt.Sprint(v)
+			for i, val := range s {
+				stop[i] = fmt.Sprint(val)
 			}
 		}
 	}
@@ -132,12 +132,17 @@ func InferHandler(c echo.Context) error {
 	}
 	m := echo.Map{}
 	if err := c.Bind(&m); err != nil {
-		return err
+		if state.IsDebug {
+			fmt.Println("Inference params decoding error", err)
+		}
+		return c.NoContent(http.StatusInternalServerError)
 	}
-
 	prompt, template, modelConf, params, err := ParseInferParams(m)
 	if err != nil {
-		panic(err)
+		if state.IsDebug {
+			fmt.Println("Inference params parsing error", err)
+		}
+		return c.NoContent(http.StatusInternalServerError)
 	}
 	if modelConf.Name != "" {
 		setModelOptions(modelConf)
@@ -183,8 +188,13 @@ func InferHandler(c echo.Context) error {
 		if ok {
 			if params.Stream {
 				enc := json.NewEncoder(c.Response())
-				lm.StreamMsg(err, c, enc)
-				return c.NoContent(http.StatusInternalServerError)
+				err := lm.StreamMsg(err, c, enc)
+				if err != nil {
+					if state.IsDebug {
+						fmt.Println("Streaming error", err)
+					}
+					return c.NoContent(http.StatusInternalServerError)
+				}
 			} else {
 				return c.JSON(http.StatusInternalServerError, err)
 			}

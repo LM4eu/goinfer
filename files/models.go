@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 )
 
 func ReadModels(dir string) ([]string, error) {
@@ -23,7 +24,9 @@ func ReadModels(dir string) ([]string, error) {
 	})
 	for _, v := range files {
 		filename := v.Name()
-		modelFiles = append(modelFiles, filename)
+		if !strings.HasSuffix(filename, ".yml") {
+			modelFiles = append(modelFiles, filename)
+		}
 	}
 	return modelFiles, nil
 }

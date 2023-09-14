@@ -10,6 +10,7 @@ import (
 	"github.com/synw/goinfer/files"
 	"github.com/synw/goinfer/lm"
 	"github.com/synw/goinfer/state"
+	"github.com/synw/goinfer/types"
 )
 
 func parseModelParams(m echo.Map) (string, llama.ModelOptions, error) {
@@ -81,8 +82,26 @@ func ModelsStateHandler(c echo.Context) error {
 	if state.IsVerbose {
 		fmt.Println("Found models:", models)
 	}
+	templates, err := files.ReadTemplates()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"error": "reading templates",
+		})
+	}
+	if state.IsVerbose {
+		fmt.Println("Found templates:", templates)
+	}
+	for _, model := range models {
+		_, hasTemplate := templates[model]
+		if !hasTemplate {
+			templates[model] = types.TemplateInfo{
+				Name: "unknown",
+				Ctx:  0,
+			}
+		}
+	}
 	return c.JSON(http.StatusOK, echo.Map{
-		"models":        models,
+		"models":        templates,
 		"isModelLoaded": state.IsModelLoaded,
 		"loadedModel":   state.LoadedModel,
 		"ctx":           state.ModelOptions.ContextSize,

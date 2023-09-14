@@ -49,6 +49,11 @@ type ModelConf struct {
 	//NGPULayers    int     `json:"n_gpu_layers,omitempty" yaml:"n_gpu_layers,omitempty"`
 }
 
+type TemplateInfo struct {
+	Name string `json:"name" yaml:"name"`
+	Ctx  int    `json:"ctx" yaml:"ctx"`
+}
+
 type MsgType string
 
 const (
