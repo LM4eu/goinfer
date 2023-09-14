@@ -20,6 +20,7 @@ Works with the [Infergui](https://github.com/synw/infergui) frontend
     - [Load model](https://synw.github.io/goinfer/llama_api/load_model)
     - [Inference](https://synw.github.io/goinfer/llama_api/inference)
     - [Tasks](https://synw.github.io/goinfer/llama_api/tasks)
+    - [Templates](https://synw.github.io/goinfer/llama_api/templates)
  - [Openai api](https://synw.github.io/goinfer/openai_api)
     - [Configure](https://synw.github.io/goinfer/openai_api/configure)
     - [Endpoints](https://synw.github.io/goinfer/openai_api/endpoints)
