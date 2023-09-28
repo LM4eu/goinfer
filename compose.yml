@@ -1,0 +1,10 @@
+services:
+  goinfer:
+    build: .
+    ports: [5143:5143]
+    configs: [goinfer.config.json]
+    command: -local
+
+configs:
+  goinfer.config.json:
+    file: ./goinfer.config.json
