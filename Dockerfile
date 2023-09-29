@@ -6,10 +6,17 @@
 #
 # Run:
 #
-#    docker run --rm -p 5143:5143 --name goinfer goinfer
-#    podman run --rm -p 5143:5143 --name goinfer goinfer
+#    docker run --rm -p 5143:5143 -v $PWD/goinfer.config.json:/goinfer.config.json goinfer
+#    podman run --rm -p 5143:5143 -v $PWD/goinfer.config.json:/goinfer.config.json goinfer
 
 
+# Arguments:
+#
+# pass the argument at build time:
+#
+#    docker build -t goinfer --build-arg uid=1122 .
+#
+# uid : to run goinfer as unprivileged (rootless)
 ARG uid=5505
 
 
@@ -20,16 +27,16 @@ FROM docker.io/node:20-bookworm AS infergui
 WORKDIR /code
 
 # Clone repo + build + clean
-RUN set -ex                                                         ;\
-    git --version                                                   ;\
-    git clone https://github.com/synw/infergui .                    ;\
-    ls -lA                                                          ;\
-    yarn versions                                                   ;\
-    yarn install --frozen-lockfile                                  ;\
-    yarn cache clean                                                ;\
-    ls -lA                                                          ;\
-    yarn build                                                      ;\
-    mv /code/dist /dist                                             ;\
+RUN set -ex                                        ;\
+    git --version                                  ;\
+    git clone https://github.com/synw/infergui .   ;\
+    ls -lAh                                        ;\
+    yarn versions                                  ;\
+    yarn install --frozen-lockfile                 ;\
+    yarn cache clean                               ;\
+    ls -lAh                                        ;\
+    yarn build                                     ;\
+    mv /code/dist /dist                            ;\
     rm -r /code
 
 
@@ -70,16 +77,15 @@ COPY main.go .
 
 COPY --from=infergui  dist  server/dist
 
-# Go build flags
-# "-s -w" removes all debug symbols: https://pkg.go.dev/cmd/link
+# Go build flags: "-s -w" removes all debug symbols: https://pkg.go.dev/cmd/link
 # GOAMD64=v3 --> https://github.com/golang/go/wiki/MinimumRequirements#amd64
 RUN set -ex                                          ;\
-    ls -lA . server/dist                             ;\
+    ls -lAh . server/dist                            ;\
     export GOFLAGS="-trimpath -modcacherw"           ;\
     export GOLDFLAGS="-d -s -w -extldflags=-static"  ;\
     export GOAMD64=v3                                ;\
     go build -v  .                                   ;\
-    ls -lA                                           ;\
+    ls -lAh                                          ;\
     ./goinfer -help       # smoke test
 
 
@@ -88,7 +94,10 @@ FROM docker.io/golang:1.21 AS integrator
 
 WORKDIR /target
 
-# Copy HTTPS root certificates (200 KB) + Create user/group files 
+ARG uid
+
+# Copy HTTPS root certificates (adds about 200 KB)
+# and create user & group files
 RUN set -ex                                                 ;\
     mkdir -p                                 etc/ssl/certs  ;\
     cp -a /etc/ssl/certs/ca-certificates.crt etc/ssl/certs  ;\
@@ -98,14 +107,14 @@ RUN set -ex                                                 ;\
 # Copy static website and backend executable
 COPY --from=goinfer  /code/goinfer .
 
-# Copies the dynamic libs
+# Copy the dynamic libs
 RUN set -ex                                           ;\
     ldd goinfer                                       ;\
-    ldd goinfer                                       |\
+    ldd goinfer |                                      \
     while read lib rest                               ;\
     do                                                 \
-       find / -name "$lib"                            ;\
-       find / -name "$lib" | while read path          ;\
+       find / -path /proc -prune -o -name "$lib" |     \
+       while read path                                ;\
        do mkdir -p /target"${path%/*}"      &&         \
           cp -v "$path" /target"${path%/*}" || true   ;\
        done                                           ;\
@@ -114,26 +123,25 @@ RUN set -ex                                           ;\
     rmdir usr                                         ;\
     mkdir -p lib64                                    ;\
     cp /usr/lib64/ld-linux-x86-64.so.2 lib64          ;\
-    echo '{\n'                                                                              \
-    '   "api_key": "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465",\n'   \
-    '   "models_dir": "/home/me/my/lm/models",\n'                                           \
-    '   "tasks_dir": "./tasks",\n'                                                          \
-    '   "origins": [\n'                                                                     \
-    '       "http://localhost:5173",\n'                                                     \
-    '       "http://localhost:5143"\n'                                                      \
-    '   ]\n'                                                                                \
-    '}' > goinfer.config.json                                                              ;\
-    ls -lA /target
+    ls -lAh /target
 
 # --------------------------------------------------------------------
 FROM scratch AS final
 
+# Run as unprivileged
+ARG    uid
+USER "$uid:$uid"
+
+# In this tiny image, put only the executable "goinfer",
+# its lib dependencies, the SSL certificates,
+# the "passwd" and "group" files. No shell commands.
 COPY --chown=$uid:$uid --from=integrator /target /
 
-# Run as unprivileged
-USER $uid:$uid
-
-# Use UTC time zone by default
+# Default timezone is UTC
 ENV TZ UTC0
 
-ENTRYPOINT ["/goinfer", "-local"]
+# The default command to run the container
+ENTRYPOINT ["/goinfer"]
+
+# Default argument(s) appended to ENTRYPOINT
+CMD ["-local"]

@@ -1,0 +1,10 @@
+*
+!go.mod
+!go.sum
+!conf
+!files
+!lm
+!server
+!state
+!types
+!main.go
