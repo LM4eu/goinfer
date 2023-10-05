@@ -31,10 +31,6 @@ func convertTask(m map[string]interface{}) (types.Task, error) {
 					task.ModelConf.Name = v.(string)
 				} else if k == "ctx" {
 					task.ModelConf.Ctx = v.(int)
-				} else if k == "rope_freq_base" {
-					task.ModelConf.FreqRopeBase = float32(v.(float64))
-				} else if k == "rope_freq_scale" {
-					task.ModelConf.FreqRopeScale = float32(v.(float64))
 				}
 			}
 		}

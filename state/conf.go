@@ -33,8 +33,6 @@ var DefaultModelOptions = llama.ModelOptions{
 }
 
 var DefaultModelConf = types.ModelConf{
-	Name:          "",
-	Ctx:           2048,
-	FreqRopeBase:  DefaultModelOptions.FreqRopeBase,
-	FreqRopeScale: DefaultModelOptions.FreqRopeScale,
+	Name: "",
+	Ctx:  2048,
 }
