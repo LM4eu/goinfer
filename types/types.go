@@ -42,10 +42,8 @@ type Task struct {
 }
 
 type ModelConf struct {
-	Name          string  `json:"name" yaml:"name"`
-	Ctx           int     `json:"ctx,omitempty" yaml:"ctx,omitempty"`
-	FreqRopeBase  float32 `json:"freq_rope_base,omitempty" yaml:"freq_rope_base,omitempty"`
-	FreqRopeScale float32 `json:"freq_rope_scale,omitempty" yaml:"freq_rope_scale,omitempty"`
+	Name string `json:"name" yaml:"name"`
+	Ctx  int    `json:"ctx,omitempty" yaml:"ctx,omitempty"`
 	//NGPULayers    int     `json:"n_gpu_layers,omitempty" yaml:"n_gpu_layers,omitempty"`
 }
 
