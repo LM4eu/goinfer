@@ -13,6 +13,7 @@ import (
 )
 
 func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.InferenceParams, error) {
+	// fmt.Println("Params", m)
 	v, ok := m["prompt"]
 	if !ok {
 		return "", "", types.ModelConf{}, types.InferenceParams{}, errors.New("provide a prompt")
