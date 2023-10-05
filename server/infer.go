@@ -13,6 +13,7 @@ import (
 )
 
 func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.InferenceParams, error) {
+	// fmt.Println("Params", m)
 	v, ok := m["prompt"]
 	if !ok {
 		return "", "", types.ModelConf{}, types.InferenceParams{}, errors.New("provide a prompt")
@@ -32,10 +33,6 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 				modelConf.Name = v.(string)
 			} else if k == "ctx" {
 				modelConf.Ctx = int(v.(float64))
-			} else if k == "freq_rope_base" {
-				modelConf.FreqRopeBase = float32(v.(float64))
-			} else if k == "freq_rope_scale" {
-				modelConf.FreqRopeScale = float32(v.(float64))
 			}
 		}
 	}
@@ -119,8 +116,6 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 func setModelOptions(modelConf types.ModelConf) error {
 	opts := state.DefaultModelOptions
 	opts.ContextSize = modelConf.Ctx
-	opts.FreqRopeBase = modelConf.FreqRopeBase
-	opts.FreqRopeScale = modelConf.FreqRopeScale
 	state.ModelOptions = opts
 	return nil
 }

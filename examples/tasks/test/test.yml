@@ -1,13 +1,9 @@
 name: test/test.yml
 template: |-
-    Below is an instruction that describes a task. Write a response that appropriately completes the request.
-
-    ### Instruction: {prompt}
-
-    ### Response:
+    <s>[INST] {prompt} [/INST]
 modelConf:
-    - name: q5_1-gguf-mamba-gpt-3B_v4.gguf
-    - ctx: 1024
+    - name: mistral-7b-instruct-v0.1.Q4_K_M.gguf
+    - ctx: 2048
 inferParams:
     - top_p: 0.35
     - temperature: 0.2
