@@ -1,10 +1,9 @@
 #!/usr/bin/env node
-// import { templates } from "modprompt";
-const { ModTemplate } = require("modprompt");
+import { PromptTemplate } from "modprompt";
 
 // in this example we use the model:
-// https://huggingface.co/NikolayKozloff/Marx-3B-V2-GGUF/resolve/main/Marx-3B-V2-Q4_1-GGUF.gguf
-const model = "Marx-3B-V2-Q4_1-GGUF.gguf"
+// https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q4_K_M.gguf
+const model = "mistral-7b-instruct-v0.1.Q4_K_M.gguf"
 const apiKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465";
 const prompt = "What is the capital of Kenya?";
 
@@ -28,7 +27,7 @@ async function readState() {
 
 async function infer(models) {
   const template = models[model];
-  const tpl = new ModTemplate(template.name);
+  const tpl = new PromptTemplate(template.name);
   const finalPrompt = tpl.prompt(prompt);
   console.log(finalPrompt);
   // run the inference query

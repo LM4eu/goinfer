@@ -1,28 +1,20 @@
 name: fix_json
 modelConf:
-  - name: open-llama-7b-v2-open-instruct.gguf.q4_K_M.bin
-  - ctx: 2048
+  - name: mistral-7b-instruct-v0.1.Q4_K_M.gguf
+  - ctx: 4096
 inferParams:
   - top_p: 0.35
   - temperature: 0.0
 template: |-
-  You are a javascript coder assistant. Below is an instruction that describes a task. Write a response that appropriately completes the request.
-
-  ### Instruction: fix this invalid json:
+  <s>[INST] fix this invalid json:
 
   ```json
   {"a":2, b: some text,} // a comment
-  ```
-
-  ### Response: (return only valid json)
+  ``` [/INST]
   ```json
   {"a":2, "b": "some text"}
-  ```
-
-  ### Instruction: fix this invalid json:
+  ``` </s> [INST] fix this invalid json:
 
   ```json
   {prompt}
-  ```
-
-  ### Response: (return only valid json)
+  ``` [/INST]
