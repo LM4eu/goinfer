@@ -1,6 +1,10 @@
 {
   "dependencies": {
     "eventsource-parser": "^1.0.0",
-    "restmix": "^0.2.0"
+    "restmix": "^0.3.0"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^20.8.2"
   }
 }
