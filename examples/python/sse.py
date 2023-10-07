@@ -3,32 +3,24 @@ import sseclient
 import requests
 
 # in this example we use the model:
-# https://huggingface.co/s3nh/mamba-gpt-3b-v3-GGML/resolve/main/mamba-gpt-3b-v3.ggmlv3.q8_0.bin
-# converted to gguf with Llama.cpp
-MODEL = "mamba-gpt-3b-v3.gguf.q8_0"
+# https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q4_K_M.gguf
+MODEL = "mistral-7b-instruct-v0.1.Q4_K_M.gguf"
 KEY = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
-TEMPLATE = "### Instruction: {prompt}\n\n### Response:"
+TEMPLATE = "<s>[INST] {prompt} [/INST]"
 PROMPT = "list the planets in the solar system"
-
-# load a language model
-payload = {
-    "model": MODEL,
-    "ctx": 4096,
-}
-headers = {"Authorization": f"Bearer {KEY}"}
-url = "http://localhost:5143/model/load"
-response = requests.post(url, headers=headers, json=payload)
-if response.status_code != 204:
-    raise Exception(f"Error loading model ${response.content}")
 
 # run the inference query
 payload = {
+    "model": {
+        "name": MODEL,
+        "ctx": 4096,
+    },
     "prompt": PROMPT,
     "template": TEMPLATE,
     "stream": True,
     "temperature": 0.6,
 }
-headers["Accept"] = "text/event-stream"
+headers = {"Authorization": f"Bearer {KEY}", "Accept": "text/event-stream"}
 url = "http://localhost:5143/completion"
 response = requests.post(url, stream=True, headers=headers, json=payload)
 client = sseclient.SSEClient(response)
