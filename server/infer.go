@@ -33,6 +33,8 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 				modelConf.Name = v.(string)
 			} else if k == "ctx" {
 				modelConf.Ctx = int(v.(float64))
+			} else if k == "gpu_layers" {
+				modelConf.GPULayers = int(v.(float64))
 			}
 		}
 	}
