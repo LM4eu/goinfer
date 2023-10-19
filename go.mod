@@ -1,8 +1,6 @@
 module github.com/synw/goinfer
 
-go 1.22
-
-replace github.com/go-skynet/go-llama.cpp => ./go-llama.cpp
+go 1.24
 
 require (
 	github.com/go-skynet/go-llama.cpp v0.0.0-20231009155254-aeba71ee8428
@@ -13,11 +11,9 @@ require (
 )
 
 require (
-	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
-	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/magiconair/properties v1.8.7 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/fsnotify/fsnotify v1.9.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
