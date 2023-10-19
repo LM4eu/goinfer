@@ -55,11 +55,24 @@ func LoadModelHandler(c echo.Context) error {
 			"error": "model params",
 		})
 	}
-	err = lm.LoadModel(model, params)
+	errcode, err := lm.LoadModel(model, params)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"error": "error loading model: " + err.Error(),
-		})
+		if errcode == 500 {
+			if state.IsDebug {
+				panic(err)
+			}
+			return c.JSON(http.StatusInternalServerError, echo.Map{
+				"error": "error loading model",
+			})
+		} else if errcode == 404 {
+			return c.JSON(http.StatusNotFound, echo.Map{
+				"error": err.Error(),
+			})
+		} else if errcode == 202 {
+			return c.JSON(http.StatusAccepted, echo.Map{
+				"error": err.Error(),
+			})
+		}
 	}
 	return c.NoContent(http.StatusNoContent)
 }
