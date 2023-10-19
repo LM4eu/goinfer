@@ -58,10 +58,10 @@ func Infer(
 	startThinking := time.Now()
 	startEmitting := time.Now()
 	var thinkingElapsed time.Duration
-	ntokens := -1
+	ntokens := 0
 	enc := json.NewEncoder(c.Response())
 	res, err := state.Lm.Predict(finalPrompt, llama.SetTokenCallback(func(token string) bool {
-		if ntokens == -1 {
+		if ntokens == 0 {
 			startEmitting = time.Now()
 			thinkingElapsed = time.Since(startThinking)
 			if state.IsVerbose {
@@ -80,25 +80,24 @@ func Infer(
 			if params.Stream && state.ContinueInferingController {
 				StreamMsg(smsg, c, enc)
 			}
-		} else {
-			if state.IsVerbose {
-				//fmt.Print(token)
+		}
+		if state.IsVerbose && !params.Stream {
+			fmt.Print(token)
+		}
+		for _, stopToken := range params.StopPrompts {
+			s, _ := strconv.Unquote(stopToken)
+			if token == s {
+				return false
 			}
-			for _, stopToken := range params.StopPrompts {
-				s, _ := strconv.Unquote(stopToken)
-				if token == s {
-					return false
-				}
+		}
+		if params.Stream {
+			tmsg := types.StreamedMessage{
+				Content: token,
+				Num:     ntokens,
+				MsgType: types.TokenMsgType,
 			}
-			if params.Stream {
-				tmsg := types.StreamedMessage{
-					Content: token,
-					Num:     ntokens,
-					MsgType: types.TokenMsgType,
-				}
-				if state.ContinueInferingController {
-					StreamMsg(tmsg, c, enc)
-				}
+			if state.ContinueInferingController {
+				StreamMsg(tmsg, c, enc)
 			}
 		}
 		ntokens++
@@ -113,8 +112,6 @@ func Infer(
 		llama.SetFrequencyPenalty(params.FrequencyPenalty),
 		llama.SetPresencePenalty(params.PresencePenalty),
 		llama.SetPenalty(params.RepeatPenalty),
-		llama.SetRopeFreqBase(state.ModelOptions.FreqRopeBase),
-		llama.SetRopeFreqScale(state.ModelOptions.FreqRopeScale),
 	)
 
 	state.IsInfering = false
