@@ -79,9 +79,12 @@ func Infer(
 			}
 			if params.Stream && state.ContinueInferingController {
 				StreamMsg(smsg, c, enc)
+				// sleep to let the time to stream this message, as a second
+				// message with the token has to be streamed in this loop as well
+				time.Sleep(2 * time.Millisecond)
 			}
 		}
-		if state.IsVerbose && !params.Stream {
+		if state.IsVerbose {
 			fmt.Print(token)
 		}
 		for _, stopToken := range params.StopPrompts {
