@@ -30,9 +30,11 @@ var DefaultModelOptions = llama.ModelOptions{
 	NBatch:        512,
 	FreqRopeBase:  10000,
 	FreqRopeScale: 1.0,
+	NGPULayers:    0,
 }
 
 var DefaultModelConf = types.ModelConf{
-	Name: "",
-	Ctx:  2048,
+	Name:      "",
+	Ctx:       2048,
+	GPULayers: 0,
 }

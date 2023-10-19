@@ -42,9 +42,9 @@ type Task struct {
 }
 
 type ModelConf struct {
-	Name string `json:"name" yaml:"name"`
-	Ctx  int    `json:"ctx,omitempty" yaml:"ctx,omitempty"`
-	//NGPULayers    int     `json:"n_gpu_layers,omitempty" yaml:"n_gpu_layers,omitempty"`
+	Name      string `json:"name" yaml:"name"`
+	Ctx       int    `json:"ctx,omitempty" yaml:"ctx,omitempty"`
+	GPULayers int    `json:"gpu_layers,omitempty" yaml:"gpu_layers,omitempty"`
 }
 
 type TemplateInfo struct {

@@ -31,7 +31,7 @@ func parseModelParams(m echo.Map) (string, llama.ModelOptions, error) {
 		embeddings = v.(bool)
 	}
 	gpuLayers := state.DefaultModelOptions.NGPULayers
-	v, ok = m["gpuLayers"]
+	v, ok = m["gpu_layers"]
 	if ok {
 		gpuLayers = v.(int)
 	}
