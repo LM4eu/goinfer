@@ -33,7 +33,7 @@ func parseModelParams(m echo.Map) (string, llama.ModelOptions, error) {
 	gpuLayers := state.DefaultModelOptions.NGPULayers
 	v, ok = m["gpu_layers"]
 	if ok {
-		gpuLayers = v.(int)
+		gpuLayers = int(v.(float64))
 	}
 	params := llama.ModelOptions{
 		ContextSize: ctx,
