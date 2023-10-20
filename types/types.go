@@ -22,8 +22,7 @@ type InferenceParams struct {
 	StopPrompts       []string `json:"stop,omitempty" yaml:"stop,omitempty"`
 }
 
-type InferenceResult struct {
-	Text               string  `json:"text"`
+type InferenceStats struct {
 	ThinkingTime       float64 `json:"thinkingTime"`
 	ThinkingTimeFormat string  `json:"thinkingTimeFormat"`
 	EmitTime           float64 `json:"emitTime"`
@@ -32,6 +31,11 @@ type InferenceResult struct {
 	TotalTimeFormat    string  `json:"totalTimeFormat"`
 	TokensPerSecond    float64 `json:"tokensPerSecond"`
 	TotalTokens        int     `json:"totalTokens"`
+}
+
+type InferenceResult struct {
+	Text  string         `json:"text"`
+	Stats InferenceStats `json:"stats"`
 }
 
 type Task struct {
