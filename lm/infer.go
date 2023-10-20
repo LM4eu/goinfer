@@ -84,9 +84,9 @@ func Infer(
 				time.Sleep(2 * time.Millisecond)
 			}
 		}
-		if state.IsVerbose {
+		/*if state.IsVerbose && !params.Stream {
 			fmt.Print(token)
-		}
+		}*/
 		for _, stopToken := range params.StopPrompts {
 			s, _ := strconv.Unquote(stopToken)
 			if token == s {
@@ -144,8 +144,7 @@ func Infer(
 			fmt.Println("Tokens per seconds", tps)
 			fmt.Println("Tokens emitted", ntokens)
 		}
-		result := types.InferenceResult{
-			Text:               res,
+		stats := types.InferenceStats{
 			ThinkingTime:       thinkingElapsed.Seconds(),
 			ThinkingTimeFormat: thinkingElapsed.String(),
 			EmitTime:           emittingElapsed.Seconds(),
@@ -154,6 +153,10 @@ func Infer(
 			TotalTimeFormat:    totalTime.String(),
 			TokensPerSecond:    tps,
 			TotalTokens:        ntokens,
+		}
+		result := types.InferenceResult{
+			Text:  res,
+			Stats: stats,
 		}
 		// result
 		b, _ := json.Marshal(&result)
