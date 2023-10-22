@@ -35,6 +35,8 @@ func LoadModel(model string, params llama.ModelOptions) (int, error) {
 	if state.IsModelLoaded {
 		UnloadModel()
 	}
+	//fmt.Println("MODEL PARAMS:")
+	//fmt.Printf("%+v\n", params)
 	lm, err := llama.New(
 		mpath,
 		llama.SetContext(params.ContextSize),
