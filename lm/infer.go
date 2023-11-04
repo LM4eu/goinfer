@@ -84,14 +84,8 @@ func Infer(
 				time.Sleep(2 * time.Millisecond)
 			}
 		}
-		/*if state.IsVerbose && !params.Stream {
+		if state.IsVerbose {
 			fmt.Print(token)
-		}*/
-		for _, stopToken := range params.StopPrompts {
-			s, _ := strconv.Unquote(stopToken)
-			if token == s {
-				return false
-			}
 		}
 		if params.Stream {
 			tmsg := types.StreamedMessage{
