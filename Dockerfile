@@ -42,7 +42,7 @@ RUN set -ex                                        ;\
 
 # --------------------------------------------------------------------
 # https://hub.docker.com/_/golang
-FROM docker.io/golang:1.21 AS llama
+FROM docker.io/golang:1.22 AS llama
 
 WORKDIR /code
 
@@ -55,7 +55,7 @@ RUN make -C go-llama.cpp libbinding.a
 
 
 # --------------------------------------------------------------------
-FROM docker.io/golang:1.21 AS goinfer
+FROM docker.io/golang:1.22 AS goinfer
 
 WORKDIR /code
 
@@ -90,7 +90,7 @@ RUN set -ex                                          ;\
 
 
 # --------------------------------------------------------------------
-FROM docker.io/golang:1.21 AS integrator
+FROM docker.io/golang:1.22 AS integrator
 
 WORKDIR /target
 
