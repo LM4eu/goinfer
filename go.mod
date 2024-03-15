@@ -1,6 +1,6 @@
 module github.com/synw/goinfer
 
-go 1.21
+go 1.22
 
 replace github.com/go-skynet/go-llama.cpp => ./go-llama.cpp
 
