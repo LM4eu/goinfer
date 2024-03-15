@@ -30,11 +30,11 @@ WORKDIR /code
 RUN set -ex                                        ;\
     git --version                                  ;\
     git clone https://github.com/synw/infergui .   ;\
-    ls -lAh                                        ;\
+    ls -lShA                                       ;\
     yarn versions                                  ;\
     yarn install --frozen-lockfile                 ;\
     yarn cache clean                               ;\
-    ls -lAh                                        ;\
+    ls -lShA                                       ;\
     yarn build                                     ;\
     mv /code/dist /dist                            ;\
     rm -r /code
@@ -51,7 +51,8 @@ RUN git clone --recurse-submodules https://github.com/go-skynet/go-llama.cpp
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update && apt install -y patch cmake && rm -rf /var/lib/apt/lists/*
 
-RUN make -C go-llama.cpp libbinding.a
+RUN make -C go-llama.cpp libbinding.a -j $(nbcores)
+
 
 
 # --------------------------------------------------------------------
@@ -80,12 +81,14 @@ COPY --from=infergui  dist  server/dist
 # Go build flags: "-s -w" removes all debug symbols: https://pkg.go.dev/cmd/link
 # GOAMD64=v3 --> https://github.com/golang/go/wiki/MinimumRequirements#amd64
 RUN set -ex                                          ;\
-    ls -lAh . server/dist                            ;\
+    ls -lShA . server/dist                           ;\
+    export CGO_ENABLED=0                             ;\
     export GOFLAGS="-trimpath -modcacherw"           ;\
     export GOLDFLAGS="-d -s -w -extldflags=-static"  ;\
     export GOAMD64=v3                                ;\
-    go build -v  .                                   ;\
-    ls -lAh                                          ;\
+    export GOEXPERIMENT=newinliner                   ;\
+    go build -a -v  .                                ;\
+    ls -lShA                                         ;\
     ./goinfer -help       # smoke test
 
 
@@ -123,7 +126,7 @@ RUN set -ex                                           ;\
     rmdir usr                                         ;\
     mkdir -p lib64                                    ;\
     cp /usr/lib64/ld-linux-x86-64.so.2 lib64          ;\
-    ls -lAh /target
+    ls -lShA /target
 
 # --------------------------------------------------------------------
 FROM scratch AS final
