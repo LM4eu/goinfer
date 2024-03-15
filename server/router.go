@@ -10,7 +10,7 @@ import (
 )
 
 //go:embed all:dist
-var embededFiles embed.FS
+var embeddedFiles embed.FS
 
 func RunServer(origins []string, apiKey string, localMode bool, enableOai bool, disableApiKey bool) {
 	e := echo.New()
@@ -39,7 +39,7 @@ func RunServer(origins []string, apiKey string, localMode bool, enableOai bool, 
 			Index:      "index.html",
 			Browse:     false,
 			HTML5:      true,
-			Filesystem: http.FS(embededFiles),
+			Filesystem: http.FS(embeddedFiles),
 		}))
 	}
 
