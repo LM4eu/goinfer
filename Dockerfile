@@ -22,7 +22,7 @@ ARG uid=5505
 
 # --------------------------------------------------------------------
 # https://hub.docker.com/_/node
-FROM docker.io/node:20-bookworm AS infergui
+FROM docker.io/node:21-bookworm AS infergui
 
 WORKDIR /code
 
