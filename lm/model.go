@@ -25,7 +25,7 @@ func LoadModel(model string, params llama.ModelOptions) (int, error) {
 	_, err := os.Stat(mpath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return 404, errors.New("the model file " + mpath + " does not exist")
+			return 404, fmt.Errorf("the model file %s does not exist", mpath)
 		}
 	}
 	// check if the model is already loaded
@@ -44,7 +44,7 @@ func LoadModel(model string, params llama.ModelOptions) (int, error) {
 		llama.SetGPULayers(params.NGPULayers),
 	)
 	if err != nil {
-		return 500, errors.New("can not load model " + model)
+		return 500, fmt.Errorf("can not load model %s", model)
 	}
 	if state.IsVerbose || state.IsDebug {
 		fmt.Println("Loaded model", mpath)
