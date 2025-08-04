@@ -127,10 +127,9 @@ func Infer(
 			fmt.Println("Emitting time:", emittingElapsed)
 		}
 		tpsRaw := float64(ntokens) / emittingElapsed.Seconds()
-		s := fmt.Sprintf("%.2f", tpsRaw)
-		tps := 0.0
-		if res, err := strconv.ParseFloat(s, 64); err == nil {
-			tps = res
+		tps, err := strconv.ParseFloat(fmt.Sprintf("%.2f", tpsRaw), 64)
+		if err != nil {
+			tps = 0.0
 		}
 		totalTime := thinkingElapsed + emittingElapsed
 		if state.IsVerbose {

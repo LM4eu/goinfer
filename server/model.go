@@ -50,7 +50,7 @@ func LoadModelHandler(c echo.Context) error {
 	}
 	model, params, err := parseModelParams(m)
 	if err != nil {
-		fmt.Println(("error in params:" + err.Error()))
+		fmt.Println("error in params:" + err.Error())
 		return c.JSON(http.StatusBadRequest, echo.Map{
 			"error": "model params",
 		})
