@@ -13,16 +13,19 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
+// StreamMsg streams a message to the client
 func StreamMsg(msg types.StreamedMessage, c echo.Context, enc *json.Encoder) error {
 	c.Response().Write([]byte("data: "))
-	if err := enc.Encode(msg); err != nil {
-		return err
+	err := enc.Encode(msg)
+	if err != nil {
+		return fmt.Errorf("failed to encode stream message: %w", err)
 	}
 	c.Response().Write([]byte("\n"))
 	c.Response().Flush()
 	return nil
 }
 
+// Infer performs language model inference
 func Infer(
 	prompt string,
 	template string,
@@ -43,8 +46,6 @@ func Infer(
 	state.ContinueInferingController = true
 	finalPrompt := strings.Replace(template, "{prompt}", prompt, 1)
 	if state.IsVerbose {
-		//fmt.Println("Inference params:")
-		//fmt.Println(params)
 		fmt.Println("---------- prompt ----------")
 		fmt.Println(finalPrompt)
 		fmt.Println("----------------------------")
@@ -53,7 +54,6 @@ func Infer(
 	if state.IsDebug {
 		fmt.Println("Inference params:")
 		fmt.Printf("%+v\n\n", params)
-
 	}
 	startThinking := time.Now()
 	startEmitting := time.Now()
@@ -78,7 +78,11 @@ func Infer(
 				},
 			}
 			if params.Stream && state.ContinueInferingController {
-				StreamMsg(smsg, c, enc)
+				err := StreamMsg(smsg, c, enc)
+				if err != nil {
+					// Log error but don't return as we want to continue processing
+					fmt.Printf("Error streaming start_emitting message: %v\n", err)
+				}
 				// sleep to let the time to stream this message, as a second
 				// message with the token has to be streamed in this loop as well
 				time.Sleep(2 * time.Millisecond)
@@ -94,7 +98,11 @@ func Infer(
 				MsgType: types.TokenMsgType,
 			}
 			if state.ContinueInferingController {
-				StreamMsg(tmsg, c, enc)
+				err := StreamMsg(tmsg, c, enc)
+				if err != nil {
+					// Log error but don't return as we want to continue processing
+					fmt.Printf("Error streaming token message: %v\n", err)
+				}
 			}
 		}
 		ntokens++
@@ -152,9 +160,27 @@ func Infer(
 			Stats: stats,
 		}
 		// result
-		b, _ := json.Marshal(&result)
+		b, err := json.Marshal(&result)
+		if err != nil {
+			// If we can't marshal the result, send an error instead
+			errCh <- types.StreamedMessage{
+				Num:     ntokens + 1,
+				Content: "result marshaling error",
+				MsgType: types.ErrorMsgType,
+			}
+			return
+		}
 		var _res map[string]interface{}
-		_ = json.Unmarshal(b, &_res)
+		err = json.Unmarshal(b, &_res)
+		if err != nil {
+			// If we can't unmarshal the result, send an error instead
+			errCh <- types.StreamedMessage{
+				Num:     ntokens + 1,
+				Content: "result unmarshaling error",
+				MsgType: types.ErrorMsgType,
+			}
+			return
+		}
 		endmsg := types.StreamedMessage{
 			Num:     ntokens + 1,
 			Content: "result",
@@ -162,7 +188,11 @@ func Infer(
 			Data:    _res,
 		}
 		if params.Stream {
-			StreamMsg(endmsg, c, enc)
+			err := StreamMsg(endmsg, c, enc)
+			if err != nil {
+				// Log error but don't return as we want to continue processing
+				fmt.Printf("Error streaming result message: %v\n", err)
+			}
 		}
 		ch <- endmsg
 	}
