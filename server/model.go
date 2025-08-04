@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	llama "github.com/go-skynet/go-llama.cpp"
 	"github.com/labstack/echo/v4"
 	"github.com/synw/goinfer/files"
+	"github.com/synw/goinfer/llama"
 	"github.com/synw/goinfer/lm"
 	"github.com/synw/goinfer/state"
 	"github.com/synw/goinfer/types"
