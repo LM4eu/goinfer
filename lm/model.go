@@ -11,6 +11,7 @@ import (
 	"github.com/synw/goinfer/state"
 )
 
+// UnloadModel unloads the currently loaded model
 func UnloadModel() {
 	if state.IsModelLoaded {
 		state.Lm.Free()
@@ -19,14 +20,21 @@ func UnloadModel() {
 	state.LoadedModel = ""
 }
 
+// LoadModel loads a model from the specified path with given parameters
+// Returns error code and error if any
 func LoadModel(model string, params llama.ModelOptions) (int, error) {
+	if model == "" {
+		return 400, errors.New("model name cannot be empty")
+	}
+	
 	mpath := filepath.Join(state.ModelsDir, model)
 	// check if the model file exists
 	_, err := os.Stat(mpath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return 404, fmt.Errorf("the model file %s does not exist", mpath)
+			return 404, fmt.Errorf("the model file %s does not exist: %w", mpath, err)
 		}
+		return 500, fmt.Errorf("error checking model file %s: %w", mpath, err)
 	}
 	// check if the model is already loaded
 	if state.LoadedModel == model {
@@ -35,8 +43,7 @@ func LoadModel(model string, params llama.ModelOptions) (int, error) {
 	if state.IsModelLoaded {
 		UnloadModel()
 	}
-	//fmt.Println("MODEL PARAMS:")
-	//fmt.Printf("%+v\n", params)
+	
 	lm, err := llama.New(
 		mpath,
 		llama.SetContext(params.ContextSize),
@@ -44,15 +51,15 @@ func LoadModel(model string, params llama.ModelOptions) (int, error) {
 		llama.SetGPULayers(params.NGPULayers),
 	)
 	if err != nil {
-		return 500, fmt.Errorf("can not load model %s", model)
+		return 500, fmt.Errorf("cannot load model %s: %w", model, err)
 	}
+	
 	if state.IsVerbose || state.IsDebug {
 		fmt.Println("Loaded model", mpath)
 		if state.IsDebug {
 			jsonData, err := json.MarshalIndent(params, "", "  ")
 			if err != nil {
-				//fmt.Println("Error decoding json:", err)
-				return 500, err
+				return 500, fmt.Errorf("error marshaling model params: %w", err)
 			}
 			fmt.Println(string(jsonData))
 		}
