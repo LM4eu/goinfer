@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-skynet/go-llama.cpp"
 	"github.com/labstack/echo/v4"
+	"github.com/synw/goinfer/llama"
 	"github.com/synw/goinfer/state"
 	"github.com/synw/goinfer/types"
 )
@@ -50,7 +50,7 @@ func InferOpenAi(
 	}
 	enc := json.NewEncoder(c.Response())
 	ntokens := 0
-	res, err := state.Lm.Predict(finalPrompt, llama.Debug, llama.SetTokenCallback(func(token string) bool {
+	res, err := state.Lm.Predict(finalPrompt, llama.SetTokenCallback(func(token string) bool {
 		if state.IsVerbose {
 			fmt.Print(token)
 		}
