@@ -1,13 +1,9 @@
 package state
 
 import (
-	llama "github.com/go-skynet/go-llama.cpp"
-
+	"github.com/synw/goinfer/llama"
 	"github.com/synw/goinfer/types"
 )
-
-// the language model instance
-var Lm *llama.LLama
 
 // models state
 var ModelsDir = ""
@@ -28,3 +24,6 @@ var TasksDir = "./tasks"
 
 // OpenAi api
 var OpenAiConf types.OpenAiConf
+
+// the language model instance
+var Lm llama.LLama

@@ -3,7 +3,6 @@ module github.com/synw/goinfer
 go 1.24
 
 require (
-	github.com/go-skynet/go-llama.cpp v0.0.0-20240314183750-6a8041ef6b46
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/labstack/gommon v0.4.2
 	github.com/spf13/viper v1.20.1
