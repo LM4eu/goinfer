@@ -2,11 +2,11 @@ package lm
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/synw/goinfer/errors"
 	"github.com/synw/goinfer/llama"
 	"github.com/synw/goinfer/state"
 )
@@ -24,7 +24,7 @@ func UnloadModel() {
 // Returns error code and error if any
 func LoadModel(model string, params llama.ModelOptions) (int, error) {
 	if model == "" {
-		return 400, fmt.Errorf("model name cannot be empty: %w", errors.ErrInvalidInput)
+		return 400, fmt.Errorf("model name cannot be empty: %w", ErrInvalidInput)
 	}
 
 	mpath := filepath.Join(state.ModelsDir, model)
@@ -32,18 +32,18 @@ func LoadModel(model string, params llama.ModelOptions) (int, error) {
 	_, err := os.Stat(mpath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return 404, fmt.Errorf("the model file %s does not exist: %w", mpath, errors.ErrModelNotFound)
+			return 404, fmt.Errorf("the model file %s does not exist: %w", mpath, ErrModelNotFound)
 		}
 		return 500, fmt.Errorf("error checking model file %s: %w", mpath, err)
 	}
 	// check if the model is already loaded
 	if state.LoadedModel == model {
-		return 202, fmt.Errorf("the model is already loaded: %w", errors.ErrInvalidInput)
+		return 202, fmt.Errorf("the model is already loaded: %w", ErrInvalidInput)
 	}
 	if state.IsModelLoaded {
 		UnloadModel()
 	}
-	
+
 	lm, err := llama.New(
 		mpath,
 		llama.SetContext(params.ContextSize),
@@ -51,9 +51,9 @@ func LoadModel(model string, params llama.ModelOptions) (int, error) {
 		llama.SetGPULayers(params.NGPULayers),
 	)
 	if err != nil {
-		return 500, fmt.Errorf("cannot load model %s: %w", model, errors.ErrModelLoadFailed)
+		return 500, fmt.Errorf("cannot load model %s: %w", model, ErrModelLoadFailed)
 	}
-	
+
 	if state.IsVerbose || state.IsDebug {
 		fmt.Println("Loaded model", mpath)
 		if state.IsDebug {
@@ -70,3 +70,11 @@ func LoadModel(model string, params llama.ModelOptions) (int, error) {
 	state.LoadedModel = model
 	return 200, nil
 }
+
+// Standard application errors
+var (
+	ErrModelNotFound      = errors.New("model not found")
+	ErrInvalidInput       = errors.New("invalid input")
+	ErrModelLoadFailed    = errors.New("failed to load model")
+	ErrTemplateParseError = errors.New("template parsing error")
+)
