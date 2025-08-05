@@ -13,24 +13,10 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-func streamOpenAiMsg(msg types.OpenAiChatCompletionDeltaResponse, c echo.Context, enc *json.Encoder) error {
-	c.Response().Write([]byte("data: "))
-	if err := enc.Encode(msg); err != nil {
-		return err
-	}
-	c.Response().Write([]byte("\n"))
-	c.Response().Flush()
-	return nil
-}
 
-func terminateStream(c echo.Context) error {
-	c.Response().Write([]byte("data: "))
-	c.Response().Write([]byte("[DONE]"))
-	c.Response().Write([]byte("\n\n"))
-	c.Response().Flush()
-	return nil
-}
+// Main Inference Functions
 
+// InferOpenAi performs OpenAI model inference
 func InferOpenAi(
 	prompt string,
 	template string,
@@ -39,43 +25,31 @@ func InferOpenAi(
 	ch chan<- types.OpenAiChatCompletion,
 	errCh chan<- error,
 ) {
+	if !state.IsModelLoaded {
+		errCh <- createErrorMessageOpenAi(1, "no model loaded", nil, ErrCodeModelNotLoaded)
+		return
+	}
+
+	finalPrompt := strings.Replace(template, "{prompt}", prompt, 1)
+	logOpenAiVerboseInfo(finalPrompt, 0, 0, 0) // Initial verbose logging with prompt
+
+	if state.IsDebug {
+		fmt.Println("Inference params:")
+		fmt.Printf("%+v\n\n", params)
+	}
+
+	ntokens := 0
+	enc := json.NewEncoder(c.Response())
+
+	startThinking := time.Now()
+	var thinkingElapsed time.Duration
+	var startEmitting time.Time
+
 	state.IsInfering = true
 	state.ContinueInferingController = true
-	finalPrompt := strings.Replace(template, "{prompt}", prompt, 1)
-	if state.IsVerbose {
-		fmt.Println("---------- prompt ----------")
-		fmt.Println(finalPrompt)
-		fmt.Println("----------------------------")
-		fmt.Println("Thinking ..")
-	}
-	enc := json.NewEncoder(c.Response())
-	ntokens := 0
+
 	res, err := state.Lm.Predict(finalPrompt, llama.SetTokenCallback(func(token string) bool {
-		if state.IsVerbose {
-			fmt.Print(token)
-		}
-		if params.Stream {
-			tmsg := types.OpenAiChatCompletionDeltaResponse{
-				ID:      strconv.Itoa(ntokens),
-				Object:  "chat.completion.chunk",
-				Created: time.Now().Unix(),
-				Model:   state.LoadedModel,
-				Choices: []types.DeltaChoice{
-					{
-						Index:        ntokens,
-						FinishReason: "",
-						Delta: types.Delta{
-							Role:    "assistant",
-							Content: token,
-						},
-					},
-				},
-			}
-			if state.ContinueInferingController {
-				streamOpenAiMsg(tmsg, c, enc)
-			}
-		}
-		ntokens++
+		streamDeltaMsgOpenAi(ntokens, token, enc, c, params, startThinking, &thinkingElapsed, &startEmitting)
 		return state.ContinueInferingController
 	}),
 		llama.SetTokens(params.NPredict),
@@ -89,12 +63,191 @@ func InferOpenAi(
 		llama.SetPenalty(params.RepeatPenalty),
 		llama.SetRopeFreqBase(1e6),
 	)
-	if params.Stream && state.ContinueInferingController {
-		terminateStream(c)
-	}
+
 	state.IsInfering = false
+
+	if err != nil {
+		state.ContinueInferingController = false
+		errCh <- createErrorMessageOpenAi(ntokens+1, "inference error", err, ErrCodeInferenceFailed)
+	}
+
+	if !state.ContinueInferingController {
+		return
+	}
+
+	if params.Stream {
+		err := sendOpenAiStreamTermination(c)
+		if err != nil {
+			state.ContinueInferingController = false
+			errCh <- createErrorMessageOpenAi(ntokens+1, "cannot send stream termination", err, ErrCodeStreamFailed)
+			fmt.Printf("Error sending stream termination: %v\n", err)
+		}
+	}
+
+	if state.ContinueInferingController {
+		ch <- createOpenAiResult(ntokens, res)
+	}
+}
+
+
+// Streaming Functions
+
+// streamOpenAiMsg streams a message to the client
+func streamOpenAiMsg(msg types.OpenAiChatCompletionDeltaResponse, c echo.Context, enc *json.Encoder) error {
+	c.Response().Write([]byte("data: "))
+	if err := enc.Encode(msg); err != nil {
+		return fmt.Errorf("failed to encode stream message: %w", err)
+	}
+	c.Response().Write([]byte("\n"))
+	c.Response().Flush()
+	return nil
+}
+
+// sendOpenAiStreamTermination sends stream termination message
+func sendOpenAiStreamTermination(c echo.Context) error {
+	c.Response().Write([]byte("data: [DONE]\n\n"))
+	c.Response().Flush()
+	return nil
+}
+
+// createOpenAiDeltaMessage creates a delta message for streaming
+func createOpenAiDeltaMessage(ntokens int, token string) types.OpenAiChatCompletionDeltaResponse {
+	return types.OpenAiChatCompletionDeltaResponse{
+		ID:      strconv.Itoa(ntokens),
+		Object:  "chat.completion.chunk",
+		Created: time.Now().Unix(),
+		Model:   state.LoadedModel,
+		Choices: []types.DeltaChoice{
+			{
+				Index:        ntokens,
+				FinishReason: "",
+				Delta: types.Delta{
+					Role:    "assistant",
+					Content: token,
+				},
+			},
+		},
+	}
+}
+
+// streamDeltaMsgOpenAi streams a delta message to the client
+func streamDeltaMsgOpenAi(ntokens int, token string, enc *json.Encoder, c echo.Context, params types.InferenceParams, startThinking time.Time, thinkingElapsed *time.Duration, startEmitting *time.Time) error {
+	if ntokens == 0 {
+		*startEmitting = time.Now()
+		*thinkingElapsed = time.Since(startThinking)
+		err := sendStartEmittingMessageOpenAi(enc, c, params, ntokens, *thinkingElapsed)
+		if err != nil {
+			fmt.Printf("Error emitting msg: %v\n", err)
+			state.ContinueInferingController = false
+			return err
+		}
+	}
+
+	if !state.ContinueInferingController {
+		return nil
+	}
+
+	if state.IsVerbose {
+		fmt.Print(token)
+	}
+
+	if !params.Stream {
+		return nil
+	}
+
+	tmsg := createOpenAiDeltaMessage(ntokens, token)
+	err := streamOpenAiMsg(tmsg, c, enc)
+	if err != nil {
+		fmt.Printf("Error streaming delta message: %v\n", err)
+		return err
+	}
+
+	return nil
+}
+
+// sendStartEmittingMessageOpenAi sends the start_emitting message to the client
+func sendStartEmittingMessageOpenAi(enc *json.Encoder, c echo.Context, params types.InferenceParams, ntokens int, thinkingElapsed time.Duration) error {
+	if !params.Stream || !state.ContinueInferingController {
+		return nil
+	}
+
+	// Create a system message similar to the one in infer.go but adapted for OpenAI format
+	smsg := types.OpenAiChatCompletionDeltaResponse{
+		ID:      strconv.Itoa(ntokens),
+		Object:  "chat.completion.chunk",
+		Created: time.Now().Unix(),
+		Model:   state.LoadedModel,
+		Choices: []types.DeltaChoice{
+			{
+				Index:        ntokens,
+				FinishReason: "",
+				Delta: types.Delta{
+					Role:    "system",
+					Content: "start_emitting",
+				},
+			},
+		},
+	}
+
+	err := streamOpenAiMsg(smsg, c, enc)
+	if err != nil {
+		fmt.Printf("Error streaming start_emitting message: %v\n", err)
+	}
+	time.Sleep(2 * time.Millisecond) // Give some time to stream this message
+	return err
+}
+
+
+// Utility Functions
+
+// createErrorMessageOpenAi creates an InferenceError for OpenAI inference
+func createErrorMessageOpenAi(ntokens int, content string, context interface{}, errorCode string) *InferenceError {
+	return &InferenceError{
+		Code:       errorCode,
+		Message:    content,
+		Context:    context,
+		Timestamp:  time.Now(),
+		TokenCount: ntokens,
+	}
+}
+
+// logOpenAiVerboseInfo logs verbose information about the OpenAI inference process
+func logOpenAiVerboseInfo(finalPrompt string, thinkingElapsed time.Duration, emittingElapsed time.Duration, ntokens int) {
+	if state.IsVerbose {
+		fmt.Println("---------- prompt ----------")
+		fmt.Println(finalPrompt)
+		fmt.Println("----------------------------")
+		fmt.Println("Thinking ..")
+
+		if thinkingElapsed > 0 {
+			fmt.Println("Thinking time:", thinkingElapsed)
+			fmt.Println("Emitting ..")
+		}
+
+		if emittingElapsed > 0 {
+			fmt.Println("Emitting time:", emittingElapsed)
+		}
+
+		totalTime := thinkingElapsed + emittingElapsed
+		fmt.Println("Total time:", totalTime)
+
+		tpsRaw := float64(ntokens) / emittingElapsed.Seconds()
+		tps, err := strconv.ParseFloat(fmt.Sprintf("%.2f", tpsRaw), 64)
+		if err != nil {
+			tps = 0.0
+		}
+		fmt.Println("Tokens per seconds", tps)
+		fmt.Println("Tokens emitted", ntokens)
+	}
+}
+
+
+// Result Creation Functions
+
+// createOpenAiResult creates the final OpenAI result
+func createOpenAiResult(ntokens int, res string) types.OpenAiChatCompletion {
 	id := strconv.Itoa(ntokens)
-	endres := types.OpenAiChatCompletion{
+	return types.OpenAiChatCompletion{
 		ID:      id,
 		Object:  "chat.completion",
 		Created: time.Now().Unix(),
@@ -114,12 +267,5 @@ func InferOpenAi(
 			CompletionTokens: 0,
 			TotalTokens:      ntokens,
 		},
-	}
-	if err != nil {
-		errCh <- err
-		state.ContinueInferingController = false
-	}
-	if state.ContinueInferingController {
-		ch <- endres
 	}
 }
