@@ -15,6 +15,7 @@ func InitConf() types.GoInferConf {
 	viper.SetConfigName("goinfer.config")
 	viper.AddConfigPath(".")
 	viper.SetDefault("origins", []string{"localhost"})
+	viper.SetDefault("tasks_dir", "./tasks")
 	viper.SetDefault("oai.enable", false)
 	viper.SetDefault("oai.threads", 4)
 	viper.SetDefault("oai.template", "{system}\n\n{prompt}")
@@ -44,6 +45,11 @@ func InitConf() types.GoInferConf {
 
 // Create : create a config file
 func Create(modelsDir string, isDefault bool) {
+	CreateWithFileName(modelsDir, isDefault, "goinfer.config.json")
+}
+
+// CreateWithFileName : create a config file with a specific name
+func CreateWithFileName(modelsDir string, isDefault bool, fileName string) {
 	key := "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
 	if !isDefault {
 		key = generateRandomKey()
@@ -55,7 +61,7 @@ func Create(modelsDir string, isDefault bool) {
 		"tasks_dir":  "./tasks",
 	}
 	jsonString, _ := json.MarshalIndent(data, "", "    ")
-	os.WriteFile("goinfer.config.json", jsonString, os.ModePerm&^0111)
+	os.WriteFile(fileName, jsonString, os.ModePerm&^0111)
 }
 
 func generateRandomKey() string {
