@@ -91,7 +91,7 @@ func parseParams(m echo.Map) (string, string, string, types.InferenceParams, err
 
 // Create an Openai api for /v1/chat/completion
 func CreateCompletionHandler(c echo.Context) error {
-	if state.IsInfering {
+	if state.IsInferring {
 		fmt.Println("An inference query is already running")
 		return c.NoContent(http.StatusAccepted)
 	}
@@ -141,7 +141,7 @@ func CreateCompletionHandler(c echo.Context) error {
 		return nil
 	case <-c.Request().Context().Done():
 		fmt.Println("\nRequest canceled")
-		state.ContinueInferingController = false
+		state.ContinueInferringController = false
 		return c.NoContent(http.StatusNoContent)
 	}
 }

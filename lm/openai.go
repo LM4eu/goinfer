@@ -45,12 +45,12 @@ func InferOpenAi(
 	var thinkingElapsed time.Duration
 	var startEmitting time.Time
 
-	state.IsInfering = true
-	state.ContinueInferingController = true
+	state.IsInferring = true
+	state.ContinueInferringController = true
 
 	res, err := state.Lm.Predict(finalPrompt, llama.SetTokenCallback(func(token string) bool {
 		streamDeltaMsgOpenAi(ntokens, token, enc, c, params, startThinking, &thinkingElapsed, &startEmitting)
-		return state.ContinueInferingController
+		return state.ContinueInferringController
 	}),
 		llama.SetTokens(params.NPredict),
 		llama.SetThreads(params.Threads),
@@ -64,27 +64,27 @@ func InferOpenAi(
 		llama.SetRopeFreqBase(1e6),
 	)
 
-	state.IsInfering = false
+	state.IsInferring = false
 
 	if err != nil {
-		state.ContinueInferingController = false
+		state.ContinueInferringController = false
 		errCh <- createErrorMessageOpenAi(ntokens+1, "inference error", err, ErrCodeInferenceFailed)
 	}
 
-	if !state.ContinueInferingController {
+	if !state.ContinueInferringController {
 		return
 	}
 
 	if params.Stream {
 		err := sendOpenAiStreamTermination(c)
 		if err != nil {
-			state.ContinueInferingController = false
+			state.ContinueInferringController = false
 			errCh <- createErrorMessageOpenAi(ntokens+1, "cannot send stream termination", err, ErrCodeStreamFailed)
 			fmt.Printf("Error sending stream termination: %v\n", err)
 		}
 	}
 
-	if state.ContinueInferingController {
+	if state.ContinueInferringController {
 		ch <- createOpenAiResult(ntokens, res)
 	}
 }
@@ -138,12 +138,12 @@ func streamDeltaMsgOpenAi(ntokens int, token string, enc *json.Encoder, c echo.C
 		err := sendStartEmittingMessageOpenAi(enc, c, params, ntokens, *thinkingElapsed)
 		if err != nil {
 			fmt.Printf("Error emitting msg: %v\n", err)
-			state.ContinueInferingController = false
+			state.ContinueInferringController = false
 			return err
 		}
 	}
 
-	if !state.ContinueInferingController {
+	if !state.ContinueInferringController {
 		return nil
 	}
 
@@ -167,7 +167,7 @@ func streamDeltaMsgOpenAi(ntokens int, token string, enc *json.Encoder, c echo.C
 
 // sendStartEmittingMessageOpenAi sends the start_emitting message to the client
 func sendStartEmittingMessageOpenAi(enc *json.Encoder, c echo.Context, params types.InferenceParams, ntokens int, thinkingElapsed time.Duration) error {
-	if !params.Stream || !state.ContinueInferingController {
+	if !params.Stream || !state.ContinueInferringController {
 		return nil
 	}
 

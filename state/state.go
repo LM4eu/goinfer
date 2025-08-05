@@ -12,8 +12,8 @@ var LoadedModel = ""
 var ModelOptions = DefaultModelOptions
 
 // inference state
-var ContinueInferingController = true
-var IsInfering = false
+var ContinueInferringController = true
+var IsInferring = false
 
 // app state
 var IsVerbose = true
