@@ -66,7 +66,7 @@ const (
 
 type StreamedMessage struct {
 	Content string                 `json:"content"`
-	Num     int                    `json:"num"`
+	Num     int                    `json:"num"` // number of tokens
 	MsgType MsgType                `json:"msg_type"`
 	Data    map[string]interface{} `json:"data,omitempty"`
 }
