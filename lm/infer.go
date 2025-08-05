@@ -73,12 +73,12 @@ func Infer(
 	var thinkingElapsed time.Duration
 	var startEmitting time.Time
 
-	state.IsInfering = true
-	state.ContinueInferingController = true
+	state.IsInferring = true
+	state.ContinueInferringController = true
 
 	res, err := state.Lm.Predict(finalPrompt, llama.SetTokenCallback(func(token string) bool {
 		streamDeltaMsg(ntokens, token, enc, c, params, startThinking, &thinkingElapsed, &startEmitting)
-		return state.ContinueInferingController
+		return state.ContinueInferringController
 	}),
 		llama.SetTokens(params.NPredict),
 		llama.SetThreads(params.Threads),
@@ -92,21 +92,21 @@ func Infer(
 		llama.SetRopeFreqBase(1e6),
 	)
 
-	state.IsInfering = false
+	state.IsInferring = false
 
 	if err != nil {
-		state.ContinueInferingController = false
+		state.ContinueInferringController = false
 		errCh <- createErrorMessage(ntokens+1, "inference error")
 	}
 
-	if !state.ContinueInferingController {
+	if !state.ContinueInferringController {
 		return
 	}
 
 	if params.Stream {
 		err := sendLlamaStreamTermination(c)
 		if err != nil {
-			state.ContinueInferingController = false
+			state.ContinueInferringController = false
 			errCh <- createErrorMessage(ntokens+1, "cannot send stream termination")
 			fmt.Printf("Error sending stream termination: %v\n", err)
 		}
@@ -115,11 +115,11 @@ func Infer(
 	stats, _ := calculateStats(ntokens, thinkingElapsed, startEmitting) // Ignore tps return value
 	endmsg, err := createResult(res, stats, enc, c, params)
 	if err != nil {
-		state.ContinueInferingController = false
+		state.ContinueInferringController = false
 		errCh <- createErrorMessage(ntokens+1, "cannot create result msg")
 	}
 
-	if state.ContinueInferingController {
+	if state.ContinueInferringController {
 		ch <- endmsg
 	}
 }
@@ -154,12 +154,12 @@ func streamDeltaMsg(ntokens int, token string, enc *json.Encoder, c echo.Context
 		err := sendStartEmittingMessage(enc, c, params, ntokens, *thinkingElapsed)
 		if err != nil {
 			fmt.Printf("Error emitting msg: %v\n", err)
-			state.ContinueInferingController = false
+			state.ContinueInferringController = false
 			return err
 		}
 	}
 
-	if !state.ContinueInferingController {
+	if !state.ContinueInferringController {
 		return nil
 	}
 
@@ -187,7 +187,7 @@ func streamDeltaMsg(ntokens int, token string, enc *json.Encoder, c echo.Context
 
 // sendStartEmittingMessage sends the start_emitting message to the client
 func sendStartEmittingMessage(enc *json.Encoder, c echo.Context, params types.InferenceParams, ntokens int, thinkingElapsed time.Duration) error {
-	if !params.Stream || !state.ContinueInferingController {
+	if !params.Stream || !state.ContinueInferringController {
 		return nil
 	}
 
@@ -291,13 +291,13 @@ func createResult(res string, stats types.InferenceStats, enc *json.Encoder, c e
 
 	b, err := json.Marshal(&result)
 	if err != nil {
-		return endmsg, fmt.Errorf("error marshaling result: %w", err)
+		return endmsg, fmt.Errorf("error marshalling result: %w", err)
 	}
 
 	var _res map[string]interface{}
 	err = json.Unmarshal(b, &_res)
 	if err != nil {
-		return endmsg, fmt.Errorf("error unmarshaling result: %w", err)
+		return endmsg, fmt.Errorf("error unmarshalling result: %w", err)
 	}
 
 	endmsg = types.StreamedMessage{

@@ -59,7 +59,7 @@ func LoadModel(model string, params llama.ModelOptions) (int, error) {
 		if state.IsDebug {
 			jsonData, err := json.MarshalIndent(params, "", "  ")
 			if err != nil {
-				return 500, fmt.Errorf("error marshaling model params: %w", err)
+				return 500, fmt.Errorf("error marshalling model params: %w", err)
 			}
 			fmt.Println(string(jsonData))
 		}
