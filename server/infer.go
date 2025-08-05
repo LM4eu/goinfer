@@ -178,7 +178,7 @@ func setModelOptions(modelConf types.ModelConf) error {
 
 // InferHandler handles inference requests
 func InferHandler(c echo.Context) error {
-	if state.IsInfering {
+	if state.IsInferring {
 		fmt.Println("An inference query is already running")
 		return c.NoContent(http.StatusAccepted)
 	}
@@ -272,20 +272,20 @@ func InferHandler(c echo.Context) error {
 		return nil
 	case <-c.Request().Context().Done():
 		fmt.Println("\nRequest canceled")
-		state.ContinueInferingController = false
+		state.ContinueInferringController = false
 		return c.NoContent(http.StatusNoContent)
 	}
 }
 
 // AbortHandler aborts ongoing inference
 func AbortHandler(c echo.Context) error {
-	if !state.IsInfering {
+	if !state.IsInferring {
 		fmt.Println("No inference running, nothing to abort")
 		return c.NoContent(http.StatusAccepted)
 	}
 	if state.IsVerbose {
 		fmt.Println("Aborting inference")
 	}
-	state.ContinueInferingController = false
+	state.ContinueInferringController = false
 	return c.NoContent(http.StatusNoContent)
 }

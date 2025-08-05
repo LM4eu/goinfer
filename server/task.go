@@ -61,7 +61,7 @@ func ExecuteTaskHandler(c echo.Context) error {
 	
 	task.Template = strings.Replace(task.Template, "{instruction}", instruction, 1)
 	
-	if state.IsInfering {
+	if state.IsInferring {
 		fmt.Println("An inference query is already running")
 		return c.NoContent(http.StatusAccepted)
 	}
@@ -124,7 +124,7 @@ case err, ok := <-errCh:
 		return nil
 	case <-c.Request().Context().Done():
 		fmt.Println("\nRequest canceled")
-		state.ContinueInferingController = false
+		state.ContinueInferringController = false
 		return c.NoContent(http.StatusNoContent)
 	}
 }
