@@ -56,6 +56,9 @@ func addPath(root *Node, path string) {
 
 func ReadTasks(rootPath string) ([]*Node, error) {
 	keyCounter = 0
+
+	// Clean the root path to ensure consistent handling
+	rootPath = filepath.Clean(rootPath)
 	root := NewNode(filepath.Base(rootPath), "")
 	relRootPath := strings.Replace(rootPath, "./", "", 1)
 
@@ -64,9 +67,13 @@ func ReadTasks(rootPath string) ([]*Node, error) {
 			return err
 		}
 
-		if filepath.Ext(path) == ".yml" {
-			p := strings.Replace(path, relRootPath, "", 1)
-			addPath(root, p)
+		if !d.IsDir() && filepath.Ext(path) == ".yml" {
+			// Get relative path from the root path
+			relPath, err := filepath.Rel(relRootPath, path)
+			if err != nil {
+				return err
+			}
+			addPath(root, relPath)
 		}
 
 		return nil
