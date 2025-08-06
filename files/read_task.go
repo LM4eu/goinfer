@@ -17,6 +17,22 @@ func keyExists(m map[string]interface{}, key string) bool {
 	return ok
 }
 
+// convertToInt converts an interface{} to int with support for float64 conversion
+func convertToInt(value interface{}, paramName string, context string) (int, error) {
+	switch v := value.(type) {
+	case int:
+		return v, nil
+	case float64:
+		// Check if the float64 has no fractional part (can be safely converted to int)
+		if v == float64(int(v)) {
+			return int(v), nil
+		}
+		return 0, fmt.Errorf("%s %s must be an integer or a float64 without fractional part, got %f", context, paramName, v)
+	default:
+		return 0, fmt.Errorf("%s %s must be an integer or float64, got %T", context, paramName, value)
+	}
+}
+
 // convertTask converts a map to a Task type with proper error handling
 func convertTask(m map[string]interface{}) (types.Task, error) {
 	// Validate required fields
@@ -47,14 +63,20 @@ func convertTask(m map[string]interface{}) (types.Task, error) {
 						case "name":
 							if name, ok := v.(string); ok {
 								task.ModelConf.Name = name
+							} else {
+								return types.Task{}, fmt.Errorf("modelConf name must be a string, got %T", v)
 							}
 						case "ctx":
-							if ctx, ok := v.(int); ok {
-								task.ModelConf.Ctx = int(ctx)
+							if ctx, err := convertToInt(v, "ctx", "modelConf"); err != nil {
+								return types.Task{}, err
+							} else {
+								task.ModelConf.Ctx = ctx
 							}
 						case "gpu_layers":
-							if gpuLayers, ok := v.(int); ok {
-								task.ModelConf.GPULayers = int(gpuLayers)
+							if gpuLayers, err := convertToInt(v, "gpu_layers", "modelConf"); err != nil {
+								return types.Task{}, err
+							} else {
+								task.ModelConf.GPULayers = gpuLayers
 							}
 						}
 					}
@@ -74,42 +96,62 @@ func convertTask(m map[string]interface{}) (types.Task, error) {
 						case "stream":
 							if stream, ok := v.(bool); ok {
 								ip.Stream = stream
+							} else {
+								return types.Task{}, fmt.Errorf("inferParams stream must be a boolean, got %T", v)
 							}
 						case "threads":
-							if threads, ok := v.(int); ok {
-								ip.Threads = int(threads)
+							if threads, err := convertToInt(v, "threads", "inferParams"); err != nil {
+								return types.Task{}, err
+							} else {
+								ip.Threads = threads
 							}
 						case "n_predict":
-							if npredict, ok := v.(int); ok {
-								ip.NPredict = int(npredict)
+							if npredict, err := convertToInt(v, "n_predict", "inferParams"); err != nil {
+								return types.Task{}, err
+							} else {
+								ip.NPredict = npredict
 							}
 						case "top_k":
-							if topk, ok := v.(int); ok {
-								ip.TopK = int(topk)
+							if topk, err := convertToInt(v, "top_k", "inferParams"); err != nil {
+								return types.Task{}, err
+							} else {
+								ip.TopK = topk
 							}
 						case "top_p":
 							if topp, ok := v.(float64); ok {
 								ip.TopP = float32(topp)
+							} else {
+								return types.Task{}, fmt.Errorf("inferParams top_p must be a float64, got %T", v)
 							}
 						case "temperature":
 							if temp, ok := v.(float64); ok {
 								ip.Temperature = float32(temp)
+							} else {
+								return types.Task{}, fmt.Errorf("inferParams temperature must be a float64, got %T", v)
 							}
 						case "frequency_penalty":
 							if freqPenalty, ok := v.(float64); ok {
 								ip.FrequencyPenalty = float32(freqPenalty)
+							} else {
+								return types.Task{}, fmt.Errorf("inferParams frequency_penalty must be a float64, got %T", v)
 							}
 						case "presence_penalty":
 							if presPenalty, ok := v.(float64); ok {
 								ip.PresencePenalty = float32(presPenalty)
+							} else {
+								return types.Task{}, fmt.Errorf("inferParams presence_penalty must be a float64, got %T", v)
 							}
 						case "repeat_penalty":
 							if repeatPenalty, ok := v.(float64); ok {
 								ip.RepeatPenalty = float32(repeatPenalty)
+							} else {
+								return types.Task{}, fmt.Errorf("inferParams repeat_penalty must be a float64, got %T", v)
 							}
 						case "tfs_z":
 							if tfs, ok := v.(float64); ok {
 								ip.TailFreeSamplingZ = float32(tfs)
+							} else {
+								return types.Task{}, fmt.Errorf("inferParams tfs_z must be a float64, got %T", v)
 							}
 						case "stop":
 							if stopSlice, ok := v.([]interface{}); ok {
@@ -118,6 +160,8 @@ func convertTask(m map[string]interface{}) (types.Task, error) {
 									stop[i] = fmt.Sprint(val)
 								}
 								ip.StopPrompts = stop
+							} else {
+								return types.Task{}, fmt.Errorf("inferParams stop must be a slice, got %T", v)
 							}
 						}
 					}
