@@ -1,0 +1,13 @@
+name: special-chars_task_123
+template: |-
+    Special: {prompt}
+    With: "quotes" and 'apostrophes'
+modelConf:
+    name: model-with-dashes
+inferParams:
+    stream: true
+    stop:
+        - STOP
+        - END
+        - |4+
+

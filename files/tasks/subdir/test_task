@@ -1,0 +1,15 @@
+name: subdir/test_task
+template: |-
+    {system}
+
+    {prompt}
+modelConf:
+    name: test_model
+    ctx: 4096
+inferParams:
+    stream: true
+    threads: 8
+    n_predict: 200
+    top_k: 50
+    top_p: 0.95
+    temperature: 0.8

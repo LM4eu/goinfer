@@ -1,0 +1,5 @@
+name: minimal_task
+template: '{prompt}'
+modelConf:
+    name: ""
+inferParams: {}
