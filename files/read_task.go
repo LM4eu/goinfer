@@ -49,11 +49,11 @@ func convertTask(m map[string]interface{}) (types.Task, error) {
 								task.ModelConf.Name = name
 							}
 						case "ctx":
-							if ctx, ok := v.(float64); ok {
+							if ctx, ok := v.(int); ok {
 								task.ModelConf.Ctx = int(ctx)
 							}
 						case "gpu_layers":
-							if gpuLayers, ok := v.(float64); ok {
+							if gpuLayers, ok := v.(int); ok {
 								task.ModelConf.GPULayers = int(gpuLayers)
 							}
 						}
@@ -71,16 +71,20 @@ func convertTask(m map[string]interface{}) (types.Task, error) {
 				if paramData, ok := param.(map[string]interface{}); ok {
 					for k, v := range paramData {
 						switch k {
+						case "stream":
+							if stream, ok := v.(bool); ok {
+								ip.Stream = stream
+							}
 						case "threads":
-							if threads, ok := v.(float64); ok {
+							if threads, ok := v.(int); ok {
 								ip.Threads = int(threads)
 							}
 						case "n_predict":
-							if npredict, ok := v.(float64); ok {
+							if npredict, ok := v.(int); ok {
 								ip.NPredict = int(npredict)
 							}
 						case "top_k":
-							if topk, ok := v.(float64); ok {
+							if topk, ok := v.(int); ok {
 								ip.TopK = int(topk)
 							}
 						case "top_p":
@@ -139,23 +143,23 @@ func ReadTask(path string) (bool, types.Task, error) {
 
 	file, err := os.Open(p)
 	if err != nil {
-		return true, t, fmt.Errorf("failed to open task file %s: %w", p, err)
+		return false, t, fmt.Errorf("failed to open task file %s: %w", p, err)
 	}
 	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		return true, t, fmt.Errorf("failed to read task file %s: %w", p, err)
+		return false, t, fmt.Errorf("failed to read task file %s: %w", p, err)
 	}
 
 	err = yaml.Unmarshal([]byte(data), &m)
 	if err != nil {
-		return true, t, fmt.Errorf("failed to unmarshal task file %s: %w", p, err)
+		return false, t, fmt.Errorf("failed to unmarshal task file %s: %w", p, err)
 	}
 
 	t, err = convertTask(m)
 	if err != nil {
-		return true, t, fmt.Errorf("failed to convert task from file %s: %w", p, err)
+		return false, t, fmt.Errorf("failed to convert task from file %s: %w", p, err)
 	}
 
 	return true, t, nil
