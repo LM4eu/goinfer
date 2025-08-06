@@ -1,0 +1,5 @@
+name: readonly/test_task
+template: '{prompt}'
+modelConf:
+    name: test_model
+inferParams: {}
