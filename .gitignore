@@ -1,5 +1,5 @@
 /go-llama.cpp
-goinfer.config.json
+goinfer.json
 goinfer
 /tasks
 /server/dist/*
