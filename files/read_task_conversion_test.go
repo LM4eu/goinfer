@@ -2,6 +2,7 @@ package files
 
 import (
 	"testing"
+
 	"github.com/synw/goinfer/types"
 )
 
@@ -31,9 +32,9 @@ func TestConvertTask_Float64ToIntConversion(t *testing.T) {
 				Template:  "test_template",
 				ModelConf: types.ModelConf{Name: "test_model", Ctx: 5, GPULayers: 0},
 				InferParams: types.InferenceParams{
-					Threads:  4, // default value
+					Threads:  4,   // default value
 					NPredict: 512, // default value
-					TopK:     40, // default value
+					TopK:     40,  // default value
 				},
 			},
 		},
@@ -55,9 +56,9 @@ func TestConvertTask_Float64ToIntConversion(t *testing.T) {
 				Template:  "test_template",
 				ModelConf: types.ModelConf{Name: "test_model", Ctx: 2048, GPULayers: 3}, // Ctx uses default value
 				InferParams: types.InferenceParams{
-					Threads:  4, // default value
+					Threads:  4,   // default value
 					NPredict: 512, // default value
-					TopK:     40, // default value
+					TopK:     40,  // default value
 				},
 			},
 		},
@@ -76,7 +77,7 @@ func TestConvertTask_Float64ToIntConversion(t *testing.T) {
 			expected: &types.Task{
 				Name:        "test_task",
 				Template:    "test_template",
-				ModelConf:   types.ModelConf{Ctx: 2048, GPULayers: 0}, // default values
+				ModelConf:   types.ModelConf{Ctx: 2048, GPULayers: 0},                   // default values
 				InferParams: types.InferenceParams{Threads: 4, NPredict: 512, TopK: 40}, // other fields use default values
 			},
 		},
@@ -95,7 +96,7 @@ func TestConvertTask_Float64ToIntConversion(t *testing.T) {
 			expected: &types.Task{
 				Name:        "test_task",
 				Template:    "test_template",
-				ModelConf:   types.ModelConf{Ctx: 2048, GPULayers: 0}, // default values
+				ModelConf:   types.ModelConf{Ctx: 2048, GPULayers: 0},                   // default values
 				InferParams: types.InferenceParams{Threads: 4, NPredict: 100, TopK: 40}, // other fields use default values
 			},
 		},
@@ -114,7 +115,7 @@ func TestConvertTask_Float64ToIntConversion(t *testing.T) {
 			expected: &types.Task{
 				Name:        "test_task",
 				Template:    "test_template",
-				ModelConf:   types.ModelConf{Ctx: 2048, GPULayers: 0}, // default values
+				ModelConf:   types.ModelConf{Ctx: 2048, GPULayers: 0},                   // default values
 				InferParams: types.InferenceParams{Threads: 4, NPredict: 512, TopK: 40}, // other fields use default values
 			},
 		},
@@ -167,24 +168,24 @@ func TestConvertTask_Float64ToIntConversion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			task, err := convertTask(tt.input)
-			
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("convertTask() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			
+
 			if tt.wantErr {
 				if err.Error() != tt.errMsg {
 					t.Errorf("convertTask() error message = %v, want %v", err.Error(), tt.errMsg)
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("convertTask() unexpected error = %v", err)
 				return
 			}
-			
+
 			// Compare the task fields
 			if task.Name != tt.expected.Name {
 				t.Errorf("convertTask() Name = %v, want %v", task.Name, tt.expected.Name)

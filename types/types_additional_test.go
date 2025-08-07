@@ -1,8 +1,9 @@
 package types
 
 import (
-	"testing"
 	"encoding/json"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -92,10 +93,10 @@ func TestMsgTypeConstants(t *testing.T) {
 func TestStreamedMessage(t *testing.T) {
 	// Test creating a StreamedMessage
 	data := map[string]interface{}{
-		"model": "test-model",
+		"model":     "test-model",
 		"timestamp": 1234567890,
 	}
-	
+
 	streamedMsg := StreamedMessage{
 		Content: "test content",
 		Num:     10,
@@ -177,9 +178,9 @@ func TestInferenceResultJSONMarshaling(t *testing.T) {
 func TestTaskJSONMarshaling(t *testing.T) {
 	// Test JSON marshaling and unmarshaling for Task
 	task := Task{
-		Name:      "test-task",
-		Template:  "test-template",
-		ModelConf: ModelConf{Name: "test-model"},
+		Name:        "test-task",
+		Template:    "test-template",
+		ModelConf:   ModelConf{Name: "test-model"},
 		InferParams: NewInferenceParams(),
 	}
 

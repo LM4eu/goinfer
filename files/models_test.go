@@ -30,11 +30,11 @@ func TestReadModels(t *testing.T) {
 
 	for _, tf := range testFiles {
 		if tf.isDir {
-			err := os.Mkdir(filepath.Join(tempDir, tf.name), 0755)
+			err := os.Mkdir(filepath.Join(tempDir, tf.name), 0o755)
 			require.NoError(t, err)
 		} else {
 			filePath := filepath.Join(tempDir, tf.name)
-			err := os.WriteFile(filePath, []byte(tf.content), 0644)
+			err := os.WriteFile(filePath, []byte(tf.content), 0o644)
 			require.NoError(t, err)
 		}
 	}
@@ -96,7 +96,7 @@ func TestReadModelsOnlyYMLFiles(t *testing.T) {
 
 	for _, file := range testFiles {
 		filePath := filepath.Join(tempDir, file)
-		err := os.WriteFile(filePath, []byte("test content"), 0644)
+		err := os.WriteFile(filePath, []byte("test content"), 0o644)
 		require.NoError(t, err)
 	}
 
@@ -128,7 +128,7 @@ func TestReadModelsMixedFiles(t *testing.T) {
 
 	for _, file := range testFiles {
 		filePath := filepath.Join(tempDir, file)
-		err := os.WriteFile(filePath, []byte("test content"), 0644)
+		err := os.WriteFile(filePath, []byte("test content"), 0o644)
 		require.NoError(t, err)
 	}
 
@@ -166,13 +166,13 @@ func TestReadModelsDirectoryWithSubdirectories(t *testing.T) {
 
 	for _, file := range testFiles {
 		filePath := filepath.Join(tempDir, file)
-		err := os.WriteFile(filePath, []byte("test content"), 0644)
+		err := os.WriteFile(filePath, []byte("test content"), 0o644)
 		require.NoError(t, err)
 	}
 
 	// Create subdirectory with files
 	subDir := filepath.Join(tempDir, "subdir")
-	err := os.Mkdir(subDir, 0755)
+	err := os.Mkdir(subDir, 0o755)
 	require.NoError(t, err)
 
 	subFiles := []string{
@@ -183,7 +183,7 @@ func TestReadModelsDirectoryWithSubdirectories(t *testing.T) {
 
 	for _, file := range subFiles {
 		filePath := filepath.Join(subDir, file)
-		err := os.WriteFile(filePath, []byte("test content"), 0644)
+		err := os.WriteFile(filePath, []byte("test content"), 0o644)
 		require.NoError(t, err)
 	}
 
@@ -219,7 +219,7 @@ func TestReadModelsFileSorting(t *testing.T) {
 	for _, tf := range testFiles {
 		filePath := filepath.Join(tempDir, tf.name)
 		content := make([]byte, tf.size)
-		err := os.WriteFile(filePath, content, 0644)
+		err := os.WriteFile(filePath, content, 0o644)
 		require.NoError(t, err)
 	}
 
@@ -254,12 +254,12 @@ func TestReadModelsPermissionError(t *testing.T) {
 
 	for _, file := range testFiles {
 		filePath := filepath.Join(tempDir, file)
-		err := os.WriteFile(filePath, []byte("test content"), 0644)
+		err := os.WriteFile(filePath, []byte("test content"), 0o644)
 		require.NoError(t, err)
 	}
 
 	// Remove read permission from directory
-	err := os.Chmod(tempDir, 0000)
+	err := os.Chmod(tempDir, 0o000)
 	require.NoError(t, err)
 
 	// Test ReadModels function
@@ -272,7 +272,7 @@ func TestReadModelsPermissionError(t *testing.T) {
 	assert.Empty(t, models)
 
 	// Restore permissions for cleanup
-	_ = os.Chmod(tempDir, 0755)
+	_ = os.Chmod(tempDir, 0o755)
 }
 
 func TestReadModelsLargeNumberOfFiles(t *testing.T) {
@@ -281,10 +281,10 @@ func TestReadModelsLargeNumberOfFiles(t *testing.T) {
 
 	// Create many test files
 	numFiles := 100
-	for i := 0; i < numFiles; i++ {
+	for i := range numFiles {
 		fileName := fmt.Sprintf("model%d.bin", i)
 		filePath := filepath.Join(tempDir, fileName)
-		err := os.WriteFile(filePath, []byte("test content"), 0644)
+		err := os.WriteFile(filePath, []byte("test content"), 0o644)
 		require.NoError(t, err)
 	}
 
@@ -298,7 +298,7 @@ func TestReadModelsLargeNumberOfFiles(t *testing.T) {
 	assert.Len(t, models, numFiles)
 
 	// Verify files are sorted by size (all same size, so order may vary)
-	for i := 0; i < numFiles; i++ {
+	for i := range numFiles {
 		assert.Contains(t, models, fmt.Sprintf("model%d.bin", i))
 	}
 }

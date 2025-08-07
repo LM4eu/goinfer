@@ -23,6 +23,7 @@ func SaveTask(task types.Task) error {
 	if !strings.HasSuffix(baseName, ".yml") {
 		baseName += ".yml"
 	}
+
 	filePath := filepath.Join(state.TasksDir, taskName)
 	// But we need to ensure the file path has .yml extension
 	if !strings.HasSuffix(filePath, ".yml") {
@@ -34,13 +35,13 @@ func SaveTask(task types.Task) error {
 		}
 		filePath = filepath.Join(dir, base)
 	}
-	
+
 	// Create a copy of the task with normalized name for YAML serialization
 	taskForYAML := task
 	taskForYAML.Name = baseName
-	
+
 	// Create directory if it doesn't exist
-	err := os.MkdirAll(filepath.Dir(filePath), 0755)
+	err := os.MkdirAll(filepath.Dir(filePath), 0o755)
 	if err != nil {
 		return err
 	}
@@ -61,8 +62,10 @@ func SaveTask(task types.Task) error {
 	if err != nil {
 		return err
 	}
+
 	if state.IsVerbose {
 		fmt.Println("Task", task.Name, "file successfully")
 	}
+
 	return nil
 }

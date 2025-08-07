@@ -3,9 +3,9 @@ package state
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/synw/goinfer/llama"
 	"github.com/synw/goinfer/types"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestStateInitialization(t *testing.T) {
@@ -20,7 +20,7 @@ func TestStateInitialization(t *testing.T) {
 	assert.False(t, IsDebug)
 	assert.Equal(t, "./tasks", TasksDir)
 	assert.Equal(t, types.OpenAiConf{}, OpenAiConf)
-	
+
 	// Test that Lm is initialized as empty LLama
 	var expectedLm llama.LLama
 	assert.Equal(t, expectedLm, Lm)
@@ -38,7 +38,7 @@ func TestStateModification(t *testing.T) {
 	originalIsDebug := IsDebug
 	originalTasksDir := TasksDir
 	originalOpenAiConf := OpenAiConf
-	
+
 	// Modify state variables
 	ModelsDir = "/test/models"
 	IsModelLoaded = true
@@ -50,7 +50,7 @@ func TestStateModification(t *testing.T) {
 	IsDebug = true
 	TasksDir = "/test/tasks"
 	OpenAiConf = types.OpenAiConf{Enable: true, Threads: 8, Template: "custom template"}
-	
+
 	// Assert modifications
 	assert.Equal(t, "/test/models", ModelsDir)
 	assert.True(t, IsModelLoaded)
@@ -62,7 +62,7 @@ func TestStateModification(t *testing.T) {
 	assert.True(t, IsDebug)
 	assert.Equal(t, "/test/tasks", TasksDir)
 	assert.Equal(t, types.OpenAiConf{Enable: true, Threads: 8, Template: "custom template"}, OpenAiConf)
-	
+
 	// Restore original values
 	ModelsDir = originalModelsDir
 	IsModelLoaded = originalIsModelLoaded
@@ -82,11 +82,11 @@ func TestStateConcurrentAccess(t *testing.T) {
 	IsModelLoaded = false
 	ContinueInferringController = true
 	IsInferring = false
-	
+
 	// Use channels to synchronize goroutines
 	writeDone := make(chan bool)
 	readDone := make(chan bool)
-	
+
 	// Goroutine 1: Modify state
 	go func() {
 		IsModelLoaded = true
@@ -94,23 +94,23 @@ func TestStateConcurrentAccess(t *testing.T) {
 		ContinueInferringController = false
 		writeDone <- true
 	}()
-	
+
 	// Wait for write to complete before reading
 	<-writeDone
-	
+
 	// Goroutine 2: Read state
 	go func() {
 		modelLoaded := IsModelLoaded
 		loadedModel := LoadedModel
 		continueInferring := ContinueInferringController
-		
+
 		// Assert values after modification
 		assert.True(t, modelLoaded)
 		assert.Equal(t, "concurrent_model", loadedModel)
 		assert.False(t, continueInferring)
 		readDone <- true
 	}()
-	
+
 	// Wait for read to complete
 	<-readDone
 }
@@ -118,7 +118,7 @@ func TestStateConcurrentAccess(t *testing.T) {
 func TestStateModelOptions(t *testing.T) {
 	// Test ModelOptions state variable
 	originalModelOptions := ModelOptions
-	
+
 	// Modify ModelOptions
 	ModelOptions = llama.ModelOptions{
 		ContextSize:   8192,
@@ -136,7 +136,7 @@ func TestStateModelOptions(t *testing.T) {
 		FreqRopeBase:  10000,
 		FreqRopeScale: 1.0,
 	}
-	
+
 	// Assert modification
 	assert.Equal(t, llama.ModelOptions{
 		ContextSize:   8192,
@@ -154,7 +154,7 @@ func TestStateModelOptions(t *testing.T) {
 		FreqRopeBase:  10000,
 		FreqRopeScale: 1.0,
 	}, ModelOptions)
-	
+
 	// Restore original value
 	ModelOptions = originalModelOptions
 }
@@ -163,26 +163,26 @@ func TestStateInferenceFlags(t *testing.T) {
 	// Test inference-related state flags
 	originalIsInferring := IsInferring
 	originalContinueInferringController := ContinueInferringController
-	
+
 	// Test inference start
 	IsInferring = true
 	ContinueInferringController = true
-	
+
 	assert.True(t, IsInferring)
 	assert.True(t, ContinueInferringController)
-	
+
 	// Test inference abort
 	ContinueInferringController = false
-	
+
 	assert.True(t, IsInferring)
 	assert.False(t, ContinueInferringController)
-	
+
 	// Test inference end
 	IsInferring = false
-	
+
 	assert.False(t, IsInferring)
 	assert.False(t, ContinueInferringController)
-	
+
 	// Restore original values
 	IsInferring = originalIsInferring
 	ContinueInferringController = originalContinueInferringController
@@ -192,35 +192,35 @@ func TestStateDebugAndVerboseFlags(t *testing.T) {
 	// Test debug and verbose flags
 	originalIsVerbose := IsVerbose
 	originalIsDebug := IsDebug
-	
+
 	// Test verbose mode
 	IsVerbose = true
 	IsDebug = false
-	
+
 	assert.True(t, IsVerbose)
 	assert.False(t, IsDebug)
-	
+
 	// Test debug mode
 	IsVerbose = false
 	IsDebug = true
-	
+
 	assert.False(t, IsVerbose)
 	assert.True(t, IsDebug)
-	
+
 	// Test both modes
 	IsVerbose = true
 	IsDebug = true
-	
+
 	assert.True(t, IsVerbose)
 	assert.True(t, IsDebug)
-	
+
 	// Test neither mode
 	IsVerbose = false
 	IsDebug = false
-	
+
 	assert.False(t, IsVerbose)
 	assert.False(t, IsDebug)
-	
+
 	// Restore original values
 	IsVerbose = originalIsVerbose
 	IsDebug = originalIsDebug
@@ -229,13 +229,13 @@ func TestStateDebugAndVerboseFlags(t *testing.T) {
 func TestStateTasksDirectory(t *testing.T) {
 	// Test TasksDir state variable
 	originalTasksDir := TasksDir
-	
+
 	// Modify TasksDir
 	TasksDir = "/custom/tasks/path"
-	
+
 	// Assert modification
 	assert.Equal(t, "/custom/tasks/path", TasksDir)
-	
+
 	// Restore original value
 	TasksDir = originalTasksDir
 }
@@ -243,21 +243,21 @@ func TestStateTasksDirectory(t *testing.T) {
 func TestStateOpenAiConfiguration(t *testing.T) {
 	// Test OpenAiConf state variable
 	originalOpenAiConf := OpenAiConf
-	
+
 	// Modify OpenAiConf
 	OpenAiConf = types.OpenAiConf{
 		Enable:   true,
 		Threads:  16,
 		Template: "custom openai template",
 	}
-	
+
 	// Assert modification
 	assert.Equal(t, types.OpenAiConf{
 		Enable:   true,
 		Threads:  16,
 		Template: "custom openai template",
 	}, OpenAiConf)
-	
+
 	// Restore original value
 	OpenAiConf = originalOpenAiConf
 }
@@ -267,25 +267,25 @@ func TestStateModelLoadedState(t *testing.T) {
 	originalIsModelLoaded := IsModelLoaded
 	originalLoadedModel := LoadedModel
 	originalModelOptions := ModelOptions
-	
+
 	// Test model loaded state
 	IsModelLoaded = true
 	LoadedModel = "test_model.bin"
 	ModelOptions = llama.ModelOptions{ContextSize: 2048}
-	
+
 	assert.True(t, IsModelLoaded)
 	assert.Equal(t, "test_model.bin", LoadedModel)
 	assert.Equal(t, llama.ModelOptions{ContextSize: 2048}, ModelOptions)
-	
+
 	// Test model unloaded state
 	IsModelLoaded = false
 	LoadedModel = ""
 	ModelOptions = llama.ModelOptions{}
-	
+
 	assert.False(t, IsModelLoaded)
 	assert.Equal(t, "", LoadedModel)
 	assert.Equal(t, llama.ModelOptions{}, ModelOptions)
-	
+
 	// Restore original values
 	IsModelLoaded = originalIsModelLoaded
 	LoadedModel = originalLoadedModel
@@ -295,18 +295,18 @@ func TestStateModelLoadedState(t *testing.T) {
 func TestStateLLamaInstance(t *testing.T) {
 	// Test Lm state variable
 	originalLm := Lm
-	
+
 	// Test setting LLama instance
 	var testLm llama.LLama = "test_model_path"
 	Lm = testLm
-	
+
 	assert.Equal(t, testLm, Lm)
-	
+
 	// Test clearing LLama instance
 	Lm = llama.LLama("")
-	
+
 	assert.Equal(t, llama.LLama(""), Lm)
-	
+
 	// Restore original value
 	Lm = originalLm
 }

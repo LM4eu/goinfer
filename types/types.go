@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-// Default values for InferenceParams
+// Default values for InferenceParams.
 const (
 	DefaultThreads           = 4
 	DefaultNPredict          = 512
@@ -16,7 +16,7 @@ const (
 	DefaultStopPrompt        = "</s>"
 )
 
-// GoInferConf holds the configuration for GoInfer
+// GoInferConf holds the configuration for GoInfer.
 type GoInferConf struct {
 	ModelsDir  string
 	TasksDir   string
@@ -25,22 +25,22 @@ type GoInferConf struct {
 	OpenAiConf OpenAiConf
 }
 
-// InferenceParams holds parameters for inference
+// InferenceParams holds parameters for inference.
 type InferenceParams struct {
-	Stream            bool     `json:"stream,omitempty" yaml:"stream,omitempty"`
-	Threads           int      `json:"threads,omitempty" yaml:"threads,omitempty"`
-	NPredict          int      `json:"n_predict,omitempty" yaml:"n_predict,omitempty"`
-	TopK              int      `json:"top_k,omitempty" yaml:"top_k,omitempty"`
-	TopP              float32  `json:"top_p,omitempty" yaml:"top_p,omitempty"`
-	Temperature       float32  `json:"temperature,omitempty" yaml:"temperature,omitempty"`
+	Stream            bool     `json:"stream,omitempty"            yaml:"stream,omitempty"`
+	Threads           int      `json:"threads,omitempty"           yaml:"threads,omitempty"`
+	NPredict          int      `json:"n_predict,omitempty"         yaml:"n_predict,omitempty"`
+	TopK              int      `json:"top_k,omitempty"             yaml:"top_k,omitempty"`
+	TopP              float32  `json:"top_p,omitempty"             yaml:"top_p,omitempty"`
+	Temperature       float32  `json:"temperature,omitempty"       yaml:"temperature,omitempty"`
 	FrequencyPenalty  float32  `json:"frequency_penalty,omitempty" yaml:"frequency_penalty,omitempty"`
-	PresencePenalty   float32  `json:"presence_penalty,omitempty" yaml:"presence_penalty,omitempty"`
-	RepeatPenalty     float32  `json:"repeat_penalty,omitempty" yaml:"repeat_penalty,omitempty"`
-	TailFreeSamplingZ float32  `json:"tfs_z,omitempty" yaml:"tfs_z,omitempty"`
-	StopPrompts       []string `json:"stop,omitempty" yaml:"stop,omitempty"`
+	PresencePenalty   float32  `json:"presence_penalty,omitempty"  yaml:"presence_penalty,omitempty"`
+	RepeatPenalty     float32  `json:"repeat_penalty,omitempty"    yaml:"repeat_penalty,omitempty"`
+	TailFreeSamplingZ float32  `json:"tfs_z,omitempty"             yaml:"tfs_z,omitempty"`
+	StopPrompts       []string `json:"stop,omitempty"              yaml:"stop,omitempty"`
 }
 
-// NewInferenceParams creates a new InferenceParams with default values
+// NewInferenceParams creates a new InferenceParams with default values.
 func NewInferenceParams() InferenceParams {
 	return InferenceParams{
 		Stream:            false,
@@ -57,7 +57,7 @@ func NewInferenceParams() InferenceParams {
 	}
 }
 
-// Validate validates the InferenceParams and returns an error if invalid
+// Validate validates the InferenceParams and returns an error if invalid.
 func (p InferenceParams) Validate() error {
 	// Threads must be positive if set
 	if p.Threads <= 0 {
@@ -86,7 +86,7 @@ func (p InferenceParams) Validate() error {
 	return nil
 }
 
-// Clone creates a deep copy of InferenceParams
+// Clone creates a deep copy of InferenceParams.
 func (p InferenceParams) Clone() InferenceParams {
 	// Create a copy of the slice to avoid sharing references
 	var stopPrompts []string
@@ -94,7 +94,7 @@ func (p InferenceParams) Clone() InferenceParams {
 		stopPrompts = make([]string, len(p.StopPrompts))
 		copy(stopPrompts, p.StopPrompts)
 	}
-	
+
 	return InferenceParams{
 		Stream:            p.Stream,
 		Threads:           p.Threads,
@@ -110,7 +110,7 @@ func (p InferenceParams) Clone() InferenceParams {
 	}
 }
 
-// InferenceStats holds statistics about inference
+// InferenceStats holds statistics about inference.
 type InferenceStats struct {
 	ThinkingTime       float64 `json:"thinkingTime"`
 	ThinkingTimeFormat string  `json:"thinkingTimeFormat"`
@@ -122,34 +122,34 @@ type InferenceStats struct {
 	TotalTokens        int     `json:"totalTokens"`
 }
 
-// InferenceResult holds the result of inference
+// InferenceResult holds the result of inference.
 type InferenceResult struct {
 	Text  string         `json:"text"`
 	Stats InferenceStats `json:"stats"`
 }
 
-// Task represents a task to be executed
+// Task represents a task to be executed.
 type Task struct {
-	Name        string          `json:"name" yaml:"name"`
-	Template    string          `json:"template" yaml:"template"`
-	ModelConf   ModelConf       `json:"modelConf" yaml:"modelConf"`
+	Name        string          `json:"name"        yaml:"name"`
+	Template    string          `json:"template"    yaml:"template"`
+	ModelConf   ModelConf       `json:"modelConf"   yaml:"modelConf"`
 	InferParams InferenceParams `json:"inferParams" yaml:"inferParams"`
 }
 
-// ModelConf holds configuration for a model
+// ModelConf holds configuration for a model.
 type ModelConf struct {
-	Name      string `json:"name" yaml:"name"`
-	Ctx       int    `json:"ctx,omitempty" yaml:"ctx,omitempty"`
+	Name      string `json:"name"                 yaml:"name"`
+	Ctx       int    `json:"ctx,omitempty"        yaml:"ctx,omitempty"`
 	GPULayers int    `json:"gpu_layers,omitempty" yaml:"gpu_layers,omitempty"`
 }
 
-// TemplateInfo holds information about a template
+// TemplateInfo holds information about a template.
 type TemplateInfo struct {
 	Name string `json:"name" yaml:"name"`
-	Ctx  int    `json:"ctx" yaml:"ctx"`
+	Ctx  int    `json:"ctx"  yaml:"ctx"`
 }
 
-// MsgType represents the type of a message
+// MsgType represents the type of a message.
 type MsgType string
 
 const (
@@ -158,7 +158,7 @@ const (
 	ErrorMsgType  MsgType = "error"
 )
 
-// StreamedMessage represents a streamed message
+// StreamedMessage represents a streamed message.
 type StreamedMessage struct {
 	Content string                 `json:"content"`
 	Num     int                    `json:"num"` // number of tokens
@@ -166,7 +166,7 @@ type StreamedMessage struct {
 	Data    map[string]interface{} `json:"data,omitempty"`
 }
 
-// ApiType represents the type of API
+// ApiType represents the type of API.
 type ApiType string
 
 const (

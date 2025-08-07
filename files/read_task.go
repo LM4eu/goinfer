@@ -1,23 +1,23 @@
 package files
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/synw/goinfer/state"
 	"github.com/synw/goinfer/types"
+	"gopkg.in/yaml.v3"
 )
 
-// keyExists checks if a key exists in a map
+// keyExists checks if a key exists in a map.
 func keyExists(m map[string]interface{}, key string) bool {
 	_, ok := m[key]
 	return ok
 }
 
-// convertToInt converts an interface{} to int with support for float64 conversion
+// convertToInt converts an interface{} to int with support for float64 conversion.
 func convertToInt(value interface{}, paramName string, context string) (int, error) {
 	switch v := value.(type) {
 	case int:
@@ -33,17 +33,17 @@ func convertToInt(value interface{}, paramName string, context string) (int, err
 	}
 }
 
-// convertTask converts a map to a Task type with proper error handling
+// convertTask converts a map to a Task type with proper error handling.
 func convertTask(m map[string]interface{}) (types.Task, error) {
 	// Validate required fields
 	name, ok := m["name"].(string)
 	if !ok {
-		return types.Task{}, fmt.Errorf("task name is required and must be a string")
+		return types.Task{}, errors.New("task name is required and must be a string")
 	}
 
 	template, ok := m["template"].(string)
 	if !ok {
-		return types.Task{}, fmt.Errorf("task template is required and must be a string")
+		return types.Task{}, errors.New("task template is required and must be a string")
 	}
 
 	task := types.Task{
@@ -171,16 +171,18 @@ func convertTask(m map[string]interface{}) (types.Task, error) {
 	}
 
 	task.InferParams = ip
+
 	return task, nil
 }
 
-// ReadTask reads a task from a YAML file with proper error handling
+// ReadTask reads a task from a YAML file with proper error handling.
 func ReadTask(path string) (bool, types.Task, error) {
 	m := make(map[string]interface{})
-	//p := filepath.Join(state.TasksDir, path) //TODO
+	// p := filepath.Join(state.TasksDir, path) //TODO
 	p := state.TasksDir + "/" + path
 	_, err := os.Stat(p)
 	var t types.Task
+
 	if os.IsNotExist(err) {
 		return false, t, nil
 	}
