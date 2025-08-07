@@ -12,7 +12,7 @@ import (
 )
 
 func InitConf() types.GoInferConf {
-	viper.SetConfigName("goinfer.config")
+	viper.SetConfigName("goinfer") // goinfer.json
 	viper.AddConfigPath(".")
 	viper.SetDefault("origins", []string{"localhost"})
 	viper.SetDefault("tasks_dir", "./tasks")
@@ -48,7 +48,7 @@ func InitConf() types.GoInferConf {
 
 // Create : create a config file.
 func Create(modelsDir string, isDefault bool) {
-	CreateWithFileName(modelsDir, isDefault, "goinfer.config.json")
+	CreateWithFileName(modelsDir, isDefault, "goinfer.json")
 }
 
 // CreateWithFileName : create a config file with a specific name.

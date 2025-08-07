@@ -29,11 +29,11 @@ func main() {
 
 	if len(*genConfModelsDir) > 0 {
 		conf.Create(*genConfModelsDir, false)
-		fmt.Println("File goinfer.config.json created")
+		fmt.Println("File goinfer.json created")
 		return
 	} else if len(*genLocalConfModelsDir) > 0 {
 		conf.Create(*genLocalConfModelsDir, true)
-		fmt.Println("File goinfer.config.json created")
+		fmt.Println("File goinfer.json created")
 		return
 	}
 
