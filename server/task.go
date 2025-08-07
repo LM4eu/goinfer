@@ -12,13 +12,13 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-// ExecuteTaskHandler executes a saved task
+// ExecuteTaskHandler executes a saved task.
 func ExecuteTaskHandler(c echo.Context) error {
 	m := echo.Map{}
 	if err := c.Bind(&m); err != nil {
 		return fmt.Errorf("failed to bind task execution parameters: %w", err)
 	}
-	
+
 	var path string
 	v, ok := m["task"]
 	if ok {
@@ -29,7 +29,7 @@ func ExecuteTaskHandler(c echo.Context) error {
 			}
 		}
 	}
-	
+
 	var prompt string
 	v, ok = m["prompt"]
 	if ok {
@@ -37,37 +37,38 @@ func ExecuteTaskHandler(c echo.Context) error {
 			prompt = p
 		}
 	}
-	
-	var instruction = ""
+
+	instruction := ""
 	v, ok = m["instruction"]
 	if ok {
 		if i, ok := v.(string); ok {
 			instruction = i
 		}
 	}
-	
+
 	exists, task, err := files.ReadTask(path)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error": err.Error(),
 		})
 	}
-	
+
 	if !exists {
 		return c.JSON(http.StatusBadRequest, echo.Map{
 			"error": fmt.Sprintf("task %s not found", path),
 		})
 	}
-	
+
 	task.Template = strings.Replace(task.Template, "{instruction}", instruction, 1)
-	
+
 	if state.IsInferring {
 		fmt.Println("An inference query is already running")
 		return c.NoContent(http.StatusAccepted)
 	}
-	
+
 	// check if the model is loaded
 	loadModel := true
+
 	if state.IsModelLoaded {
 		if state.LoadedModel == task.ModelConf.Name {
 			if state.ModelOptions.ContextSize == task.ModelConf.Ctx {
@@ -75,7 +76,7 @@ func ExecuteTaskHandler(c echo.Context) error {
 			}
 		}
 	}
-	
+
 	if loadModel {
 		err := setModelOptions(task.ModelConf)
 		if err != nil {
@@ -83,7 +84,7 @@ func ExecuteTaskHandler(c echo.Context) error {
 				"error": fmt.Sprintf("failed to set model options: %v", err),
 			})
 		}
-		
+
 		_, err = lm.LoadModel(task.ModelConf.Name, state.ModelOptions)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, echo.Map{
@@ -91,10 +92,11 @@ func ExecuteTaskHandler(c echo.Context) error {
 			})
 		}
 	}
-	
+
 	// exec task
 	ch := make(chan types.StreamedMessage)
 	errCh := make(chan types.StreamedMessage)
+
 	defer close(ch)
 	defer close(errCh)
 
@@ -115,7 +117,7 @@ func ExecuteTaskHandler(c echo.Context) error {
 			}
 		}
 		return nil
-case err, ok := <-errCh:
+	case err, ok := <-errCh:
 		if ok {
 			return c.JSON(http.StatusInternalServerError, echo.Map{
 				"error": err.Content,
@@ -129,13 +131,13 @@ case err, ok := <-errCh:
 	}
 }
 
-// ReadTaskHandler reads a specific task
+// ReadTaskHandler reads a specific task.
 func ReadTaskHandler(c echo.Context) error {
 	m := echo.Map{}
 	if err := c.Bind(&m); err != nil {
 		return fmt.Errorf("failed to bind read task parameters: %w", err)
 	}
-	
+
 	var path string
 	v, ok := m["path"]
 	if ok {
@@ -146,24 +148,24 @@ func ReadTaskHandler(c echo.Context) error {
 			}
 		}
 	}
-	
+
 	exists, task, err := files.ReadTask(path)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error": err.Error(),
 		})
 	}
-	
+
 	if !exists {
 		return c.JSON(http.StatusBadRequest, echo.Map{
 			"error": fmt.Sprintf("task %s not found", path),
 		})
 	}
-	
+
 	return c.JSON(http.StatusOK, task)
 }
 
-// ReadTasksHandler reads all available tasks
+// ReadTasksHandler reads all available tasks.
 func ReadTasksHandler(c echo.Context) error {
 	tasks, err := files.ReadTasks(state.TasksDir)
 	if err != nil {
@@ -174,13 +176,13 @@ func ReadTasksHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, tasks)
 }
 
-// SaveTaskHandler saves a task
+// SaveTaskHandler saves a task.
 func SaveTaskHandler(c echo.Context) error {
 	m := echo.Map{}
 	if err := c.Bind(&m); err != nil {
 		return fmt.Errorf("failed to bind save task parameters: %w", err)
 	}
-	
+
 	var name string
 	v, ok := m["name"]
 	if ok {
@@ -188,7 +190,7 @@ func SaveTaskHandler(c echo.Context) error {
 			name = n
 		}
 	}
-	
+
 	var template string
 	v, ok = m["template"]
 	if ok {
@@ -196,7 +198,7 @@ func SaveTaskHandler(c echo.Context) error {
 			template = t
 		}
 	}
-	
+
 	var rawInferParams map[string]interface{}
 	v, ok = m["inferParams"]
 	if ok {
@@ -205,27 +207,27 @@ func SaveTaskHandler(c echo.Context) error {
 			rawInferParams["template"] = template
 		}
 	}
-	
+
 	rawInferParams["prompt"] = ""
-	
+
 	_, _, modelConf, inferParams, err := ParseInferParams(rawInferParams)
 	if err != nil {
 		return fmt.Errorf("failed to parse inference parameters: %w", err)
 	}
-	
+
 	task := types.Task{
 		Name:        name,
 		Template:    template,
 		ModelConf:   modelConf,
 		InferParams: inferParams,
 	}
-	
+
 	err = files.SaveTask(task)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error": fmt.Sprintf("failed to save task: %v", err),
 		})
 	}
-	
+
 	return c.NoContent(http.StatusCreated)
 }

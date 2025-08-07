@@ -12,20 +12,20 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-// ParseInferParams parses inference parameters from echo.Map
+// ParseInferParams parses inference parameters from echo.Map.
 func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.InferenceParams, error) {
 	// fmt.Println("Params", m)
 	v, ok := m["prompt"]
 	if !ok {
 		return "", "", types.ModelConf{}, types.InferenceParams{}, errors.New("provide a prompt")
 	}
-	
+
 	// Type assertion with error checking
 	prompt, ok := v.(string)
 	if !ok {
 		return "", "", types.ModelConf{}, types.InferenceParams{}, errors.New("prompt must be a string")
 	}
-	
+
 	template := "{prompt}"
 	v, ok = m["template"]
 	if ok {
@@ -33,7 +33,7 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 			template = t
 		}
 	}
-	
+
 	modelConf := state.DefaultModelConf
 	modelConfRaw, ok := m["model"]
 	if ok {
@@ -57,7 +57,7 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 			}
 		}
 	}
-	
+
 	stream := state.DefaultInferenceParams.Stream
 	v, ok = m["stream"]
 	if ok {
@@ -65,7 +65,7 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 			stream = s
 		}
 	}
-	
+
 	threads := state.DefaultInferenceParams.Threads
 	v, ok = m["threads"]
 	if ok {
@@ -73,7 +73,7 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 			threads = int(t)
 		}
 	}
-	
+
 	tokens := state.DefaultInferenceParams.NPredict
 	v, ok = m["n_predict"]
 	if ok {
@@ -81,7 +81,7 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 			tokens = int(t)
 		}
 	}
-	
+
 	topK := state.DefaultInferenceParams.TopK
 	v, ok = m["top_k"]
 	if ok {
@@ -89,7 +89,7 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 			topK = int(k)
 		}
 	}
-	
+
 	topP := state.DefaultInferenceParams.TopP
 	v, ok = m["top_p"]
 	if ok {
@@ -97,7 +97,7 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 			topP = float32(p)
 		}
 	}
-	
+
 	temp := state.DefaultInferenceParams.Temperature
 	v, ok = m["temperature"]
 	if ok {
@@ -105,7 +105,7 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 			temp = float32(t)
 		}
 	}
-	
+
 	freqPenalty := state.DefaultInferenceParams.FrequencyPenalty
 	v, ok = m["frequency_penalty"]
 	if ok {
@@ -113,7 +113,7 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 			freqPenalty = float32(fp)
 		}
 	}
-	
+
 	presPenalty := state.DefaultInferenceParams.PresencePenalty
 	v, ok = m["presence_penalty"]
 	if ok {
@@ -121,7 +121,7 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 			presPenalty = float32(pp)
 		}
 	}
-	
+
 	repeatPenalty := state.DefaultInferenceParams.RepeatPenalty
 	v, ok = m["repeat_penalty"]
 	if ok {
@@ -129,7 +129,7 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 			repeatPenalty = float32(rp)
 		}
 	}
-	
+
 	tfs := state.DefaultInferenceParams.TailFreeSamplingZ
 	v, ok = m["tfs_z"]
 	if ok {
@@ -137,7 +137,7 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 			tfs = float32(t)
 		}
 	}
-	
+
 	stop := state.DefaultInferenceParams.StopPrompts
 	v, ok = m["stop"]
 	if ok {
@@ -150,7 +150,7 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 			}
 		}
 	}
-	
+
 	params := types.InferenceParams{
 		Stream:            stream,
 		Threads:           threads,
@@ -164,11 +164,11 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 		TailFreeSamplingZ: tfs,
 		StopPrompts:       stop,
 	}
-	
+
 	return prompt, template, modelConf, params, nil
 }
 
-// setModelOptions sets model options based on model configuration
+// setModelOptions sets model options based on model configuration.
 func setModelOptions(modelConf types.ModelConf) error {
 	opts := state.DefaultModelOptions
 	opts.ContextSize = modelConf.Ctx
@@ -176,13 +176,13 @@ func setModelOptions(modelConf types.ModelConf) error {
 	return nil
 }
 
-// InferHandler handles inference requests
+// InferHandler handles inference requests.
 func InferHandler(c echo.Context) error {
 	if state.IsInferring {
 		fmt.Println("An inference query is already running")
 		return c.NoContent(http.StatusAccepted)
 	}
-	
+
 	m := echo.Map{}
 	if err := c.Bind(&m); err != nil {
 		if state.IsDebug {
@@ -190,7 +190,7 @@ func InferHandler(c echo.Context) error {
 		}
 		return c.NoContent(http.StatusInternalServerError)
 	}
-	
+
 	prompt, template, modelConf, params, err := ParseInferParams(m)
 	if err != nil {
 		if state.IsDebug {
@@ -198,7 +198,7 @@ func InferHandler(c echo.Context) error {
 		}
 		return c.NoContent(http.StatusInternalServerError)
 	}
-	
+
 	if modelConf.Name != "" {
 		err := setModelOptions(modelConf)
 		if err != nil {
@@ -207,7 +207,7 @@ func InferHandler(c echo.Context) error {
 			}
 			return c.NoContent(http.StatusInternalServerError)
 		}
-		
+
 		_, err = lm.LoadModel(modelConf.Name, state.ModelOptions)
 		if err != nil {
 			if state.IsDebug {
@@ -215,7 +215,7 @@ func InferHandler(c echo.Context) error {
 			}
 			return c.NoContent(http.StatusInternalServerError)
 		}
-		
+
 		if state.IsDebug {
 			fmt.Println("Loaded model with params:")
 			jsonData, err := json.MarshalIndent(state.ModelOptions, "", "  ")
@@ -225,8 +225,8 @@ func InferHandler(c echo.Context) error {
 			fmt.Println(string(jsonData))
 		}
 	}
-	
-	//fmt.Println("Params", params)
+
+	// fmt.Println("Params", params)
 	if params.Stream {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		c.Response().WriteHeader(http.StatusOK)
@@ -234,6 +234,7 @@ func InferHandler(c echo.Context) error {
 
 	ch := make(chan types.StreamedMessage)
 	errCh := make(chan types.StreamedMessage)
+
 	defer close(ch)
 	defer close(errCh)
 
@@ -277,7 +278,7 @@ func InferHandler(c echo.Context) error {
 	}
 }
 
-// AbortHandler aborts ongoing inference
+// AbortHandler aborts ongoing inference.
 func AbortHandler(c echo.Context) error {
 	if !state.IsInferring {
 		fmt.Println("No inference running, nothing to abort")

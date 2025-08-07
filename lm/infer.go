@@ -13,10 +13,9 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-
 // Type Definitions
 
-// InferenceError represents a structured error for language model inference
+// InferenceError represents a structured error for language model inference.
 type InferenceError struct {
 	Code       string      `json:"code"`
 	Message    string      `json:"message"`
@@ -26,26 +25,24 @@ type InferenceError struct {
 	Stage      string      `json:"stage,omitempty"`
 }
 
-// Error implements the error interface
+// Error implements the error interface.
 func (e *InferenceError) Error() string {
 	return fmt.Sprintf("[%s] %s: %v", e.Code, e.Message, e.Context)
 }
 
-
 // Constants
 
-// Error codes for inference operations
+// Error codes for inference operations.
 const (
-	ErrCodeModelNotLoaded     = "MODEL_NOT_LOADED"
-	ErrCodeInferenceFailed    = "INFERENCE_FAILED"
-	ErrCodeStreamFailed       = "STREAM_FAILED"
-	ErrCodeInvalidParams      = "INVALID_PARAMS"
+	ErrCodeModelNotLoaded  = "MODEL_NOT_LOADED"
+	ErrCodeInferenceFailed = "INFERENCE_FAILED"
+	ErrCodeStreamFailed    = "STREAM_FAILED"
+	ErrCodeInvalidParams   = "INVALID_PARAMS"
 )
-
 
 // Main Inference Functions
 
-// Infer performs language model inference
+// Infer performs language model inference.
 func Infer(
 	prompt string,
 	template string,
@@ -124,10 +121,9 @@ func Infer(
 	}
 }
 
-
 // Streaming Functions
 
-// StreamMsg streams a message to the client
+// StreamMsg streams a message to the client.
 func StreamMsg(msg types.StreamedMessage, c echo.Context, enc *json.Encoder) error {
 	c.Response().Write([]byte("data: "))
 	if err := enc.Encode(msg); err != nil {
@@ -138,15 +134,14 @@ func StreamMsg(msg types.StreamedMessage, c echo.Context, enc *json.Encoder) err
 	return nil
 }
 
-// sendLlamaStreamTermination sends stream termination message
+// sendLlamaStreamTermination sends stream termination message.
 func sendLlamaStreamTermination(c echo.Context) error {
 	c.Response().Write([]byte("data: [DONE]\n\n"))
 	c.Response().Flush()
 	return nil
 }
 
-
-// streamDeltaMsg handles token processing during prediction
+// streamDeltaMsg handles token processing during prediction.
 func streamDeltaMsg(ntokens int, token string, enc *json.Encoder, c echo.Context, params types.InferenceParams, startThinking time.Time, thinkingElapsed *time.Duration, startEmitting *time.Time) error {
 	if ntokens == 0 {
 		*startEmitting = time.Now()
@@ -176,16 +171,18 @@ func streamDeltaMsg(ntokens int, token string, enc *json.Encoder, c echo.Context
 		Num:     ntokens,
 		MsgType: types.TokenMsgType,
 	}
+
 	err := StreamMsg(tmsg, c, enc)
 	if err != nil {
 		fmt.Printf("Error streaming delta message: %v\n", err)
+
 		return err
 	}
 
 	return nil
 }
 
-// sendStartEmittingMessage sends the start_emitting message to the client
+// sendStartEmittingMessage sends the start_emitting message to the client.
 func sendStartEmittingMessage(enc *json.Encoder, c echo.Context, params types.InferenceParams, ntokens int, thinkingElapsed time.Duration) error {
 	if !params.Stream || !state.ContinueInferringController {
 		return nil
@@ -209,10 +206,9 @@ func sendStartEmittingMessage(enc *json.Encoder, c echo.Context, params types.In
 	return err
 }
 
-
 // Utility Functions
 
-// createErrorMessage sends an error message through the error channel
+// createErrorMessage sends an error message through the error channel.
 func createErrorMessage(ntokens int, content string) types.StreamedMessage {
 	return types.StreamedMessage{
 		Num:     ntokens,
@@ -221,7 +217,7 @@ func createErrorMessage(ntokens int, content string) types.StreamedMessage {
 	}
 }
 
-// logVerboseInfo logs verbose information about the inference process
+// logVerboseInfo logs verbose information about the inference process.
 func logVerboseInfo(finalPrompt string, thinkingElapsed time.Duration, emittingElapsed time.Duration, ntokens int) {
 	if state.IsVerbose {
 		fmt.Println("---------- prompt ----------")
@@ -246,15 +242,15 @@ func logVerboseInfo(finalPrompt string, thinkingElapsed time.Duration, emittingE
 		if err != nil {
 			tps = 0.0
 		}
+
 		fmt.Println("Tokens per seconds", tps)
 		fmt.Println("Tokens emitted", ntokens)
 	}
 }
 
-
 // Statistics Functions
 
-// calculateStats calculates inference statistics
+// calculateStats calculates inference statistics.
 func calculateStats(ntokens int, thinkingElapsed time.Duration, startEmitting time.Time) (types.InferenceStats, float64) {
 	emittingElapsed := time.Since(startEmitting)
 	tpsRaw := float64(ntokens) / emittingElapsed.Seconds()
@@ -277,10 +273,9 @@ func calculateStats(ntokens int, thinkingElapsed time.Duration, startEmitting ti
 	}, tps
 }
 
-
 // Result Creation Functions
 
-// createResult creates the final result message to the client
+// createResult creates the final result message to the client.
 func createResult(res string, stats types.InferenceStats, enc *json.Encoder, c echo.Context, params types.InferenceParams) (types.StreamedMessage, error) {
 	result := types.InferenceResult{
 		Text:  res,

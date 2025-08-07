@@ -13,10 +13,9 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-
 // Main Inference Functions
 
-// InferOpenAi performs OpenAI model inference
+// InferOpenAi performs OpenAI model inference.
 func InferOpenAi(
 	prompt string,
 	template string,
@@ -89,10 +88,9 @@ func InferOpenAi(
 	}
 }
 
-
 // Streaming Functions
 
-// streamOpenAiMsg streams a message to the client
+// streamOpenAiMsg streams a message to the client.
 func streamOpenAiMsg(msg types.OpenAiChatCompletionDeltaResponse, c echo.Context, enc *json.Encoder) error {
 	c.Response().Write([]byte("data: "))
 	if err := enc.Encode(msg); err != nil {
@@ -103,14 +101,14 @@ func streamOpenAiMsg(msg types.OpenAiChatCompletionDeltaResponse, c echo.Context
 	return nil
 }
 
-// sendOpenAiStreamTermination sends stream termination message
+// sendOpenAiStreamTermination sends stream termination message.
 func sendOpenAiStreamTermination(c echo.Context) error {
 	c.Response().Write([]byte("data: [DONE]\n\n"))
 	c.Response().Flush()
 	return nil
 }
 
-// createOpenAiDeltaMessage creates a delta message for streaming
+// createOpenAiDeltaMessage creates a delta message for streaming.
 func createOpenAiDeltaMessage(ntokens int, token string) types.OpenAiChatCompletionDeltaResponse {
 	return types.OpenAiChatCompletionDeltaResponse{
 		ID:      strconv.Itoa(ntokens),
@@ -130,11 +128,12 @@ func createOpenAiDeltaMessage(ntokens int, token string) types.OpenAiChatComplet
 	}
 }
 
-// streamDeltaMsgOpenAi streams a delta message to the client
+// streamDeltaMsgOpenAi streams a delta message to the client.
 func streamDeltaMsgOpenAi(ntokens int, token string, enc *json.Encoder, c echo.Context, params types.InferenceParams, startThinking time.Time, thinkingElapsed *time.Duration, startEmitting *time.Time) error {
 	if ntokens == 0 {
 		*startEmitting = time.Now()
 		*thinkingElapsed = time.Since(startThinking)
+
 		err := sendStartEmittingMessageOpenAi(enc, c, params, ntokens, *thinkingElapsed)
 		if err != nil {
 			fmt.Printf("Error emitting msg: %v\n", err)
@@ -156,6 +155,7 @@ func streamDeltaMsgOpenAi(ntokens int, token string, enc *json.Encoder, c echo.C
 	}
 
 	tmsg := createOpenAiDeltaMessage(ntokens, token)
+
 	err := streamOpenAiMsg(tmsg, c, enc)
 	if err != nil {
 		fmt.Printf("Error streaming delta message: %v\n", err)
@@ -165,7 +165,7 @@ func streamDeltaMsgOpenAi(ntokens int, token string, enc *json.Encoder, c echo.C
 	return nil
 }
 
-// sendStartEmittingMessageOpenAi sends the start_emitting message to the client
+// sendStartEmittingMessageOpenAi sends the start_emitting message to the client.
 func sendStartEmittingMessageOpenAi(enc *json.Encoder, c echo.Context, params types.InferenceParams, ntokens int, thinkingElapsed time.Duration) error {
 	if !params.Stream || !state.ContinueInferringController {
 		return nil
@@ -197,10 +197,9 @@ func sendStartEmittingMessageOpenAi(enc *json.Encoder, c echo.Context, params ty
 	return err
 }
 
-
 // Utility Functions
 
-// createErrorMessageOpenAi creates an InferenceError for OpenAI inference
+// createErrorMessageOpenAi creates an InferenceError for OpenAI inference.
 func createErrorMessageOpenAi(ntokens int, content string, context interface{}, errorCode string) *InferenceError {
 	return &InferenceError{
 		Code:       errorCode,
@@ -211,7 +210,7 @@ func createErrorMessageOpenAi(ntokens int, content string, context interface{}, 
 	}
 }
 
-// logOpenAiVerboseInfo logs verbose information about the OpenAI inference process
+// logOpenAiVerboseInfo logs verbose information about the OpenAI inference process.
 func logOpenAiVerboseInfo(finalPrompt string, thinkingElapsed time.Duration, emittingElapsed time.Duration, ntokens int) {
 	if state.IsVerbose {
 		fmt.Println("---------- prompt ----------")
@@ -236,15 +235,15 @@ func logOpenAiVerboseInfo(finalPrompt string, thinkingElapsed time.Duration, emi
 		if err != nil {
 			tps = 0.0
 		}
+
 		fmt.Println("Tokens per seconds", tps)
 		fmt.Println("Tokens emitted", ntokens)
 	}
 }
 
-
 // Result Creation Functions
 
-// createOpenAiResult creates the final OpenAI result
+// createOpenAiResult creates the final OpenAI result.
 func createOpenAiResult(ntokens int, res string) types.OpenAiChatCompletion {
 	id := strconv.Itoa(ntokens)
 	return types.OpenAiChatCompletion{
