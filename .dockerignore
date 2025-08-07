@@ -3,6 +3,7 @@
 !go.sum
 !conf
 !files
+!llama
 !lm
 !server
 !state

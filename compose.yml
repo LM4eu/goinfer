@@ -1,22 +1,37 @@
-# requirement: local file ./goinfer.config.json
-# run:  docker compose up
-# stop: CTRL + C
-# clean: docker compose down
+# - Requirement:  local file ./goinfer.json
+# - Build:        DOCKER_BUILDKIT=1 docker compose build
+# - Run:          docker compose up
+# - Stop:         CTRL + C
+# - Clean:        docker compose down
 
 services:
-  goinfer:
-    build: .
-    image: goinfer
-    container_name: goinfer
+  goinfer-llama:
+    image: goinfer-llama
+    container_name: goinfer-llama
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        - llama_git_tag=b6089
+        - CUDA_VERSION=12.9
+        - CUDA_PATCH=1
+        - UBUNTU_VERSION=24.04
     command: -local
     ports: [5143:5143]
-    configs: [goinfer.config.json]
+    configs: [goinfer.json]
     volumes:
-      # goinfer.config.json must contain: "models_dir":"/models", "tasks_dir":"/tasks"
+      # goinfer.json must contain: "models_dir":"/models", "tasks_dir":"/tasks"
       # Define your custom models_dir and tasks_dir in the ".env" file
-      - ${models_dir:-./go-llama.cpp/llama.cpp/models}:/models
+      - ${models_dir:-./models}:/models
       - ${tasks_dir:-./tasks}:/tasks
+      - ${ccache_dir:-./.ccache}:/root/.ccache
+      - ${go_cache_dir:-./.go}:/root/go
+    environment:
+      - TZ=UTC0 # time.Unix() uses UTC instead of local time zone
+    # restart: unless-stopped
 
 configs:
-  goinfer.config.json:
-    file: ./goinfer.config.json
+  goinfer.json:
+    # file: ./goinfer.json
+    content: '{"models_dir":"/models", "tasks_dir":"/tasks"}'
+
