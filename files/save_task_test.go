@@ -5,15 +5,15 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/synw/goinfer/state"
 	"github.com/synw/goinfer/types"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestSaveTask(t *testing.T) {
 	// Create a temporary directory for tasks
 	tempDir := t.TempDir()
-	
+
 	// Save the original TasksDir
 	originalTasksDir := state.TasksDir
 	// Set the tasks directory for testing
@@ -22,7 +22,7 @@ func TestSaveTask(t *testing.T) {
 	defer func() {
 		state.TasksDir = originalTasksDir
 	}()
-	
+
 	// Create test task
 	task := types.Task{
 		Name:     "test_task",
@@ -40,21 +40,21 @@ func TestSaveTask(t *testing.T) {
 			Temperature: 0.7,
 		},
 	}
-	
+
 	// Test SaveTask
 	err := SaveTask(task)
-	
+
 	// Assert no error
 	assert.NoError(t, err)
-	
+
 	// Verify file was created
 	expectedPath := filepath.Join(tempDir, "test_task.yml")
 	assert.FileExists(t, expectedPath)
-	
+
 	// Read and verify file content
 	fileContent, err := os.ReadFile(expectedPath)
 	assert.NoError(t, err)
-	
+
 	// The content should be a valid YAML representation of the task
 	assert.Contains(t, string(fileContent), "name: test_task.yml")
 	assert.Contains(t, string(fileContent), "template: '{prompt}'")
@@ -65,7 +65,7 @@ func TestSaveTask(t *testing.T) {
 func TestSaveTask_WithSubdirectory(t *testing.T) {
 	// Create a temporary directory for tasks
 	tempDir := t.TempDir()
-	
+
 	// Save the original TasksDir
 	originalTasksDir := state.TasksDir
 	// Set the tasks directory for testing
@@ -74,7 +74,7 @@ func TestSaveTask_WithSubdirectory(t *testing.T) {
 	defer func() {
 		state.TasksDir = originalTasksDir
 	}()
-	
+
 	// Create test task with subdirectory path
 	task := types.Task{
 		Name:     "subdir/test_task",
@@ -92,25 +92,25 @@ func TestSaveTask_WithSubdirectory(t *testing.T) {
 			Temperature: 0.8,
 		},
 	}
-	
+
 	// Test SaveTask
 	err := SaveTask(task)
-	
+
 	// Assert no error
 	assert.NoError(t, err)
-	
+
 	// Verify file was created in subdirectory
 	expectedPath := filepath.Join(tempDir, "subdir", "test_task.yml")
 	assert.FileExists(t, expectedPath)
-	
+
 	// Verify subdirectory was created
 	subdirPath := filepath.Join(tempDir, "subdir")
 	assert.DirExists(t, subdirPath)
-	
+
 	// Read and verify file content
 	fileContent, err := os.ReadFile(expectedPath)
 	assert.NoError(t, err)
-	
+
 	// The content should be a valid YAML representation of the task
 	assert.Contains(t, string(fileContent), "name: test_task.yml")
 	assert.Contains(t, string(fileContent), "template: |-\n    {system}\n\n    {prompt}")
@@ -122,7 +122,7 @@ func TestSaveTask_WithSubdirectory(t *testing.T) {
 func TestSaveTask_NestedSubdirectory(t *testing.T) {
 	// Create a temporary directory for tasks
 	tempDir := t.TempDir()
-	
+
 	// Save the original TasksDir
 	originalTasksDir := state.TasksDir
 	// Set the tasks directory for testing
@@ -131,7 +131,7 @@ func TestSaveTask_NestedSubdirectory(t *testing.T) {
 	defer func() {
 		state.TasksDir = originalTasksDir
 	}()
-	
+
 	// Create test task with deeply nested subdirectory path
 	task := types.Task{
 		Name:     "level1/level2/level3/deep_task",
@@ -155,27 +155,27 @@ func TestSaveTask_NestedSubdirectory(t *testing.T) {
 			StopPrompts:       []string{"\n", "User:"},
 		},
 	}
-	
+
 	// Test SaveTask
 	err := SaveTask(task)
-	
+
 	// Assert no error
 	assert.NoError(t, err)
-	
+
 	// Verify file was created in nested subdirectory
 	expectedPath := filepath.Join(tempDir, "level1", "level2", "level3", "deep_task.yml")
 	assert.FileExists(t, expectedPath)
-	
+
 	// Verify all nested subdirectories were created
 	for _, level := range []string{"level1", "level1/level2", "level1/level2/level3"} {
 		subdirPath := filepath.Join(tempDir, level)
 		assert.DirExists(t, subdirPath)
 	}
-	
+
 	// Read and verify file content
 	fileContent, err := os.ReadFile(expectedPath)
 	assert.NoError(t, err)
-	
+
 	// The content should be a valid YAML representation of the task
 	assert.Contains(t, string(fileContent), "name: deep_task.yml")
 	assert.Contains(t, string(fileContent), "template: 'Custom template: {prompt}'")
@@ -191,12 +191,12 @@ func TestSaveTask_NestedSubdirectory(t *testing.T) {
 func TestSaveTask_InvalidDirectoryPermissions(t *testing.T) {
 	// Create a temporary directory
 	tempDir := t.TempDir()
-	
+
 	// Create a read-only directory to simulate permission issues
 	readOnlyDir := filepath.Join(tempDir, "readonly")
-	err := os.Mkdir(readOnlyDir, 0555) // Read-only permissions
+	err := os.Mkdir(readOnlyDir, 0o555) // Read-only permissions
 	assert.NoError(t, err)
-	
+
 	// Save the original TasksDir
 	originalTasksDir := state.TasksDir
 	// Set the tasks directory to the read-only directory for testing
@@ -205,7 +205,7 @@ func TestSaveTask_InvalidDirectoryPermissions(t *testing.T) {
 	defer func() {
 		state.TasksDir = originalTasksDir
 	}()
-	
+
 	// Create test task that should try to write to the read-only directory
 	task := types.Task{
 		Name:     "test_task",
@@ -217,13 +217,13 @@ func TestSaveTask_InvalidDirectoryPermissions(t *testing.T) {
 			Stream: false,
 		},
 	}
-	
+
 	// Test SaveTask - should fail due to permissions
 	err = SaveTask(task)
-	
+
 	// Assert error occurred
 	assert.Error(t, err)
-	
+
 	// Verify file was not created
 	expectedPath := filepath.Join(readOnlyDir, "test_task.yml")
 	assert.NoFileExists(t, expectedPath)
@@ -232,7 +232,7 @@ func TestSaveTask_InvalidDirectoryPermissions(t *testing.T) {
 func TestSaveTask_EmptyTask(t *testing.T) {
 	// Create a temporary directory for tasks
 	tempDir := t.TempDir()
-	
+
 	// Save the original TasksDir
 	originalTasksDir := state.TasksDir
 	// Set the tasks directory for testing
@@ -241,27 +241,27 @@ func TestSaveTask_EmptyTask(t *testing.T) {
 	defer func() {
 		state.TasksDir = originalTasksDir
 	}()
-	
+
 	// Create test task with minimal required fields
 	task := types.Task{
 		Name:     "minimal_task",
 		Template: "{prompt}",
 	}
-	
+
 	// Test SaveTask
 	err := SaveTask(task)
-	
+
 	// Assert no error
 	assert.NoError(t, err)
-	
+
 	// Verify file was created
 	expectedPath := filepath.Join(tempDir, "minimal_task.yml")
 	assert.FileExists(t, expectedPath)
-	
+
 	// Read and verify file content
 	fileContent, err := os.ReadFile(expectedPath)
 	assert.NoError(t, err)
-	
+
 	// The content should be a valid YAML representation of the task
 	assert.Contains(t, string(fileContent), "name: minimal_task.yml")
 	assert.Contains(t, string(fileContent), "template: '{prompt}'")
@@ -270,7 +270,7 @@ func TestSaveTask_EmptyTask(t *testing.T) {
 func TestSaveTask_WithSpecialCharacters(t *testing.T) {
 	// Create a temporary directory for tasks
 	tempDir := t.TempDir()
-	
+
 	// Save the original TasksDir
 	originalTasksDir := state.TasksDir
 	// Set the tasks directory for testing
@@ -279,7 +279,7 @@ func TestSaveTask_WithSpecialCharacters(t *testing.T) {
 	defer func() {
 		state.TasksDir = originalTasksDir
 	}()
-	
+
 	// Create test task with special characters in name and template
 	task := types.Task{
 		Name:     "special-chars_task_123",
@@ -292,21 +292,21 @@ func TestSaveTask_WithSpecialCharacters(t *testing.T) {
 			StopPrompts: []string{"STOP", "END", "\n\n"},
 		},
 	}
-	
+
 	// Test SaveTask
 	err := SaveTask(task)
-	
+
 	// Assert no error
 	assert.NoError(t, err)
-	
+
 	// Verify file was created
 	expectedPath := filepath.Join(tempDir, "special-chars_task_123.yml")
 	assert.FileExists(t, expectedPath)
-	
+
 	// Read and verify file content
 	fileContent, err := os.ReadFile(expectedPath)
 	assert.NoError(t, err)
-	
+
 	// The content should be a valid YAML representation of the task
 	assert.Contains(t, string(fileContent), "name: special-chars_task_123.yml")
 	assert.Contains(t, string(fileContent), "template: |-\n    Special: {prompt}\n    With: \"quotes\" and 'apostrophes'")

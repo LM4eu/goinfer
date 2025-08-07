@@ -2,6 +2,7 @@ package types
 
 import (
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -11,11 +12,11 @@ func TestInferenceParamsCloneWithEmptySlice(t *testing.T) {
 	params := InferenceParams{
 		StopPrompts: []string{},
 	}
-	
+
 	cloned := params.Clone()
 	assert.Equal(t, params, cloned)
 	assert.Empty(t, cloned.StopPrompts)
-	
+
 	// Modify the clone and ensure original is not affected
 	cloned.StopPrompts = append(cloned.StopPrompts, "test")
 	assert.Empty(t, params.StopPrompts)
@@ -27,11 +28,11 @@ func TestInferenceParamsCloneWithNilSlice(t *testing.T) {
 	params := InferenceParams{
 		StopPrompts: nil,
 	}
-	
+
 	cloned := params.Clone()
 	assert.Equal(t, params, cloned)
 	assert.Nil(t, cloned.StopPrompts)
-	
+
 	// Modify the clone and ensure original is not affected
 	cloned.StopPrompts = []string{"test"}
 	assert.Nil(t, params.StopPrompts)
@@ -53,15 +54,15 @@ func TestInferenceParamsCloneWithComplexValues(t *testing.T) {
 		TailFreeSamplingZ: 0.9,
 		StopPrompts:       []string{"STOP", "END", "DONE"},
 	}
-	
+
 	cloned := params.Clone()
 	assert.Equal(t, params, cloned)
-	
+
 	// Modify the clone and ensure original is not affected
 	cloned.Stream = false
 	cloned.Threads = 16
 	cloned.StopPrompts[0] = "MODIFIED"
-	
+
 	assert.True(t, params.Stream)
 	assert.False(t, cloned.Stream)
 	assert.Equal(t, 8, params.Threads)
@@ -84,7 +85,7 @@ func TestInferenceParamsValidationWithAllFields(t *testing.T) {
 		TailFreeSamplingZ: 1.0,
 		StopPrompts:       []string{"</s>"},
 	}
-	
+
 	require.NoError(t, params.Validate())
 }
 
@@ -101,7 +102,7 @@ func TestInferenceParamsValidationWithMaxValues(t *testing.T) {
 		RepeatPenalty:     100.0,
 		TailFreeSamplingZ: 100.0,
 	}
-	
+
 	require.NoError(t, params.Validate())
 }
 
@@ -117,32 +118,32 @@ func TestInferenceParamsValidationWithMinValues(t *testing.T) {
 		RepeatPenalty:     0.0,
 		TailFreeSamplingZ: 0.0,
 	}
-	
+
 	require.NoError(t, params.Validate())
 }
 
 func TestInferenceParamsEquality(t *testing.T) {
 	// Test equality between two identical params
 	params1 := InferenceParams{
-		Stream:            true,
-		Threads:           8,
-		TopK:              50,
-		TopP:              0.8,
-		Temperature:       0.5,
-		StopPrompts:       []string{"STOP", "END"},
+		Stream:      true,
+		Threads:     8,
+		TopK:        50,
+		TopP:        0.8,
+		Temperature: 0.5,
+		StopPrompts: []string{"STOP", "END"},
 	}
-	
+
 	params2 := InferenceParams{
-		Stream:            true,
-		Threads:           8,
-		TopK:              50,
-		TopP:              0.8,
-		Temperature:       0.5,
-		StopPrompts:       []string{"STOP", "END"},
+		Stream:      true,
+		Threads:     8,
+		TopK:        50,
+		TopP:        0.8,
+		Temperature: 0.5,
+		StopPrompts: []string{"STOP", "END"},
 	}
-	
+
 	assert.Equal(t, params1, params2)
-	
+
 	// Modify one field and ensure they're not equal
 	params2.Threads = 16
 	assert.NotEqual(t, params1, params2)
@@ -163,10 +164,10 @@ func TestInferenceParamsResetToDefaults(t *testing.T) {
 		TailFreeSamplingZ: 0.8,
 		StopPrompts:       []string{"STOP", "END", "DONE"},
 	}
-	
+
 	// Reset to defaults
 	params = NewInferenceParams()
-	
+
 	// Verify all fields are set to defaults
 	assert.False(t, params.Stream)
 	assert.Equal(t, DefaultThreads, params.Threads)
@@ -196,17 +197,17 @@ func TestInferenceParamsPartialReset(t *testing.T) {
 		TailFreeSamplingZ: 0.8,
 		StopPrompts:       []string{"STOP", "END", "DONE"},
 	}
-	
+
 	// Reset only some fields
 	params.Stream = false
 	params.Threads = DefaultThreads
 	params.TopK = DefaultTopK
-	
+
 	// Verify only the reset fields changed
 	assert.False(t, params.Stream)
 	assert.Equal(t, DefaultThreads, params.Threads)
 	assert.Equal(t, DefaultTopK, params.TopK)
-	
+
 	// Verify other fields remain unchanged
 	assert.Equal(t, 2048, params.NPredict)
 	assert.Equal(t, DefaultTopK, params.TopK) // This should be DefaultTopK now

@@ -22,9 +22,11 @@ func main() {
 		fmt.Println("Debug mode is on")
 		state.IsDebug = true
 	}
+
 	if !*quiet {
 		state.IsVerbose = *quiet
 	}
+
 	if len(*genConfModelsDir) > 0 {
 		conf.Create(*genConfModelsDir, false)
 		fmt.Println("File goinfer.config.json created")
@@ -40,8 +42,10 @@ func main() {
 	state.TasksDir = conf.TasksDir
 	state.OpenAiConf = conf.OpenAiConf
 	state.IsVerbose = !*quiet
+
 	if state.IsVerbose {
 		fmt.Println("Starting the http server with allowed origins", conf.Origins)
 	}
+
 	server.RunServer(conf.Origins, conf.ApiKey, *local, conf.OpenAiConf.Enable, *disableApiKey)
 }

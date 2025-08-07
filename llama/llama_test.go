@@ -9,7 +9,6 @@ import (
 func TestModelCreationWithDefaultOptions(t *testing.T) {
 	// Test creating a model with default options
 	// This is a mock test since we can't actually load a real model in unit tests
-	
 	// Test that New function can be called with default options
 	// In a real scenario, this would load the model
 	// For testing, we'll just verify the function signature works
@@ -18,14 +17,13 @@ func TestModelCreationWithDefaultOptions(t *testing.T) {
 
 func TestModelCreationWithCustomOptions(t *testing.T) {
 	// Test creating a model with custom options
-	
 	// Test various option combinations
 	options := []ModelOption{
 		SetContext(2048),
 		SetGPULayers(2),
 		EnableEmbeddings,
 	}
-	
+
 	for _, opts := range options {
 		// Test that options are functions
 		assert.NotNil(t, opts)
@@ -34,15 +32,14 @@ func TestModelCreationWithCustomOptions(t *testing.T) {
 
 func TestOptionSettingFunctions(t *testing.T) {
 	// Test the option setting functions
-	
 	// Test SetContext
 	opts1 := SetContext(4096)
 	assert.NotNil(t, opts1)
-	
+
 	// Test SetGPULayers
 	opts2 := SetGPULayers(4)
 	assert.NotNil(t, opts2)
-	
+
 	// Test EnableEmbeddings
 	opts3 := EnableEmbeddings
 	assert.NotNil(t, opts3)
@@ -50,12 +47,11 @@ func TestOptionSettingFunctions(t *testing.T) {
 
 func TestModelOptionsCombination(t *testing.T) {
 	// Test combining multiple options
-	
 	// Create separate options
 	opts1 := SetContext(8192)
 	opts2 := SetGPULayers(2)
 	opts3 := EnableEmbeddings
-	
+
 	// Test that each option is not nil
 	assert.NotNil(t, opts1)
 	assert.NotNil(t, opts2)
@@ -65,20 +61,20 @@ func TestModelOptionsCombination(t *testing.T) {
 func TestModelOptionsDefaultValues(t *testing.T) {
 	// Test that default values are properly set
 	opts := ModelOptions{}
-	
+
 	// Test default values
-	assert.Equal(t, 0, opts.ContextSize) // Default context size
-	assert.Equal(t, 0, opts.Seed)        // Default seed
-	assert.Equal(t, 0, opts.NBatch)      // Default n_batch
-	assert.False(t, opts.F16Memory)      // Default f16_memory
-	assert.False(t, opts.MLock)          // Default mlock
-	assert.False(t, opts.MMap)           // Default mmap
-	assert.False(t, opts.LowVRAM)        // Default low_vram
-	assert.False(t, opts.Embeddings)     // Default embeddings
-	assert.False(t, opts.NUMA)           // Default numa
-	assert.Equal(t, 0, opts.NGPULayers)  // Default n_gpu_layers
-	assert.Equal(t, "", opts.MainGPU)    // Default main_gpu
-	assert.Equal(t, "", opts.TensorSplit) // Default tensor_split
+	assert.Equal(t, 0, opts.ContextSize)            // Default context size
+	assert.Equal(t, 0, opts.Seed)                   // Default seed
+	assert.Equal(t, 0, opts.NBatch)                 // Default n_batch
+	assert.False(t, opts.F16Memory)                 // Default f16_memory
+	assert.False(t, opts.MLock)                     // Default mlock
+	assert.False(t, opts.MMap)                      // Default mmap
+	assert.False(t, opts.LowVRAM)                   // Default low_vram
+	assert.False(t, opts.Embeddings)                // Default embeddings
+	assert.False(t, opts.NUMA)                      // Default numa
+	assert.Equal(t, 0, opts.NGPULayers)             // Default n_gpu_layers
+	assert.Equal(t, "", opts.MainGPU)               // Default main_gpu
+	assert.Equal(t, "", opts.TensorSplit)           // Default tensor_split
 	assert.Equal(t, float32(0), opts.FreqRopeBase)  // Default freq_rope_base
 	assert.Equal(t, float32(0), opts.FreqRopeScale) // Default freq_rope_scale
 }
@@ -86,9 +82,9 @@ func TestModelOptionsDefaultValues(t *testing.T) {
 func TestModelOptionsValidation(t *testing.T) {
 	// Test validation of model options
 	testCases := []struct {
-		name     string
-		opts     ModelOptions
-		valid    bool
+		name  string
+		opts  ModelOptions
+		valid bool
 	}{
 		{
 			name:  "Valid options",
@@ -126,7 +122,7 @@ func TestModelOptionsValidation(t *testing.T) {
 			valid: false,
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// In a real implementation, you would have validation logic
@@ -161,7 +157,7 @@ func TestModelOptionsStringRepresentation(t *testing.T) {
 		FreqRopeBase:  20000,
 		FreqRopeScale: 0.8,
 	}
-	
+
 	// Test that options have values
 	assert.NotZero(t, opts.ContextSize)
 	assert.NotZero(t, opts.Seed)
@@ -188,17 +184,17 @@ func TestModelOptionsCopying(t *testing.T) {
 		FreqRopeBase:  10000,
 		FreqRopeScale: 1.0,
 	}
-	
+
 	// Copy the options
 	opts2 := opts1
-	
+
 	// Verify they are equal
 	assert.Equal(t, opts1, opts2)
-	
+
 	// Modify the copy
 	opts2.ContextSize = 4096
 	opts2.Seed = 456
-	
+
 	// Verify they are now different
 	assert.NotEqual(t, opts1, opts2)
 	assert.Equal(t, 2048, opts1.ContextSize)
@@ -225,16 +221,16 @@ func TestModelOptionsReset(t *testing.T) {
 		FreqRopeBase:  20000,
 		FreqRopeScale: 0.8,
 	}
-	
+
 	// Reset to defaults by creating a new ModelOptions
 	defaultOpts := ModelOptions{}
-	
+
 	// Verify they are different
 	assert.NotEqual(t, defaultOpts, opts)
-	
+
 	// Reset opts
 	opts = ModelOptions{}
-	
+
 	// Verify they are now equal
 	assert.Equal(t, defaultOpts, opts)
 }
@@ -242,9 +238,9 @@ func TestModelOptionsReset(t *testing.T) {
 func TestPredictOptions(t *testing.T) {
 	// Test predict options
 	testCases := []struct {
-		name     string
-		opts     PredictOption
-		valid    bool
+		name  string
+		opts  PredictOption
+		valid bool
 	}{
 		{
 			name:  "SetTokens",
@@ -292,7 +288,7 @@ func TestPredictOptions(t *testing.T) {
 			valid: true,
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Test that options are functions
@@ -312,7 +308,7 @@ func TestPredictOptionsCombination(t *testing.T) {
 	opts7 := SetFrequencyPenalty(0.1)
 	opts8 := SetPresencePenalty(0.1)
 	opts9 := SetRopeFreqBase(10000)
-	
+
 	// Test that each option is not nil
 	assert.NotNil(t, opts1)
 	assert.NotNil(t, opts2)
@@ -328,12 +324,12 @@ func TestPredictOptionsCombination(t *testing.T) {
 func TestLLamaMethods(t *testing.T) {
 	// Test LLama methods
 	var l LLama = "test_model"
-	
+
 	// Test Predict method
 	result, err := l.Predict("test prompt")
 	assert.NoError(t, err)
 	assert.Equal(t, "test_model", result)
-	
+
 	// Test Free method
 	// This is a no-op in the mock, but we test it doesn't panic
 	assert.NotPanics(t, func() { l.Free() })
@@ -344,30 +340,29 @@ func TestTokenCallback(t *testing.T) {
 	callback := SetTokenCallback(func(token string) bool {
 		return true
 	})
-	
+
 	// Test that callback is not nil
 	assert.NotNil(t, callback)
-	
+
 	// Test with a callback that returns false
 	callbackFalse := SetTokenCallback(func(token string) bool {
 		return false
 	})
-	
+
 	// Test that callback is not nil
 	assert.NotNil(t, callbackFalse)
 }
 
 func TestNewFunction(t *testing.T) {
 	// Test New function with various options
-	
 	// Test with default options
 	_, err := New("test_model.bin")
 	assert.NoError(t, err)
-	
+
 	// Test with custom options
 	_, err = New("test_model.bin", SetContext(2048), SetGPULayers(2))
 	assert.NoError(t, err)
-	
+
 	// Test with embeddings
 	_, err = New("test_model.bin", EnableEmbeddings)
 	assert.NoError(t, err)

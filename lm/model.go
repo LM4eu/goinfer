@@ -11,7 +11,7 @@ import (
 	"github.com/synw/goinfer/state"
 )
 
-// UnloadModel unloads the currently loaded model
+// UnloadModel unloads the currently loaded model.
 func UnloadModel() {
 	if state.IsModelLoaded {
 		state.Lm.Free()
@@ -20,8 +20,7 @@ func UnloadModel() {
 	state.LoadedModel = ""
 }
 
-// LoadModel loads a model from the specified path with given parameters
-// Returns error code and error if any
+// Returns error code and error if any.
 func LoadModel(model string, params llama.ModelOptions) (int, error) {
 	if model == "" {
 		return 400, fmt.Errorf("model name cannot be empty: %w", ErrInvalidInput)
@@ -64,14 +63,16 @@ func LoadModel(model string, params llama.ModelOptions) (int, error) {
 			fmt.Println(string(jsonData))
 		}
 	}
+
 	state.Lm = lm
 	state.ModelOptions = params
 	state.IsModelLoaded = true
 	state.LoadedModel = model
+
 	return 200, nil
 }
 
-// Standard application errors
+// Standard application errors.
 var (
 	ErrModelNotFound      = errors.New("model not found")
 	ErrInvalidInput       = errors.New("invalid input")

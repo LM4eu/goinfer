@@ -13,21 +13,22 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-// parseModelParams parses model parameters from echo.Map
+// parseModelParams parses model parameters from echo.Map.
 func parseModelParams(m echo.Map) (string, llama.ModelOptions, error) {
 	var model string
 	v, ok := m["name"]
 	if !ok {
 		return "", llama.ModelOptions{}, errors.New("provide a model name")
 	}
-	
+
 	// Type assertion with error checking
 	modelName, ok := v.(string)
 	if !ok {
 		return "", llama.ModelOptions{}, errors.New("model name must be a string")
 	}
+
 	model = modelName
-	
+
 	ctx := state.DefaultModelOptions.ContextSize
 	v, ok = m["ctx"]
 	if ok {
@@ -35,7 +36,7 @@ func parseModelParams(m echo.Map) (string, llama.ModelOptions, error) {
 			ctx = int(ctxVal)
 		}
 	}
-	
+
 	embeddings := state.DefaultModelOptions.Embeddings
 	v, ok = m["embeddings"]
 	if ok {
@@ -43,7 +44,7 @@ func parseModelParams(m echo.Map) (string, llama.ModelOptions, error) {
 			embeddings = e
 		}
 	}
-	
+
 	gpuLayers := state.DefaultModelOptions.NGPULayers
 	v, ok = m["gpu_layers"]
 	if ok {
@@ -51,23 +52,23 @@ func parseModelParams(m echo.Map) (string, llama.ModelOptions, error) {
 			gpuLayers = int(gpuLayersVal)
 		}
 	}
-	
+
 	params := llama.ModelOptions{
 		ContextSize: ctx,
 		Embeddings:  embeddings,
 		NGPULayers:  gpuLayers,
 	}
-	
+
 	return model, params, nil
 }
 
-// LoadModelHandler handles loading a model
+// LoadModelHandler handles loading a model.
 func LoadModelHandler(c echo.Context) error {
 	m := echo.Map{}
 	if err := c.Bind(&m); err != nil {
 		return fmt.Errorf("failed to bind model parameters: %w", err)
 	}
-	
+
 	model, params, err := parseModelParams(m)
 	if err != nil {
 		fmt.Println("error in params:" + err.Error())
@@ -75,7 +76,7 @@ func LoadModelHandler(c echo.Context) error {
 			"error": "model params",
 		})
 	}
-	
+
 	errcode, err := lm.LoadModel(model, params)
 	if err != nil {
 		if errcode == 500 {
@@ -99,44 +100,44 @@ func LoadModelHandler(c echo.Context) error {
 			})
 		}
 	}
-	
+
 	return c.NoContent(http.StatusNoContent)
 }
 
-// UnloadModelHandler unloads the currently loaded model
+// UnloadModelHandler unloads the currently loaded model.
 func UnloadModelHandler(c echo.Context) error {
 	lm.UnloadModel()
 	return c.NoContent(http.StatusNoContent)
 }
 
-// ModelsStateHandler returns the state of models
+// ModelsStateHandler returns the state of models.
 func ModelsStateHandler(c echo.Context) error {
 	if state.IsVerbose {
 		fmt.Println("Reading files in:", state.ModelsDir)
 	}
-	
+
 	models, err := files.ReadModels(state.ModelsDir)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error": "reading models",
 		})
 	}
-	
+
 	if state.IsVerbose {
 		fmt.Println("Found models:", models)
 	}
-	
+
 	templates, err := files.ReadTemplates()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error": "reading templates",
 		})
 	}
-	
+
 	if state.IsVerbose {
 		fmt.Println("Found templates:", templates)
 	}
-	
+
 	for _, model := range models {
 		_, hasTemplate := templates[model]
 		if !hasTemplate {
@@ -146,7 +147,7 @@ func ModelsStateHandler(c echo.Context) error {
 			}
 		}
 	}
-	
+
 	return c.JSON(http.StatusOK, echo.Map{
 		"models":        templates,
 		"isModelLoaded": state.IsModelLoaded,

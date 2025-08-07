@@ -40,7 +40,7 @@ func SetContext(c int) ModelOption {
 	}
 }
 
-// SetGPULayers sets the number of GPU layers to use to offload computation
+// SetGPULayers sets the number of GPU layers to use to offload computation.
 func SetGPULayers(n int) ModelOption {
 	return func(p *ModelOptions) {
 		p.NGPULayers = n

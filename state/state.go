@@ -5,25 +5,31 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-// models state
-var ModelsDir = ""
-var IsModelLoaded = false
-var LoadedModel = ""
-var ModelOptions = DefaultModelOptions
+// models state.
+var (
+	ModelsDir     = ""
+	IsModelLoaded = false
+	LoadedModel   = ""
+	ModelOptions  = DefaultModelOptions
+)
 
-// inference state
-var ContinueInferringController = true
-var IsInferring = false
+// inference state.
+var (
+	ContinueInferringController = true
+	IsInferring                 = false
+)
 
-// app state
-var IsVerbose = true
-var IsDebug = false
+// app state.
+var (
+	IsVerbose = true
+	IsDebug   = false
+)
 
-// tasks
+// tasks.
 var TasksDir = "./tasks"
 
-// OpenAi api
+// OpenAi api.
 var OpenAiConf types.OpenAiConf
 
-// the language model instance
+// the language model instance.
 var Lm llama.LLama

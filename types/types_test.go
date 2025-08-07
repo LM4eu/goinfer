@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestInferenceParamsConstructor tests the constructor function
+// TestInferenceParamsConstructor tests the constructor function.
 func TestInferenceParamsConstructor(t *testing.T) {
 	// Test that default values are properly set using the constructor
 	params := NewInferenceParams()
@@ -27,7 +27,7 @@ func TestInferenceParamsConstructor(t *testing.T) {
 	assert.Equal(t, []string{DefaultStopPrompt}, params.StopPrompts)
 }
 
-// TestInferenceParamsCreation tests creating InferenceParams with custom values
+// TestInferenceParamsCreation tests creating InferenceParams with custom values.
 func TestInferenceParamsCreation(t *testing.T) {
 	// Test creating custom inference params
 	params := InferenceParams{
@@ -58,7 +58,7 @@ func TestInferenceParamsCreation(t *testing.T) {
 	assert.Equal(t, []string{"STOP", "END"}, params.StopPrompts)
 }
 
-// TestInferenceParamsClone tests the Clone method
+// TestInferenceParamsClone tests the Clone method.
 func TestInferenceParamsClone(t *testing.T) {
 	// Test that inference params can be copied correctly using Clone
 	params1 := InferenceParams{
@@ -96,7 +96,7 @@ func TestInferenceParamsClone(t *testing.T) {
 	assert.Equal(t, []string{"END"}, params2.StopPrompts)
 }
 
-// TestInferenceParamsReset tests resetting to defaults
+// TestInferenceParamsReset tests resetting to defaults.
 func TestInferenceParamsReset(t *testing.T) {
 	// Test resetting inference params to defaults
 	params := InferenceParams{
@@ -199,7 +199,7 @@ func TestInferenceParamsValidation(t *testing.T) {
 		{
 			name: "Invalid RepeatPenalty (negative)",
 			params: InferenceParams{
-				Threads:      1,
+				Threads:       1,
 				RepeatPenalty: -0.1,
 			},
 			valid:       false,
@@ -249,7 +249,7 @@ func TestInferenceParamsValidation(t *testing.T) {
 		{
 			name: "RepeatPenalty boundary (0.0)",
 			params: InferenceParams{
-				Threads:      1,
+				Threads:       1,
 				RepeatPenalty: 0.0,
 			},
 			valid: true,
@@ -267,7 +267,7 @@ func TestInferenceParamsValidation(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.params.Validate()
-			
+
 			if tc.valid {
 				require.NoError(t, err)
 			} else {
@@ -345,16 +345,16 @@ func TestInferenceParamsWithPartialDefaults(t *testing.T) {
 	assert.Equal(t, float32(0.5), customParams.Temperature)
 
 	// Verify other fields retain default values
-	assert.Equal(t, DefaultThreads, defaultParams.Threads)                      // Default value
-	assert.Equal(t, DefaultNPredict, defaultParams.NPredict)                   // Default value
-	assert.Equal(t, DefaultTopK, defaultParams.TopK)                        // Default value
-	assert.Equal(t, float32(DefaultTopP), defaultParams.TopP)             // Default value
-	assert.Equal(t, float32(DefaultTemperature), defaultParams.Temperature)       // Default value
-	assert.Equal(t, float32(DefaultFrequencyPenalty), defaultParams.FrequencyPenalty)  // Default value
-	assert.Equal(t, float32(DefaultPresencePenalty), defaultParams.PresencePenalty)   // Default value
-	assert.Equal(t, float32(DefaultRepeatPenalty), defaultParams.RepeatPenalty)     // Default value
+	assert.Equal(t, DefaultThreads, defaultParams.Threads)                              // Default value
+	assert.Equal(t, DefaultNPredict, defaultParams.NPredict)                            // Default value
+	assert.Equal(t, DefaultTopK, defaultParams.TopK)                                    // Default value
+	assert.Equal(t, float32(DefaultTopP), defaultParams.TopP)                           // Default value
+	assert.Equal(t, float32(DefaultTemperature), defaultParams.Temperature)             // Default value
+	assert.Equal(t, float32(DefaultFrequencyPenalty), defaultParams.FrequencyPenalty)   // Default value
+	assert.Equal(t, float32(DefaultPresencePenalty), defaultParams.PresencePenalty)     // Default value
+	assert.Equal(t, float32(DefaultRepeatPenalty), defaultParams.RepeatPenalty)         // Default value
 	assert.Equal(t, float32(DefaultTailFreeSamplingZ), defaultParams.TailFreeSamplingZ) // Default value
-	assert.Equal(t, []string{DefaultStopPrompt}, defaultParams.StopPrompts)   // Default value
+	assert.Equal(t, []string{DefaultStopPrompt}, defaultParams.StopPrompts)             // Default value
 }
 
 func TestStopPromptsManipulation(t *testing.T) {
@@ -429,10 +429,10 @@ func TestInferenceParamsEdgeCases(t *testing.T) {
 		{
 			name: "Maximum valid values",
 			params: InferenceParams{
-				Threads:     1, // Set to minimum valid value
-				TopP:        1.0,
-				Temperature: 100.0,
-				RepeatPenalty: 100.0,
+				Threads:           1, // Set to minimum valid value
+				TopP:              1.0,
+				Temperature:       100.0,
+				RepeatPenalty:     100.0,
 				TailFreeSamplingZ: 100.0,
 			},
 		},

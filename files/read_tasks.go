@@ -1,9 +1,9 @@
 package files
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -19,7 +19,7 @@ var keyCounter int
 func NewNode(label string, path string) *Node {
 	keyCounter++
 	return &Node{
-		Key:   fmt.Sprintf("%d", keyCounter),
+		Key:   strconv.Itoa(keyCounter),
 		Label: strings.Replace(label, ".yml", "", 1),
 		Path:  path,
 	}
@@ -29,6 +29,7 @@ func addPath(root *Node, path string) {
 	parts := strings.Split(path, string(filepath.Separator))
 	current := root
 	prevParts := ""
+
 	for _, part := range parts {
 		found := false
 		for _, child := range current.Children {
@@ -38,6 +39,7 @@ func addPath(root *Node, path string) {
 				break
 			}
 		}
+
 		if part != root.Label {
 			if len(prevParts) > 0 {
 				prevParts = prevParts + "/" + part
@@ -89,5 +91,6 @@ func ReadTasks(rootPath string) ([]*Node, error) {
 			data = ts.Children[0].Children
 		}
 	}
+
 	return data, nil
 }
