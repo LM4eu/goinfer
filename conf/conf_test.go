@@ -13,7 +13,7 @@ import (
 func TestInitConf(t *testing.T) {
 	// Create a temporary config file
 	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "goinfer.config.json")
+	configPath := filepath.Join(tempDir, "goinfer.json")
 
 	configData := map[string]interface{}{
 		"models_dir": "./test_models",
@@ -53,7 +53,7 @@ func TestInitConf(t *testing.T) {
 func TestInitConf_WithDefaults(t *testing.T) {
 	// Create a minimal config file with only required fields
 	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "goinfer.config.json")
+	configPath := filepath.Join(tempDir, "goinfer.json")
 
 	configData := map[string]interface{}{
 		"models_dir": "./test_models",
@@ -101,7 +101,7 @@ func TestInitConf_InvalidConfig(t *testing.T) {
 func TestInitConf_InvalidJSON(t *testing.T) {
 	// Create a temporary config file with invalid JSON
 	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "goinfer.config.json")
+	configPath := filepath.Join(tempDir, "goinfer.json")
 
 	invalidJSON := `{"models_dir": "./test_models", "tasks_dir": "./test_tasks",` // Missing closing brace
 	err := os.WriteFile(configPath, []byte(invalidJSON), 0o644)
@@ -143,7 +143,7 @@ func TestInitConf_DifferentConfigName(t *testing.T) {
 	err = os.Chdir(tempDir)
 	require.NoError(t, err)
 
-	// Test InitConf with different config name (should panic as it looks for "goinfer.config")
+	// Test InitConf with different config name (should panic as it looks for "goinfer.json")
 	assert.Panics(t, func() {
 		InitConf()
 	})
@@ -163,10 +163,10 @@ func TestCreate(t *testing.T) {
 	Create("/test/models", false)
 
 	// Verify config file was created
-	assert.FileExists(t, "goinfer.config.json")
+	assert.FileExists(t, "goinfer.json")
 
 	// Read and verify config content
-	configBytes, err := os.ReadFile("goinfer.config.json")
+	configBytes, err := os.ReadFile("goinfer.json")
 	require.NoError(t, err)
 
 	var config map[string]interface{}
@@ -180,7 +180,7 @@ func TestCreate(t *testing.T) {
 
 	// Verify cleanup after test
 	t.Cleanup(func() {
-		os.Remove("goinfer.config.json")
+		os.Remove("goinfer.json")
 	})
 }
 
@@ -198,10 +198,10 @@ func TestCreate_WithDefaults(t *testing.T) {
 	Create("/test/models", true)
 
 	// Verify config file was created
-	assert.FileExists(t, "goinfer.config.json")
+	assert.FileExists(t, "goinfer.json")
 
 	// Read and verify config content
-	configBytes, err := os.ReadFile("goinfer.config.json")
+	configBytes, err := os.ReadFile("goinfer.json")
 	require.NoError(t, err)
 
 	var config map[string]interface{}
@@ -215,7 +215,7 @@ func TestCreate_WithDefaults(t *testing.T) {
 
 	// Verify cleanup after test
 	t.Cleanup(func() {
-		os.Remove("goinfer.config.json")
+		os.Remove("goinfer.json")
 	})
 }
 
