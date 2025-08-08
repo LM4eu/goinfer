@@ -27,7 +27,7 @@ func NewLlamaServerManager(config *LlamaConfig) *LlamaServerManager {
 	}
 }
 
-// Start -  process launch with minimal validation.
+// Start - process launch with minimal validation.
 func (m *LlamaServerManager) Start() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -102,7 +102,7 @@ func (m *LlamaServerManager) Stop() error {
 	}
 }
 
-// Restart -  restart with minimal downtime.
+// Restart - restart with minimal downtime.
 func (m *LlamaServerManager) Restart() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -156,7 +156,7 @@ func (m *LlamaServerManager) HealthCheck() bool {
 	return healthCheckTime < 2*time.Millisecond
 }
 
-// GetUptime -  uptime calculation.
+// GetUptime - uptime calculation.
 func (m *LlamaServerManager) GetUptime() time.Duration {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -167,7 +167,7 @@ func (m *LlamaServerManager) GetUptime() time.Duration {
 	return time.Since(m.startTime)
 }
 
-// GetPID -  PID retrieval.
+// GetPID - PID retrieval.
 func (m *LlamaServerManager) GetPID() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -178,14 +178,14 @@ func (m *LlamaServerManager) GetPID() int {
 	return m.process.Pid
 }
 
-// GetStartTime -  start time retrieval.
+// GetStartTime - start time retrieval.
 func (m *LlamaServerManager) GetStartTime() time.Time {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.startTime
 }
 
-// GetRestartCount -  restart count retrieval.
+// GetRestartCount - restart count retrieval.
 func (m *LlamaServerManager) GetRestartCount() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -193,7 +193,7 @@ func (m *LlamaServerManager) GetRestartCount() int {
 	return m.restartCount
 }
 
-// IsRunning -  running state check.
+// IsRunning - running state check.
 func (m *LlamaServerManager) IsRunning() bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -224,7 +224,7 @@ func (m *LlamaServerManager) monitor() {
 	}
 }
 
-// UpdateConfig -  configuration update.
+// UpdateConfig - configuration update.
 func (m *LlamaServerManager) UpdateConfig(newConfig *LlamaConfig) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -245,7 +245,7 @@ func (m *LlamaServerManager) UpdateConfig(newConfig *LlamaConfig) error {
 	return nil
 }
 
-// GetConfig -  config retrieval.
+// GetConfig - config retrieval.
 func (m *LlamaServerManager) GetConfig() *LlamaConfig {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -290,7 +290,7 @@ type ErrRestartFailed string
 
 func (e ErrRestartFailed) Error() string { return "restart failed: " + string(e) }
 
-// isProcessTerminated -  check if process is terminated.
+// isProcessTerminated - check if process is terminated.
 func isProcessTerminated(err error) bool {
 	if err == nil {
 		return true
