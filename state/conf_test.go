@@ -38,7 +38,7 @@ func TestDefaultModelOptions(t *testing.T) {
 
 func TestDefaultModelConf(t *testing.T) {
 	// Test that DefaultModelConf has expected values
-	assert.Equal(t, "", DefaultModelConf.Name)
+	assert.Empty(t, DefaultModelConf.Name)
 	assert.Equal(t, 2048, DefaultModelConf.Ctx)
 	assert.Equal(t, 0, DefaultModelConf.GPULayers)
 }

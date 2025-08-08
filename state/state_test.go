@@ -10,9 +10,9 @@ import (
 
 func TestStateInitialization(t *testing.T) {
 	// Test that state variables have expected default values
-	assert.Equal(t, "", ModelsDir)
+	assert.Empty(t, ModelsDir)
 	assert.False(t, IsModelLoaded)
-	assert.Equal(t, "", LoadedModel)
+	assert.Empty(t, LoadedModel)
 	assert.Equal(t, DefaultModelOptions, ModelOptions)
 	assert.True(t, ContinueInferringController)
 	assert.False(t, IsInferring)
@@ -283,7 +283,7 @@ func TestStateModelLoadedState(t *testing.T) {
 	ModelOptions = llama.ModelOptions{}
 
 	assert.False(t, IsModelLoaded)
-	assert.Equal(t, "", LoadedModel)
+	assert.Empty(t, LoadedModel)
 	assert.Equal(t, llama.ModelOptions{}, ModelOptions)
 
 	// Restore original values

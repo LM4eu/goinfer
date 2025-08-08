@@ -258,7 +258,7 @@ inferParams:
 	// Assert task content with defaults
 	assert.Equal(t, "test_task", task.Name)
 	assert.Equal(t, "{prompt}", task.Template)
-	assert.Equal(t, "", task.ModelConf.Name)     // Default empty name
+	assert.Empty(t, task.ModelConf.Name)         // Default empty name
 	assert.Equal(t, 2048, task.ModelConf.Ctx)    // Default ctx
 	assert.Equal(t, 0, task.ModelConf.GPULayers) // Default gpu_layers
 }

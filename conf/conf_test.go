@@ -76,7 +76,7 @@ func TestInitConf_WithDefaults(t *testing.T) {
 	assert.Equal(t, "./test_models", config.ModelsDir)
 	assert.Equal(t, "./tasks", config.TasksDir)                         // Default value should be set
 	assert.Equal(t, []string{"localhost"}, config.Origins)              // Default value
-	assert.Equal(t, "", config.ApiKey)                                  // Default empty value
+	assert.Empty(t, config.ApiKey)                                      // Default empty value
 	assert.False(t, config.OpenAiConf.Enable)                           // Default value
 	assert.Equal(t, 4, config.OpenAiConf.Threads)                       // Default value
 	assert.Equal(t, "{system}\n\n{prompt}", config.OpenAiConf.Template) // Default value

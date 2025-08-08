@@ -20,9 +20,10 @@ func readTemplates(m map[string]interface{}) (map[string]types.TemplateInfo, err
 		for _, vx := range c {
 			val := vx.(map[string]interface{})
 			for k, v := range val {
-				if k == "ctx" {
+				switch k {
+				case "ctx":
 					mi.Ctx = v.(int)
-				} else if k == "template" {
+				case "template":
 					mi.Name = v.(string)
 				}
 			}
