@@ -99,7 +99,8 @@ func CreateWithFileName(modelsDir string, isDefault bool, fileName string) {
 
 func generateRandomKey() string {
 	bytes := make([]byte, 32)
-	if _, err := rand.Read(bytes); err != nil {
+	_, err := rand.Read(bytes)
+	if err != nil {
 		panic(err.Error())
 	}
 	key := hex.EncodeToString(bytes)
