@@ -77,7 +77,7 @@ type MemoryStats struct {
 	NumGC      uint32
 }
 
-// GetMemoryStats -  memory statistics collection.
+// GetMemoryStats - memory statistics collection.
 func GetMemoryStats() MemoryStats {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
