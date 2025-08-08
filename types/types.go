@@ -26,7 +26,7 @@ type GoInferConf struct {
 	LlamaConfig *LlamaConfig
 }
 
-// LlamaConfig holds configuration for the Llama server proxy
+// LlamaConfig holds configuration for the Llama server proxy.
 type LlamaConfig struct {
 	BinaryPath string
 	ModelPath  string

@@ -37,9 +37,10 @@ func parseParams(m echo.Map) (string, string, string, types.InferenceParams, err
 		el := m.(map[string]interface{})
 		role := el["role"].(string)
 		content := el["content"].(string)
-		if role == "system" {
+		switch role {
+		case "system":
 			template = strings.Replace(template, "{system}", content, 1)
-		} else if role == "user" {
+		case "user":
 			prompt = content
 		}
 	}
