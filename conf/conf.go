@@ -20,6 +20,13 @@ func InitConf() types.GoInferConf {
 	viper.SetDefault("oai.threads", 4)
 	viper.SetDefault("oai.template", "{system}\n\n{prompt}")
 
+	// Llama configuration defaults
+	viper.SetDefault("llama.binary_path", "")
+	viper.SetDefault("llama.model_path", "")
+	viper.SetDefault("llama.host", "localhost")
+	viper.SetDefault("llama.port", 8080)
+	viper.SetDefault("llama.args", []string{})
+
 	err := viper.ReadInConfig() // Find and read the config file
 	if err != nil {             // Handle errors reading the config file
 		panic(fmt.Errorf("fatal error config file: %w", err))
@@ -33,6 +40,13 @@ func InitConf() types.GoInferConf {
 	oaiThreads := viper.GetInt("oai.threads")
 	oaiTemplate := viper.GetString("oai.template")
 
+	// Llama configuration
+	llamaBinaryPath := viper.GetString("llama.binary_path")
+	llamaModelPath := viper.GetString("llama.model_path")
+	llamaHost := viper.GetString("llama.host")
+	llamaPort := viper.GetInt("llama.port")
+	llamaArgs := viper.GetStringSlice("llama.args")
+
 	return types.GoInferConf{
 		ModelsDir: md,
 		TasksDir:  td,
@@ -42,6 +56,13 @@ func InitConf() types.GoInferConf {
 			Enable:   oaiEnable,
 			Threads:  oaiThreads,
 			Template: oaiTemplate,
+		},
+		LlamaConfig: &types.LlamaConfig{
+			BinaryPath: llamaBinaryPath,
+			ModelPath:  llamaModelPath,
+			Host:       llamaHost,
+			Port:       llamaPort,
+			Args:       llamaArgs,
 		},
 	}
 }
@@ -63,6 +84,14 @@ func CreateWithFileName(modelsDir string, isDefault bool, fileName string) {
 		"origins":    []string{"http://localhost:5173", "http://localhost:5143"},
 		"api_key":    key,
 		"tasks_dir":  "./tasks",
+		// Llama configuration defaults
+		"llama": map[string]interface{}{
+			"binary_path": "",
+			"model_path":  "",
+			"host":        "localhost",
+			"port":        8080,
+			"args":        []string{},
+		},
 	}
 	jsonString, _ := json.MarshalIndent(data, "", "    ")
 	os.WriteFile(fileName, jsonString, os.ModePerm&^0o111)
