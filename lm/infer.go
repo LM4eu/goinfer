@@ -126,7 +126,8 @@ func Infer(
 // StreamMsg streams a message to the client.
 func StreamMsg(msg types.StreamedMessage, c echo.Context, enc *json.Encoder) error {
 	c.Response().Write([]byte("data: "))
-	if err := enc.Encode(msg); err != nil {
+	err := enc.Encode(msg)
+	if err != nil {
 		return fmt.Errorf("failed to encode stream message: %w", err)
 	}
 	c.Response().Write([]byte("\n"))

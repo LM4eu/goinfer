@@ -1,0 +1,611 @@
+version: "2"
+
+# Enable all linters except deprecated ones
+linters:
+  default: all
+
+  disable: 
+  - nlreturn
+  - wsl
+  - wsl_v5
+
+  enable:
+    # Enabled by default linters
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    
+    # Disabled by default linters
+    - arangolint
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - canonicalheader
+    - containedctx
+    - contextcheck
+    - copyloopvar
+    - cyclop
+    - decorder
+    - depguard
+    - dogsled
+    - dupl
+    - dupword
+    - durationcheck
+    - embeddedstructfieldcheck
+    - err113
+    - errchkjson
+    - errname
+    - errorlint
+    - exhaustive
+    - exhaustruct
+    - exptostd
+    - fatcontext
+    - forbidigo
+    - forcetypeassert
+    - funcorder
+    - funlen
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    - gochecknoglobals
+    - gochecknoinits
+    - gochecksumtype
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - godox
+    - goheader
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - gosmopolitan
+    - grouper
+    - iface
+    - importas
+    - inamedparam
+    - interfacebloat
+    - intrange
+    - ireturn
+    - lll
+    - loggercheck
+    - maintidx
+    - makezero
+    - mirror
+    - misspell
+    - mnd
+    - musttag
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnesserr
+    - nilnil
+    - noctx
+    - noinlineerr
+    - nolintlint
+    - nonamedreturns
+    - nosprintfhostport
+    - paralleltest
+    - perfsprint
+    - prealloc
+    - predeclared
+    - promlinter
+    - protogetter
+    - reassign
+    - recvcheck
+    - revive
+    - rowserrcheck
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - tagalign
+    - tagliatelle
+    - testableexamples
+    - testifylint
+    - testpackage
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - usetesting
+    - varnamelen
+    - wastedassign
+    - whitespace
+    - wrapcheck
+    - zerologlint
+
+linters-settings:
+  # errcheck settings
+  errcheck:
+    check-type-assertions: false
+    check-blank: false
+  
+  # govet settings
+  govet:
+    enable-all: true
+    settings:
+      shadow:
+        strict: true
+  
+  # staticcheck settings
+  staticcheck:
+    checks: all
+  
+  # unused settings
+  unused:
+    check-exported: false
+  
+  # gocritic settings
+  gocritic:
+    enabled-checks: all
+    settings:
+      captureruneverywhere:
+        params-only: true
+      exitafterreturn:
+        allow-comment: true
+      hugeparam:
+        threshold: 10
+      ifelsechain:
+        max-chains: 3
+      longchain:
+        max-len: 5
+      nestingreduce:
+        max-depth: 5
+      rangevalcopy:
+        threshold: 512
+      sliceinit:
+        max-size: 100
+      stringintconv:
+        ignore-string-representation: true
+  
+  # revive settings
+  revive:
+    enable-all-rules: true
+    config:
+      - rule-name: blank-imports
+        severity: warning
+      - rule-name: context-as-argument
+        severity: warning
+      - rule-name: context-keys-type
+        severity: warning
+      - rule-name: dot-imports
+        severity: warning
+      - rule-name: error-return
+        severity: warning
+      - rule-name: error-naming
+        severity: warning
+      - rule-name: if-return
+        severity: warning
+      - rule-name: var-naming
+        severity: warning
+  
+  # goconst settings
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  
+  # gocyclo settings
+  gocyclo:
+    min-complexity: 15
+  
+  # maligned settings
+  maligned:
+    suggest-new-order: true
+  
+  # dupl settings
+  dupl:
+    threshold: 100
+  
+  # gochecknoglobals settings
+  gochecknoglobals:
+    allow: []
+  
+  # gochecknoinits settings
+  gochecknoinits:
+    skip: []
+  
+  # lll settings
+  lll:
+    line-length: 120
+  
+  # funlen settings
+  funlen:
+    lines: 60
+    statements: 40
+  
+  # gocognit settings
+  gocognit:
+    min-complexity: 20
+  
+  # cyclop settings
+  cyclop:
+    max-complexity: 30
+    skip-test: true
+  
+  # misspell settings
+  misspell:
+    locale: US
+  
+  # nolintlint settings
+  nolintlint:
+    require-explanation: false
+    allow-leading-space: true
+    require-specific: true
+  
+  # predeclared settings
+  predeclared:
+    ignore: ""
+  
+  # wsl_v5 settings
+  wsl_v5:
+    strict: true
+    allow-trailing-comma: true
+  
+  # tagalign settings
+  tagalign:
+    order: "align"
+    style: "same"
+  
+  # godot settings
+  godot:
+    scope: "declarations"
+  
+  # godox settings
+  godox:
+    keywords: ["TODO", "FIXME", "BUG", "HACK"]
+  
+  # gomodguard settings
+  gomodguard:
+    rules:
+      deny:
+        - path: "^gopkg.in/"
+          reason: "use newer go modules"
+        - path: "^github.com/golang/protobuf"
+          reason: "use newer go modules"
+  
+  # depguard settings
+  depguard:
+    rules:
+      deny:
+        # path: "github.com/some/bad/package"
+        # reason: "use a better package"
+  
+  # gomoddirectives settings
+  gomoddirectives:
+    replace-allowlist:
+      - "github.com/owner/repo v1.0.0"
+  
+  # importas settings
+  importas:
+    alias:
+      - pkg: "github.com/pkg/errors"
+        alias: "errors"
+      - pkg: "context"
+        alias: "ctx"
+  
+  # unparam settings
+  unparam:
+    check-exported: false
+  
+  # errorlint settings
+  errorlint:
+    errorf: true
+    asserts: true
+    comparison: true
+  
+  # wrapcheck settings
+  wrapcheck:
+    ignore-sigs:
+      - "errors.New("
+      - "errors.New("
+      - "fmt.Errorf("
+    ignore-interface-regexps:
+      - "^(?i)error$"
+    ignore-package-globs:
+      - "errors/*"
+      - "fmt/*"
+  
+  # bodyclose settings
+  bodyclose:
+    no-default-checks: false
+  
+  # rowserrcheck settings
+  rowserrcheck:
+    check-all: true
+    packages:
+      - "database/sql"
+      - "github.com/jackc/pgx/v4"
+  
+  # sqlclosecheck settings
+  sqlclosecheck:
+    packages:
+      - "database/sql"
+      - "github.com/jackc/pgx/v4"
+  
+  # gosec settings
+  gosec:
+    excludes:
+      - "G104"
+    severity: "medium"
+    confidence: "medium"
+    nosec: ""
+  
+  # gosmopolitan settings
+  gosmopolitan:
+    allow-time: false
+    allow-time-utc: false
+    check-timezone: true
+  
+  # loggercheck settings
+  loggercheck:
+    kitsune: true
+    klog: true
+    logr: true
+    slog: true
+    zap: true
+  
+  # zerologlint settings
+  zerologlint:
+    check-log: true
+    check-event: true
+  
+  # testifylint settings
+  testifylint:
+    disable-all: false
+    enable:
+      - bool-compare
+      - compares
+      - empty
+      - error-is-as
+      - error-nil
+      - expected-actual
+      - go-require
+      - float-compare
+      - len
+      - nil-compare
+      - require-error
+      - suite-extra-assert-call
+      - suite-thelper
+  
+  # paralleltest settings
+  paralleltest:
+    ignore-missing: false
+  
+  # tparallel settings
+  tparallel:
+    check-all: true
+    ignore-missing: false
+  
+  # testpackage settings
+  testpackage:
+    suffix: "_test"
+  
+  # thelper settings
+  thelper:
+    allow: []
+  
+  # usestdlibvars settings
+  usestdlibvars:
+    allow-all: false
+    ignore:
+      - "os.O_WRONLY"
+      - "os.O_RDWR"
+  
+  # usetesting settings
+  usetesting:
+    allow:
+      - "testing.T"
+      - "testing.B"
+      - "testing.F"
+  
+  # iface settings
+  iface:
+    allow-empty-interface: false
+    allow-single-method: false
+  
+  # interfacebloat settings
+  interfacebloat:
+    max-methods: 10
+  
+  # inamedparam settings
+  inamedparam:
+    ignore-empty: false
+  
+  # prealloc settings
+  prealloc:
+    simple: true
+    range-loops: true
+    for-loops: true
+  
+  # perfsprint settings
+  perfsprint:
+    ignore: []
+  
+  # exptostd settings
+  exptostd:
+    ignore: []
+  
+  # canonicalheader settings
+  canonicalheader:
+    canonical-headers: []
+  
+  # copyloopvar settings
+  copyloopvar:
+    check-alias: true
+  
+  # durationcheck settings
+  durationcheck:
+    check-multiplication: true
+  
+  # embeddedstructfieldcheck settings
+  embeddedstructfieldcheck:
+    allow-empty-line: true
+  
+  # errchkjson settings
+  errchkjson:
+    check-struct-tag: true
+  
+  # errname settings
+  errname:
+    check-named-errors: true
+    check-func-errors: true
+  
+  # exhaustive settings
+  exhaustive:
+    check-generated: false
+  
+  # exhaustruct settings
+  exhaustruct:
+    ignore-structs: []
+  
+  # fatcontext settings
+  fatcontext:
+    max-context-nesting: 3
+  
+  # forbidigo settings
+  forbidigo:
+    forbid:
+      - pattern: '^fmt\.Print.*$'
+        msg: "Use logger instead of fmt.Print"
+      - pattern: '^log\..*$'
+        msg: "Use logger instead of log"
+  
+  # forcetypeassert settings
+  forcetypeassert:
+    check-all: true
+  
+  # funcorder settings
+  funcorder:
+    order: ["init", "main", "Setup", "TearDown", "Test", "Benchmark", "Example"]
+  
+  # gochecksumtype settings
+  gochecksumtype:
+    check-all: true
+  
+  # goprintffuncname settings
+  goprintffuncname:
+    check-func-names: []
+  
+  # intrange settings
+  intrange:
+    check-range: true
+  
+  # ireturn settings
+  ireturn:
+    allow: []
+  
+  # makezero settings
+  makezero:
+    always: false
+  
+  # mirror settings
+  mirror:
+    check-all: true
+  
+  # musttag settings
+  musttag:
+    rules: []
+  
+  # nakedret settings
+  nakedret:
+    max-func-lines: 15
+  
+  # nestif settings
+  nestif:
+    max-nesting: 5
+  
+  # nilerr settings
+  nilerr:
+    check-all: true
+  
+  # nilnesserr settings
+  nilnesserr:
+    check-all: true
+  
+  # nlreturn settings
+  nlreturn:
+    max-lines: 2
+  
+  # noctx settings
+  noctx:
+    check-all: true
+  
+  # noinlineerr settings
+  noinlineerr:
+    check-all: true
+  
+  # nonamedreturns settings
+  nonamedreturns:
+    check-all: true
+  
+  # nosprintfhostport settings
+  nosprintfhostport:
+    check-all: true
+  
+  # promlinter settings
+  promlinter:
+    strict: false
+  
+  # protogetter settings
+  protogetter:
+    check-all: true
+  
+  # reassign settings
+  reassign:
+    check-local: true
+    check-global: true
+  
+  # recvcheck settings
+  recvcheck:
+    check-all: true
+  
+  # sloglint settings
+  sloglint:
+    context: all
+    key-value-braces: true
+    args-on-separate-lines: true
+  
+  # spancheck settings
+  spancheck:
+    check-all: true
+  
+  # tagliatelle settings
+  tagliatelle:
+    check-all: true
+    ignore: []
+  
+  # testableexamples settings
+  testableexamples:
+    check-all: true
+  
+  # unconvert settings
+  unconvert:
+    check-all: true
+  
+  # varnamelen settings
+  varnamelen:
+    min-length: 2
+    ignore: []
+  
+  # wastedassign settings
+  wastedassign:
+    check-all: true
+  
+  # whitespace settings
+  whitespace:
+    multi-if: true
+    multi-assign: true
+    blank-lines: true
+    space-around-operator: true
+    space-around-braces: true
+    space-around-parentheses: true
+    space-around-comment: true
+
+# Run settings
+run:
+  timeout: 5m
