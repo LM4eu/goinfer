@@ -15,12 +15,12 @@ func TestInitConf(t *testing.T) {
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "goinfer.json")
 
-	configData := map[string]interface{}{
+	configData := map[string]any{
 		"models_dir": "./test_models",
 		"tasks_dir":  "./test_tasks",
 		"origins":    []string{"http://localhost:3000"},
 		"api_key":    "test_key_123",
-		"oai": map[string]interface{}{
+		"oai": map[string]any{
 			"enable":   true,
 			"threads":  4,
 			"template": "{system}\n\n{prompt}",
@@ -55,7 +55,7 @@ func TestInitConf_WithDefaults(t *testing.T) {
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "goinfer.json")
 
-	configData := map[string]interface{}{
+	configData := map[string]any{
 		"models_dir": "./test_models",
 	}
 
@@ -125,7 +125,7 @@ func TestInitConf_DifferentConfigName(t *testing.T) {
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "custom.config.json")
 
-	configData := map[string]interface{}{
+	configData := map[string]any{
 		"models_dir": "./test_models",
 		"tasks_dir":  "./test_tasks",
 		"origins":    []string{"http://localhost:3000"},
@@ -169,12 +169,12 @@ func TestCreate(t *testing.T) {
 	configBytes, err := os.ReadFile("goinfer.json")
 	require.NoError(t, err)
 
-	var config map[string]interface{}
+	var config map[string]any
 	err = json.Unmarshal(configBytes, &config)
 	require.NoError(t, err)
 
 	assert.Equal(t, "/test/models", config["models_dir"])
-	assert.Equal(t, []interface{}{"http://localhost:5173", "http://localhost:5143"}, config["origins"])
+	assert.Equal(t, []any{"http://localhost:5173", "http://localhost:5143"}, config["origins"])
 	assert.Equal(t, "./tasks", config["tasks_dir"])
 	assert.NotEmpty(t, config["api_key"]) // Should be a random key
 
@@ -204,12 +204,12 @@ func TestCreate_WithDefaults(t *testing.T) {
 	configBytes, err := os.ReadFile("goinfer.json")
 	require.NoError(t, err)
 
-	var config map[string]interface{}
+	var config map[string]any
 	err = json.Unmarshal(configBytes, &config)
 	require.NoError(t, err)
 
 	assert.Equal(t, "/test/models", config["models_dir"])
-	assert.Equal(t, []interface{}{"http://localhost:5173", "http://localhost:5143"}, config["origins"])
+	assert.Equal(t, []any{"http://localhost:5173", "http://localhost:5143"}, config["origins"])
 	assert.Equal(t, "./tasks", config["tasks_dir"])
 	assert.Equal(t, "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465", config["api_key"]) // Default key
 
@@ -271,12 +271,12 @@ func TestCreateWithFileName(t *testing.T) {
 	configBytes, err := os.ReadFile(customFileName)
 	require.NoError(t, err)
 
-	var config map[string]interface{}
+	var config map[string]any
 	err = json.Unmarshal(configBytes, &config)
 	require.NoError(t, err)
 
 	assert.Equal(t, "/test/models", config["models_dir"])
-	assert.Equal(t, []interface{}{"http://localhost:5173", "http://localhost:5143"}, config["origins"])
+	assert.Equal(t, []any{"http://localhost:5173", "http://localhost:5143"}, config["origins"])
 	assert.Equal(t, "./tasks", config["tasks_dir"])
 	assert.NotEmpty(t, config["api_key"]) // Should be a random key
 

@@ -9,18 +9,18 @@ import (
 func TestConvertTask_Float64ToIntConversion(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    map[string]interface{}
+		input    map[string]any
 		wantErr  bool
 		errMsg   string
 		expected *types.Task
 	}{
 		{
 			name: "float64 ctx conversion",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":     "test_task",
 				"template": "test_template",
-				"modelConf": []interface{}{
-					map[string]interface{}{
+				"modelConf": []any{
+					map[string]any{
 						"name": "test_model",
 						"ctx":  5.0, // float64 that should convert to int
 					},
@@ -40,11 +40,11 @@ func TestConvertTask_Float64ToIntConversion(t *testing.T) {
 		},
 		{
 			name: "float64 gpu_layers conversion",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":     "test_task",
 				"template": "test_template",
-				"modelConf": []interface{}{
-					map[string]interface{}{
+				"modelConf": []any{
+					map[string]any{
 						"name":       "test_model",
 						"gpu_layers": 3.0, // float64 that should convert to int
 					},
@@ -64,11 +64,11 @@ func TestConvertTask_Float64ToIntConversion(t *testing.T) {
 		},
 		{
 			name: "float64 threads conversion",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":     "test_task",
 				"template": "test_template",
-				"inferParams": []interface{}{
-					map[string]interface{}{
+				"inferParams": []any{
+					map[string]any{
 						"threads": 4.0, // float64 that should convert to int
 					},
 				},
@@ -83,11 +83,11 @@ func TestConvertTask_Float64ToIntConversion(t *testing.T) {
 		},
 		{
 			name: "float64 n_predict conversion",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":     "test_task",
 				"template": "test_template",
-				"inferParams": []interface{}{
-					map[string]interface{}{
+				"inferParams": []any{
+					map[string]any{
 						"n_predict": 100.0, // float64 that should convert to int
 					},
 				},
@@ -102,11 +102,11 @@ func TestConvertTask_Float64ToIntConversion(t *testing.T) {
 		},
 		{
 			name: "float64 top_k conversion",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":     "test_task",
 				"template": "test_template",
-				"inferParams": []interface{}{
-					map[string]interface{}{
+				"inferParams": []any{
+					map[string]any{
 						"top_k": 40.0, // float64 that should convert to int
 					},
 				},
@@ -121,11 +121,11 @@ func TestConvertTask_Float64ToIntConversion(t *testing.T) {
 		},
 		{
 			name: "float64 with fractional part should error",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":     "test_task",
 				"template": "test_template",
-				"modelConf": []interface{}{
-					map[string]interface{}{
+				"modelConf": []any{
+					map[string]any{
 						"name": "test_model",
 						"ctx":  5.5, // float64 with fractional part
 					},
@@ -136,11 +136,11 @@ func TestConvertTask_Float64ToIntConversion(t *testing.T) {
 		},
 		{
 			name: "invalid type for ctx should error",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":     "test_task",
 				"template": "test_template",
-				"modelConf": []interface{}{
-					map[string]interface{}{
+				"modelConf": []any{
+					map[string]any{
 						"name": "test_model",
 						"ctx":  "invalid", // string instead of number
 					},
@@ -151,11 +151,11 @@ func TestConvertTask_Float64ToIntConversion(t *testing.T) {
 		},
 		{
 			name: "invalid type for threads should error",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":     "test_task",
 				"template": "test_template",
-				"inferParams": []interface{}{
-					map[string]interface{}{
+				"inferParams": []any{
+					map[string]any{
 						"threads": "invalid", // string instead of number
 					},
 				},

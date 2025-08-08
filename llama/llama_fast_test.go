@@ -462,7 +462,7 @@ func TestLlamaUtils_ConcurrentMap(t *testing.T) {
 	// Test concurrent writes
 	for i := range iterations {
 		wg.Add(1)
-		go func(key string, value interface{}) {
+		go func(key string, value any) {
 			defer wg.Done()
 			cm.Set(key, value)
 		}(strconv.Itoa(i), i)
