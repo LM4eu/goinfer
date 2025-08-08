@@ -59,7 +59,7 @@ type OpenAiMessages struct {
 	TopP             float64         `json:"top_p,omitempty"`
 	N                int             `json:"n,omitempty"`
 	Stream           bool            `json:"stream,omitempty"`
-	Stop             interface{}     `json:"stop,omitempty"`
+	Stop             any             `json:"stop,omitempty"`
 	MaxTokens        int             `json:"max_tokens,omitempty"`
 	PresencePenalty  float64         `json:"presence_penalty,omitempty"`
 	FrequencyPenalty float64         `json:"frequency_penalty,omitempty"`

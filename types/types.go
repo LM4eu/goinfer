@@ -170,10 +170,10 @@ const (
 
 // StreamedMessage represents a streamed message.
 type StreamedMessage struct {
-	Content string                 `json:"content"`
-	Num     int                    `json:"num"` // number of tokens
-	MsgType MsgType                `json:"msg_type"`
-	Data    map[string]interface{} `json:"data,omitempty"`
+	Content string         `json:"content"`
+	Num     int            `json:"num"` // number of tokens
+	MsgType MsgType        `json:"msg_type"`
+	Data    map[string]any `json:"data,omitempty"`
 }
 
 // ApiType represents the type of API.

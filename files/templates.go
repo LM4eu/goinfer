@@ -11,14 +11,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func readTemplates(m map[string]interface{}) (map[string]types.TemplateInfo, error) {
+func readTemplates(m map[string]any) (map[string]types.TemplateInfo, error) {
 	info := map[string]types.TemplateInfo{}
 
 	for model, conf := range m {
-		c := conf.([]interface{})
+		c := conf.([]any)
 		mi := types.TemplateInfo{}
 		for _, vx := range c {
-			val := vx.(map[string]interface{})
+			val := vx.(map[string]any)
 			for k, v := range val {
 				switch k {
 				case "ctx":
@@ -35,7 +35,7 @@ func readTemplates(m map[string]interface{}) (map[string]types.TemplateInfo, err
 }
 
 func ReadTemplates() (map[string]types.TemplateInfo, error) {
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	p := filepath.Join(state.ModelsDir, "templates.yml")
 	info := map[string]types.TemplateInfo{}
 	// fmt.Println("Opening", p)

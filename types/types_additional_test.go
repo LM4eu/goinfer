@@ -92,7 +92,7 @@ func TestMsgTypeConstants(t *testing.T) {
 
 func TestStreamedMessage(t *testing.T) {
 	// Test creating a StreamedMessage
-	data := map[string]interface{}{
+	data := map[string]any{
 		"model":     "test-model",
 		"timestamp": 1234567890,
 	}
