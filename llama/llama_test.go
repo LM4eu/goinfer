@@ -73,8 +73,8 @@ func TestModelOptionsDefaultValues(t *testing.T) {
 	assert.False(t, opts.Embeddings)                // Default embeddings
 	assert.False(t, opts.NUMA)                      // Default numa
 	assert.Equal(t, 0, opts.NGPULayers)             // Default n_gpu_layers
-	assert.Equal(t, "", opts.MainGPU)               // Default main_gpu
-	assert.Equal(t, "", opts.TensorSplit)           // Default tensor_split
+	assert.Empty(t, opts.MainGPU)                   // Default main_gpu
+	assert.Empty(t, opts.TensorSplit)               // Default tensor_split
 	assert.Equal(t, float32(0), opts.FreqRopeBase)  // Default freq_rope_base
 	assert.Equal(t, float32(0), opts.FreqRopeScale) // Default freq_rope_scale
 }

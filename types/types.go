@@ -18,11 +18,21 @@ const (
 
 // GoInferConf holds the configuration for GoInfer.
 type GoInferConf struct {
-	ModelsDir  string
-	TasksDir   string
-	Origins    []string
-	ApiKey     string
-	OpenAiConf OpenAiConf
+	ModelsDir   string
+	TasksDir    string
+	Origins     []string
+	ApiKey      string
+	OpenAiConf  OpenAiConf
+	LlamaConfig *LlamaConfig
+}
+
+// LlamaConfig holds configuration for the Llama server proxy
+type LlamaConfig struct {
+	BinaryPath string
+	ModelPath  string
+	Host       string
+	Port       int
+	Args       []string
 }
 
 // InferenceParams holds parameters for inference.
