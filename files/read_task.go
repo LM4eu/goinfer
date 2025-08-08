@@ -12,13 +12,13 @@ import (
 )
 
 // keyExists checks if a key exists in a map.
-func keyExists(m map[string]interface{}, key string) bool {
+func keyExists(m map[string]any, key string) bool {
 	_, ok := m[key]
 	return ok
 }
 
-// convertToInt converts an interface{} to int with support for float64 conversion.
-func convertToInt(value interface{}, paramName string, context string) (int, error) {
+// convertToInt converts an any to int with support for float64 conversion.
+func convertToInt(value any, paramName string, context string) (int, error) {
 	switch v := value.(type) {
 	case int:
 		return v, nil
@@ -34,7 +34,7 @@ func convertToInt(value interface{}, paramName string, context string) (int, err
 }
 
 // convertTask converts a map to a Task type with proper error handling.
-func convertTask(m map[string]interface{}) (types.Task, error) {
+func convertTask(m map[string]any) (types.Task, error) {
 	// Validate required fields
 	name, ok := m["name"].(string)
 	if !ok {
@@ -55,9 +55,9 @@ func convertTask(m map[string]interface{}) (types.Task, error) {
 
 	// Process modelConf if present
 	if keyExists(m, "modelConf") {
-		if modelConfRaw, ok := m["modelConf"].([]interface{}); ok {
+		if modelConfRaw, ok := m["modelConf"].([]any); ok {
 			for _, param := range modelConfRaw {
-				if paramMap, ok := param.(map[string]interface{}); ok {
+				if paramMap, ok := param.(map[string]any); ok {
 					for k, v := range paramMap {
 						switch k {
 						case "name":
@@ -88,9 +88,9 @@ func convertTask(m map[string]interface{}) (types.Task, error) {
 	// Process inferParams if present
 	ip := state.DefaultInferenceParams
 	if keyExists(m, "inferParams") {
-		if inferParamsRaw, ok := m["inferParams"].([]interface{}); ok {
+		if inferParamsRaw, ok := m["inferParams"].([]any); ok {
 			for _, param := range inferParamsRaw {
-				if paramData, ok := param.(map[string]interface{}); ok {
+				if paramData, ok := param.(map[string]any); ok {
 					for k, v := range paramData {
 						switch k {
 						case "stream":
@@ -154,7 +154,7 @@ func convertTask(m map[string]interface{}) (types.Task, error) {
 								return types.Task{}, fmt.Errorf("inferParams tfs_z must be a float64, got %T", v)
 							}
 						case "stop":
-							if stopSlice, ok := v.([]interface{}); ok {
+							if stopSlice, ok := v.([]any); ok {
 								stop := make([]string, len(stopSlice))
 								for i, val := range stopSlice {
 									stop[i] = fmt.Sprint(val)
@@ -177,7 +177,7 @@ func convertTask(m map[string]interface{}) (types.Task, error) {
 
 // ReadTask reads a task from a YAML file with proper error handling.
 func ReadTask(path string) (bool, types.Task, error) {
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	// p := filepath.Join(state.TasksDir, path) //TODO
 	p := state.TasksDir + "/" + path
 	_, err := os.Stat(p)

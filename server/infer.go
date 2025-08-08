@@ -38,7 +38,7 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 	modelConfRaw, ok := m["model"]
 	if ok {
 		// Type assertion with error checking
-		if modelMap, ok := modelConfRaw.(map[string]interface{}); ok {
+		if modelMap, ok := modelConfRaw.(map[string]any); ok {
 			for k, v := range modelMap {
 				switch k {
 				case "name":
@@ -141,7 +141,7 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 	stop := state.DefaultInferenceParams.StopPrompts
 	v, ok = m["stop"]
 	if ok {
-		if stopSlice, ok := v.([]interface{}); ok {
+		if stopSlice, ok := v.([]any); ok {
 			if len(stopSlice) > 0 {
 				stop = make([]string, len(stopSlice))
 				for i, val := range stopSlice {

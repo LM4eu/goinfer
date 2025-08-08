@@ -199,10 +199,10 @@ func SaveTaskHandler(c echo.Context) error {
 		}
 	}
 
-	var rawInferParams map[string]interface{}
+	var rawInferParams map[string]any
 	v, ok = m["inferParams"]
 	if ok {
-		if params, ok := v.(map[string]interface{}); ok {
+		if params, ok := v.(map[string]any); ok {
 			rawInferParams = params
 			rawInferParams["template"] = template
 		}

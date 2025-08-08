@@ -17,12 +17,12 @@ import (
 
 // InferenceError represents a structured error for language model inference.
 type InferenceError struct {
-	Code       string      `json:"code"`
-	Message    string      `json:"message"`
-	Context    interface{} `json:"context,omitempty"`
-	Timestamp  time.Time   `json:"timestamp"`
-	TokenCount int         `json:"token_count,omitempty"`
-	Stage      string      `json:"stage,omitempty"`
+	Code       string    `json:"code"`
+	Message    string    `json:"message"`
+	Context    any       `json:"context,omitempty"`
+	Timestamp  time.Time `json:"timestamp"`
+	TokenCount int       `json:"token_count,omitempty"`
+	Stage      string    `json:"stage,omitempty"`
 }
 
 // Error implements the error interface.
@@ -193,7 +193,7 @@ func sendStartEmittingMessage(enc *json.Encoder, c echo.Context, params types.In
 		Num:     ntokens,
 		Content: "start_emitting",
 		MsgType: types.SystemMsgType,
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"thinking_time":        thinkingElapsed,
 			"thinking_time_format": thinkingElapsed.String(),
 		},
@@ -290,7 +290,7 @@ func createResult(res string, stats types.InferenceStats, enc *json.Encoder, c e
 		return endmsg, fmt.Errorf("error marshalling result: %w", err)
 	}
 
-	var _res map[string]interface{}
+	var _res map[string]any
 	err = json.Unmarshal(b, &_res)
 	if err != nil {
 		return endmsg, fmt.Errorf("error unmarshalling result: %w", err)

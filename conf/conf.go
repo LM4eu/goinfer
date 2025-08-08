@@ -79,13 +79,13 @@ func CreateWithFileName(modelsDir string, isDefault bool, fileName string) {
 		key = generateRandomKey()
 	}
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"models_dir": modelsDir,
 		"origins":    []string{"http://localhost:5173", "http://localhost:5143"},
 		"api_key":    key,
 		"tasks_dir":  "./tasks",
 		// Llama configuration defaults
-		"llama": map[string]interface{}{
+		"llama": map[string]any{
 			"binary_path": "",
 			"model_path":  "",
 			"host":        "localhost",

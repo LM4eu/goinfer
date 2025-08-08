@@ -10,7 +10,7 @@ import (
 
 // BufferPool - Reusable buffer pool to minimize allocations.
 var BufferPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return make([]byte, 0, 1024)
 	},
 }
@@ -18,7 +18,7 @@ var BufferPool = sync.Pool{
 // NewBufferPool - Creates a new buffer pool with specified size and capacity.
 func NewBufferPool(size, capacity int) *sync.Pool {
 	pool := &sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			return make([]byte, capacity)
 		},
 	}
@@ -97,7 +97,7 @@ func MeasureExecutionTime(fn func()) time.Duration {
 }
 
 // MeasureExecutionTimeWithResult - Measures execution time and returns result.
-func MeasureExecutionTimeWithResult(fn func() interface{}) (time.Duration, interface{}) {
+func MeasureExecutionTimeWithResult(fn func() any) (time.Duration, any) {
 	start := time.Now()
 	result := fn()
 	return time.Since(start), result
@@ -124,7 +124,7 @@ type ObjectPool[T any] struct {
 func NewObjectPool[T any](ctor func() T) *ObjectPool[T] {
 	return &ObjectPool[T]{
 		pool: sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				return ctor()
 			},
 		},
@@ -144,7 +144,7 @@ func (p *ObjectPool[T]) Release(obj T) {
 
 // RingBuffer - High-performance ring buffer implementation.
 type RingBuffer struct {
-	buf   []interface{}
+	buf   []any
 	size  int
 	head  int
 	tail  int
@@ -155,13 +155,13 @@ type RingBuffer struct {
 // NewRingBuffer - Creates a new ring buffer.
 func NewRingBuffer(size int) *RingBuffer {
 	return &RingBuffer{
-		buf:  make([]interface{}, size),
+		buf:  make([]any, size),
 		size: size,
 	}
 }
 
 // Add - Adds an item to the ring buffer.
-func (rb *RingBuffer) Add(item interface{}) bool {
+func (rb *RingBuffer) Add(item any) bool {
 	rb.mu.Lock()
 	defer rb.mu.Unlock()
 
@@ -176,7 +176,7 @@ func (rb *RingBuffer) Add(item interface{}) bool {
 }
 
 // Remove - Removes an item from the ring buffer.
-func (rb *RingBuffer) Remove() (interface{}, bool) {
+func (rb *RingBuffer) Remove() (any, bool) {
 	rb.mu.Lock()
 	defer rb.mu.Unlock()
 
@@ -191,7 +191,7 @@ func (rb *RingBuffer) Remove() (interface{}, bool) {
 	return item, true
 }
 
-// Write - Writes data to ring buffer (not implemented for interface{} buffer).
+// Write - Writes data to ring buffer (not implemented for any buffer).
 func (rb *RingBuffer) Write(data []byte) (int, error) {
 	// For simplicity, we'll just add individual bytes as integers
 	rb.mu.Lock()
@@ -210,7 +210,7 @@ func (rb *RingBuffer) Write(data []byte) (int, error) {
 	return written, nil
 }
 
-// Read - Reads data from ring buffer (not implemented for interface{} buffer).
+// Read - Reads data from ring buffer (not implemented for any buffer).
 func (rb *RingBuffer) Read(data []byte) (int, error) {
 	rb.mu.Lock()
 	defer rb.mu.Unlock()
@@ -268,12 +268,12 @@ type concurrentMapShard[K comparable, V any] struct {
 }
 
 // NewConcurrentMap - Creates a new concurrent map.
-func NewConcurrentMap(shardCount int) *ConcurrentMap[string, interface{}] {
-	shards := make([]concurrentMapShard[string, interface{}], shardCount)
+func NewConcurrentMap(shardCount int) *ConcurrentMap[string, any] {
+	shards := make([]concurrentMapShard[string, any], shardCount)
 	for i := range shards {
-		shards[i].data = make(map[string]interface{})
+		shards[i].data = make(map[string]any)
 	}
-	return &ConcurrentMap[string, interface{}]{
+	return &ConcurrentMap[string, any]{
 		shards: shards,
 	}
 }
@@ -421,8 +421,8 @@ func NewTimer() *Timer {
 // NoopLogger - No-operation logger for performance-critical paths.
 type NoopLogger struct{}
 
-func (l *NoopLogger) Log(args ...interface{})                 {}
-func (l *NoopLogger) Logf(format string, args ...interface{}) {}
+func (l *NoopLogger) Log(args ...any)                 {}
+func (l *NoopLogger) Logf(format string, args ...any) {}
 
 // GetGoroutineCount - Returns current goroutine count.
 func GetGoroutineCount() int {
@@ -442,7 +442,7 @@ func SetGOMAXPROCS() {
 
 // ConnectionPool - Thread-safe connection pool with Get/Put interface.
 type ConnectionPool struct {
-	connections []interface{}
+	connections []any
 	address     string
 	capacity    int
 	mu          sync.RWMutex
@@ -451,7 +451,7 @@ type ConnectionPool struct {
 // NewConnectionPool - Creates a new connection pool.
 func NewConnectionPool(address string) *ConnectionPool {
 	pool := &ConnectionPool{
-		connections: make([]interface{}, 0, 10), // Default capacity of 10
+		connections: make([]any, 0, 10), // Default capacity of 10
 		address:     address,
 		capacity:    10,
 	}
@@ -463,7 +463,7 @@ func NewConnectionPool(address string) *ConnectionPool {
 }
 
 // Get - Gets a connection from the pool.
-func (p *ConnectionPool) Get() interface{} {
+func (p *ConnectionPool) Get() any {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -478,7 +478,7 @@ func (p *ConnectionPool) Get() interface{} {
 }
 
 // Put - Puts a connection back into the pool.
-func (p *ConnectionPool) Put(conn interface{}) {
+func (p *ConnectionPool) Put(conn any) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 

@@ -184,7 +184,7 @@ func BatchHealthCheck(managers []*LlamaServerManager) []HealthCheckResult {
 
 // HealthCheckPool - Object pool for health check results to minimize allocations.
 var healthCheckPool = &sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return &HealthCheckResult{}
 	},
 }

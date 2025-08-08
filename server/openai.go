@@ -29,12 +29,12 @@ func parseParams(m echo.Map) (string, string, string, types.InferenceParams, err
 		return "", "", "", params, errors.New("provide a messages array")
 	}
 
-	qmsgs := v.([]interface{})
+	qmsgs := v.([]any)
 	prompt := ""
 	template := state.OpenAiConf.Template
 	// fmt.Println("Q>:", qmsgs)
 	for _, m := range qmsgs {
-		el := m.(map[string]interface{})
+		el := m.(map[string]any)
 		role := el["role"].(string)
 		content := el["content"].(string)
 		switch role {
@@ -72,7 +72,7 @@ func parseParams(m echo.Map) (string, string, string, types.InferenceParams, err
 
 	v, ok = m["stop"]
 	if ok {
-		st := v.([]interface{})
+		st := v.([]any)
 		stf := []string{}
 		for _, s := range st {
 			stf = append(stf, s.(string))
