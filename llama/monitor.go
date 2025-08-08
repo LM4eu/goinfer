@@ -61,7 +61,7 @@ func (m *Monitor) Stop() {
 	// Monitor will stop automatically when the manager is closed
 }
 
-// CheckHealth -  health check with minimal validation.
+// CheckHealth - health check with minimal validation.
 func (m *Monitor) CheckHealth() HealthCheckResult {
 	start := time.Now()
 
@@ -95,7 +95,7 @@ func (m *Monitor) CheckHealth() HealthCheckResult {
 	}
 }
 
-// GetStatus -  status retrieval with minimal locking.
+// GetStatus - status retrieval with minimal locking.
 func (m *Monitor) GetStatus() HealthStatus {
 	return HealthStatus{
 		IsHealthy:    m.healthy.Load(),
@@ -104,7 +104,7 @@ func (m *Monitor) GetStatus() HealthStatus {
 	}
 }
 
-// IsHealthy -  healthy check without allocations.
+// IsHealthy - healthy check without allocations.
 func (m *Monitor) IsHealthy() bool {
 	// Apply rate limiting
 	if !m.rateLimiter.Allow() {
@@ -120,22 +120,22 @@ func (m *Monitor) IsHealthy() bool {
 	return result.Healthy
 }
 
-// GetLastLatency -  latency retrieval.
+// GetLastLatency - latency retrieval.
 func (m *Monitor) GetLastLatency() time.Duration {
 	return time.Duration(m.lastLatency.Load())
 }
 
-// GetLastCheckTime -  last check time retrieval.
+// GetLastCheckTime - last check time retrieval.
 func (m *Monitor) GetLastCheckTime() time.Time {
 	return time.Unix(0, m.lastCheckTime.Load())
 }
 
-// SetCheckInterval -  interval update.
+// SetCheckInterval - interval update.
 func (m *Monitor) SetCheckInterval(interval time.Duration) {
 	m.checkInterval = interval
 }
 
-// SetTimeout -  timeout update.
+// SetTimeout - timeout update.
 func (m *Monitor) SetTimeout(timeout time.Duration) {
 	m.timeout = timeout
 }
