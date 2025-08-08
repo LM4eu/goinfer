@@ -50,7 +50,7 @@ func (m *LlamaServerManager) Start() error {
 	m.cmd.Env = os.Environ()
 
 	// Start process with minimal setup
-	err := m.cmd.Start()
+	err = m.cmd.Start()
 	if err != nil {
 		return ErrStartFailed("failed to start process: " + err.Error())
 	}

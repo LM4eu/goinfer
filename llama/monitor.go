@@ -175,7 +175,7 @@ func BatchHealthCheck(managers []*LlamaServerManager) []HealthCheckResult {
 	}
 
 	// Wait for all checks to complete
-	for range len(managers) {
+	for range managers {
 		<-done
 	}
 
