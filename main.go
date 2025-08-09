@@ -29,13 +29,13 @@ func main() {
 
 	if len(*genConfModelsDir) > 0 {
 		conf.Create(*genConfModelsDir, false, "goinfer.json")
-		fmt.Println("File goinfer.json created")
+		fmt.Println("File goinfer.json created with random API key")
 		return
 	}
-	
+
 	if len(*genLocalConfModelsDir) > 0 {
 		conf.Create(*genLocalConfModelsDir, true, "goinfer.json")
-		fmt.Println("File goinfer.json created")
+		fmt.Println("File goinfer.json created with default API key")
 		return
 	}
 
