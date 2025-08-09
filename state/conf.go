@@ -11,6 +11,7 @@ var DefaultInferenceParams = types.InferenceParams{
 	NPredict:          512,
 	TopK:              40,
 	TopP:              0.95,
+	MinP:              0.05,
 	Temperature:       0.2,
 	FrequencyPenalty:  0.0,
 	PresencePenalty:   0.0,

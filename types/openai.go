@@ -57,6 +57,7 @@ type OpenAiMessages struct {
 	Messages         []OpenAiMessage `json:"messages"`
 	Temperature      float64         `json:"temperature,omitempty"`
 	TopP             float64         `json:"top_p,omitempty"`
+	MinP             float64         `json:"min_p,omitempty"`
 	N                int             `json:"n,omitempty"`
 	Stream           bool            `json:"stream,omitempty"`
 	Stop             any             `json:"stop,omitempty"`

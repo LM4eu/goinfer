@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -45,9 +44,7 @@ const (
 
 // Infer performs language model inference.
 func Infer(
-	prompt string,
-	template string,
-	params types.InferenceParams,
+	prompt types.Prompt,
 	c echo.Context,
 	ch chan<- types.StreamedMessage,
 	errCh chan<- types.StreamedMessage,
@@ -56,12 +53,11 @@ func Infer(
 		errCh <- createErrorMessage(1, "no model loaded")
 	}
 
-	finalPrompt := strings.Replace(template, "{prompt}", prompt, 1)
-	logVerboseInfo(finalPrompt, 0, 0, 0) // Initial verbose logging with prompt
+	logVerboseInfo(prompt.Prompt, 0, 0, 0) // Initial verbose logging with prompt
 
 	if state.IsDebug {
 		fmt.Println("Inference params:")
-		fmt.Printf("%+v\n\n", params)
+		fmt.Printf("%+v\n\n", prompt.InferParams)
 	}
 
 	ntokens := 0
@@ -74,22 +70,23 @@ func Infer(
 	state.IsInferring = true
 	state.ContinueInferringController = true
 
-	res, err := state.Lm.Predict(finalPrompt, llama.SetTokenCallback(func(token string) bool {
-		err := streamDeltaMsg(ntokens, token, enc, c, params, startThinking, &thinkingElapsed, &startEmitting)
+	res, err := state.Lm.Predict(prompt.Prompt, llama.SetTokenCallback(func(token string) bool {
+		err := streamDeltaMsg(ntokens, token, enc, c, prompt.InferParams, startThinking, &thinkingElapsed, &startEmitting)
 		if err != nil {
 			errCh <- createErrorMessage(ntokens+1, "streamDeltaMsg error")
 		}
 		return state.ContinueInferringController
 	}),
-		llama.SetTokens(params.NPredict),
-		llama.SetThreads(params.Threads),
-		llama.SetTopK(params.TopK),
-		llama.SetTopP(params.TopP),
-		llama.SetTemperature(params.Temperature),
-		llama.SetStopWords(params.StopPrompts...),
-		llama.SetFrequencyPenalty(params.FrequencyPenalty),
-		llama.SetPresencePenalty(params.PresencePenalty),
-		llama.SetPenalty(params.RepeatPenalty),
+		llama.SetTokens(prompt.InferParams.NPredict),
+		llama.SetThreads(prompt.InferParams.Threads),
+		llama.SetMinP(prompt.InferParams.MinP),
+		llama.SetTopP(prompt.InferParams.TopP),
+		llama.SetTopK(prompt.InferParams.TopK),
+		llama.SetTemperature(prompt.InferParams.Temperature),
+		llama.SetStopWords(prompt.InferParams.StopPrompts...),
+		llama.SetFrequencyPenalty(prompt.InferParams.FrequencyPenalty),
+		llama.SetPresencePenalty(prompt.InferParams.PresencePenalty),
+		llama.SetPenalty(prompt.InferParams.RepeatPenalty),
 		llama.SetRopeFreqBase(1e6),
 	)
 
@@ -104,7 +101,7 @@ func Infer(
 		return
 	}
 
-	if params.Stream {
+	if prompt.InferParams.Stream {
 		err := sendLlamaStreamTermination(c)
 		if err != nil {
 			state.ContinueInferringController = false
@@ -114,7 +111,7 @@ func Infer(
 	}
 
 	stats, _ := calculateStats(ntokens, thinkingElapsed, startEmitting) // Ignore tps return value
-	endmsg, err := createResult(res, stats, enc, c, params)
+	endmsg, err := createResult(res, stats, enc, c, prompt.InferParams)
 	if err != nil {
 		state.ContinueInferringController = false
 		errCh <- createErrorMessage(ntokens+1, "cannot create result msg")
@@ -234,10 +231,10 @@ func createErrorMessage(ntokens int, content string) types.StreamedMessage {
 }
 
 // logVerboseInfo logs verbose information about the inference process.
-func logVerboseInfo(finalPrompt string, thinkingElapsed time.Duration, emittingElapsed time.Duration, ntokens int) {
+func logVerboseInfo(prompt string, thinkingElapsed time.Duration, emittingElapsed time.Duration, ntokens int) {
 	if state.IsVerbose {
 		fmt.Println("---------- prompt ----------")
-		fmt.Println(finalPrompt)
+		fmt.Println(prompt)
 		fmt.Println("----------------------------")
 		fmt.Println("Thinking ..")
 

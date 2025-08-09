@@ -77,6 +77,8 @@ func RunServer(conf types.WebServerConf, localMode bool, disableApiKey bool) {
 		}))
 	}
 
+	tas.POST("/execute", ExecutePromptHandler)
+
 	if conf.EnableApiOpenAi {
 		// openai api
 		oai := e.Group("/v1")

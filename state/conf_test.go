@@ -12,6 +12,7 @@ func TestDefaultInferenceParams(t *testing.T) {
 	assert.Equal(t, 4, DefaultInferenceParams.Threads)
 	assert.Equal(t, 512, DefaultInferenceParams.NPredict)
 	assert.Equal(t, 40, DefaultInferenceParams.TopK)
+	assert.Equal(t, float32(0.05), DefaultInferenceParams.MinP)
 	assert.Equal(t, float32(0.95), DefaultInferenceParams.TopP)
 	assert.Equal(t, float32(0.2), DefaultInferenceParams.Temperature)
 	assert.Equal(t, float32(0.0), DefaultInferenceParams.FrequencyPenalty)
@@ -104,6 +105,7 @@ func TestDefaultInferenceParamsWithCustomValues(t *testing.T) {
 	customParams.NPredict = 1024
 	customParams.TopK = 80
 	customParams.TopP = 0.8
+	customParams.MinP = 0.2
 	customParams.Temperature = 0.5
 
 	// Verify other fields retain default values
@@ -111,6 +113,7 @@ func TestDefaultInferenceParamsWithCustomValues(t *testing.T) {
 	assert.Equal(t, 16, customParams.Threads)
 	assert.Equal(t, 1024, customParams.NPredict)
 	assert.Equal(t, 80, customParams.TopK)
+	assert.Equal(t, float32(0.2), customParams.MinP)
 	assert.Equal(t, float32(0.8), customParams.TopP)
 	assert.Equal(t, float32(0.5), customParams.Temperature)
 	assert.Equal(t, float32(0.0), customParams.FrequencyPenalty)  // Default value
