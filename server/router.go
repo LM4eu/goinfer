@@ -7,12 +7,13 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
+	"github.com/synw/goinfer/types"
 )
 
 //go:embed all:dist
 var embeddedFiles embed.FS
 
-func RunServer(origins []string, apiKey string, localMode bool, enableOai bool, disableApiKey bool) {
+func RunServer(conf types.WebServerConf, localMode bool, disableApiKey bool) {
 	e := echo.New()
 	e.HideBanner = true
 
@@ -27,7 +28,7 @@ func RunServer(origins []string, apiKey string, localMode bool, enableOai bool, 
 
 	// cors
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     origins,
+		AllowOrigins:     conf.Origins,
 		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAuthorization},
 		AllowMethods:     []string{http.MethodGet, http.MethodOptions, http.MethodPost},
 		AllowCredentials: true,
@@ -48,7 +49,7 @@ func RunServer(origins []string, apiKey string, localMode bool, enableOai bool, 
 	inf := e.Group("/completion")
 	if !disableApiKey {
 		inf.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-			return key == apiKey, nil
+			return key == conf.ApiKey, nil
 		}))
 	}
 
@@ -59,7 +60,7 @@ func RunServer(origins []string, apiKey string, localMode bool, enableOai bool, 
 	mod := e.Group("/model")
 	if !disableApiKey {
 		mod.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-			return key == apiKey, nil
+			return key == conf.ApiKey, nil
 		}))
 	}
 
@@ -71,7 +72,7 @@ func RunServer(origins []string, apiKey string, localMode bool, enableOai bool, 
 	tas := e.Group("/task")
 	if !disableApiKey {
 		tas.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-			return key == apiKey, nil
+			return key == conf.ApiKey, nil
 		}))
 	}
 
@@ -80,12 +81,12 @@ func RunServer(origins []string, apiKey string, localMode bool, enableOai bool, 
 	tas.POST("/execute", ExecuteTaskHandler)
 	tas.POST("/save", SaveTaskHandler)
 
-	if enableOai {
+	if conf.EnableApiOpenAi {
 		// openai api
 		oai := e.Group("/v1")
 		if !disableApiKey {
 			oai.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-				return key == apiKey, nil
+				return key == conf.ApiKey, nil
 			}))
 		}
 
@@ -93,5 +94,5 @@ func RunServer(origins []string, apiKey string, localMode bool, enableOai bool, 
 		oai.GET("/models", OpenAiListModels)
 	}
 
-	e.Start(":5143")
+	e.Start(conf.Port)
 }

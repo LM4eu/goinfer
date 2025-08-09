@@ -13,17 +13,16 @@ func TestGoInferConf(t *testing.T) {
 	conf := GoInferConf{
 		ModelsDir:  "/models",
 		TasksDir:   "/tasks",
-		Origins:    []string{"localhost", "example.com"},
-		ApiKey:     "test-key",
-		OpenAiConf: OpenAiConf{Enable: true},
+		WebServer: WebServerConf{EnableApiOpenAi: true, Origins:    []string{"localhost", "example.com"},		ApiKey:     "test-key"},
+		OpenAiConf: OpenAiConf{},
 	}
 
 	// Test field values
 	assert.Equal(t, "/models", conf.ModelsDir)
 	assert.Equal(t, "/tasks", conf.TasksDir)
-	assert.Equal(t, []string{"localhost", "example.com"}, conf.Origins)
-	assert.Equal(t, "test-key", conf.ApiKey)
-	assert.True(t, conf.OpenAiConf.Enable)
+	assert.Equal(t, []string{"localhost", "example.com"}, conf.WebServer.Origins)
+	assert.Equal(t, "test-key", conf.WebServer.ApiKey)
+	assert.True(t, conf.WebServer.EnableApiOpenAi)
 }
 
 func TestTask(t *testing.T) {
