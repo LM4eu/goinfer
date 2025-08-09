@@ -200,13 +200,25 @@ func InferHandler(c echo.Context) error {
 		return c.NoContent(http.StatusBadRequest)
 	}
 
-	if prompt.ModelConf.Name != "" {
+	// Do we need to load the model?
+	loadModel := true
+	if state.IsModelLoaded {
+		if state.LoadedModel == prompt.ModelConf.Name {
+			if state.ModelOptions.ContextSize == prompt.ModelConf.Ctx {
+				loadModel = false
+			}
+		}
+	}
+
+	if loadModel {
 		err := setModelOptions(prompt.ModelConf)
 		if err != nil {
 			if state.IsDebug {
 				fmt.Println("Error setting model options:", err)
 			}
-			return c.NoContent(http.StatusBadRequest)
+			return c.JSON(http.StatusBadRequest, echo.Map{
+				"error": fmt.Sprintf("failed to set model options: %v", err),
+			})
 		}
 
 		_, err = lm.LoadModel(prompt.ModelConf.Name, state.ModelOptions)
@@ -214,7 +226,9 @@ func InferHandler(c echo.Context) error {
 			if state.IsDebug {
 				fmt.Println("Error loading model:", err)
 			}
-			return c.NoContent(http.StatusInternalServerError)
+			return c.JSON(http.StatusInternalServerError, echo.Map{
+				"error": fmt.Sprintf("failed to load model: %v", err),
+			})
 		}
 
 		if state.IsDebug {
@@ -264,10 +278,10 @@ func InferHandler(c echo.Context) error {
 					if state.IsDebug {
 						fmt.Println("Streaming error", err)
 					}
-					return c.NoContent(http.StatusInternalServerError)
+					return c.JSON(http.StatusInternalServerError, echo.Map{"error": err})
 				}
 			} else {
-				return c.JSON(http.StatusInternalServerError, err)
+				return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Content})
 			}
 		}
 		return nil

@@ -27,7 +27,6 @@ func RunServer(conf types.WebServerConf, localMode bool, disableApiKey bool) {
 		l.SetHeader("[${time_rfc3339}] ${level}")
 	}
 
-	// cors
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     conf.Origins,
 		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAuthorization},
@@ -46,8 +45,9 @@ func RunServer(conf types.WebServerConf, localMode bool, disableApiKey bool) {
 		}))
 	}
 
-	// inference
-	inf := e.Group("/completion")
+	// ------------ Inference ------------
+
+	inf := e.Group("/infer")
 	if !disableApiKey {
 		inf.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
 			return key == conf.ApiKey, nil
@@ -57,7 +57,8 @@ func RunServer(conf types.WebServerConf, localMode bool, disableApiKey bool) {
 	inf.POST("", InferHandler)
 	inf.GET("/abort", AbortHandler)
 
-	// models
+	// ------------ Models ------------
+
 	mod := e.Group("/model")
 	if !disableApiKey {
 		mod.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
@@ -69,18 +70,9 @@ func RunServer(conf types.WebServerConf, localMode bool, disableApiKey bool) {
 	mod.POST("/load", LoadModelHandler)
 	mod.GET("/unload", UnloadModelHandler)
 
-	// tasks
-	tas := e.Group("/task")
-	if !disableApiKey {
-		tas.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-			return key == conf.ApiKey, nil
-		}))
-	}
-
-	tas.POST("/execute", ExecutePromptHandler)
+	// ------------ OpenAI ------------
 
 	if conf.EnableApiOpenAi {
-		// openai api
 		oai := e.Group("/v1")
 		if !disableApiKey {
 			oai.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
