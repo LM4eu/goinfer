@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/synw/goinfer/state"
 	"github.com/synw/goinfer/types"
@@ -176,37 +177,36 @@ func convertTask(m map[string]any) (types.Task, error) {
 }
 
 // ReadTask reads a task from a YAML file with proper error handling.
-func ReadTask(path string) (bool, types.Task, error) {
-	m := make(map[string]any)
-	// p := filepath.Join(state.TasksDir, path) //TODO
-	p := state.TasksDir + "/" + path
+func ReadTask(path string) (types.Task, error) {
+	p := filepath.Join(state.TasksDir, path)
 	_, err := os.Stat(p)
 	var t types.Task
 
 	if os.IsNotExist(err) {
-		return false, t, nil
+		return t, errors.New("task " + path+ "not found")
 	}
 
 	file, err := os.Open(p)
 	if err != nil {
-		return false, t, fmt.Errorf("failed to open task file %s: %w", p, err)
+		return t, fmt.Errorf("failed to open task file %s: %w", p, err)
 	}
 	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		return false, t, fmt.Errorf("failed to read task file %s: %w", p, err)
+		return t, fmt.Errorf("failed to read task file %s: %w", p, err)
 	}
 
+	m := make(map[string]any)
 	err = yaml.Unmarshal([]byte(data), &m)
 	if err != nil {
-		return false, t, fmt.Errorf("failed to unmarshal task file %s: %w", p, err)
+		return t, fmt.Errorf("failed to unmarshal task file %s: %w", p, err)
 	}
 
 	t, err = convertTask(m)
 	if err != nil {
-		return false, t, fmt.Errorf("failed to convert task from file %s: %w", p, err)
+		return t, fmt.Errorf("failed to convert task from file %s: %w", p, err)
 	}
 
-	return true, t, nil
+	return t, nil
 }
