@@ -75,7 +75,10 @@ func Infer(
 	state.ContinueInferringController = true
 
 	res, err := state.Lm.Predict(finalPrompt, llama.SetTokenCallback(func(token string) bool {
-		streamDeltaMsg(ntokens, token, enc, c, params, startThinking, &thinkingElapsed, &startEmitting)
+		err := streamDeltaMsg(ntokens, token, enc, c, params, startThinking, &thinkingElapsed, &startEmitting)
+		if err != nil {
+			errCh <- createErrorMessage(ntokens+1, "streamDeltaMsg error")
+		}
 		return state.ContinueInferringController
 	}),
 		llama.SetTokens(params.NPredict),
@@ -126,19 +129,31 @@ func Infer(
 
 // StreamMsg streams a message to the client.
 func StreamMsg(msg types.StreamedMessage, c echo.Context, enc *json.Encoder) error {
-	c.Response().Write([]byte("data: "))
-	err := enc.Encode(msg)
+	_, err := c.Response().Write([]byte("data: "))
+	if err != nil {
+		return fmt.Errorf("failed to write stream begin: %w", err)
+	}
+
+	err = enc.Encode(msg)
 	if err != nil {
 		return fmt.Errorf("failed to encode stream message: %w", err)
 	}
-	c.Response().Write([]byte("\n"))
+
+	_, err = c.Response().Write([]byte("\n"))
+	if err != nil {
+		return fmt.Errorf("failed to write stream message: %w", err)
+	}
+
 	c.Response().Flush()
 	return nil
 }
 
 // sendLlamaStreamTermination sends stream termination message.
 func sendLlamaStreamTermination(c echo.Context) error {
-	c.Response().Write([]byte("data: [DONE]\n\n"))
+	_, err := c.Response().Write([]byte("data: [DONE]\n\n"))
+	if err != nil {
+		return fmt.Errorf("failed to write stream termination: %w", err)
+	}
 	c.Response().Flush()
 	return nil
 }
@@ -177,7 +192,6 @@ func streamDeltaMsg(ntokens int, token string, enc *json.Encoder, c echo.Context
 	err := StreamMsg(tmsg, c, enc)
 	if err != nil {
 		fmt.Printf("Error streaming delta message: %v\n", err)
-
 		return err
 	}
 
