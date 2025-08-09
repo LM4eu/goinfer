@@ -11,9 +11,11 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-func InitConf() types.GoInferConf {
-	viper.SetConfigName("goinfer") // goinfer.json
-	viper.AddConfigPath(".")
+// InitConf loads the config file.
+// Does not include extension.
+func InitConf(path, configFile string) types.GoInferConf {
+	viper.SetConfigName(configFile)
+	viper.AddConfigPath(path)
 	viper.SetDefault("origins", []string{"localhost"})
 	viper.SetDefault("tasks_dir", "./tasks")
 	viper.SetDefault("oai.enable", false)
