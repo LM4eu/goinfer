@@ -46,16 +46,10 @@ func ExecuteTaskHandler(c echo.Context) error {
 		}
 	}
 
-	exists, task, err := files.ReadTask(path)
+	task, err := files.ReadTask(path)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error": err.Error(),
-		})
-	}
-
-	if !exists {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": fmt.Sprintf("task %s not found", path),
 		})
 	}
 
@@ -66,7 +60,7 @@ func ExecuteTaskHandler(c echo.Context) error {
 		return c.NoContent(http.StatusAccepted)
 	}
 
-	// check if the model is loaded
+	// Check if the model is loaded
 	loadModel := true
 
 	if state.IsModelLoaded {
@@ -149,16 +143,10 @@ func ReadTaskHandler(c echo.Context) error {
 		}
 	}
 
-	exists, task, err := files.ReadTask(path)
+	task, err := files.ReadTask(path)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error": err.Error(),
-		})
-	}
-
-	if !exists {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": fmt.Sprintf("task %s not found", path),
 		})
 	}
 
