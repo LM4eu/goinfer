@@ -157,13 +157,14 @@ func TestCreate(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test Create with default=false
-	Create("/test/models", false)
+customFileName := "custom.config.json"
+	Create("/test/models", false, customFileName)
 
-	// Verify config file was created
-	assert.FileExists(t, "goinfer.json")
+	// Verify config file was created with custom name
+	assert.FileExists(t, customFileName)
 
 	// Read and verify config content
-	configBytes, err := os.ReadFile("goinfer.json")
+	configBytes, err := os.ReadFile(customFileName)
 	require.NoError(t, err)
 
 	var config map[string]any
@@ -177,7 +178,7 @@ func TestCreate(t *testing.T) {
 
 	// Verify cleanup after test
 	t.Cleanup(func() {
-		os.Remove("goinfer.json")
+		os.Remove(customFileName)
 	})
 }
 
@@ -192,7 +193,7 @@ func TestCreate_WithDefaults(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test Create with default=true
-	Create("/test/models", true)
+	Create("/test/models", true, "goinfer.json")
 
 	// Verify config file was created
 	assert.FileExists(t, "goinfer.json")
@@ -245,40 +246,4 @@ func TestGenerateRandomKey_WithFixedSeed(t *testing.T) {
 		assert.False(t, keys[k], "Duplicate key generated")
 		keys[k] = true
 	}
-}
-
-func TestCreateWithFileName(t *testing.T) {
-	// Change to temp directory
-	tempDir := t.TempDir()
-
-	originalDir, _ := os.Getwd()
-	defer os.Chdir(originalDir)
-
-	err := os.Chdir(tempDir)
-	require.NoError(t, err)
-
-	// Test CreateWithFileName with default=false
-	customFileName := "custom.config.json"
-	CreateWithFileName("/test/models", false, customFileName)
-
-	// Verify config file was created with custom name
-	assert.FileExists(t, customFileName)
-
-	// Read and verify config content
-	configBytes, err := os.ReadFile(customFileName)
-	require.NoError(t, err)
-
-	var config map[string]any
-	err = json.Unmarshal(configBytes, &config)
-	require.NoError(t, err)
-
-	assert.Equal(t, "/test/models", config["models_dir"])
-	assert.Equal(t, []any{"http://localhost:5173", "http://localhost:5143"}, config["origins"])
-	assert.Equal(t, "./tasks", config["tasks_dir"])
-	assert.NotEmpty(t, config["api_key"]) // Should be a random key
-
-	// Verify cleanup after test
-	t.Cleanup(func() {
-		os.Remove(customFileName)
-	})
 }
