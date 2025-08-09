@@ -17,7 +17,6 @@ func InitConf(path, configFile string) (types.GoInferConf, error) {
 	viper.SetConfigName(configFile)
 	viper.AddConfigPath(path)
 	viper.SetDefault("origins", []string{"localhost"})
-	viper.SetDefault("tasks_dir", "./tasks")
 	viper.SetDefault("oai.enable", false)
 	viper.SetDefault("oai.threads", 4)
 	viper.SetDefault("oai.template", "{system}\n\n{prompt}")
@@ -35,7 +34,6 @@ func InitConf(path, configFile string) (types.GoInferConf, error) {
 	}
 
 	md := viper.GetString("models_dir")
-	td := viper.GetString("tasks_dir")
 	or := viper.GetStringSlice("origins")
 	ak := viper.GetString("api_key")
 	oaiEnable := viper.GetBool("oai.enable")
@@ -51,7 +49,6 @@ func InitConf(path, configFile string) (types.GoInferConf, error) {
 
 	return types.GoInferConf{
 		ModelsDir: md,
-		TasksDir:  td,
 		WebServer: types.WebServerConf{
 			Port:            ":5143",
 			Origins:         or,
@@ -79,12 +76,11 @@ func Create(modelsDir string, isDefault bool, fileName string) {
 		key = generateRandomKey()
 	}
 
+	// configuration defaults
 	data := map[string]any{
 		"models_dir": modelsDir,
 		"origins":    []string{"http://localhost:5173", "http://localhost:5143"},
 		"api_key":    key,
-		"tasks_dir":  "./tasks",
-		// Llama configuration defaults
 		"llama": map[string]any{
 			"binary_path": "",
 			"model_path":  "",
