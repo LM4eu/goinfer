@@ -76,11 +76,6 @@ func RunServer(conf types.WebServerConf, localMode bool, disableApiKey bool) {
 		}))
 	}
 
-	tas.GET("/tree", ReadTasksHandler)
-	tas.POST("/read", ReadTaskHandler)
-	tas.POST("/execute", ExecuteTaskHandler)
-	tas.POST("/save", SaveTaskHandler)
-
 	if conf.EnableApiOpenAi {
 		// openai api
 		oai := e.Group("/v1")
