@@ -43,9 +43,9 @@ func TestInitConf(t *testing.T) {
 
 	assert.Equal(t, "./test_models", config.ModelsDir)
 	assert.Equal(t, "./test_tasks", config.TasksDir)
-	assert.Equal(t, []string{"http://localhost:3000"}, config.Origins)
-	assert.Equal(t, "test_key_123", config.ApiKey)
-	assert.True(t, config.OpenAiConf.Enable)
+	assert.Equal(t, []string{"http://localhost:3000"}, config.WebServer.Origins)
+	assert.Equal(t, "test_key_123", config.WebServer.ApiKey)
+	assert.True(t, config.WebServer.EnableApiOpenAi)
 	assert.Equal(t, 4, config.OpenAiConf.Threads)
 	assert.Equal(t, "{system}\n\n{prompt}", config.OpenAiConf.Template)
 }
@@ -75,9 +75,9 @@ func TestInitConf_WithDefaults(t *testing.T) {
 
 	assert.Equal(t, "./test_models", config.ModelsDir)
 	assert.Equal(t, "./tasks", config.TasksDir)                         // Default value should be set
-	assert.Equal(t, []string{"localhost"}, config.Origins)              // Default value
-	assert.Empty(t, config.ApiKey)                                      // Default empty value
-	assert.False(t, config.OpenAiConf.Enable)                           // Default value
+	assert.Equal(t, []string{"localhost"}, config.WebServer.Origins)    // Default value
+	assert.Empty(t, config.WebServer.ApiKey)                            // Default empty value
+	assert.False(t, config.WebServer.EnableApiOpenAi)                   // Default value
 	assert.Equal(t, 4, config.OpenAiConf.Threads)                       // Default value
 	assert.Equal(t, "{system}\n\n{prompt}", config.OpenAiConf.Template) // Default value
 }

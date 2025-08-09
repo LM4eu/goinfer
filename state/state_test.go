@@ -49,7 +49,7 @@ func TestStateModification(t *testing.T) {
 	IsVerbose = false
 	IsDebug = true
 	TasksDir = "/test/tasks"
-	OpenAiConf = types.OpenAiConf{Enable: true, Threads: 8, Template: "custom template"}
+	OpenAiConf = types.OpenAiConf{Threads: 8, Template: "custom template"}
 
 	// Assert modifications
 	assert.Equal(t, "/test/models", ModelsDir)
@@ -61,7 +61,7 @@ func TestStateModification(t *testing.T) {
 	assert.False(t, IsVerbose)
 	assert.True(t, IsDebug)
 	assert.Equal(t, "/test/tasks", TasksDir)
-	assert.Equal(t, types.OpenAiConf{Enable: true, Threads: 8, Template: "custom template"}, OpenAiConf)
+	assert.Equal(t, types.OpenAiConf{Threads: 8, Template: "custom template"}, OpenAiConf)
 
 	// Restore original values
 	ModelsDir = originalModelsDir
@@ -246,14 +246,12 @@ func TestStateOpenAiConfiguration(t *testing.T) {
 
 	// Modify OpenAiConf
 	OpenAiConf = types.OpenAiConf{
-		Enable:   true,
 		Threads:  16,
 		Template: "custom openai template",
 	}
 
 	// Assert modification
 	assert.Equal(t, types.OpenAiConf{
-		Enable:   true,
 		Threads:  16,
 		Template: "custom openai template",
 	}, OpenAiConf)

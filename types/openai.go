@@ -67,7 +67,6 @@ type OpenAiMessages struct {
 }
 
 type OpenAiConf struct {
-	Enable   bool   `json:"enable"`
 	Threads  int    `json:"threads"`
 	Template string `json:"template"`
 }

@@ -15,7 +15,7 @@ var (
 	ModelOptions  = DefaultModelOptions
 )
 
-// inference state.
+// Inference state.
 var (
 	ContinueInferringController = true
 	IsInferring                 = false
