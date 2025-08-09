@@ -20,10 +20,17 @@ const (
 type GoInferConf struct {
 	ModelsDir   string
 	TasksDir    string
-	Origins     []string
-	ApiKey      string
+	WebServer   WebServerConf
 	OpenAiConf  OpenAiConf
 	LlamaConfig *LlamaConfig
+}
+
+// WebServerConf holds the configuration for GoInfer web server.
+type WebServerConf struct {
+	Port string
+	EnableApiOpenAi bool `json:"enableApiOpenAi"`
+	Origins         []string
+	ApiKey          string
 }
 
 // LlamaConfig holds configuration for the Llama server proxy.

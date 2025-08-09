@@ -48,8 +48,8 @@ func main() {
 	state.IsVerbose = !*quiet
 
 	if state.IsVerbose {
-		fmt.Println("Starting the http server with allowed origins", conf.Origins)
+		fmt.Println("Starting the http server with allowed origins", conf.WebServer.Origins)
 	}
 
-	server.RunServer(conf.Origins, conf.ApiKey, *local, conf.OpenAiConf.Enable, *disableApiKey)
+	server.RunServer(conf.WebServer, *local, *disableApiKey)
 }
