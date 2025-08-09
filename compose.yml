@@ -20,10 +20,9 @@ services:
     ports: [5143:5143]
     configs: [goinfer.json]
     volumes:
-      # goinfer.json must contain: "models_dir":"/models", "tasks_dir":"/tasks"
-      # Define your custom models_dir and tasks_dir in the ".env" file
+      # goinfer.json must contain: "models_dir":"/models"
+      # Define your custom models_dir in the ".env" file
       - ${models_dir:-./models}:/models
-      - ${tasks_dir:-./tasks}:/tasks
       - ${ccache_dir:-./.ccache}:/root/.ccache
       - ${go_cache_dir:-./.go}:/root/go
     environment:
@@ -33,5 +32,5 @@ services:
 configs:
   goinfer.json:
     # file: ./goinfer.json
-    content: '{"models_dir":"/models", "tasks_dir":"/tasks"}'
+    content: '{"models_dir":"/models"}'
 

@@ -27,9 +27,6 @@ var (
 	IsDebug   = false
 )
 
-// tasks.
-var TasksDir = "./tasks"
-
 // OpenAi api.
 var OpenAiConf types.OpenAiConf
 

@@ -18,7 +18,6 @@ func TestStateInitialization(t *testing.T) {
 	assert.False(t, IsInferring)
 	assert.True(t, IsVerbose)
 	assert.False(t, IsDebug)
-	assert.Equal(t, "./tasks", TasksDir)
 	assert.Equal(t, types.OpenAiConf{}, OpenAiConf)
 
 	// Test that Lm is initialized as empty LLama
@@ -36,7 +35,6 @@ func TestStateModification(t *testing.T) {
 	originalIsInferring := IsInferring
 	originalIsVerbose := IsVerbose
 	originalIsDebug := IsDebug
-	originalTasksDir := TasksDir
 	originalOpenAiConf := OpenAiConf
 
 	// Modify state variables
@@ -48,7 +46,6 @@ func TestStateModification(t *testing.T) {
 	IsInferring = true
 	IsVerbose = false
 	IsDebug = true
-	TasksDir = "/test/tasks"
 	OpenAiConf = types.OpenAiConf{Threads: 8, Template: "custom template"}
 
 	// Assert modifications
@@ -60,7 +57,6 @@ func TestStateModification(t *testing.T) {
 	assert.True(t, IsInferring)
 	assert.False(t, IsVerbose)
 	assert.True(t, IsDebug)
-	assert.Equal(t, "/test/tasks", TasksDir)
 	assert.Equal(t, types.OpenAiConf{Threads: 8, Template: "custom template"}, OpenAiConf)
 
 	// Restore original values
@@ -72,7 +68,6 @@ func TestStateModification(t *testing.T) {
 	IsInferring = originalIsInferring
 	IsVerbose = originalIsVerbose
 	IsDebug = originalIsDebug
-	TasksDir = originalTasksDir
 	OpenAiConf = originalOpenAiConf
 }
 
@@ -224,20 +219,6 @@ func TestStateDebugAndVerboseFlags(t *testing.T) {
 	// Restore original values
 	IsVerbose = originalIsVerbose
 	IsDebug = originalIsDebug
-}
-
-func TestStateTasksDirectory(t *testing.T) {
-	// Test TasksDir state variable
-	originalTasksDir := TasksDir
-
-	// Modify TasksDir
-	TasksDir = "/custom/tasks/path"
-
-	// Assert modification
-	assert.Equal(t, "/custom/tasks/path", TasksDir)
-
-	// Restore original value
-	TasksDir = originalTasksDir
 }
 
 func TestStateOpenAiConfiguration(t *testing.T) {

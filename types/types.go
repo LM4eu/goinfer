@@ -19,7 +19,6 @@ const (
 // GoInferConf holds the configuration for GoInfer.
 type GoInferConf struct {
 	ModelsDir   string
-	TasksDir    string
 	WebServer   WebServerConf
 	OpenAiConf  OpenAiConf
 	LlamaConfig *LlamaConfig
