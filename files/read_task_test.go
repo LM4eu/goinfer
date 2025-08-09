@@ -38,13 +38,10 @@ inferParams:
 	require.NoError(t, err)
 
 	// Test ReadTask
-	exists, task, err := ReadTask("test_task.yml")
+	task, err := ReadTask("test_task.yml")
 
 	// Assert no error
 	assert.NoError(t, err)
-
-	// Assert task exists
-	assert.True(t, exists)
 
 	// Assert task content
 	assert.Equal(t, "test_task", task.Name)
@@ -88,15 +85,10 @@ inferParams:
 	require.NoError(t, err)
 
 	// Test ReadTask with subdirectory path
-	exists, task, err := ReadTask("subdir/sub_task.yml")
+	task, err := ReadTask("subdir/sub_task.yml")
 
 	// Assert no error
 	assert.NoError(t, err)
-
-	// Assert task exists
-	if !exists {
-		t.Fatal("Task should exist in subdirectory")
-	}
 
 	// Assert task content
 	assert.Equal(t, "sub_task", task.Name)
@@ -116,13 +108,10 @@ func TestReadTask_NonExistentFile(t *testing.T) {
 	state.TasksDir = tempDir
 
 	// Test ReadTask with non-existent file
-	exists, task, err := ReadTask("non_existent_task.yml")
+	task, err := ReadTask("non_existent_task.yml")
 
-	// Assert no error (returns false but no error)
-	assert.NoError(t, err)
-
-	// Assert task doesn't exist
-	assert.False(t, exists)
+	// Assert error (task file does not exist)
+	assert.Error(t, err)
 
 	// Assert empty task
 	assert.Equal(t, types.Task{}, task)
@@ -149,13 +138,10 @@ modelConf:
 	require.NoError(t, err)
 
 	// Test ReadTask with invalid YAML
-	exists, task, err := ReadTask("invalid_task.yml")
+	task, err := ReadTask("invalid_task.yml")
 
 	// Assert error occurred
 	assert.Error(t, err)
-
-	// Assert task doesn't exist
-	assert.False(t, exists)
 
 	// Assert empty task
 	assert.Equal(t, types.Task{}, task)
@@ -181,13 +167,10 @@ modelConf:
 	require.NoError(t, err)
 
 	// Test ReadTask with incomplete data
-	exists, task, err := ReadTask("incomplete_task.yml")
+	task, err := ReadTask("incomplete_task.yml")
 
 	// Assert error occurred
 	assert.Error(t, err)
-
-	// Assert task doesn't exist
-	assert.False(t, exists)
 
 	// Assert empty task
 	assert.Equal(t, types.Task{}, task)
@@ -215,13 +198,10 @@ inferParams:
 	require.NoError(t, err)
 
 	// Test ReadTask with missing template
-	exists, task, err := ReadTask("no_template_task.yml")
+	task, err := ReadTask("no_template_task.yml")
 
 	// Assert error occurred
 	assert.Error(t, err)
-
-	// Assert task doesn't exist
-	assert.False(t, exists)
 
 	// Assert empty task
 	assert.Equal(t, types.Task{}, task)
@@ -247,13 +227,10 @@ inferParams:
 	require.NoError(t, err)
 
 	// Test ReadTask with missing modelConf
-	exists, task, err := ReadTask("no_modelconf_task.yml")
+	task, err := ReadTask("no_modelconf_task.yml")
 
 	// Assert no error (should use defaults)
 	assert.NoError(t, err)
-
-	// Assert task exists
-	assert.True(t, exists)
 
 	// Assert task content with defaults
 	assert.Equal(t, "test_task", task.Name)
@@ -283,13 +260,10 @@ modelConf:
 	require.NoError(t, err)
 
 	// Test ReadTask with missing inferParams
-	exists, task, err := ReadTask("no_inferparams_task.yml")
+	task, err := ReadTask("no_inferparams_task.yml")
 
 	// Assert no error (should use defaults)
 	assert.NoError(t, err)
-
-	// Assert task exists
-	assert.True(t, exists)
 
 	// Assert task content with default inferParams
 	assert.Equal(t, "test_task", task.Name)
@@ -333,13 +307,10 @@ inferParams:
 	require.NoError(t, err)
 
 	// Test ReadTask with special characters
-	exists, task, err := ReadTask("special_task.yml")
+	task, err := ReadTask("special_task.yml")
 
 	// Assert no error
 	assert.NoError(t, err, "Should be able to read file with special characters")
-
-	// Assert task exists
-	assert.True(t, exists, "Task with special characters should exist")
 
 	// Assert task content preserves special characters
 	assert.Equal(t, "special-chars_task_123", task.Name)
@@ -385,13 +356,10 @@ inferParams:
 	require.NoError(t, err)
 
 	// Test ReadTask with complex parameters
-	exists, task, err := ReadTask("complex_task.yml")
+	task, err := ReadTask("complex_task.yml")
 
 	// Assert no error
 	assert.NoError(t, err)
-
-	// Assert task exists
-	assert.True(t, exists)
 
 	// Assert complex task content
 	assert.Equal(t, "complex_task", task.Name)
@@ -437,18 +405,16 @@ template: "{prompt}"
 	require.NoError(t, err)
 
 	// Test ReadTask with read-only file
-	exists, task, err := ReadTask("readonly/readonly_task.yml")
+	task, err := ReadTask("readonly/readonly_task.yml")
 
 	// The behavior might vary depending on the system, so let's check both possibilities
 	// In some cases, permission errors might be handled gracefully
 	if err != nil {
 		// Assert error occurred (permission denied)
 		assert.Contains(t, err.Error(), "permission denied", "Error message should mention permission denied")
-		assert.False(t, exists, "Task should not exist when file cannot be read")
 		assert.Equal(t, types.Task{}, task, "Should return empty task when file cannot be read")
 	} else {
 		// If no error, the file was successfully read (this can happen on some systems)
-		assert.True(t, exists, "Task should exist when file can be read")
 		assert.Equal(t, "readonly_task", task.Name, "Task name should be correct")
 		assert.Equal(t, "{prompt}", task.Template, "Task template should be correct")
 	}
