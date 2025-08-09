@@ -72,13 +72,8 @@ func InitConf(path, configFile string) (types.GoInferConf, error) {
 	}, nil
 }
 
-// Create : create a config file.
-func Create(modelsDir string, isDefault bool) {
-	CreateWithFileName(modelsDir, isDefault, "goinfer.json")
-}
-
-// CreateWithFileName : create a config file with a specific name.
-func CreateWithFileName(modelsDir string, isDefault bool, fileName string) {
+// Create : create a config file
+func Create(modelsDir string, isDefault bool, fileName string) {
 	key := "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
 	if !isDefault {
 		key = generateRandomKey()

@@ -28,11 +28,13 @@ func main() {
 	}
 
 	if len(*genConfModelsDir) > 0 {
-		conf.Create(*genConfModelsDir, false)
+		conf.Create(*genConfModelsDir, false, "goinfer.json")
 		fmt.Println("File goinfer.json created")
 		return
-	} else if len(*genLocalConfModelsDir) > 0 {
-		conf.Create(*genLocalConfModelsDir, true)
+	}
+	
+	if len(*genLocalConfModelsDir) > 0 {
+		conf.Create(*genLocalConfModelsDir, true, "goinfer.json")
 		fmt.Println("File goinfer.json created")
 		return
 	}
@@ -43,7 +45,6 @@ func main() {
 	}
 
 	state.ModelsDir = conf.ModelsDir
-	state.TasksDir = conf.TasksDir
 	state.OpenAiConf = conf.OpenAiConf
 	state.IsVerbose = !*quiet
 
