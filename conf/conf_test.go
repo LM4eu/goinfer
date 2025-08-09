@@ -17,7 +17,6 @@ func TestInitConf(t *testing.T) {
 
 	configData := map[string]any{
 		"models_dir": "./test_models",
-		"tasks_dir":  "./test_tasks",
 		"origins":    []string{"http://localhost:3000"},
 		"api_key":    "test_key_123",
 		"oai": map[string]any{
@@ -42,7 +41,6 @@ func TestInitConf(t *testing.T) {
 	config, _ := InitConf(".", "goinfer") // ./goinfer.json
 
 	assert.Equal(t, "./test_models", config.ModelsDir)
-	assert.Equal(t, "./test_tasks", config.TasksDir)
 	assert.Equal(t, []string{"http://localhost:3000"}, config.WebServer.Origins)
 	assert.Equal(t, "test_key_123", config.WebServer.ApiKey)
 	assert.True(t, config.WebServer.EnableApiOpenAi)
@@ -74,7 +72,6 @@ func TestInitConf_WithDefaults(t *testing.T) {
 	config, _ := InitConf(".", "goinfer") // ./goinfer.json
 
 	assert.Equal(t, "./test_models", config.ModelsDir)
-	assert.Equal(t, "./tasks", config.TasksDir)                         // Default value should be set
 	assert.Equal(t, []string{"localhost"}, config.WebServer.Origins)    // Default value
 	assert.Empty(t, config.WebServer.ApiKey)                            // Default empty value
 	assert.False(t, config.WebServer.EnableApiOpenAi)                   // Default value
@@ -102,7 +99,7 @@ func TestInitConf_InvalidJSON(t *testing.T) {
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "goinfer.json")
 
-	invalidJSON := `{"models_dir": "./test_models", "tasks_dir": "./test_tasks",` // Missing closing brace
+	invalidJSON := `{"models_dir": "./test_models",` // Missing closing brace
 	err := os.WriteFile(configPath, []byte(invalidJSON), 0o644)
 	require.NoError(t, err)
 
@@ -125,7 +122,6 @@ func TestInitConf_DifferentConfigName(t *testing.T) {
 
 	configData := map[string]any{
 		"models_dir": "./test_models",
-		"tasks_dir":  "./test_tasks",
 		"origins":    []string{"http://localhost:3000"},
 		"api_key":    "test_key_123",
 	}
@@ -157,7 +153,7 @@ func TestCreate(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test Create with default=false
-customFileName := "custom.config.json"
+	customFileName := "custom.config.json"
 	Create("/test/models", false, customFileName)
 
 	// Verify config file was created with custom name
@@ -173,7 +169,6 @@ customFileName := "custom.config.json"
 
 	assert.Equal(t, "/test/models", config["models_dir"])
 	assert.Equal(t, []any{"http://localhost:5173", "http://localhost:5143"}, config["origins"])
-	assert.Equal(t, "./tasks", config["tasks_dir"])
 	assert.NotEmpty(t, config["api_key"]) // Should be a random key
 
 	// Verify cleanup after test
@@ -208,7 +203,6 @@ func TestCreate_WithDefaults(t *testing.T) {
 
 	assert.Equal(t, "/test/models", config["models_dir"])
 	assert.Equal(t, []any{"http://localhost:5173", "http://localhost:5143"}, config["origins"])
-	assert.Equal(t, "./tasks", config["tasks_dir"])
 	assert.Equal(t, "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465", config["api_key"]) // Default key
 
 	// Verify cleanup after test
