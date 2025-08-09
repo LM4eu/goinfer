@@ -8,6 +8,7 @@ const (
 	DefaultNPredict          = 512
 	DefaultTopK              = 40
 	DefaultTopP              = 0.95
+	DefaultMinP              = 0.05
 	DefaultTemperature       = 0.2
 	DefaultFrequencyPenalty  = 0.0
 	DefaultPresencePenalty   = 0.0
@@ -26,7 +27,7 @@ type GoInferConf struct {
 
 // WebServerConf holds the configuration for GoInfer web server.
 type WebServerConf struct {
-	Port string
+	Port            string
 	EnableApiOpenAi bool `json:"enableApiOpenAi"`
 	Origins         []string
 	ApiKey          string
@@ -48,6 +49,7 @@ type InferenceParams struct {
 	NPredict          int      `json:"n_predict,omitempty"         yaml:"n_predict,omitempty"`
 	TopK              int      `json:"top_k,omitempty"             yaml:"top_k,omitempty"`
 	TopP              float32  `json:"top_p,omitempty"             yaml:"top_p,omitempty"`
+	MinP              float32  `json:"min_p,omitempty"             yaml:"min_p,omitempty"`
 	Temperature       float32  `json:"temperature,omitempty"       yaml:"temperature,omitempty"`
 	FrequencyPenalty  float32  `json:"frequency_penalty,omitempty" yaml:"frequency_penalty,omitempty"`
 	PresencePenalty   float32  `json:"presence_penalty,omitempty"  yaml:"presence_penalty,omitempty"`
@@ -64,6 +66,7 @@ func NewInferenceParams() InferenceParams {
 		NPredict:          DefaultNPredict,
 		TopK:              DefaultTopK,
 		TopP:              DefaultTopP,
+		MinP:              DefaultMinP,
 		Temperature:       DefaultTemperature,
 		FrequencyPenalty:  DefaultFrequencyPenalty,
 		PresencePenalty:   DefaultPresencePenalty,
@@ -86,6 +89,10 @@ func (p InferenceParams) Validate() error {
 	// TopP must be between 0.0 and 1.0 if set
 	if p.TopP < 0.0 || p.TopP > 1.0 {
 		return fmt.Errorf("top_p must be between 0.0 and 1.0, got %f", p.TopP)
+	}
+	// MinP must be between 0.0 and 1.0 if set
+	if p.MinP < 0.0 || p.MinP > 1.0 {
+		return fmt.Errorf("min_p must be between 0.0 and 1.0, got %f", p.MinP)
 	}
 	// Temperature must be non-negative if set
 	if p.Temperature < 0.0 {
@@ -117,6 +124,7 @@ func (p InferenceParams) Clone() InferenceParams {
 		NPredict:          p.NPredict,
 		TopK:              p.TopK,
 		TopP:              p.TopP,
+		MinP:              p.MinP,
 		Temperature:       p.Temperature,
 		FrequencyPenalty:  p.FrequencyPenalty,
 		PresencePenalty:   p.PresencePenalty,
@@ -144,10 +152,9 @@ type InferenceResult struct {
 	Stats InferenceStats `json:"stats"`
 }
 
-// Task represents a task to be executed.
-type Task struct {
-	Name        string          `json:"name"        yaml:"name"`
-	Template    string          `json:"template"    yaml:"template"`
+// Prompt represents a task to be executed.
+type Prompt struct {
+	Prompt      string          `json:"prompt"  yaml:"prompt"`
 	ModelConf   ModelConf       `json:"modelConf"   yaml:"modelConf"`
 	InferParams InferenceParams `json:"inferParams" yaml:"inferParams"`
 }

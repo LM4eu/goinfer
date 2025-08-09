@@ -55,6 +55,11 @@ func parseParams(m echo.Map) (string, string, string, types.InferenceParams, err
 		params.Temperature = float32(v.(float64))
 	}
 
+	v, ok = m["min_p"]
+	if ok {
+		params.MinP = float32(v.(float64))
+	}
+
 	v, ok = m["top_p"]
 	if ok {
 		params.TopP = float32(v.(float64))

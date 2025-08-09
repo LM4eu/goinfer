@@ -84,6 +84,13 @@ func SetTopP(topp float32) PredictOption {
 	}
 }
 
+// SetMinP sets the value for nucleus sampling.
+func SetMinP(minp float32) PredictOption {
+	return func(p *PredictOptions) {
+		p.MinP = minp
+	}
+}
+
 // SetTemperature sets the temperature value for text generation.
 func SetTemperature(temp float32) PredictOption {
 	return func(p *PredictOptions) {
@@ -157,7 +164,7 @@ type PredictOption func(p *PredictOptions)
 
 type PredictOptions struct {
 	Seed, Threads, Tokens, TopK, Repeat, Batch, NKeep int
-	TopP, Temperature, Penalty                        float32
+	TopP, MinP, Temperature, Penalty                        float32
 	NDraft                                            int
 	F16KV                                             bool
 	DebugMode                                         bool
