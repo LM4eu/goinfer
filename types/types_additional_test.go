@@ -12,7 +12,7 @@ func TestGoInferConf(t *testing.T) {
 	// Test creating a GoInferConf
 	conf := GoInferConf{
 		ModelsDir:  "/models",
-		WebServer: WebServerConf{EnableApiOpenAi: true, Origins:    []string{"localhost", "example.com"},		ApiKey:     "test-key"},
+		WebServer:  WebServerConf{EnableApiOpenAi: true, Origins: []string{"localhost", "example.com"}, ApiKey: "test-key"},
 		OpenAiConf: OpenAiConf{},
 	}
 
@@ -25,21 +25,20 @@ func TestGoInferConf(t *testing.T) {
 
 func TestTask(t *testing.T) {
 	// Test creating a Task
-	task := Task{
-		Name:      "test-task",
-		Template:  "test-template",
+	task := Prompt{
+		Prompt:    "Please read this prompt",
 		ModelConf: ModelConf{Name: "test-model", Ctx: 2048},
 		InferParams: InferenceParams{
 			Threads:     4,
 			TopK:        40,
 			TopP:        0.95,
+			MinP:        0.05,
 			Temperature: 0.2,
 		},
 	}
 
 	// Test field values
-	assert.Equal(t, "test-task", task.Name)
-	assert.Equal(t, "test-template", task.Template)
+	assert.Equal(t, "Please read this prompt", task.Prompt)
 	assert.Equal(t, "test-model", task.ModelConf.Name)
 	assert.Equal(t, 2048, task.ModelConf.Ctx)
 	assert.Equal(t, 4, task.InferParams.Threads)
@@ -174,9 +173,8 @@ func TestInferenceResultJSONMarshaling(t *testing.T) {
 
 func TestTaskJSONMarshaling(t *testing.T) {
 	// Test JSON marshaling and unmarshaling for Task
-	task := Task{
-		Name:        "test-task",
-		Template:    "test-template",
+	task := Prompt{
+		Prompt:      "test-template",
 		ModelConf:   ModelConf{Name: "test-model"},
 		InferParams: NewInferenceParams(),
 	}
@@ -186,7 +184,7 @@ func TestTaskJSONMarshaling(t *testing.T) {
 	require.NoError(t, err)
 
 	// Unmarshal from JSON
-	var unmarshalledTask Task
+	var unmarshalledTask Prompt
 	err = json.Unmarshal(jsonData, &unmarshalledTask)
 	require.NoError(t, err)
 

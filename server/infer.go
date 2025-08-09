@@ -13,25 +13,16 @@ import (
 )
 
 // ParseInferParams parses inference parameters from echo.Map.
-func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.InferenceParams, error) {
-	// fmt.Println("Params", m)
+func ParseInferParams(m echo.Map) (types.Prompt, error) {
 	v, ok := m["prompt"]
 	if !ok {
-		return "", "", types.ModelConf{}, types.InferenceParams{}, errors.New("provide a prompt")
+		return types.Prompt{}, errors.New("provide a prompt")
 	}
 
 	// Type assertion with error checking
 	prompt, ok := v.(string)
 	if !ok {
-		return "", "", types.ModelConf{}, types.InferenceParams{}, errors.New("prompt must be a string")
-	}
-
-	template := "{prompt}"
-	v, ok = m["template"]
-	if ok {
-		if t, ok := v.(string); ok {
-			template = t
-		}
+		return types.Prompt{}, errors.New("prompt must be a string")
 	}
 
 	modelConf := state.DefaultModelConf
@@ -98,6 +89,14 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 		}
 	}
 
+	minP := state.DefaultInferenceParams.MinP
+	v, ok = m["min_p"]
+	if ok {
+		if p, ok := v.(float64); ok {
+			minP = float32(p)
+		}
+	}
+
 	temp := state.DefaultInferenceParams.Temperature
 	v, ok = m["temperature"]
 	if ok {
@@ -151,21 +150,23 @@ func ParseInferParams(m echo.Map) (string, string, types.ModelConf, types.Infere
 		}
 	}
 
-	params := types.InferenceParams{
-		Stream:            stream,
-		Threads:           threads,
-		NPredict:          tokens,
-		TopK:              topK,
-		TopP:              topP,
-		Temperature:       temp,
-		FrequencyPenalty:  freqPenalty,
-		PresencePenalty:   presPenalty,
-		RepeatPenalty:     repeatPenalty,
-		TailFreeSamplingZ: tfs,
-		StopPrompts:       stop,
-	}
-
-	return prompt, template, modelConf, params, nil
+	return types.Prompt{
+		Prompt:    prompt,
+		ModelConf: modelConf,
+		InferParams: types.InferenceParams{
+			Stream:            stream,
+			Threads:           threads,
+			NPredict:          tokens,
+			TopK:              topK,
+			TopP:              topP,
+			MinP:              minP,
+			Temperature:       temp,
+			FrequencyPenalty:  freqPenalty,
+			PresencePenalty:   presPenalty,
+			RepeatPenalty:     repeatPenalty,
+			TailFreeSamplingZ: tfs,
+			StopPrompts:       stop,
+		}}, nil
 }
 
 // setModelOptions sets model options based on model configuration.
@@ -188,27 +189,27 @@ func InferHandler(c echo.Context) error {
 		if state.IsDebug {
 			fmt.Println("Inference params decoding error", err)
 		}
-		return c.NoContent(http.StatusInternalServerError)
+		return c.NoContent(http.StatusBadRequest)
 	}
 
-	prompt, template, modelConf, params, err := ParseInferParams(m)
+	prompt, err := ParseInferParams(m)
 	if err != nil {
 		if state.IsDebug {
 			fmt.Println("Inference params parsing error", err)
 		}
-		return c.NoContent(http.StatusInternalServerError)
+		return c.NoContent(http.StatusBadRequest)
 	}
 
-	if modelConf.Name != "" {
-		err := setModelOptions(modelConf)
+	if prompt.ModelConf.Name != "" {
+		err := setModelOptions(prompt.ModelConf)
 		if err != nil {
 			if state.IsDebug {
 				fmt.Println("Error setting model options:", err)
 			}
-			return c.NoContent(http.StatusInternalServerError)
+			return c.NoContent(http.StatusBadRequest)
 		}
 
-		_, err = lm.LoadModel(modelConf.Name, state.ModelOptions)
+		_, err = lm.LoadModel(prompt.ModelConf.Name, state.ModelOptions)
 		if err != nil {
 			if state.IsDebug {
 				fmt.Println("Error loading model:", err)
@@ -226,8 +227,7 @@ func InferHandler(c echo.Context) error {
 		}
 	}
 
-	// fmt.Println("Params", params)
-	if params.Stream {
+	if prompt.InferParams.Stream {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		c.Response().WriteHeader(http.StatusOK)
 	}
@@ -238,7 +238,7 @@ func InferHandler(c echo.Context) error {
 	defer close(ch)
 	defer close(errCh)
 
-	go lm.Infer(prompt, template, params, c, ch, errCh)
+	go lm.Infer(prompt, c, ch, errCh)
 
 	select {
 	case res, ok := <-ch:
@@ -250,14 +250,14 @@ func InferHandler(c echo.Context) error {
 				}
 				fmt.Println("--------------------------")
 			}
-			if !params.Stream {
+			if !prompt.InferParams.Stream {
 				return c.JSON(http.StatusOK, res.Data)
 			}
 		}
 		return nil
 	case err, ok := <-errCh:
 		if ok {
-			if params.Stream {
+			if prompt.InferParams.Stream {
 				enc := json.NewEncoder(c.Response())
 				err := lm.StreamMsg(err, c, enc)
 				if err != nil {
