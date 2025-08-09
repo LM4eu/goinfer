@@ -25,18 +25,6 @@ func NewBufferPool(size, capacity int) *sync.Pool {
 	return pool
 }
 
-// AcquireBuffer - Acquires a buffer from the pool.
-func AcquireBuffer() []byte {
-	return BufferPool.Get().([]byte)
-}
-
-// ReleaseBuffer - Releases a buffer back to the pool.
-func ReleaseBuffer(buf []byte) {
-	// Reset buffer before returning to pool
-	buf = buf[:0]
-	BufferPool.Put(buf)
-}
-
 // StringJoin - High-performance string joining.
 func StringJoin(sep string, strs []string) string {
 	if len(strs) == 0 {
@@ -59,14 +47,26 @@ func StringJoin(sep string, strs []string) string {
 	// Use pooled buffer
 	buf := AcquireBuffer()
 	defer ReleaseBuffer(buf)
-	buf = append(buf, strs[0]...)
+	*buf = append(*buf, strs[0]...)
 
 	for i := 1; i < len(strs); i++ {
-		buf = append(buf, sep...)
-		buf = append(buf, strs[i]...)
+		*buf = append(*buf, sep...)
+		*buf = append(*buf, strs[i]...)
 	}
 
-	return string(buf)
+	return string(*buf)
+}
+
+// AcquireBuffer - Acquires a buffer from the pool.
+func AcquireBuffer() *[]byte {
+	return BufferPool.Get().(*[]byte)
+}
+
+// ReleaseBuffer - Releases a buffer back to the pool.
+func ReleaseBuffer(buf *[]byte) {
+	// Reset buffer before returning to pool
+	*buf = (*buf)[:0]
+	BufferPool.Put(buf)
 }
 
 // MemoryStats - Lightweight memory statistics.
