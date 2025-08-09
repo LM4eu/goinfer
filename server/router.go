@@ -2,6 +2,7 @@ package server
 
 import (
 	"embed"
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -89,5 +90,8 @@ func RunServer(conf types.WebServerConf, localMode bool, disableApiKey bool) {
 		oai.GET("/models", OpenAiListModels)
 	}
 
-	e.Start(conf.Port)
+	err := e.Start(conf.Port)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 }

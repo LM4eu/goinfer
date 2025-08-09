@@ -82,7 +82,7 @@ func LoadModelHandler(c echo.Context) error {
 		switch errcode {
 		case 500:
 			if state.IsDebug {
-				panic(fmt.Errorf("Debug - Error loading model: %w\n", err))
+				panic(fmt.Errorf("debug - Error loading model: %w", err))
 			}
 			return c.JSON(http.StatusInternalServerError, echo.Map{
 				"error": "error loading model",

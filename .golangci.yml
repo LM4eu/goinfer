@@ -1,23 +1,25 @@
 version: "2"
 
-# Enable all linters except deprecated ones
+# Documentation:
+# https://golangci-lint.run/usage/configuration/#run-configuration
+
+# Run the last version:
+# go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix
+
+# List the available linters:
+# go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest linters --no-config --color always
+
+---
+
 linters:
   default: all
 
-  disable: 
+  disable:
   - nlreturn
   - wsl
   - wsl_v5
 
   enable:
-    # Enabled by default linters
-    - errcheck
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
-    
-    # Disabled by default linters
     - arangolint
     - asasalint
     - asciicheck
@@ -36,6 +38,7 @@ linters:
     - durationcheck
     - embeddedstructfieldcheck
     - err113
+    - errcheck
     - errchkjson
     - errname
     - errorlint
@@ -64,10 +67,12 @@ linters:
     - goprintffuncname
     - gosec
     - gosmopolitan
+    - govet
     - grouper
     - iface
     - importas
     - inamedparam
+    - ineffassign
     - interfacebloat
     - intrange
     - ireturn
@@ -102,6 +107,7 @@ linters:
     - sloglint
     - spancheck
     - sqlclosecheck
+    - staticcheck
     - tagalign
     - tagliatelle
     - testableexamples
@@ -111,6 +117,7 @@ linters:
     - tparallel
     - unconvert
     - unparam
+    - unused
     - usestdlibvars
     - usetesting
     - varnamelen
@@ -120,29 +127,119 @@ linters:
     - zerologlint
 
 linters-settings:
-  # errcheck settings
+
+  bodyclose:
+    no-default-checks: false
+
+  canonicalheader:
+    canonical-headers: []
+
+  copyloopvar:
+    check-alias: true
+
+  depguard:
+    rules:
+      deny: null
+
+  dupl:
+    threshold: 94
+
+  durationcheck:
+    check-multiplication: true
+
+  embeddedstructfieldcheck:
+    allow-empty-line: true
+
   errcheck:
-    check-type-assertions: false
     check-blank: false
-  
-  # govet settings
-  govet:
-    enable-all: true
-    settings:
-      shadow:
-        strict: true
-  
-  # staticcheck settings
-  staticcheck:
-    checks: all
-  
-  # unused settings
-  unused:
-    check-exported: false
-  
-  # gocritic settings
+    check-type-assertions: false
+
+  errchkjson:
+    check-struct-tag: true
+
+  errname:
+    check-func-errors: true
+    check-named-errors: true
+
+  errorlint:
+    asserts: true
+    comparison: true
+    errorf: true
+
+  exhaustive:
+    check-generated: false
+
+  exhaustruct:
+    ignore-structs: []
+    include: []
+    exclude:
+      - "Perm$"
+
+  exptostd:
+    ignore: []
+
+  fatcontext:
+    max-context-nesting: 3
+
+  forbidigo:
+    forbid:
+      - msg: Use logger instead of fmt.Print
+        pattern: ^fmt\.Print.*$
+      - msg: Use logger instead of log
+        pattern: ^log\..*$
+
+  forcetypeassert:
+    check-all: true
+
+  funcorder:
+    order: ["init", "main", "Setup", "TearDown", "Test", "Benchmark", "Example"]
+
+  funlen:
+    lines: 100
+    statements: 50
+
+  gochecknoglobals:
+    allow: []
+
+  gochecknoinits:
+    skip: []
+
+  gochecksumtype:
+    check-all: true
+
+  gocyclo:
+    min-complexity: 10
+
+  cyclop:
+    max-complexity: 10
+    skip-test: true
+
+  gocognit:
+    min-complexity: 18
+
+  goconst:
+    min-len: 2
+    min-occurrences: 5
+
   gocritic:
     enabled-checks: all
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - captLocal
+      - unnamedResult
+    # - dupImport # https://github.com/go-critic/go-critic/issues/845
+    # - ifElseChain
+    # - octalLiteral
+      - whyNoLint
+    # - wrapperFunc
+    # - yodaStyleExpr
+    # - singleCaseSwitch # Every time this occurred in the code, there was no other way.
+
     settings:
       captureruneverywhere:
         params-only: true
@@ -162,10 +259,160 @@ linters-settings:
         max-size: 100
       stringintconv:
         ignore-string-representation: true
-  
-  # revive settings
+
+  godot:
+    scope: declarations
+
+  godox:
+    keywords: ["TODO", "FIXME", "BUG", "HACK"]
+
+  gomoddirectives:
+    replace-allowlist:
+      - github.com/owner/repo v1.0.0
+
+  gomodguard:
+    rules:
+      deny:
+        - path: ^gopkg.in/
+          reason: use newer go modules
+        - path: ^github.com/golang/protobuf
+          reason: use newer go modules
+
+  goprintffuncname:
+    check-func-names: []
+
+  gosec:
+    confidence: medium
+    excludes:
+      - G104
+    nosec: ''
+    severity: medium
+
+  gosmopolitan:
+    allow-time: false
+    allow-time-utc: false
+    check-timezone: true
+
+  govet:
+    check-shadowing: true
+    enable-all: true
+    settings:
+      shadow:
+        strict: true
+      printf:
+        funcs:
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
+
+  iface:
+    allow-empty-interface: false
+    allow-single-method: false
+
+  importas:
+    alias:
+      - alias: errors
+        pkg: github.com/pkg/errors
+      - alias: ctx
+        pkg: context
+
+  inamedparam:
+    ignore-empty: false
+
+  interfacebloat:
+    max-methods: 10
+
+  intrange:
+    check-range: true
+
+  lll:
+    line-length: 160
+
+  loggercheck:
+    kitsune: true
+    klog: true
+    logr: true
+    slog: true
+    zap: true
+
+  makezero:
+    always: false
+
+  maligned:
+    suggest-new: true
+    suggest-new-order: true
+
+  mirror:
+    check-all: true
+
+  misspell:
+    locale: US
+
+  musttag:
+    rules: []
+
+  nakedret:
+    max-func-lines: 15
+
+  nestif:
+    max-nesting: 5
+
+  nilerr:
+    check-all: true
+
+  nilnesserr:
+    check-all: true
+
+  nlreturn:
+    max-lines: 2
+
+  noctx:
+    check-all: true
+
+  noinlineerr:
+    check-all: true
+
+  nolintlint:
+    allow-leading-space: false # don't require machine-readable nolint directives (i.e. with no leading space)
+    allow-unused: false # report any unused nolint directives
+    require-explanation: false # don't require an explanation for nolint directives
+    require-specific: true # require nolint directives to be specific about which linter is being skipped
+
+  nonamedreturns:
+    check-all: true
+
+  nosprintfhostport:
+    check-all: true
+
+  paralleltest:
+    ignore-missing: false
+
+  perfsprint:
+    ignore: []
+
+  prealloc:
+    for-loops: true
+    range-loops: true
+    simple: true
+
+  predeclared:
+    ignore: ''
+
+  promlinter:
+    strict: false
+
+  protogetter:
+    check-all: true
+
+  reassign:
+    check-global: true
+    check-local: true
+
+  recvcheck:
+    check-all: true
+
   revive:
-    enable-all-rules: true
     config:
       - rule-name: blank-imports
         severity: warning
@@ -183,178 +430,56 @@ linters-settings:
         severity: warning
       - rule-name: var-naming
         severity: warning
-  
-  # goconst settings
-  goconst:
-    min-len: 3
-    min-occurrences: 3
-  
-  # gocyclo settings
-  gocyclo:
-    min-complexity: 15
-  
-  # maligned settings
-  maligned:
-    suggest-new-order: true
-  
-  # dupl settings
-  dupl:
-    threshold: 100
-  
-  # gochecknoglobals settings
-  gochecknoglobals:
-    allow: []
-  
-  # gochecknoinits settings
-  gochecknoinits:
-    skip: []
-  
-  # lll settings
-  lll:
-    line-length: 120
-  
-  # funlen settings
-  funlen:
-    lines: 60
-    statements: 40
-  
-  # gocognit settings
-  gocognit:
-    min-complexity: 20
-  
-  # cyclop settings
-  cyclop:
-    max-complexity: 30
-    skip-test: true
-  
-  # misspell settings
-  misspell:
-    locale: US
-  
-  # nolintlint settings
-  nolintlint:
-    require-explanation: false
-    allow-leading-space: true
-    require-specific: true
-  
-  # predeclared settings
-  predeclared:
-    ignore: ""
-  
-  # wsl_v5 settings
-  wsl_v5:
-    strict: true
-    allow-trailing-comma: true
-  
-  # tagalign settings
-  tagalign:
-    order: "align"
-    style: "same"
-  
-  # godot settings
-  godot:
-    scope: "declarations"
-  
-  # godox settings
-  godox:
-    keywords: ["TODO", "FIXME", "BUG", "HACK"]
-  
-  # gomodguard settings
-  gomodguard:
-    rules:
-      deny:
-        - path: "^gopkg.in/"
-          reason: "use newer go modules"
-        - path: "^github.com/golang/protobuf"
-          reason: "use newer go modules"
-  
-  # depguard settings
-  depguard:
-    rules:
-      deny:
-        # path: "github.com/some/bad/package"
-        # reason: "use a better package"
-  
-  # gomoddirectives settings
-  gomoddirectives:
-    replace-allowlist:
-      - "github.com/owner/repo v1.0.0"
-  
-  # importas settings
-  importas:
-    alias:
-      - pkg: "github.com/pkg/errors"
-        alias: "errors"
-      - pkg: "context"
-        alias: "ctx"
-  
-  # unparam settings
-  unparam:
-    check-exported: false
-  
-  # errorlint settings
-  errorlint:
-    errorf: true
-    asserts: true
-    comparison: true
-  
-  # wrapcheck settings
-  wrapcheck:
-    ignore-sigs:
-      - "errors.New("
-      - "errors.New("
-      - "fmt.Errorf("
-    ignore-interface-regexps:
-      - "^(?i)error$"
-    ignore-package-globs:
-      - "errors/*"
-      - "fmt/*"
-  
-  # bodyclose settings
-  bodyclose:
-    no-default-checks: false
-  
-  # rowserrcheck settings
+    enable-all-rules: true
+
   rowserrcheck:
     check-all: true
     packages:
-      - "database/sql"
-      - "github.com/jackc/pgx/v4"
-  
-  # sqlclosecheck settings
+      - database/sql
+      - github.com/jackc/pgx/v4
+
+  sloglint:
+    args-on-separate-lines: true
+    context: all
+    key-value-braces: true
+
+  spancheck:
+    check-all: true
+
   sqlclosecheck:
     packages:
-      - "database/sql"
-      - "github.com/jackc/pgx/v4"
-  
-  # gosec settings
-  gosec:
-    excludes:
-      - "G104"
-    severity: "medium"
-    confidence: "medium"
-    nosec: ""
-  
-  # gosmopolitan settings
-  gosmopolitan:
-    allow-time: false
-    allow-time-utc: false
-    check-timezone: true
-  
-  # loggercheck settings
-  loggercheck:
-    kitsune: true
-    klog: true
-    logr: true
-    slog: true
-    zap: true
-  
-  # zerologlint settings
-  zerologlint:
-    check-log: true
-    check-event: true
-  
-  # testifylint settings
+      - database/sql
+      - github.com/jackc/pgx/v4
+
+  staticcheck:
+    go: "1.24"
+    # https://staticcheck.io/docs/options#checks
+    checks: all
+
+  tagalign:
+    order: align
+    style: same
+
+  tagliatelle:
+    check-all: true
+    ignore: []
+    case:
+      rules:
+        json: snake # could be "goCamel"
+
+  # https://github.com/butuzov/ireturn
+  # https://golangci-lint.run/usage/linters/#ireturn
+  ireturn:
+    allow:
+      - anon # anonymous interfaces such as: interface{Stop()}
+      - error # error interface
+      - stdlib # standard library interfaces
+      - github.com/prometheus\/client_golang\/prometheus.Gauge
+      - github.com/prometheus\/client_golang\/prometheus.Counter
+
+  testableexamples:
+    check-all: true
+
   testifylint:
     disable-all: false
     enable:
@@ -371,241 +496,175 @@ linters-settings:
       - require-error
       - suite-extra-assert-call
       - suite-thelper
-  
-  # paralleltest settings
-  paralleltest:
-    ignore-missing: false
-  
-  # tparallel settings
+
+  testpackage:
+    suffix: _test
+
+  thelper:
+    allow: []
+
   tparallel:
     check-all: true
     ignore-missing: false
-  
-  # testpackage settings
-  testpackage:
-    suffix: "_test"
-  
-  # thelper settings
-  thelper:
-    allow: []
-  
-  # usestdlibvars settings
+
+  unconvert:
+    check-all: true
+
+  unparam:
+    check-exported: false
+
+  unused:
+    check-exported: false
+
   usestdlibvars:
     allow-all: false
     ignore:
-      - "os.O_WRONLY"
-      - "os.O_RDWR"
-  
-  # usetesting settings
+      - os.O_WRONLY
+      - os.O_RDWR
+
   usetesting:
     allow:
-      - "testing.T"
-      - "testing.B"
-      - "testing.F"
-  
-  # iface settings
-  iface:
-    allow-empty-interface: false
-    allow-single-method: false
-  
-  # interfacebloat settings
-  interfacebloat:
-    max-methods: 10
-  
-  # inamedparam settings
-  inamedparam:
-    ignore-empty: false
-  
-  # prealloc settings
-  prealloc:
-    simple: true
-    range-loops: true
-    for-loops: true
-  
-  # perfsprint settings
-  perfsprint:
-    ignore: []
-  
-  # exptostd settings
-  exptostd:
-    ignore: []
-  
-  # canonicalheader settings
-  canonicalheader:
-    canonical-headers: []
-  
-  # copyloopvar settings
-  copyloopvar:
-    check-alias: true
-  
-  # durationcheck settings
-  durationcheck:
-    check-multiplication: true
-  
-  # embeddedstructfieldcheck settings
-  embeddedstructfieldcheck:
-    allow-empty-line: true
-  
-  # errchkjson settings
-  errchkjson:
-    check-struct-tag: true
-  
-  # errname settings
-  errname:
-    check-named-errors: true
-    check-func-errors: true
-  
-  # exhaustive settings
-  exhaustive:
-    check-generated: false
-  
-  # exhaustruct settings
-  exhaustruct:
-    ignore-structs: []
-  
-  # fatcontext settings
-  fatcontext:
-    max-context-nesting: 3
-  
-  # forbidigo settings
-  forbidigo:
-    forbid:
-      - pattern: '^fmt\.Print.*$'
-        msg: "Use logger instead of fmt.Print"
-      - pattern: '^log\..*$'
-        msg: "Use logger instead of log"
-  
-  # forcetypeassert settings
-  forcetypeassert:
-    check-all: true
-  
-  # funcorder settings
-  funcorder:
-    order: ["init", "main", "Setup", "TearDown", "Test", "Benchmark", "Example"]
-  
-  # gochecksumtype settings
-  gochecksumtype:
-    check-all: true
-  
-  # goprintffuncname settings
-  goprintffuncname:
-    check-func-names: []
-  
-  # intrange settings
-  intrange:
-    check-range: true
-  
-  # ireturn settings
-  ireturn:
-    allow: []
-  
-  # makezero settings
-  makezero:
-    always: false
-  
-  # mirror settings
-  mirror:
-    check-all: true
-  
-  # musttag settings
-  musttag:
-    rules: []
-  
-  # nakedret settings
-  nakedret:
-    max-func-lines: 15
-  
-  # nestif settings
-  nestif:
-    max-nesting: 5
-  
-  # nilerr settings
-  nilerr:
-    check-all: true
-  
-  # nilnesserr settings
-  nilnesserr:
-    check-all: true
-  
-  # nlreturn settings
-  nlreturn:
-    max-lines: 2
-  
-  # noctx settings
-  noctx:
-    check-all: true
-  
-  # noinlineerr settings
-  noinlineerr:
-    check-all: true
-  
-  # nonamedreturns settings
-  nonamedreturns:
-    check-all: true
-  
-  # nosprintfhostport settings
-  nosprintfhostport:
-    check-all: true
-  
-  # promlinter settings
-  promlinter:
-    strict: false
-  
-  # protogetter settings
-  protogetter:
-    check-all: true
-  
-  # reassign settings
-  reassign:
-    check-local: true
-    check-global: true
-  
-  # recvcheck settings
-  recvcheck:
-    check-all: true
-  
-  # sloglint settings
-  sloglint:
-    context: all
-    key-value-braces: true
-    args-on-separate-lines: true
-  
-  # spancheck settings
-  spancheck:
-    check-all: true
-  
-  # tagliatelle settings
-  tagliatelle:
-    check-all: true
-    ignore: []
-  
-  # testableexamples settings
-  testableexamples:
-    check-all: true
-  
-  # unconvert settings
-  unconvert:
-    check-all: true
-  
-  # varnamelen settings
+      - testing.T
+      - testing.B
+      - testing.F
+
   varnamelen:
-    min-length: 2
     ignore: []
-  
-  # wastedassign settings
+    min-length: 2
+    # The longest distance, in source lines, that is being considered a "small scope".
+    # Variables used in at most this many lines will be ignored.
+    # Default: 5
+    max-distance: 14
+    # The minimum length of a variable's name that is considered "long".
+    # Variable names that are at least this long will be ignored.
+    # Default: 3
+    min-name-length: 2
+    # Check method receivers.
+    # Default: false
+    check-receiver: false
+    # Check named return values.
+    # Default: false
+    check-return: true
+    # Check type parameters.
+    # Default: false
+    check-type-param: true
+    # Ignore "ok" variables that hold the bool return value of a type assertion.
+    # Default: false
+    ignore-type-assert-ok: false
+    # Ignore "ok" variables that hold the bool return value of a map index.
+    # Default: false
+    ignore-map-index-ok: false
+    # Ignore "ok" variables that hold the bool return value of a channel receive.
+    # Default: false
+    ignore-chan-recv-ok: false
+    # Optional list of variable names that should be ignored completely.
+    # Default: []
+    ignore-names:
+      - err
+      - r # request
+      - w # writer
+      - g # garcon
+      - u # url
+      - d # duration
+    # Optional list of variable declarations that should be ignored completely.
+    # Entries must be in one of the following forms (see below for examples):
+    # - for variables, parameters, named return values, method receivers, or type parameters:
+    #   <name> <type>  (<type> can also be a pointer/slice/map/chan/...)
+    # - for constants: const <name>
+    #
+    # Default: []
+    ignore-decls:
+      - t testing.T
+      - f *foo.Bar
+      - e error
+      - i int
+      - const C
+      - T any
+      - m map[string]int
+
   wastedassign:
     check-all: true
-  
-  # whitespace settings
-  whitespace:
-    multi-if: true
-    multi-assign: true
-    blank-lines: true
-    space-around-operator: true
-    space-around-braces: true
-    space-around-parentheses: true
-    space-around-comment: true
 
-# Run settings
+  whitespace:
+    blank-lines: true
+    multi-assign: true
+    multi-if: true
+    space-around-braces: true
+    space-around-comment: true
+    space-around-operator: true
+    space-around-parentheses: true
+
+  wrapcheck:
+    ignore-interface-regexps:
+      - ^(?i)error$
+    ignore-package-globs:
+      - errors/*
+      - fmt/*
+    ignore-sigs:
+      - errors.New(
+      - errors.New(
+      - fmt.Errorf(
+
+  wsl_v5:
+    allow-trailing-comma: true
+    strict: true
+
+  zerologlint:
+    check-event: true
+    check-log: true
+
+
+issues:
+  exclude-rules:
+    # Excluding configuration per-path
+    - path: _test\.go
+      linters:
+        - gosec # weak random number generator (math/rand instead of crypto/rand)
+        - scopelint
+        # gocyclo
+        # errcheck
+        # dupl
+        # unparam
+        # staticcheck
+
+    # Excluding configuration per-linter
+    - linters:
+        - gocritic
+      text: "unnecessaryDefer:"
+
+    # Excluding configuration per-text and per-source
+    - text: "exitAfterDefer:"
+      linters:
+        - gocritic
+
+
 run:
+  # timeout for analysis, e.g. 30s, 5m, default is 1m
+  deadline: 9m
+  # exit code when at least one issue was found, default is 1
+  issues-exit-code: 1
+  # which dirs to skip: they won't be analyzed;
+  # can use regexp here: generated.*, regexp is applied on full path;
+  # default value is empty list, but next dirs are always skipped independently
+  # from this option's value:
+  #     vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
+  skip-dirs: [poc]
+  go: "1.24"
   timeout: 5m
+
+
+output:
+  # colored-line-number|line-number|json|tab|checkstyle, default is "colored-line-number"
+  format: colored-line-number
+
+  # print lines of code with issue, default is true
+  print-issued-lines: true
+
+  # print linter name in the end of issue text, default is true
+  print-linter-name: true
+
+  # make issues output unique by line, default is true
+  uniq-by-line: true
+
+  # sorts results by: filepath, line and column
+  sort-results: true

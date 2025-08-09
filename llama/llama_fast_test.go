@@ -194,11 +194,9 @@ func TestLlamaServerManager_StartupTime(t *testing.T) {
 		Port:       8080,
 	}
 
-	manager := NewLlamaServerManager(&config)
-
 	// Test that manager is created quickly
 	start := time.Now()
-	manager = NewLlamaServerManager(&config)
+	manager := NewLlamaServerManager(&config)
 	creationTime := time.Since(start)
 
 	// Manager creation should be very fast (< 1ms)
