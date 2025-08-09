@@ -37,7 +37,7 @@ func main() {
 		return
 	}
 
-	conf := conf.InitConf()
+	conf := conf.InitConf(".", "goinfer") // ./goinfer.json
 	state.ModelsDir = conf.ModelsDir
 	state.TasksDir = conf.TasksDir
 	state.OpenAiConf = conf.OpenAiConf
