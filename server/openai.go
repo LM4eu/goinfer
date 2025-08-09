@@ -124,7 +124,13 @@ func CreateCompletionHandler(c echo.Context) error {
 	}
 
 	if state.LoadedModel != model {
-		lm.LoadModel(model, state.DefaultModelOptions)
+		_, err = lm.LoadModel(model, state.DefaultModelOptions)
+		if err != nil {
+			if state.IsDebug {
+				fmt.Println("Error loading model:", err)
+			}
+			return c.NoContent(http.StatusInternalServerError)
+		}
 	}
 
 	if params.Stream {

@@ -99,7 +99,10 @@ func CreateWithFileName(modelsDir string, isDefault bool, fileName string) {
 		},
 	}
 	jsonString, _ := json.MarshalIndent(data, "", "    ")
-	os.WriteFile(fileName, jsonString, os.ModePerm&^0o111)
+	err := os.WriteFile(fileName, jsonString, os.ModePerm&^0o111)
+	if err != nil {
+		fmt.Printf("Cannot write %s - %v", fileName, err)
+	}
 }
 
 func generateRandomKey() string {

@@ -1,6 +1,7 @@
 package llama
 
 import (
+	"fmt"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -68,6 +69,8 @@ func (m *Monitor) CheckHealth() HealthCheckResult {
 	//  TCP connection check with short timeout
 	conn, err := net.DialTimeout("tcp", m.config.GetAddress(), m.timeout)
 	if err != nil {
+		fmt.Printf("Failed CheckHealth DialTimeout: %v", err)
+
 		// Update atomic values for performance
 		m.lastCheckTime.Store(time.Now().UnixNano())
 		m.lastLatency.Store(0)
@@ -80,9 +83,18 @@ func (m *Monitor) CheckHealth() HealthCheckResult {
 	}
 
 	//  close with minimal overhead
-	conn.Close()
+	err = conn.Close()
 
 	latency := time.Since(start)
+
+	if err != nil {
+		fmt.Printf("Failed closing CheckHealth connection: %v", err)
+		return HealthCheckResult{
+			Healthy: false,
+			Latency: latency,
+		}
+	}
+
 
 	// Update atomic values for performance
 	m.lastCheckTime.Store(time.Now().UnixNano())
@@ -202,16 +214,21 @@ func ReleaseHealthCheckResult(result *HealthCheckResult) {
 	healthCheckPool.Put(result)
 }
 
-// TCPHealthCheck - Ultra-fast TCP health check for external use.
+// TCPHealthCheck - TCP health check for external use.
 func TCPHealthCheck(address string) bool {
 	start := time.Now()
 
 	conn, err := net.DialTimeout("tcp", address, 1*time.Millisecond)
 	if err != nil {
+		fmt.Printf("Failed TCPHealthCheck DialTimeout: %v", err)
 		return false
 	}
 
-	conn.Close()
+	err = conn.Close()
+	if err != nil {
+		fmt.Printf("Failed closing TCPHealthCheck connection: %v", err)
+		return false
+	}
 
 	// Verify it meets the <2ms target
 	return time.Since(start) < 2*time.Millisecond

@@ -150,23 +150,8 @@ func TestInferenceParamsEquality(t *testing.T) {
 }
 
 func TestInferenceParamsResetToDefaults(t *testing.T) {
-	// Test resetting params to defaults
-	params := InferenceParams{
-		Stream:            true,
-		Threads:           16,
-		NPredict:          2048,
-		TopK:              100,
-		TopP:              0.9,
-		Temperature:       0.7,
-		FrequencyPenalty:  0.2,
-		PresencePenalty:   0.2,
-		RepeatPenalty:     1.5,
-		TailFreeSamplingZ: 0.8,
-		StopPrompts:       []string{"STOP", "END", "DONE"},
-	}
-
 	// Reset to defaults
-	params = NewInferenceParams()
+	params := NewInferenceParams()
 
 	// Verify all fields are set to defaults
 	assert.False(t, params.Stream)

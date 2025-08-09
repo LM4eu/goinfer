@@ -34,10 +34,11 @@ func (e *InferenceError) Error() string {
 
 // Error codes for inference operations.
 const (
-	ErrCodeModelNotLoaded  = "MODEL_NOT_LOADED"
-	ErrCodeInferenceFailed = "INFERENCE_FAILED"
-	ErrCodeStreamFailed    = "STREAM_FAILED"
-	ErrCodeInvalidParams   = "INVALID_PARAMS"
+	ErrStreamDeltaMsgOpenAi = "STREAM_DELTA_OPENAI"
+	ErrCodeModelNotLoaded   = "MODEL_NOT_LOADED"
+	ErrCodeInferenceFailed  = "INFERENCE_FAILED"
+	ErrCodeStreamFailed     = "STREAM_FAILED"
+	ErrCodeInvalidParams    = "INVALID_PARAMS"
 )
 
 // Main Inference Functions

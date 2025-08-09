@@ -48,7 +48,10 @@ func InferOpenAi(
 	state.ContinueInferringController = true
 
 	res, err := state.Lm.Predict(finalPrompt, llama.SetTokenCallback(func(token string) bool {
-		streamDeltaMsgOpenAi(ntokens, token, enc, c, params, startThinking, &thinkingElapsed, &startEmitting)
+		err := streamDeltaMsgOpenAi(ntokens, token, enc, c, params, startThinking, &thinkingElapsed, &startEmitting)
+		if err != nil {
+			errCh <- createErrorMessageOpenAi(ntokens+1, "streamDeltaMsgOpenAi error", err, ErrStreamDeltaMsgOpenAi)
+		}
 		return state.ContinueInferringController
 	}),
 		llama.SetTokens(params.NPredict),

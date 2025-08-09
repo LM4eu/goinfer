@@ -1,6 +1,7 @@
 package llama
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"os/exec"
@@ -64,7 +65,7 @@ func (m *LlamaServerManager) Start() error {
 	return nil
 }
 
-// Stop - Quick termination with Kill() instead of graceful shutdown.
+// Stop - termination with Kill() instead of graceful shutdown.
 func (m *LlamaServerManager) Stop() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -115,7 +116,7 @@ func (m *LlamaServerManager) Restart() error {
 		}
 	}
 
-	// Quick restart
+	// restart
 	m.restartCount++
 
 	// Create new command with minimal overhead
@@ -133,12 +134,12 @@ func (m *LlamaServerManager) Restart() error {
 	return nil
 }
 
-// HealthCheck - Quick health verification in <2ms.
+// HealthCheck - health verification in <2ms.
 func (m *LlamaServerManager) HealthCheck() bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	// Quick check if process exists
+	// check if process exists
 	if m.process == nil {
 		return false
 	}
@@ -147,9 +148,15 @@ func (m *LlamaServerManager) HealthCheck() bool {
 	start := time.Now()
 	conn, err := net.DialTimeout("tcp", m.config.GetAddress(), 1*time.Millisecond)
 	if err != nil {
+		fmt.Printf("Failed HealthCheck DialTimeout: %v", err)
 		return false
 	}
-	conn.Close()
+
+	err = conn.Close()
+	if err != nil {
+		fmt.Printf("Failed closing HealthCheck connection: %v", err)
+		return false
+	}
 
 	// Verify health check time target
 	healthCheckTime := time.Since(start)
@@ -211,7 +218,7 @@ func (m *LlamaServerManager) monitor() {
 		case <-time.After(5 * time.Second):
 			// Periodic health check with minimal logging
 			if !m.HealthCheck() && m.process != nil {
-				// Quick restart on failure
+				// restart on failure
 				go func() {
 					err := m.Restart()
 					if err != nil {
