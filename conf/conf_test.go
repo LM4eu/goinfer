@@ -39,7 +39,7 @@ func TestInitConf(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test InitConf
-	config := InitConf(".", "goinfer") // ./goinfer.json
+	config, _ := InitConf(".", "goinfer") // ./goinfer.json
 
 	assert.Equal(t, "./test_models", config.ModelsDir)
 	assert.Equal(t, "./test_tasks", config.TasksDir)
@@ -71,7 +71,7 @@ func TestInitConf_WithDefaults(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test InitConf with defaults
-	config := InitConf(".", "goinfer") // ./goinfer.json
+	config, _ := InitConf(".", "goinfer") // ./goinfer.json
 
 	assert.Equal(t, "./test_models", config.ModelsDir)
 	assert.Equal(t, "./tasks", config.TasksDir)                         // Default value should be set
@@ -92,10 +92,9 @@ func TestInitConf_InvalidConfig(t *testing.T) {
 	err := os.Chdir(tempDir)
 	require.NoError(t, err)
 
-	// Test InitConf with invalid config (should panic)
-	assert.Panics(t, func() {
-		InitConf(".", "goinfer") // ./goinfer.json
-	})
+	// Test InitConf with invalid config
+	_, err = InitConf(".", "goinfer") // ./goinfer.json
+	assert.Error(t, err)
 }
 
 func TestInitConf_InvalidJSON(t *testing.T) {
@@ -114,10 +113,9 @@ func TestInitConf_InvalidJSON(t *testing.T) {
 	err = os.Chdir(tempDir)
 	require.NoError(t, err)
 
-	// Test InitConf with invalid JSON (should panic)
-	assert.Panics(t, func() {
-		InitConf(".", "goinfer") // ./goinfer.json
-	})
+	// Test InitConf with invalid JSON
+	_, err = InitConf(".", "goinfer") // ./goinfer.json
+	assert.Error(t, err)
 }
 
 func TestInitConf_DifferentConfigName(t *testing.T) {
@@ -143,10 +141,9 @@ func TestInitConf_DifferentConfigName(t *testing.T) {
 	err = os.Chdir(tempDir)
 	require.NoError(t, err)
 
-	// Test InitConf with different config name (should panic as it looks for "goinfer.json")
-	assert.Panics(t, func() {
-		InitConf(".", "goinfer") // ./goinfer.json
-	})
+	// Test InitConf with different config name
+	_, err = InitConf(".", "goinfer") // ./goinfer.json
+	assert.Error(t, err)
 }
 
 func TestCreate(t *testing.T) {

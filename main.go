@@ -37,7 +37,11 @@ func main() {
 		return
 	}
 
-	conf := conf.InitConf(".", "goinfer") // ./goinfer.json
+	conf, err := conf.InitConf(".", "goinfer") // ./goinfer.json or goinfer.yml ...
+	if err != nil {
+		panic(err)
+	}
+
 	state.ModelsDir = conf.ModelsDir
 	state.TasksDir = conf.TasksDir
 	state.OpenAiConf = conf.OpenAiConf
