@@ -95,19 +95,31 @@ func InferOpenAi(
 
 // streamOpenAiMsg streams a message to the client.
 func streamOpenAiMsg(msg types.OpenAiChatCompletionDeltaResponse, c echo.Context, enc *json.Encoder) error {
-	c.Response().Write([]byte("data: "))
-	err := enc.Encode(msg)
+	_, err := c.Response().Write([]byte("data: "))
+	if err != nil {
+		return fmt.Errorf("failed to write stream begin: %w", err)
+	}
+
+	err = enc.Encode(msg)
 	if err != nil {
 		return fmt.Errorf("failed to encode stream message: %w", err)
 	}
-	c.Response().Write([]byte("\n"))
+
+	_, err = c.Response().Write([]byte("\n"))
+	if err != nil {
+		return fmt.Errorf("failed to write stream message: %w", err)
+	}
+
 	c.Response().Flush()
 	return nil
 }
 
 // sendOpenAiStreamTermination sends stream termination message.
 func sendOpenAiStreamTermination(c echo.Context) error {
-	c.Response().Write([]byte("data: [DONE]\n\n"))
+	_, err := c.Response().Write([]byte("data: [DONE]\n\n"))
+	if err != nil {
+		return fmt.Errorf("failed to write stream termination: %w", err)
+	}
 	c.Response().Flush()
 	return nil
 }
