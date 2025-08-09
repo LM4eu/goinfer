@@ -13,7 +13,7 @@ import (
 
 // InitConf loads the config file.
 // Does not include extension.
-func InitConf(path, configFile string) types.GoInferConf {
+func InitConf(path, configFile string) (types.GoInferConf, error) {
 	viper.SetConfigName(configFile)
 	viper.AddConfigPath(path)
 	viper.SetDefault("origins", []string{"localhost"})
@@ -29,9 +29,14 @@ func InitConf(path, configFile string) types.GoInferConf {
 	viper.SetDefault("llama.port", 8080)
 	viper.SetDefault("llama.args", []string{})
 
-	err := viper.ReadInConfig() // Find and read the config file
-	if err != nil {             // Handle errors reading the config file
-		panic(fmt.Errorf("fatal error config file: %w", err))
+	err := viper.ReadInConfig()
+	if err != nil {
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		if errors.As(err, &configFileNotFoundError) {
+			return types.GoInferConf{}, fmt.Errorf("No config file %s/%s.??? found: %w", path, configFile, err)
+		} else {
+			return types.GoInferConf{}, fmt.Errorf("Error inside config file %s/%s.???: %w", path, configFile, err)
+		}
 	}
 
 	md := viper.GetString("models_dir")
@@ -66,7 +71,7 @@ func InitConf(path, configFile string) types.GoInferConf {
 			Port:       llamaPort,
 			Args:       llamaArgs,
 		},
-	}
+	}, nil
 }
 
 // Create : create a config file.
