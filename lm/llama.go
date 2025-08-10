@@ -63,9 +63,10 @@ const (
 func Infer(query types.InferQuery, c echo.Context, ch chan<- types.StreamedMessage, errCh chan<- types.StreamedMessage) {
 	if !state.IsModelLoaded {
 		errCh <- createErrorMessage(1, "no model loaded")
+		return
 	}
 
-	logVerboseInfo(query.Prompt, 0, 0, 0) // Initial verbose logging with prompt
+	logVerboseInfo(query.Prompt, 0, 0, 0)
 
 	if state.IsDebug {
 		fmt.Println("Inference params:")
@@ -162,6 +163,7 @@ func streamDeltaMsg(ntokens int, token string, enc *json.Encoder, c echo.Context
 	if ntokens == 0 {
 		*startEmitting = time.Now()
 		*thinkingElapsed = time.Since(startThinking)
+
 		err := sendStartEmittingMessage(enc, c, params, ntokens, *thinkingElapsed)
 		if err != nil {
 			fmt.Printf("Error emitting msg: %v\n", err)

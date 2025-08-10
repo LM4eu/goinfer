@@ -112,12 +112,9 @@ func CreateCompletionHandler(c echo.Context) error {
 
 	m := echo.Map{}
 	if err := c.Bind(&m); err != nil {
-		return err
+		return c.NoContent(http.StatusBadRequest)
 	}
-	// fmt.Println("Params:")
-	/*for p, i := range m {
-		fmt.Println(p, ":", i)
-	}*/
+
 	query, err := parseParams(m)
 	if err != nil {
 		panic(err)
@@ -131,7 +128,7 @@ func CreateCompletionHandler(c echo.Context) error {
 			if state.IsDebug {
 				fmt.Println("Error loading model:", err)
 			}
-			return c.NoContent(http.StatusInternalServerError)
+			return c.JSON(http.StatusInternalServerError, "{error: cannot find model file}")
 		}
 	}
 
