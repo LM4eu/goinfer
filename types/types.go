@@ -152,8 +152,8 @@ type InferenceResult struct {
 	Stats InferenceStats `json:"stats"`
 }
 
-// Prompt represents a task to be executed.
-type Prompt struct {
+// InferQuery represents a task to be executed.
+type InferQuery struct {
 	Prompt      string          `json:"prompt"  yaml:"prompt"`
 	ModelConf   ModelConf       `json:"modelConf"   yaml:"modelConf"`
 	InferParams InferenceParams `json:"inferParams" yaml:"inferParams"`
@@ -163,7 +163,6 @@ type Prompt struct {
 type ModelConf struct {
 	Name      string `json:"name"                 yaml:"name"`
 	Ctx       int    `json:"ctx,omitempty"        yaml:"ctx,omitempty"`
-	GPULayers int    `json:"gpu_layers,omitempty" yaml:"gpu_layers,omitempty"`
 }
 
 // TemplateInfo holds information about a template.

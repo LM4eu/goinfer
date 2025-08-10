@@ -44,7 +44,7 @@ const (
 
 // Infer performs language model inference.
 func Infer(
-	prompt types.Prompt,
+	prompt types.InferQuery,
 	c echo.Context,
 	ch chan<- types.StreamedMessage,
 	errCh chan<- types.StreamedMessage,
