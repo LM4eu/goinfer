@@ -82,7 +82,7 @@ func InferOpenAi(query types.InferQuery, c echo.Context, ch chan<- OpenAiChatCom
 	state.IsInferring = true
 	state.ContinueInferringController = true
 
-	res, err := state.Lm.Predict(
+	res, err := state.Llama.Predict(
 		query,
 		func(token string) bool {
 			err := streamDeltaMsgOpenAi(ntokens, token, enc, c, query.InferParams, startThinking, &thinkingElapsed, &startEmitting)
