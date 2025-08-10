@@ -49,21 +49,9 @@ func StartLlamaHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "model params"})
 	}
 
-	errcode, err := state.StartLlamaWithModel(modelConf)
+	err = state.RestartLlamaServer(modelConf)
 	if err != nil {
-		switch errcode {
-		case 500:
-			if state.IsDebug {
-				panic(fmt.Errorf("debug - Error loading model: %w", err))
-			}
-			return c.JSON(http.StatusInternalServerError, echo.Map{"error": "error loading model"})
-		case 404:
-			return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
-		case 202:
-			return c.JSON(http.StatusAccepted, echo.Map{"error": err.Error()})
-		case 400:
-			return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
-		}
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "error starting llama-server " + err.Error()})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -71,7 +59,10 @@ func StartLlamaHandler(c echo.Context) error {
 
 // StopLlamaHandler unloads the currently loaded model.
 func StopLlamaHandler(c echo.Context) error {
-	state.StopLlamaServer()
+	err := state.StopLlamaServer()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+	}
 	return c.NoContent(http.StatusNoContent)
 }
 
@@ -116,10 +107,7 @@ func ModelsStateHandler(c echo.Context) error {
 	isRunning, uptime, count := state.GetServerStatus()
 
 	return c.JSON(http.StatusOK, echo.Map{
-		"models":        templates,
-		"isModelLoaded": state.IsModelLoaded,
-		"loadedModel":   state.LoadedModel,
-		"ctx":           state.ModelConf.Ctx,
+		"conf": state.Llama.Conf,
 		"llama-server": echo.Map{
 			"running":       isRunning,
 			"uptime":        uptime,

@@ -1,13 +1,14 @@
 package state
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/synw/goinfer/conf"
 	"github.com/synw/goinfer/llama"
 	"github.com/synw/goinfer/types"
 )
@@ -23,33 +24,32 @@ var (
 	ErrInvalidInput  = errors.New("invalid input")
 )
 
-func StartLlamaServer() error {
+func RestartLlamaServer(modelConf types.ModelConf) error {
 	if Llama == nil {
 		return llama.ErrNotRunning("Llama manager not initialized")
 	}
 
-	return Llama.Start()
+	modelPath := modelConf.Name
+	if conf.IsDownloadURL(modelConf.Name) != 0 {
+		path, err := searchModelFile(modelConf)
+		if err != nil {
+			return err
+		}
+		modelPath = path
+	}
+
+	Llama.Conf.ModelPath = modelPath
+	Llama.Conf.ContextSize = modelConf.Ctx
+	return Llama.Restart()
 }
 
 func StopLlamaServer() error {
-	// unloads the currently loaded model if any.
-	IsModelLoaded = false
-	LoadedModel = ""
-
 	// Llama not initialized => llama-server already stopped (never started)
 	if Llama == nil {
 		return nil
 	}
 
 	return Llama.Stop()
-}
-
-func RestartLlamaServer() error {
-	if Llama == nil {
-		return llama.ErrNotRunning("Llama manager not initialized")
-	}
-
-	return Llama.Restart()
 }
 
 // GetServerStatus - Gets the current server status.
@@ -70,42 +70,57 @@ func CheckServerHealth() bool {
 	return Llama.HealthCheck()
 }
 
-// StartLlamaWithModel returns HTTP status code + Go error.
-func StartLlamaWithModel(modelConf types.ModelConf) (int, error) {
-	if modelConf.Name == "" {
-		return 400, fmt.Errorf("model name cannot be empty: %w", ErrInvalidInput)
+//	if modelConf.Name == "" {
+//		return errors.New("model name cannot be empty")
+//	}
+
+// IsStartNeeded returns true if we need to start/restart llama-server.
+// Check if llama-server is already running with the right model and context size.
+func IsStartNeeded(modelConf types.ModelConf) bool {
+	if !Llama.IsRunning() {
+		return true
 	}
 
-	filepath := filepath.Join(ModelsDir, modelConf.Name)
-	// check if the model file exists
-	_, err := os.Stat(filepath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return 404, fmt.Errorf("the model file %s does not exist: %w", filepath, ErrModelNotFound)
-		}
-		return 500, fmt.Errorf("error checking model file %s: %w", filepath, err)
-	}
-	// check if the model is already loaded
-	if LoadedModel == modelConf.Name {
-		return 202, fmt.Errorf("the model is already loaded: %w", ErrInvalidInput)
+	if modelConf.Ctx != Llama.Conf.ContextSize {
+		return true
 	}
 
-	if IsVerbose || IsDebug {
-		fmt.Println("Loaded model", filepath)
-		if IsDebug {
-			jsonData, err := json.MarshalIndent(modelConf, "", "  ")
-			if err != nil {
-				return 500, fmt.Errorf("error marshalling model params: %w", err)
-			}
-			fmt.Println(string(jsonData))
-		}
+	if modelConf.Name == Llama.Conf.ModelPath {
+		return false
 	}
 
-	RestartLlamaServer()
+	base := filepath.Base(Llama.Conf.ModelPath) // Just the filename without directory
+	if modelConf.Name == base {
+		return false
+	}
 
-	ModelConf = modelConf
-	IsModelLoaded = true
-	LoadedModel = modelConf.Name
+	ext := filepath.Ext(base) // Get the extension
+	stem := strings.TrimSuffix(base, ext)
+	return modelConf.Name != stem
+}
 
-	return 200, nil
+// searchModelFile checks if the model file is OK.
+func searchModelFile(modelConf types.ModelConf) (string, error) {
+	path1 := filepath.Join(ModelsDir, modelConf.Name)
+
+	_, err := os.Stat(path1)
+	if err == nil {
+		return path1, nil
+	}
+
+	if !os.IsNotExist(err) {
+		return "", fmt.Errorf("cannot verify if model file exist %s: %w", path1, err)
+	}
+
+	path2 := path1 + ".gguf"
+	_, err = os.Stat(path2)
+	if err == nil {
+		return path2, nil
+	}
+
+	if os.IsNotExist(err) {
+		return "", fmt.Errorf("no model file %s, neither %s", path1, path2)
+	}
+
+	return "", fmt.Errorf("error checking model file %s: %w", path1, err)
 }

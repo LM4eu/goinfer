@@ -6,10 +6,8 @@ import (
 
 // models state.
 var (
-	ModelsDir     = ""
-	IsModelLoaded = false
-	LoadedModel   = ""
-	ModelConf     = types.DefaultModelConf
+	ModelsDir = ""
+	ModelConf = types.DefaultModelConf
 )
 
 // Inference state.

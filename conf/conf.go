@@ -43,6 +43,9 @@ func InitConf(path, configFile string) (GoInferConf, error) {
 	viper.SetDefault("llama_path", "./llama-server")
 	viper.SetDefault("llama_host", "localhost")
 	viper.SetDefault("llama_port", 8080)
+	viper.SetDefault("llama_webui", false)
+	viper.SetDefault("llama_threads", 8)
+	viper.SetDefault("llama_thrPromptProc", 16)
 	viper.SetDefault("llama_args", []string{"--log-colors", "--no-warmup"})
 
 	err := viper.ReadInConfig()
@@ -60,15 +63,17 @@ func InitConf(path, configFile string) (GoInferConf, error) {
 		ModelsDir: viper.GetString("models_dir"),
 		Llama: LlamaConf{
 			ModelPath:      viper.GetString("default_model"),
-			DownloadUrl:    viper.GetString("download_url"),
 			ContextSize:    viper.GetInt("ctx"),
 			GpuLayers:      viper.GetInt("gpu_layers"),
 			FlashAttention: viper.GetBool("flash_attention"),
 
-			BinaryPath: viper.GetString("llama_path"),
-			Host:       viper.GetString("llama_host"),
-			Port:       viper.GetInt("llama_port"),
-			Args:       viper.GetStringSlice("llama_args"),
+			BinaryPath:   viper.GetString("llama_path"),
+			Host:         viper.GetString("llama_host"),
+			Port:         viper.GetInt("llama_port"),
+			WebUI:        viper.GetBool("llama_webui"),
+			Threads:      viper.GetInt("llama_threads"),
+			ThPromptProc: viper.GetInt("llama_thrPromptProc"),
+			Args:         viper.GetStringSlice("llama_args"),
 		},
 	}, nil
 }
@@ -94,10 +99,12 @@ func Create(modelsDir string, isDefault bool, fileName string) {
 		"gpu_layers":      999,
 		"flash_attention": true,
 
-		"llama_path": "./llama-server",
-		"llama_host": "localhost",
-		"llama_port": 8080,
-		"llama_args": []string{"--log-colors", "--no-warmup"},
+		"llama_path":          "./llama-server",
+		"llama_host":          "localhost",
+		"llama_port":          8080,
+		"llama_threads":       8,
+		"llama_thrPromptProc": 16,
+		"llama_args":          []string{"--log-colors", "--no-warmup"},
 	}
 	jsonString, _ := json.MarshalIndent(data, "", "    ")
 	err := os.WriteFile(fileName, jsonString, os.ModePerm&^0o111)
