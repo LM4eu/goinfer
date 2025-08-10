@@ -36,8 +36,8 @@ func parseModelParams(m echo.Map) (types.ModelConf, error) {
 	return modelConf, nil
 }
 
-// LoadModelHandler handles loading a model.
-func LoadModelHandler(c echo.Context) error {
+// StartLlamaHandler handles loading a model.
+func StartLlamaHandler(c echo.Context) error {
 	m := echo.Map{}
 	if err := c.Bind(&m); err != nil {
 		return fmt.Errorf("failed to bind model parameters: %w", err)
@@ -69,9 +69,9 @@ func LoadModelHandler(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-// UnloadModelHandler unloads the currently loaded model.
-func UnloadModelHandler(c echo.Context) error {
-	state.UnloadModel()
+// StopLlamaHandler unloads the currently loaded model.
+func StopLlamaHandler(c echo.Context) error {
+	state.StopLlamaServer()
 	return c.NoContent(http.StatusNoContent)
 }
 
@@ -113,10 +113,16 @@ func ModelsStateHandler(c echo.Context) error {
 		}
 	}
 
+	isRunning, uptime, count := state.GetServerStatus()
+
 	return c.JSON(http.StatusOK, echo.Map{
 		"models":        templates,
 		"isModelLoaded": state.IsModelLoaded,
 		"loadedModel":   state.LoadedModel,
 		"ctx":           state.ModelConf.Ctx,
-	})
+		"llama-server": echo.Map{
+			"running":       isRunning,
+			"uptime":        uptime,
+			"start_counter": count,
+		}})
 }
