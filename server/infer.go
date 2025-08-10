@@ -14,143 +14,146 @@ import (
 
 // parseInferQuery parses inference parameters from echo.Map.
 func parseInferQuery(m echo.Map) (types.InferQuery, error) {
+	query := types.InferQuery{
+		Prompt:      "",
+		ModelConf:   types.DefaultModelConf,
+		InferParams: types.DefaultInferParams,
+	}
+
 	v, ok := m["prompt"]
 	if !ok {
-		return types.InferQuery{}, errors.New("missing mandatory field: prompt")
+		return query, errors.New("missing mandatory field: prompt")
 	}
-	prompt, ok := v.(string)
+	query.Prompt, ok = v.(string)
 	if !ok {
-		return types.InferQuery{}, errors.New("prompt must be a string")
+		return query, errors.New("field prompt must be a string")
 	}
 
-	modelConf := types.DefaultModelConf
-	modelConfRaw, ok := m["model"]
+	// Simplify by flattening the "model" sub-struct
+	//
+	//	modelConfRaw, ok := m["model"]
+	//	if ok {
+	//		if modelMap, ok := modelConfRaw.(map[string]any); ok {
+	//			for k, v := range modelMap {
+	//				switch k {
+	//				case "name":
+	//					if name, ok := v.(string); ok {
+	//						query.ModelConf.Name = name
+	//					}
+	//				case "ctx":
+	//					if ctx, ok := v.(float64); ok {
+	//						 = int(ctx)
+	//					}
+	//				}
+	//			}
+	//		}
+	//	}
+
+	v, ok = m["model"]
 	if ok {
-		if modelMap, ok := modelConfRaw.(map[string]any); ok {
-			for k, v := range modelMap {
-				switch k {
-				case "name":
-					if name, ok := v.(string); ok {
-						modelConf.Name = name
-					}
-				case "ctx":
-					if ctx, ok := v.(float64); ok {
-						modelConf.Ctx = int(ctx)
-					}
-				}
-			}
-		}
+		query.ModelConf.Name = v.(string)
 	}
 
-	stream := types.DefaultInferParams.Stream
+	v, ok = m["ctx"]
+	if ok {
+		query.ModelConf.Ctx = v.(int)
+	}
+
 	v, ok = m["stream"]
 	if ok {
 		if s, ok := v.(bool); ok {
-			stream = s
+			query.InferParams.Stream = s
 		}
 	}
 
-	tokens := types.DefaultInferParams.MaxTokens
-	v, ok = m["max_tokens"]
-	if ok {
-		if t, ok := v.(float64); ok {
-			tokens = int(t)
-		}
-	}
-
-	topK := types.DefaultInferParams.TopK
-	v, ok = m["top_k"]
-	if ok {
-		if k, ok := v.(float64); ok {
-			topK = int(k)
-		}
-	}
-
-	topP := types.DefaultInferParams.TopP
-	v, ok = m["top_p"]
-	if ok {
-		if p, ok := v.(float64); ok {
-			topP = float32(p)
-		}
-	}
-
-	minP := types.DefaultInferParams.MinP
-	v, ok = m["min_p"]
-	if ok {
-		if p, ok := v.(float64); ok {
-			minP = float32(p)
-		}
-	}
-
-	temp := types.DefaultInferParams.Temperature
 	v, ok = m["temperature"]
 	if ok {
 		if t, ok := v.(float64); ok {
-			temp = float32(t)
+			query.InferParams.Temperature = float32(t)
 		}
 	}
 
-	freqPenalty := types.DefaultInferParams.FrequencyPenalty
-	v, ok = m["frequency_penalty"]
+	v, ok = m["min_p"]
 	if ok {
-		if fp, ok := v.(float64); ok {
-			freqPenalty = float32(fp)
+		if p, ok := v.(float64); ok {
+			query.InferParams.MinP = float32(p)
 		}
 	}
 
-	presPenalty := types.DefaultInferParams.PresencePenalty
-	v, ok = m["presence_penalty"]
+	v, ok = m["top_p"]
 	if ok {
-		if pp, ok := v.(float64); ok {
-			presPenalty = float32(pp)
+		if p, ok := v.(float64); ok {
+			query.InferParams.TopP = float32(p)
 		}
 	}
 
-	repeatPenalty := types.DefaultInferParams.RepeatPenalty
-	v, ok = m["repeat_penalty"]
+	v, ok = m["top_k"]
 	if ok {
-		if rp, ok := v.(float64); ok {
-			repeatPenalty = float32(rp)
+		if k, ok := v.(float64); ok {
+			query.InferParams.TopK = int(k)
 		}
 	}
 
-	tfs := types.DefaultInferParams.TailFreeSamplingZ
-	v, ok = m["tfs"]
+	v, ok = m["max_tokens"]
 	if ok {
 		if t, ok := v.(float64); ok {
-			tfs = float32(t)
+			query.InferParams.MaxTokens = int(t)
 		}
 	}
 
-	stop := types.DefaultInferParams.StopPrompts
 	v, ok = m["stop"]
 	if ok {
 		if stopSlice, ok := v.([]any); ok {
 			if len(stopSlice) > 0 {
-				stop = make([]string, len(stopSlice))
+				query.InferParams.StopPrompts = make([]string, len(stopSlice))
 				for i, val := range stopSlice {
-					stop[i] = fmt.Sprint(val)
+					query.InferParams.StopPrompts[i] = fmt.Sprint(val)
 				}
 			}
 		}
 	}
 
-	return types.InferQuery{
-		Prompt:    prompt,
-		ModelConf: modelConf,
-		InferParams: types.InferParams{
-			Stream:            stream,
-			MaxTokens:         tokens,
-			TopK:              topK,
-			TopP:              topP,
-			MinP:              minP,
-			Temperature:       temp,
-			FrequencyPenalty:  freqPenalty,
-			PresencePenalty:   presPenalty,
-			RepeatPenalty:     repeatPenalty,
-			TailFreeSamplingZ: tfs,
-			StopPrompts:       stop,
-		}}, nil
+	v, ok = m["presence_penalty"]
+	if ok {
+		if pp, ok := v.(float64); ok {
+			query.InferParams.PresencePenalty = float32(pp)
+		}
+	}
+
+	v, ok = m["frequency_penalty"]
+	if ok {
+		if fp, ok := v.(float64); ok {
+			query.InferParams.FrequencyPenalty = float32(fp)
+		}
+	}
+
+	v, ok = m["repeat_penalty"]
+	if ok {
+		if rp, ok := v.(float64); ok {
+			query.InferParams.RepeatPenalty = float32(rp)
+		}
+	}
+
+	v, ok = m["tfs"]
+	if ok {
+		if t, ok := v.(float64); ok {
+			query.InferParams.TailFreeSamplingZ = float32(t)
+		}
+	}
+
+	v, ok = m["images"]
+	if ok {
+		if slice, ok := v.([]any); ok {
+			if len(slice) > 0 {
+				query.InferParams.Images = make([]byte, len(slice))
+				for i, val := range slice {
+					query.InferParams.Images[i] = val.(byte)
+				}
+			}
+		}
+	}
+
+	return query, nil
 }
 
 // InferHandler handles inference requests.
@@ -188,7 +191,7 @@ func InferHandler(c echo.Context) error {
 
 	if loadModel {
 		state.ModelConf = query.ModelConf
-		statusCode, err := lm.LoadModel(query.ModelConf)
+		statusCode, err := lm.CheckModelFile(query.ModelConf)
 		if err != nil {
 			if state.IsDebug {
 				fmt.Println("Error loading model:", err)
@@ -257,8 +260,8 @@ func InferHandler(c echo.Context) error {
 	}
 }
 
-// AbortHandler aborts ongoing inference.
-func AbortHandler(c echo.Context) error {
+// AbortLlamaHandler aborts ongoing inference.
+func AbortLlamaHandler(c echo.Context) error {
 	if !state.IsInferring {
 		fmt.Println("No inference running, nothing to abort")
 		return c.NoContent(http.StatusAccepted)

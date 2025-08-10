@@ -21,51 +21,53 @@ type openAiModel struct {
 	OwnedBy string `json:"owned_by"`
 }
 
-func parseParams(m echo.Map) (string, string, types.InferParams, error) {
-	// fmt.Println("MAP", m)
-	// fmt.Println("---------")
-	params := types.DefaultInferParams
-
-	v, ok := m["model"]
-	if !ok {
-		return "", "", params, errors.New("missing mandatory field: model")
+func parseParams(m echo.Map) (types.InferQuery, error) {
+	query := types.InferQuery{
+		Prompt:      "",
+		ModelConf:   types.DefaultModelConf,
+		InferParams: types.DefaultInferParams,
 	}
-	model := v.(string)
 
-	v, ok = m["prompt"]
+	v, ok := m["prompt"]
 	if !ok {
-		return "", "", params, errors.New("missing mandatory field: prompt")
+		return query, errors.New("missing mandatory field: prompt")
 	}
-	prompt := v.(string)
+	query.Prompt = v.(string)
+
+	v, ok = m["model"]
+	if !ok {
+		return query, errors.New("missing mandatory field: model")
+	}
+	query.ModelConf.Name = v.(string)
 
 	v, ok = m["stream"]
 	if ok {
-		params.Stream = v.(bool)
+		query.InferParams.Stream = v.(bool)
 	}
 
 	v, ok = m["temperature"]
 	if ok {
-		params.Temperature = float32(v.(float64))
+		query.InferParams.Temperature = float32(v.(float64))
 	}
 
 	v, ok = m["min_p"]
 	if ok {
-		params.MinP = float32(v.(float64))
+		query.InferParams.MinP = float32(v.(float64))
 	}
 
 	v, ok = m["top_p"]
 	if ok {
-		params.TopP = float32(v.(float64))
+		query.InferParams.TopP = float32(v.(float64))
 	}
 
 	v, ok = m["top_k"]
 	if ok {
-		params.TopK = int(v.(float64))
+		query.InferParams.TopK = int(v.(float64))
 	}
 
 	v, ok = m["max_tokens"]
 	if ok {
-		params.MaxTokens = int(v.(float64))
+		query.InferParams.MaxTokens = int(v.(float64))
 	}
 
 	v, ok = m["stop"]
@@ -75,30 +77,30 @@ func parseParams(m echo.Map) (string, string, types.InferParams, error) {
 		for _, s := range st {
 			stf = append(stf, s.(string))
 		}
-		params.StopPrompts = stf
+		query.InferParams.StopPrompts = stf
 	}
 
 	v, ok = m["presence_penalty"]
 	if ok {
-		params.PresencePenalty = float32(v.(float64))
+		query.InferParams.PresencePenalty = float32(v.(float64))
 	}
 
 	v, ok = m["frequency_penalty"]
 	if ok {
-		params.FrequencyPenalty = float32(v.(float64))
+		query.InferParams.FrequencyPenalty = float32(v.(float64))
 	}
 
 	v, ok = m["repeat_penalty"]
 	if ok {
-		params.RepeatPenalty = float32(v.(float64))
+		query.InferParams.RepeatPenalty = float32(v.(float64))
 	}
 
 	v, ok = m["tfs"]
 	if ok {
-		params.TailFreeSamplingZ = float32(v.(float64))
+		query.InferParams.TailFreeSamplingZ = float32(v.(float64))
 	}
 
-	return model, prompt, params, nil
+	return query, nil
 }
 
 // Create an OpenAI api for /v1/chat/completion.
@@ -116,15 +118,15 @@ func CreateCompletionHandler(c echo.Context) error {
 	/*for p, i := range m {
 		fmt.Println(p, ":", i)
 	}*/
-	model, prompt, params, err := parseParams(m)
+	query, err := parseParams(m)
 	if err != nil {
 		panic(err)
 	}
 
-	if state.LoadedModel != model {
+	if state.LoadedModel != query.ModelConf.Name {
 		modelConf := types.DefaultModelConf
-		modelConf.Name = model
-		_, err = lm.LoadModel(modelConf)
+		modelConf.Name = query.ModelConf.Name
+		_, err = lm.CheckModelFile(modelConf)
 		if err != nil {
 			if state.IsDebug {
 				fmt.Println("Error loading model:", err)
@@ -133,7 +135,7 @@ func CreateCompletionHandler(c echo.Context) error {
 		}
 	}
 
-	if params.Stream {
+	if query.InferParams.Stream {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		c.Response().WriteHeader(http.StatusOK)
 	}
@@ -150,7 +152,7 @@ func CreateCompletionHandler(c echo.Context) error {
 	defer close(ch)
 	defer close(errCh)
 
-	go lm.InferOpenAi(prompt, params, c, ch, errCh)
+	go lm.InferOpenAi(query, c, ch, errCh)
 
 	select {
 	case res, ok := <-ch:

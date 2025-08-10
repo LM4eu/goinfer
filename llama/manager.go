@@ -11,13 +11,14 @@ import (
 
 // LlamaServerManager - process manager for llama-server.
 type LlamaServerManager struct {
-	config     *LlamaConfig
-	process    *os.Process
-	cmd        *exec.Cmd
-	stopChan   chan struct{}
-	mu         sync.RWMutex
-	startTime  time.Time
-	startCount int
+	config        *LlamaConfig
+	process       *os.Process
+	cmd           *exec.Cmd
+	stopChan      chan struct{}
+	mu            sync.RWMutex
+	startTime     time.Time
+	startCount    int
+	TokenCallback func(string) bool // TokenCallback sets the prompts that will stop predictions.
 }
 
 // NewLlamaServerManager - Creates a new LlamaServerManager.
