@@ -3,6 +3,7 @@ package state
 import (
 	"time"
 
+	"github.com/synw/goinfer/conf"
 	"github.com/synw/goinfer/llama"
 	"github.com/synw/goinfer/types"
 )
@@ -33,7 +34,7 @@ var Lm llama.LlamaServerManager
 // Llama server manager state.
 var (
 	LlamaManager       *llama.LlamaServerManager
-	LlamaConfig        *types.LlamaConfig
+	LlamaConfig        *conf.LlamaConf
 	LlamaMonitor       *llama.Monitor
 	IsServerRunning    = false
 	ServerStartTime    = time.Time{}
@@ -41,26 +42,16 @@ var (
 )
 
 // InitializeLlama - Initializes the Llama server manager.
-func InitializeLlama(config *types.LlamaConfig) error {
+func InitializeLlama(conf *conf.LlamaConf) error {
 	if LlamaManager != nil {
 		return llama.ErrAlreadyRunning("Llama manager already initialized")
 	}
 
-	// Convert types.LlamaConfig to llama.LlamaConfig
-	llamaConfig := llama.NewLlamaConfig(
-		config.BinaryPath,
-		config.ModelPath,
-		config.Args...,
-	)
-	llamaConfig.Host = config.Host
-	llamaConfig.Port = config.Port
-
 	// Create manager
-	LlamaManager = llama.NewLlamaServerManager(llamaConfig)
-	LlamaConfig = config
+	LlamaManager = llama.NewLlamaServerManager(conf)
 
 	// Create monitor
-	LlamaMonitor = llama.NewMonitor(llamaConfig)
+	LlamaMonitor = llama.NewMonitor(conf)
 	LlamaMonitor.Start()
 
 	return nil
@@ -134,19 +125,6 @@ func CheckServerHealth() bool {
 	}
 
 	return LlamaManager.HealthCheck()
-}
-
-// UpdateServerConfig - Updates the server configuration.
-func UpdateServerConfig(newConfig *types.LlamaConfig) error {
-	if LlamaManager == nil {
-		return llama.ErrNotRunning("Llama manager not initialized")
-	}
-
-	return LlamaManager.UpdateConfig(llama.NewLlamaConfig(
-		newConfig.BinaryPath,
-		newConfig.ModelPath,
-		newConfig.Args...,
-	))
 }
 
 // GetServerManager - Returns the server manager instance.

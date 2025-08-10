@@ -8,14 +8,13 @@ import (
 	"os"
 
 	"github.com/spf13/viper"
-	"github.com/synw/goinfer/types"
 )
 
-// goInferConf holds the configuration for GoInfer.
-type goInferConf struct {
-	ModelsDir   string
-	WebServer   WebServerConf
-	LlamaConfig *types.LlamaConfig
+// GoInferConf holds the configuration for GoInfer.
+type GoInferConf struct {
+	ModelsDir string
+	WebServer WebServerConf
+	Llama     LlamaConf
 }
 
 // WebServerConf holds the configuration for GoInfer web server.
@@ -28,7 +27,7 @@ type WebServerConf struct {
 
 // InitConf loads the config file.
 // Does not include extension.
-func InitConf(path, configFile string) (goInferConf, error) {
+func InitConf(path, configFile string) (GoInferConf, error) {
 	viper.SetConfigName(configFile)
 	viper.AddConfigPath(path)
 	viper.SetDefault("origins", []string{"localhost"})
@@ -43,7 +42,7 @@ func InitConf(path, configFile string) (goInferConf, error) {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		return goInferConf{}, fmt.Errorf("config file %s/%s.???: %w", path, configFile, err)
+		return GoInferConf{}, fmt.Errorf("config file %s/%s.???: %w", path, configFile, err)
 	}
 
 	md := viper.GetString("models_dir")
@@ -52,13 +51,12 @@ func InitConf(path, configFile string) (goInferConf, error) {
 	oaiEnable := viper.GetBool("openai_api")
 
 	// Llama configuration
-	llamaBinaryPath := viper.GetString("llama.binary_path")
-	llamaModelPath := viper.GetString("llama.model_path")
-	llamaHost := viper.GetString("llama.host")
-	llamaPort := viper.GetInt("llama.port")
-	llamaArgs := viper.GetStringSlice("llama.args")
+	llamaBinaryPath := viper.GetString("llama_path")
+	llamaHost := viper.GetString("llama_host")
+	llamaPort := viper.GetInt("llama_port")
+	llamaArgs := viper.GetStringSlice("llama_args")
 
-	return goInferConf{
+	return GoInferConf{
 		ModelsDir: md,
 		WebServer: WebServerConf{
 			Port:            ":5143",
@@ -66,9 +64,9 @@ func InitConf(path, configFile string) (goInferConf, error) {
 			ApiKey:          ak,
 			EnableApiOpenAi: oaiEnable,
 		},
-		LlamaConfig: &types.LlamaConfig{
+		Llama: LlamaConf{
 			BinaryPath: llamaBinaryPath,
-			ModelPath:  llamaModelPath,
+			ModelPath:  md,
 			Host:       llamaHost,
 			Port:       llamaPort,
 			Args:       llamaArgs,

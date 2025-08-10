@@ -11,15 +11,6 @@ var DefaultModelConf = ModelConf{
 	Ctx:  2048,
 }
 
-// LlamaConfig holds configuration for the Llama server proxy.
-type LlamaConfig struct {
-	BinaryPath string
-	ModelPath  string
-	Host       string
-	Port       int
-	Args       []string
-}
-
 // InferParams holds parameters for inference.
 type InferParams struct {
 	Stream            bool     `json:"stream,omitempty"            yaml:"stream,omitempty"`

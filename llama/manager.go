@@ -7,11 +7,13 @@ import (
 	"os/exec"
 	"sync"
 	"time"
+
+	"github.com/synw/goinfer/conf"
 )
 
 // LlamaServerManager - process manager for llama-server.
 type LlamaServerManager struct {
-	config        *LlamaConfig
+	Conf          *conf.LlamaConf
 	process       *os.Process
 	cmd           *exec.Cmd
 	stopChan      chan struct{}
@@ -22,9 +24,9 @@ type LlamaServerManager struct {
 }
 
 // NewLlamaServerManager - Creates a new LlamaServerManager.
-func NewLlamaServerManager(config *LlamaConfig) *LlamaServerManager {
+func NewLlamaServerManager(config *conf.LlamaConf) *LlamaServerManager {
 	return &LlamaServerManager{
-		config:   config,
+		Conf:     config,
 		stopChan: make(chan struct{}, 1),
 	}
 }
@@ -34,18 +36,18 @@ func (m *LlamaServerManager) Start() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	err := m.config.Validate()
+	// fast return if already running
+	if m.process != nil {
+		return nil
+	}
+
+	err := m.Conf.Validate()
 	if err != nil {
 		return err
 	}
 
-	// Check if already running
-	if m.process != nil {
-		return ErrAlreadyRunning("server is already running")
-	}
-
 	// Create command
-	m.cmd = exec.Command(m.config.BinaryPath, m.config.GetCommandArgs()...)
+	m.cmd = exec.Command(m.Conf.BinaryPath, m.Conf.GetCommandArgs()...)
 
 	// Preserve system environment
 	m.cmd.Env = os.Environ()
@@ -116,7 +118,7 @@ func (m *LlamaServerManager) Restart() error {
 	}
 
 	// Create new command
-	m.cmd = exec.Command(m.config.BinaryPath, m.config.GetCommandArgs()...)
+	m.cmd = exec.Command(m.Conf.BinaryPath, m.Conf.GetCommandArgs()...)
 	m.cmd.Env = os.Environ()
 
 	err := m.cmd.Start()
@@ -143,7 +145,7 @@ func (m *LlamaServerManager) HealthCheck() bool {
 
 	//  TCP connection check with short timeout
 	start := time.Now()
-	conn, err := net.DialTimeout("tcp", m.config.GetAddress(), 1*time.Millisecond)
+	conn, err := net.DialTimeout("tcp", m.Conf.GetAddress(), 1*time.Millisecond)
 	if err != nil {
 		fmt.Printf("Failed HealthCheck DialTimeout: %v", err)
 		return false
@@ -225,7 +227,7 @@ func (m *LlamaServerManager) monitor() {
 	}
 }
 
-func (m *LlamaServerManager) UpdateConfig(newConfig *LlamaConfig) error {
+func (m *LlamaServerManager) UpdateConfig(newConfig *conf.LlamaConf) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -237,20 +239,20 @@ func (m *LlamaServerManager) UpdateConfig(newConfig *LlamaConfig) error {
 
 	// Update config and restart if needed
 	if m.process != nil {
-		m.config = newConfig.Clone()
+		m.Conf = newConfig.Clone()
 		return m.Restart()
 	}
 
-	m.config = newConfig.Clone()
+	m.Conf = newConfig.Clone()
 	return nil
 }
 
 // GetConfig - config retrieval.
-func (m *LlamaServerManager) GetConfig() *LlamaConfig {
+func (m *LlamaServerManager) GetConfig() *conf.LlamaConf {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	return m.config.Clone()
+	return m.Conf.Clone()
 }
 
 // Close - Cleanup resources.

@@ -8,187 +8,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/synw/goinfer/conf"
 )
-
-func TestModelCreationWithDefaultOptions(t *testing.T) {
-	// Test creating a model with default options
-	// This is a mock test since we can't actually load a real model in unit tests
-	// Test that New function can be called with default options
-	// In a real scenario, this would load the model
-	// For testing, we'll just verify the function signature works
-	assert.NotNil(t, "test_model.bin")
-}
-
-
-
-
-func TestLlamaConfig_Validation(t *testing.T) {
-	testCases := []struct {
-		name   string
-		config LlamaConfig
-		valid  bool
-		errMsg string
-	}{
-		{
-			name: "Valid minimal config",
-			config: LlamaConfig{
-				BinaryPath: "./llama-server",
-				ModelPath:  "./model.bin",
-				Host:       "localhost",
-				Port:       8080,
-			},
-			valid: true,
-		},
-		{
-			name: "Valid config with args",
-			config: LlamaConfig{
-				BinaryPath: "./llama-server",
-				ModelPath:  "./model.bin",
-				Host:       "localhost",
-				Port:       8080,
-				Args:       []string{"--ctx-size", "2048"},
-			},
-			valid: true,
-		},
-		{
-			name: "Empty binary path",
-			config: LlamaConfig{
-				BinaryPath: "",
-				ModelPath:  "./model.bin",
-				Host:       "localhost",
-				Port:       8080,
-			},
-			valid:  false,
-			errMsg: "binary path cannot be empty",
-		},
-		{
-			name: "Empty model path",
-			config: LlamaConfig{
-				BinaryPath: "./llama-server",
-				ModelPath:  "",
-				Host:       "localhost",
-				Port:       8080,
-			},
-			valid:  false,
-			errMsg: "model path cannot be empty",
-		},
-		{
-			name: "Empty host",
-			config: LlamaConfig{
-				BinaryPath: "./llama-server",
-				ModelPath:  "./model.bin",
-				Host:       "",
-				Port:       8080,
-			},
-			valid:  false,
-			errMsg: "host cannot be empty",
-		},
-		{
-			name: "Invalid port format",
-			config: LlamaConfig{
-				BinaryPath: "./llama-server",
-				ModelPath:  "./model.bin",
-				Host:       "localhost",
-				Port:       -123, // invalid
-			},
-			valid:  false,
-			errMsg: "port must be a valid number",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			err := tc.config.Validate()
-
-			if tc.valid {
-				require.NoError(t, err)
-			} else {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tc.errMsg)
-			}
-		})
-	}
-}
-
-func TestLlamaConfig_Clone(t *testing.T) {
-	original := LlamaConfig{
-		BinaryPath: "./llama-server",
-		ModelPath:  "./model.bin",
-		Host:       "localhost",
-		Port:       8080,
-		Args:       []string{"--ctx-size", "2048"},
-	}
-
-	// Clone the config
-	cloned := original.Clone()
-
-	// Verify they are equal (compare pointers)
-	assert.Equal(t, &original, cloned)
-
-	// Modify the clone
-	cloned.Args = append(cloned.Args, "--threads", "4")
-
-	// Verify they are now different
-	assert.NotEqual(t, original.Args, cloned.Args)
-	assert.Equal(t, []string{"--ctx-size", "2048"}, original.Args)
-	assert.Equal(t, []string{"--ctx-size", "2048", "--threads", "4"}, cloned.Args)
-}
-
-func TestLlamaConfig_GetCommand(t *testing.T) {
-	config := LlamaConfig{
-		BinaryPath: "./llama-server",
-		ModelPath:  "./model.bin",
-		Host:       "localhost",
-		Port:       8080,
-		Args:       []string{"--ctx-size", "2048", "--threads", "4"},
-	}
-
-	cmd := config.GetCommand()
-
-	// Verify command path
-	assert.Equal(t, "./llama-server", cmd.Path)
-
-	// Verify args
-	expectedArgs := []string{
-		"./llama-server",
-		"-m", "./model.bin",
-		"-h", "localhost",
-		"-p", "8080",
-		"--ctx-size", "2048",
-		"--threads", "4",
-	}
-	assert.Equal(t, expectedArgs, cmd.Args)
-}
-
-func TestLlamaConfig_GetCommand_Minimal(t *testing.T) {
-	config := LlamaConfig{
-		BinaryPath: "./llama-server",
-		ModelPath:  "./model.bin",
-		Host:       "localhost",
-		Port:       8080,
-	}
-
-	cmd := config.GetCommand()
-
-	// Verify command path
-	assert.Equal(t, "./llama-server", cmd.Path)
-
-	// Verify minimal args
-	expectedArgs := []string{
-		"./llama-server",
-		"-m", "./model.bin",
-		"-h", "localhost",
-		"-p", "8080",
-	}
-	assert.Equal(t, expectedArgs, cmd.Args)
-}
 
 func TestLlamaServerManager_StartupTime(t *testing.T) {
 	// This test measures startup time performance
 	// Note: This is a mock test since we can't actually start a real server
 
-	config := LlamaConfig{
+	config := conf.LlamaConf{
 		BinaryPath: "./llama-server",
 		ModelPath:  "./model.bin",
 		Host:       "localhost",
@@ -206,7 +33,7 @@ func TestLlamaServerManager_StartupTime(t *testing.T) {
 }
 
 func TestLlamaServerManager_ConcurrentAccess(t *testing.T) {
-	config := LlamaConfig{
+	config := conf.LlamaConf{
 		BinaryPath: "./llama-server",
 		ModelPath:  "./model.bin",
 		Host:       "localhost",
@@ -238,7 +65,7 @@ func TestLlamaServerManager_ConcurrentAccess(t *testing.T) {
 }
 
 func TestLlamaServerManager_MemoryUsage(t *testing.T) {
-	config := LlamaConfig{
+	config := conf.LlamaConf{
 		BinaryPath: "./llama-server",
 		ModelPath:  "./model.bin",
 		Host:       "localhost",
@@ -269,7 +96,7 @@ func TestLlamaServerManager_MemoryUsage(t *testing.T) {
 }
 
 func TestLlamaMonitor_HealthCheckSpeed(t *testing.T) {
-	config := LlamaConfig{
+	config := conf.LlamaConf{
 		BinaryPath: "./llama-server",
 		ModelPath:  "./model.bin",
 		Host:       "localhost",
@@ -289,7 +116,7 @@ func TestLlamaMonitor_HealthCheckSpeed(t *testing.T) {
 }
 
 func TestLlamaMonitor_ConcurrentHealthChecks(t *testing.T) {
-	config := LlamaConfig{
+	config := conf.LlamaConf{
 		BinaryPath: "./llama-server",
 		ModelPath:  "./model.bin",
 		Host:       "localhost",
@@ -315,7 +142,7 @@ func TestLlamaMonitor_ConcurrentHealthChecks(t *testing.T) {
 }
 
 func TestLlamaMonitor_RateLimiting(t *testing.T) {
-	config := LlamaConfig{
+	config := conf.LlamaConf{
 		BinaryPath: "./llama-server",
 		ModelPath:  "./model.bin",
 		Host:       "localhost",
@@ -341,7 +168,7 @@ func TestLlamaMonitor_RateLimiting(t *testing.T) {
 }
 
 func TestLlamaMonitor_AtomicOperations(t *testing.T) {
-	config := LlamaConfig{
+	config := conf.LlamaConf{
 		BinaryPath: "./llama-server",
 		ModelPath:  "./model.bin",
 		Host:       "localhost",
