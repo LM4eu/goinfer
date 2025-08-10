@@ -69,7 +69,7 @@ func ReleaseBuffer(buf *[]byte) {
 	BufferPool.Put(buf)
 }
 
-// MemoryStats - Lightweight memory statistics.
+// MemoryStats - memory statistics.
 type MemoryStats struct {
 	Alloc      uint64
 	TotalAlloc uint64
@@ -89,7 +89,7 @@ func GetMemoryStats() MemoryStats {
 	}
 }
 
-// MeasureExecutionTime - Measures execution time with minimal overhead.
+// MeasureExecutionTime - Measures execution time.
 func MeasureExecutionTime(fn func()) time.Duration {
 	start := time.Now()
 	fn()

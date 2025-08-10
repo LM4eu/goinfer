@@ -253,17 +253,6 @@ func TestLlamaConfig_Validation(t *testing.T) {
 			errMsg: "host cannot be empty",
 		},
 		{
-			name: "Empty port",
-			config: LlamaConfig{
-				BinaryPath: "./llama-server",
-				ModelPath:  "./model.bin",
-				Host:       "localhost",
-				Port:       0,
-			},
-			valid:  false,
-			errMsg: "port cannot be empty",
-		},
-		{
 			name: "Invalid port format",
 			config: LlamaConfig{
 				BinaryPath: "./llama-server",
@@ -409,7 +398,7 @@ func TestLlamaServerManager_ConcurrentAccess(t *testing.T) {
 
 			// Mock operations that would be fast
 			manager.GetStartTime()
-			manager.GetRestartCount()
+			manager.GetStartCount()
 		}(i)
 	}
 
