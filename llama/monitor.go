@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// HealthStatus - Lightweight health status representation.
+// HealthStatus - health status representation.
 type HealthStatus struct {
 	IsHealthy    bool
 	ResponseTime time.Duration
@@ -22,7 +22,7 @@ type HealthCheckResult struct {
 	Latency time.Duration
 }
 
-// Monitor - Lightweight health monitor with minimal overhead.
+// Monitor - health monitor.
 type Monitor struct {
 	config        *LlamaConfig
 	checkInterval time.Duration
@@ -52,7 +52,7 @@ func NewLlamaMonitor(config *LlamaConfig, checkInterval, timeout time.Duration) 
 	}
 }
 
-// Start - Starts monitoring with minimal overhead.
+// Start - Starts monitoring.
 func (m *Monitor) Start() {
 	go m.monitorLoop()
 }
@@ -82,7 +82,7 @@ func (m *Monitor) CheckHealth() HealthCheckResult {
 		}
 	}
 
-	//  close with minimal overhead
+	//  close
 	err = conn.Close()
 
 	latency := time.Since(start)
@@ -94,7 +94,6 @@ func (m *Monitor) CheckHealth() HealthCheckResult {
 			Latency: latency,
 		}
 	}
-
 
 	// Update atomic values for performance
 	m.lastCheckTime.Store(time.Now().UnixNano())
@@ -152,7 +151,7 @@ func (m *Monitor) SetTimeout(timeout time.Duration) {
 	m.timeout = timeout
 }
 
-// monitorLoop - Lightweight monitoring loop with minimal overhead.
+// monitorLoop - monitoring loop.
 func (m *Monitor) monitorLoop() {
 	ticker := time.NewTicker(m.checkInterval)
 	defer ticker.Stop()
@@ -160,7 +159,7 @@ func (m *Monitor) monitorLoop() {
 	for {
 		select {
 		case <-ticker.C:
-			// Perform health check with minimal overhead
+			// Perform health check
 			result := m.CheckHealth()
 
 			// Only log significant failures to minimize I/O
