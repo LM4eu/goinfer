@@ -72,7 +72,7 @@ func RunServer(conf conf.WebServerConf, localMode bool, disableApiKey bool) {
 
 	// ----- Inference OpenAI API -----
 
-	if conf.EnableApiOpenAi {
+	if conf.EnableOaiAPI {
 		oai := e.Group("/v1")
 		if !disableApiKey {
 			oai.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
