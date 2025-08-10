@@ -19,7 +19,7 @@ import (
 func InferOpenAi(
 	prompt string,
 	template string,
-	params types.InferenceParams,
+	params types.InferParams,
 	c echo.Context,
 	ch chan<- types.OpenAiChatCompletion,
 	errCh chan<- error,
@@ -144,7 +144,7 @@ func createOpenAiDeltaMessage(ntokens int, token string) types.OpenAiChatComplet
 }
 
 // streamDeltaMsgOpenAi streams a delta message to the client.
-func streamDeltaMsgOpenAi(ntokens int, token string, enc *json.Encoder, c echo.Context, params types.InferenceParams, startThinking time.Time, thinkingElapsed *time.Duration, startEmitting *time.Time) error {
+func streamDeltaMsgOpenAi(ntokens int, token string, enc *json.Encoder, c echo.Context, params types.InferParams, startThinking time.Time, thinkingElapsed *time.Duration, startEmitting *time.Time) error {
 	if ntokens == 0 {
 		*startEmitting = time.Now()
 		*thinkingElapsed = time.Since(startThinking)
@@ -181,7 +181,7 @@ func streamDeltaMsgOpenAi(ntokens int, token string, enc *json.Encoder, c echo.C
 }
 
 // sendStartEmittingMessageOpenAi sends the start_emitting message to the client.
-func sendStartEmittingMessageOpenAi(enc *json.Encoder, c echo.Context, params types.InferenceParams, ntokens int, thinkingElapsed time.Duration) error {
+func sendStartEmittingMessageOpenAi(enc *json.Encoder, c echo.Context, params types.InferParams, ntokens int, thinkingElapsed time.Duration) error {
 	if !params.Stream || !state.ContinueInferringController {
 		return nil
 	}

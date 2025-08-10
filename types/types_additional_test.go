@@ -28,7 +28,7 @@ func TestTask(t *testing.T) {
 	task := InferQuery{
 		Prompt:    "Please read this prompt",
 		ModelConf: ModelConf{Name: "test-model", Ctx: 2048},
-		InferParams: InferenceParams{
+		InferParams: InferParams{
 			TopK:        40,
 			TopP:        0.95,
 			MinP:        0.05,
@@ -171,7 +171,7 @@ func TestTaskJSONMarshaling(t *testing.T) {
 	task := InferQuery{
 		Prompt:      "test-template",
 		ModelConf:   ModelConf{Name: "test-model"},
-		InferParams: DefaultInferenceParams,
+		InferParams: DefaultInferParams,
 	}
 
 	// Marshal to JSON

@@ -14,10 +14,10 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-func parseParams(m echo.Map) (string, string, string, types.InferenceParams, error) {
+func parseParams(m echo.Map) (string, string, string, types.InferParams, error) {
 	// fmt.Println("MAP", m)
 	// fmt.Println("---------")
-	params := types.DefaultInferenceParams
+	params := types.DefaultInferParams
 	v, ok := m["model"]
 	if !ok {
 		return "", "", "", params, errors.New("provide a model")

@@ -8,28 +8,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestInferenceParamsConstructor tests the constructor function.
-func TestInferenceParamsConstructor(t *testing.T) {
+// TestInferParamsConstructor tests the constructor function.
+func TestInferParamsConstructor(t *testing.T) {
 	// Test that default values are properly set using the constructor
-	params := DefaultInferenceParams
+	params := DefaultInferParams
 
 	// Test default values
 	assert.False(t, params.Stream)
-	assert.Equal(t, DefaultInferenceParams.MaxTokens, params.MaxTokens)
-	assert.Equal(t, DefaultInferenceParams.TopK, params.TopK)
-	assert.Equal(t, float32(DefaultInferenceParams.TopP), params.TopP)
-	assert.Equal(t, float32(DefaultInferenceParams.Temperature), params.Temperature)
-	assert.Equal(t, float32(DefaultInferenceParams.FrequencyPenalty), params.FrequencyPenalty)
-	assert.Equal(t, float32(DefaultInferenceParams.PresencePenalty), params.PresencePenalty)
-	assert.Equal(t, float32(DefaultInferenceParams.RepeatPenalty), params.RepeatPenalty)
-	assert.Equal(t, float32(DefaultInferenceParams.TailFreeSamplingZ), params.TailFreeSamplingZ)
-	assert.Equal(t, DefaultInferenceParams.StopPrompts, params.StopPrompts)
+	assert.Equal(t, DefaultInferParams.MaxTokens, params.MaxTokens)
+	assert.Equal(t, DefaultInferParams.TopK, params.TopK)
+	assert.Equal(t, float32(DefaultInferParams.TopP), params.TopP)
+	assert.Equal(t, float32(DefaultInferParams.Temperature), params.Temperature)
+	assert.Equal(t, float32(DefaultInferParams.FrequencyPenalty), params.FrequencyPenalty)
+	assert.Equal(t, float32(DefaultInferParams.PresencePenalty), params.PresencePenalty)
+	assert.Equal(t, float32(DefaultInferParams.RepeatPenalty), params.RepeatPenalty)
+	assert.Equal(t, float32(DefaultInferParams.TailFreeSamplingZ), params.TailFreeSamplingZ)
+	assert.Equal(t, DefaultInferParams.StopPrompts, params.StopPrompts)
 }
 
-// TestInferenceParamsCreation tests creating InferenceParams with custom values.
-func TestInferenceParamsCreation(t *testing.T) {
+// TestInferParamsCreation tests creating InferParams with custom values.
+func TestInferParamsCreation(t *testing.T) {
 	// Test creating custom inference params
-	params := InferenceParams{
+	params := InferParams{
 		Stream:            true,
 		MaxTokens:         1024,
 		TopK:              80,
@@ -55,10 +55,10 @@ func TestInferenceParamsCreation(t *testing.T) {
 	assert.Equal(t, []string{"STOP", "END"}, params.StopPrompts)
 }
 
-// TestInferenceParamsClone tests the Clone method.
-func TestInferenceParamsClone(t *testing.T) {
+// TestInferParamsClone tests the Clone method.
+func TestInferParamsClone(t *testing.T) {
 	// Test that inference params can be copied correctly using Clone
-	params1 := InferenceParams{
+	params1 := InferParams{
 		Stream:            true,
 		MaxTokens:         2048,
 		TopK:              100,
@@ -89,10 +89,10 @@ func TestInferenceParamsClone(t *testing.T) {
 	assert.Equal(t, []string{"END"}, params2.StopPrompts)
 }
 
-// TestInferenceParamsReset tests resetting to defaults.
-func TestInferenceParamsReset(t *testing.T) {
+// TestInferParamsReset tests resetting to defaults.
+func TestInferParamsReset(t *testing.T) {
 	// Test resetting inference params to defaults
-	params := InferenceParams{
+	params := InferParams{
 		Stream:            true,
 		MaxTokens:         2048,
 		TopK:              100,
@@ -106,29 +106,29 @@ func TestInferenceParamsReset(t *testing.T) {
 	}
 
 	// Reset to defaults using constructor
-	defaultParams := DefaultInferenceParams
+	defaultParams := DefaultInferParams
 
 	// Verify they are different
 	assert.NotEqual(t, defaultParams, params)
 
 	// Reset params using constructor
-	params = DefaultInferenceParams
+	params = DefaultInferParams
 
 	// Verify they are now equal
 	assert.Equal(t, defaultParams, params)
 }
 
-func TestInferenceParamsValidation(t *testing.T) {
+func TestInferParamsValidation(t *testing.T) {
 	// Test validation of inference params
 	testCases := []struct {
 		name        string
-		params      InferenceParams
+		params      InferParams
 		valid       bool
 		expectedErr string
 	}{
 		{
 			name: "Valid params",
-			params: InferenceParams{
+			params: InferParams{
 				TopK:        40,
 				TopP:        0.95,
 				Temperature: 0.2,
@@ -137,7 +137,7 @@ func TestInferenceParamsValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid TopK (negative)",
-			params: InferenceParams{
+			params: InferParams{
 				TopK: -1,
 			},
 			valid:       false,
@@ -145,7 +145,7 @@ func TestInferenceParamsValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid TopP (negative)",
-			params: InferenceParams{
+			params: InferParams{
 				TopP: -0.1,
 			},
 			valid:       false,
@@ -153,7 +153,7 @@ func TestInferenceParamsValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid TopP (> 1.0)",
-			params: InferenceParams{
+			params: InferParams{
 				TopP: 1.1,
 			},
 			valid:       false,
@@ -161,7 +161,7 @@ func TestInferenceParamsValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid Temperature (negative)",
-			params: InferenceParams{
+			params: InferParams{
 				Temperature: -0.1,
 			},
 			valid:       false,
@@ -169,7 +169,7 @@ func TestInferenceParamsValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid RepeatPenalty (negative)",
-			params: InferenceParams{
+			params: InferParams{
 				RepeatPenalty: -0.1,
 			},
 			valid:       false,
@@ -177,7 +177,7 @@ func TestInferenceParamsValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid TailFreeSamplingZ (negative)",
-			params: InferenceParams{
+			params: InferParams{
 				TailFreeSamplingZ: -0.1,
 			},
 			valid:       false,
@@ -185,42 +185,42 @@ func TestInferenceParamsValidation(t *testing.T) {
 		},
 		{
 			name: "TopP boundary (0.0)",
-			params: InferenceParams{
+			params: InferParams{
 				TopP: 0.0,
 			},
 			valid: true,
 		},
 		{
 			name: "TopP boundary (1.0)",
-			params: InferenceParams{
+			params: InferParams{
 				TopP: 1.0,
 			},
 			valid: true,
 		},
 		{
 			name: "TopK boundary (0)",
-			params: InferenceParams{
+			params: InferParams{
 				TopK: 0,
 			},
 			valid: true,
 		},
 		{
 			name: "Temperature boundary (0.0)",
-			params: InferenceParams{
+			params: InferParams{
 				Temperature: 0.0,
 			},
 			valid: true,
 		},
 		{
 			name: "RepeatPenalty boundary (0.0)",
-			params: InferenceParams{
+			params: InferParams{
 				RepeatPenalty: 0.0,
 			},
 			valid: true,
 		},
 		{
 			name: "TailFreeSamplingZ boundary (0.0)",
-			params: InferenceParams{
+			params: InferParams{
 				TailFreeSamplingZ: 0.0,
 			},
 			valid: true,
@@ -241,9 +241,9 @@ func TestInferenceParamsValidation(t *testing.T) {
 	}
 }
 
-func TestInferenceParamsStringRepresentation(t *testing.T) {
+func TestInferParamsStringRepresentation(t *testing.T) {
 	// Test string representation of inference params
-	params := InferenceParams{
+	params := InferParams{
 		Stream:            true,
 		MaxTokens:         1024,
 		TopK:              50,
@@ -267,9 +267,9 @@ func TestInferenceParamsStringRepresentation(t *testing.T) {
 	assert.NotEmpty(t, params.StopPrompts)
 }
 
-func TestInferenceParamsImmutability(t *testing.T) {
+func TestInferParamsImmutability(t *testing.T) {
 	// Test that modifying inference params doesn't affect other instances
-	originalParams := InferenceParams{
+	originalParams := InferParams{
 		Stream: true,
 	}
 
@@ -281,9 +281,9 @@ func TestInferenceParamsImmutability(t *testing.T) {
 	assert.False(t, newParams.Stream)
 }
 
-func TestInferenceParamsWithPartialDefaults(t *testing.T) {
+func TestInferParamsWithPartialDefaults(t *testing.T) {
 	// Test creating inference params with some defaults and some custom values
-	defaultParams := DefaultInferenceParams
+	defaultParams := DefaultInferParams
 
 	// Create custom params based on defaults
 	customParams := defaultParams
@@ -301,20 +301,20 @@ func TestInferenceParamsWithPartialDefaults(t *testing.T) {
 	assert.Equal(t, float32(0.5), customParams.Temperature)
 
 	// Verify other fields retain default values
-	assert.Equal(t, DefaultInferenceParams.MaxTokens, defaultParams.MaxTokens)                          // Default value
-	assert.Equal(t, DefaultInferenceParams.TopK, defaultParams.TopK)                                    // Default value
-	assert.Equal(t, float32(DefaultInferenceParams.TopP), defaultParams.TopP)                           // Default value
-	assert.Equal(t, float32(DefaultInferenceParams.Temperature), defaultParams.Temperature)             // Default value
-	assert.Equal(t, float32(DefaultInferenceParams.FrequencyPenalty), defaultParams.FrequencyPenalty)   // Default value
-	assert.Equal(t, float32(DefaultInferenceParams.PresencePenalty), defaultParams.PresencePenalty)     // Default value
-	assert.Equal(t, float32(DefaultInferenceParams.RepeatPenalty), defaultParams.RepeatPenalty)         // Default value
-	assert.Equal(t, float32(DefaultInferenceParams.TailFreeSamplingZ), defaultParams.TailFreeSamplingZ) // Default value
-	assert.Equal(t, DefaultInferenceParams.StopPrompts, defaultParams.StopPrompts)                      // Default value
+	assert.Equal(t, DefaultInferParams.MaxTokens, defaultParams.MaxTokens)                          // Default value
+	assert.Equal(t, DefaultInferParams.TopK, defaultParams.TopK)                                    // Default value
+	assert.Equal(t, float32(DefaultInferParams.TopP), defaultParams.TopP)                           // Default value
+	assert.Equal(t, float32(DefaultInferParams.Temperature), defaultParams.Temperature)             // Default value
+	assert.Equal(t, float32(DefaultInferParams.FrequencyPenalty), defaultParams.FrequencyPenalty)   // Default value
+	assert.Equal(t, float32(DefaultInferParams.PresencePenalty), defaultParams.PresencePenalty)     // Default value
+	assert.Equal(t, float32(DefaultInferParams.RepeatPenalty), defaultParams.RepeatPenalty)         // Default value
+	assert.Equal(t, float32(DefaultInferParams.TailFreeSamplingZ), defaultParams.TailFreeSamplingZ) // Default value
+	assert.Equal(t, DefaultInferParams.StopPrompts, defaultParams.StopPrompts)                      // Default value
 }
 
 func TestStopPromptsManipulation(t *testing.T) {
 	// Test manipulation of stop prompts
-	params := InferenceParams{
+	params := InferParams{
 		StopPrompts: []string{"STOP", "END"},
 	}
 
@@ -337,9 +337,9 @@ func TestStopPromptsManipulation(t *testing.T) {
 	assert.Equal(t, []string{"COPY"}, copyParams.StopPrompts)
 }
 
-func TestInferenceParamsJSONMarshaling(t *testing.T) {
+func TestInferParamsJSONMarshaling(t *testing.T) {
 	// Test JSON marshaling and unmarshaling
-	params := InferenceParams{
+	params := InferParams{
 		Stream:            true,
 		MaxTokens:         1024,
 		TopK:              50,
@@ -357,7 +357,7 @@ func TestInferenceParamsJSONMarshaling(t *testing.T) {
 	require.NoError(t, err)
 
 	// Unmarshal from JSON
-	var unmarshalledParams InferenceParams
+	var unmarshalledParams InferParams
 	err = json.Unmarshal(jsonData, &unmarshalledParams)
 	require.NoError(t, err)
 
@@ -365,15 +365,15 @@ func TestInferenceParamsJSONMarshaling(t *testing.T) {
 	assert.Equal(t, params, unmarshalledParams)
 }
 
-func TestInferenceParamsEdgeCases(t *testing.T) {
-	// Test edge cases for InferenceParams
+func TestInferParamsEdgeCases(t *testing.T) {
+	// Test edge cases for InferParams
 	testCases := []struct {
 		name   string
-		params InferenceParams
+		params InferParams
 	}{
 		{
 			name: "Minimum valid values",
-			params: InferenceParams{
+			params: InferParams{
 				TopK:        0,
 				TopP:        0.0,
 				Temperature: 0.0,
@@ -381,7 +381,7 @@ func TestInferenceParamsEdgeCases(t *testing.T) {
 		},
 		{
 			name: "Maximum valid values",
-			params: InferenceParams{
+			params: InferParams{
 				TopP:              1.0,
 				Temperature:       100.0,
 				RepeatPenalty:     100.0,
@@ -390,13 +390,13 @@ func TestInferenceParamsEdgeCases(t *testing.T) {
 		},
 		{
 			name: "Empty stop prompts",
-			params: InferenceParams{
+			params: InferParams{
 				StopPrompts: []string{},
 			},
 		},
 		{
 			name: "Nil stop prompts",
-			params: InferenceParams{
+			params: InferParams{
 				StopPrompts: nil,
 			},
 		},

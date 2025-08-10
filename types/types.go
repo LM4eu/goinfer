@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-var DefaultInferenceParams = InferenceParams{
+var DefaultInferParams = InferParams{
 	Stream:            false,
 	MaxTokens:         512,
 	TopK:              40,
@@ -47,8 +47,8 @@ type LlamaConfig struct {
 	Args       []string
 }
 
-// InferenceParams holds parameters for inference.
-type InferenceParams struct {
+// InferParams holds parameters for inference.
+type InferParams struct {
 	Stream            bool     `json:"stream,omitempty"            yaml:"stream,omitempty"`
 	MaxTokens         int      `json:"max_tokens,omitempty"         yaml:"max_tokens,omitempty"`
 	TopK              int      `json:"top_k,omitempty"             yaml:"top_k,omitempty"`
@@ -63,8 +63,8 @@ type InferenceParams struct {
 	Images            []byte   `json:"images,omitempty"              yaml:"images,omitempty"`
 }
 
-// Validate validates the InferenceParams and returns an error if invalid.
-func (p InferenceParams) Validate() error {
+// Validate validates the InferParams and returns an error if invalid.
+func (p InferParams) Validate() error {
 	// TopK must be non-negative if set
 	if p.TopK < 0 {
 		return fmt.Errorf("top_k must be non-negative, got %d", p.TopK)
@@ -92,8 +92,8 @@ func (p InferenceParams) Validate() error {
 	return nil
 }
 
-// Clone creates a deep copy of InferenceParams.
-func (p InferenceParams) Clone() InferenceParams {
+// Clone creates a deep copy of InferParams.
+func (p InferParams) Clone() InferParams {
 	// Create a copy of the slice to avoid sharing references
 	var stopPrompts []string
 	if p.StopPrompts != nil {
@@ -101,7 +101,7 @@ func (p InferenceParams) Clone() InferenceParams {
 		copy(stopPrompts, p.StopPrompts)
 	}
 
-	return InferenceParams{
+	return InferParams{
 		Stream:            p.Stream,
 		MaxTokens:         p.MaxTokens,
 		TopK:              p.TopK,
@@ -138,7 +138,7 @@ type InferenceResult struct {
 type InferQuery struct {
 	Prompt      string          `json:"prompt"  yaml:"prompt"`
 	ModelConf   ModelConf       `json:"modelConf"   yaml:"modelConf"`
-	InferParams InferenceParams `json:"inferParams" yaml:"inferParams"`
+	InferParams InferParams `json:"inferParams" yaml:"inferParams"`
 }
 
 // ModelConf holds configuration for a model.

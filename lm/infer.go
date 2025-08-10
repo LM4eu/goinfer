@@ -155,7 +155,7 @@ func sendLlamaStreamTermination(c echo.Context) error {
 }
 
 // streamDeltaMsg handles token processing during prediction.
-func streamDeltaMsg(ntokens int, token string, enc *json.Encoder, c echo.Context, params types.InferenceParams, startThinking time.Time, thinkingElapsed *time.Duration, startEmitting *time.Time) error {
+func streamDeltaMsg(ntokens int, token string, enc *json.Encoder, c echo.Context, params types.InferParams, startThinking time.Time, thinkingElapsed *time.Duration, startEmitting *time.Time) error {
 	if ntokens == 0 {
 		*startEmitting = time.Now()
 		*thinkingElapsed = time.Since(startThinking)
@@ -195,7 +195,7 @@ func streamDeltaMsg(ntokens int, token string, enc *json.Encoder, c echo.Context
 }
 
 // sendStartEmittingMessage sends the start_emitting message to the client.
-func sendStartEmittingMessage(enc *json.Encoder, c echo.Context, params types.InferenceParams, ntokens int, thinkingElapsed time.Duration) error {
+func sendStartEmittingMessage(enc *json.Encoder, c echo.Context, params types.InferParams, ntokens int, thinkingElapsed time.Duration) error {
 	if !params.Stream || !state.ContinueInferringController {
 		return nil
 	}
@@ -288,7 +288,7 @@ func calculateStats(ntokens int, thinkingElapsed time.Duration, startEmitting ti
 // Result Creation Functions
 
 // createResult creates the final result message to the client.
-func createResult(res string, stats types.InferenceStats, enc *json.Encoder, c echo.Context, params types.InferenceParams) (types.StreamedMessage, error) {
+func createResult(res string, stats types.InferenceStats, enc *json.Encoder, c echo.Context, params types.InferParams) (types.StreamedMessage, error) {
 	result := types.InferenceResult{
 		Text:  res,
 		Stats: stats,
