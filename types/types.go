@@ -2,19 +2,25 @@ package types
 
 import "fmt"
 
-// Default values for InferenceParams.
-const (
-	DefaultNPredict          = 512
-	DefaultTopK              = 40
-	DefaultTopP              = 0.95
-	DefaultMinP              = 0.05
-	DefaultTemperature       = 0.2
-	DefaultFrequencyPenalty  = 0.0
-	DefaultPresencePenalty   = 0.0
-	DefaultRepeatPenalty     = 1.0
-	DefaultTailFreeSamplingZ = 1.0
-	DefaultStopPrompt        = "</s>"
-)
+var DefaultInferenceParams = InferenceParams{
+	Stream:            false,
+	MaxTokens:         512,
+	TopK:              40,
+	TopP:              0.95,
+	MinP:              0.05,
+	Temperature:       0.2,
+	FrequencyPenalty:  0.0,
+	PresencePenalty:   0.0,
+	RepeatPenalty:     1.0,
+	TailFreeSamplingZ: 1.0,
+	StopPrompts:       []string{"</s>"},
+	Images:            nil,
+}
+
+var DefaultModelConf = ModelConf{
+	Name: "",
+	Ctx:  2048,
+}
 
 // GoInferConf holds the configuration for GoInfer.
 type GoInferConf struct {
@@ -55,23 +61,6 @@ type InferenceParams struct {
 	TailFreeSamplingZ float32  `json:"tfs,omitempty"             yaml:"tfs,omitempty"`
 	StopPrompts       []string `json:"stop,omitempty"              yaml:"stop,omitempty"`
 	Images            []byte   `json:"images,omitempty"              yaml:"images,omitempty"`
-}
-
-// NewInferenceParams creates a new InferenceParams with default values.
-func NewInferenceParams() InferenceParams {
-	return InferenceParams{
-		Stream:            false,
-		MaxTokens:         DefaultNPredict,
-		TopK:              DefaultTopK,
-		TopP:              DefaultTopP,
-		MinP:              DefaultMinP,
-		Temperature:       DefaultTemperature,
-		FrequencyPenalty:  DefaultFrequencyPenalty,
-		PresencePenalty:   DefaultPresencePenalty,
-		RepeatPenalty:     DefaultRepeatPenalty,
-		TailFreeSamplingZ: DefaultTailFreeSamplingZ,
-		StopPrompts:       []string{DefaultStopPrompt},
-	}
 }
 
 // Validate validates the InferenceParams and returns an error if invalid.

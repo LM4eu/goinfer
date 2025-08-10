@@ -12,7 +12,7 @@ var (
 	ModelsDir     = ""
 	IsModelLoaded = false
 	LoadedModel   = ""
-	ModelConf     = DefaultModelConf
+	ModelConf     = types.DefaultModelConf
 )
 
 // Inference state.
