@@ -27,14 +27,14 @@ func LoadModel(modelConf types.ModelConf) (int, error) {
 		return 400, fmt.Errorf("model name cannot be empty: %w", ErrInvalidInput)
 	}
 
-	mpath := filepath.Join(state.ModelsDir, modelConf.Name)
+	filepath := filepath.Join(state.ModelsDir, modelConf.Name)
 	// check if the model file exists
-	_, err := os.Stat(mpath)
+	_, err := os.Stat(filepath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return 404, fmt.Errorf("the model file %s does not exist: %w", mpath, ErrModelNotFound)
+			return 404, fmt.Errorf("the model file %s does not exist: %w", filepath, ErrModelNotFound)
 		}
-		return 500, fmt.Errorf("error checking model file %s: %w", mpath, err)
+		return 500, fmt.Errorf("error checking model file %s: %w", filepath, err)
 	}
 	// check if the model is already loaded
 	if state.LoadedModel == modelConf.Name {
@@ -45,17 +45,17 @@ func LoadModel(modelConf types.ModelConf) (int, error) {
 	}
 
 	lm, err := llama.New(
-		mpath,
+		filepath,
 		llama.SetContext(modelConf.Ctx),
 		llama.EnableEmbeddings,
-		llama.SetGPULayers(99), // TODO modelConf.NGPULayers
+		llama.SetGPULayers(99),
 	)
 	if err != nil {
 		return 500, fmt.Errorf("cannot load model %s: %w", modelConf.Name, ErrModelLoadFailed)
 	}
 
 	if state.IsVerbose || state.IsDebug {
-		fmt.Println("Loaded model", mpath)
+		fmt.Println("Loaded model", filepath)
 		if state.IsDebug {
 			jsonData, err := json.MarshalIndent(modelConf, "", "  ")
 			if err != nil {
