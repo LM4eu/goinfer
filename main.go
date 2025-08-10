@@ -45,7 +45,6 @@ func main() {
 	}
 
 	state.ModelsDir = conf.ModelsDir
-	state.OpenAiConf = conf.OpenAiConf
 	state.IsVerbose = !*quiet
 
 	if state.IsVerbose {

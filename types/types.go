@@ -80,8 +80,3 @@ const (
 	SystemMsgType MsgType = "system"
 	ErrorMsgType  MsgType = "error"
 )
-
-type OpenAiConf struct {
-	Threads  int    `json:"threads"`
-	Template string `json:"template"`
-}

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -63,7 +62,6 @@ type openAiUsage struct {
 // InferOpenAi performs OpenAI model inference.
 func InferOpenAi(
 	prompt string,
-	template string,
 	params types.InferParams,
 	c echo.Context,
 	ch chan<- OpenAiChatCompletion,
@@ -74,8 +72,7 @@ func InferOpenAi(
 		return
 	}
 
-	finalPrompt := strings.Replace(template, "{prompt}", prompt, 1)
-	logOpenAiVerboseInfo(finalPrompt, 0, 0, 0) // Initial verbose logging with prompt
+	logOpenAiVerboseInfo(prompt, 0, 0, 0) // Initial verbose logging with prompt
 
 	if state.IsDebug {
 		fmt.Println("Inference params:")
@@ -92,7 +89,7 @@ func InferOpenAi(
 	state.IsInferring = true
 	state.ContinueInferringController = true
 
-	res, err := state.Lm.Predict(finalPrompt, llama.SetTokenCallback(func(token string) bool {
+	res, err := state.Lm.Predict(prompt, llama.SetTokenCallback(func(token string) bool {
 		err := streamDeltaMsgOpenAi(ntokens, token, enc, c, params, startThinking, &thinkingElapsed, &startEmitting)
 		if err != nil {
 			errCh <- createErrorMessageOpenAi(ntokens+1, "streamDeltaMsgOpenAi error", err, ErrStreamDeltaMsgOpenAi)

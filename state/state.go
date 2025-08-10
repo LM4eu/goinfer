@@ -27,10 +27,6 @@ var (
 	IsDebug   = false
 )
 
-
-// OpenAI api.
-var OpenAiConf types.OpenAiConf
-
 // the language model instance.
 var Lm llama.LLama
 
