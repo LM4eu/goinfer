@@ -120,7 +120,7 @@ func TestApiTypeConstants(t *testing.T) {
 
 func TestInferenceStatsJSONMarshaling(t *testing.T) {
 	// Test JSON marshaling and unmarshaling for InferenceStats
-	stats := InferenceStats{
+	stats := InferStats{
 		ThinkingTime:       1.5,
 		ThinkingTimeFormat: "seconds",
 		EmitTime:           0.5,
@@ -136,7 +136,7 @@ func TestInferenceStatsJSONMarshaling(t *testing.T) {
 	require.NoError(t, err)
 
 	// Unmarshal from JSON
-	var unmarshalledStats InferenceStats
+	var unmarshalledStats InferStats
 	err = json.Unmarshal(jsonData, &unmarshalledStats)
 	require.NoError(t, err)
 
@@ -146,9 +146,9 @@ func TestInferenceStatsJSONMarshaling(t *testing.T) {
 
 func TestInferenceResultJSONMarshaling(t *testing.T) {
 	// Test JSON marshaling and unmarshaling for InferenceResult
-	result := InferenceResult{
+	result := InferResult{
 		Text: "test result",
-		Stats: InferenceStats{
+		Stats: InferStats{
 			TotalTokens: 10,
 		},
 	}
@@ -158,7 +158,7 @@ func TestInferenceResultJSONMarshaling(t *testing.T) {
 	require.NoError(t, err)
 
 	// Unmarshal from JSON
-	var unmarshalledResult InferenceResult
+	var unmarshalledResult InferResult
 	err = json.Unmarshal(jsonData, &unmarshalledResult)
 	require.NoError(t, err)
 
