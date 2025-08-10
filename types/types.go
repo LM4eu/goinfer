@@ -116,8 +116,8 @@ func (p InferParams) Clone() InferParams {
 	}
 }
 
-// InferenceStats holds statistics about inference.
-type InferenceStats struct {
+// InferStats holds statistics about inference.
+type InferStats struct {
 	ThinkingTime       float64 `json:"thinkingTime"`
 	ThinkingTimeFormat string  `json:"thinkingTimeFormat"`
 	EmitTime           float64 `json:"emitTime"`
@@ -128,10 +128,10 @@ type InferenceStats struct {
 	TotalTokens        int     `json:"totalTokens"`
 }
 
-// InferenceResult holds the result of inference.
-type InferenceResult struct {
+// InferResult holds the result of inference.
+type InferResult struct {
 	Text  string         `json:"text"`
-	Stats InferenceStats `json:"stats"`
+	Stats InferStats `json:"stats"`
 }
 
 // InferQuery represents a task to be executed.

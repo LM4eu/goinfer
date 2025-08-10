@@ -215,8 +215,8 @@ func sendStartEmittingMessageOpenAi(enc *json.Encoder, c echo.Context, params ty
 // Utility Functions
 
 // createErrorMessageOpenAi creates an InferenceError for OpenAI inference.
-func createErrorMessageOpenAi(ntokens int, content string, context any, errorCode string) *InferenceError {
-	return &InferenceError{
+func createErrorMessageOpenAi(ntokens int, content string, context any, errorCode string) *InferError {
+	return &InferError{
 		Code:       errorCode,
 		Message:    content,
 		Context:    context,

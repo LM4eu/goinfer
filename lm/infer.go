@@ -14,8 +14,8 @@ import (
 
 // Type Definitions
 
-// InferenceError represents a structured error for language model inference.
-type InferenceError struct {
+// InferError represents a structured error for language model inference.
+type InferError struct {
 	Code       string    `json:"code"`
 	Message    string    `json:"message"`
 	Context    any       `json:"context,omitempty"`
@@ -25,7 +25,7 @@ type InferenceError struct {
 }
 
 // Error implements the error interface.
-func (e *InferenceError) Error() string {
+func (e *InferError) Error() string {
 	return fmt.Sprintf("[%s] %s: %v", e.Code, e.Message, e.Context)
 }
 
@@ -263,7 +263,7 @@ func logVerboseInfo(prompt string, thinkingElapsed time.Duration, emittingElapse
 // Statistics Functions
 
 // calculateStats calculates inference statistics.
-func calculateStats(ntokens int, thinkingElapsed time.Duration, startEmitting time.Time) (types.InferenceStats, float64) {
+func calculateStats(ntokens int, thinkingElapsed time.Duration, startEmitting time.Time) (types.InferStats, float64) {
 	emittingElapsed := time.Since(startEmitting)
 	tpsRaw := float64(ntokens) / emittingElapsed.Seconds()
 	tps, err := strconv.ParseFloat(fmt.Sprintf("%.2f", tpsRaw), 64)
@@ -273,7 +273,7 @@ func calculateStats(ntokens int, thinkingElapsed time.Duration, startEmitting ti
 
 	totalTime := thinkingElapsed + emittingElapsed
 
-	return types.InferenceStats{
+	return types.InferStats{
 		ThinkingTime:       thinkingElapsed.Seconds(),
 		ThinkingTimeFormat: thinkingElapsed.String(),
 		EmitTime:           emittingElapsed.Seconds(),
@@ -288,8 +288,8 @@ func calculateStats(ntokens int, thinkingElapsed time.Duration, startEmitting ti
 // Result Creation Functions
 
 // createResult creates the final result message to the client.
-func createResult(res string, stats types.InferenceStats, enc *json.Encoder, c echo.Context, params types.InferParams) (types.StreamedMessage, error) {
-	result := types.InferenceResult{
+func createResult(res string, stats types.InferStats, enc *json.Encoder, c echo.Context, params types.InferParams) (types.StreamedMessage, error) {
+	result := types.InferResult{
 		Text:  res,
 		Stats: stats,
 	}
