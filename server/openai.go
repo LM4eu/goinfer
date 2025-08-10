@@ -72,7 +72,7 @@ func parseParams(m echo.Map) (string, string, string, types.InferenceParams, err
 
 	v, ok = m["max_tokens"]
 	if ok {
-		params.NPredict = int(v.(float64))
+		params.MaxTokens = int(v.(float64))
 	}
 
 	v, ok = m["stop"]
@@ -100,7 +100,7 @@ func parseParams(m echo.Map) (string, string, string, types.InferenceParams, err
 		params.RepeatPenalty = float32(v.(float64))
 	}
 
-	v, ok = m["tfs_z"]
+	v, ok = m["tfs"]
 	if ok {
 		params.TailFreeSamplingZ = float32(v.(float64))
 	}
