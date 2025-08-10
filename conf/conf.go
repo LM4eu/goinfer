@@ -15,7 +15,6 @@ import (
 type goInferConf struct {
 	ModelsDir   string
 	WebServer   WebServerConf
-	OpenAiConf  types.OpenAiConf
 	LlamaConfig *types.LlamaConfig
 }
 
@@ -33,9 +32,7 @@ func InitConf(path, configFile string) (goInferConf, error) {
 	viper.SetConfigName(configFile)
 	viper.AddConfigPath(path)
 	viper.SetDefault("origins", []string{"localhost"})
-	viper.SetDefault("oai.enable", false)
-	viper.SetDefault("oai.threads", 4)
-	viper.SetDefault("oai.template", "{system}\n\n{prompt}")
+	viper.SetDefault("openai_api", false)
 
 	// Llama configuration defaults
 	viper.SetDefault("llama.binary_path", "")
@@ -52,9 +49,7 @@ func InitConf(path, configFile string) (goInferConf, error) {
 	md := viper.GetString("models_dir")
 	or := viper.GetStringSlice("origins")
 	ak := viper.GetString("api_key")
-	oaiEnable := viper.GetBool("oai.enable")
-	oaiThreads := viper.GetInt("oai.threads")
-	oaiTemplate := viper.GetString("oai.template")
+	oaiEnable := viper.GetBool("openai_api")
 
 	// Llama configuration
 	llamaBinaryPath := viper.GetString("llama.binary_path")
@@ -70,10 +65,6 @@ func InitConf(path, configFile string) (goInferConf, error) {
 			Origins:         or,
 			ApiKey:          ak,
 			EnableApiOpenAi: oaiEnable,
-		},
-		OpenAiConf: types.OpenAiConf{
-			Threads:  oaiThreads,
-			Template: oaiTemplate,
 		},
 		LlamaConfig: &types.LlamaConfig{
 			BinaryPath: llamaBinaryPath,

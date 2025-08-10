@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -22,36 +21,22 @@ type openAiModel struct {
 	OwnedBy string `json:"owned_by"`
 }
 
-func parseParams(m echo.Map) (string, string, string, types.InferParams, error) {
+func parseParams(m echo.Map) (string, string, types.InferParams, error) {
 	// fmt.Println("MAP", m)
 	// fmt.Println("---------")
 	params := types.DefaultInferParams
+
 	v, ok := m["model"]
 	if !ok {
-		return "", "", "", params, errors.New("provide a model")
+		return "", "", params, errors.New("missing mandatory field: model")
 	}
-
 	model := v.(string)
-	v, ok = m["messages"]
-	if !ok {
-		return "", "", "", params, errors.New("provide a messages array")
-	}
 
-	qmsgs := v.([]any)
-	prompt := ""
-	template := state.OpenAiConf.Template
-	// fmt.Println("Q>:", qmsgs)
-	for _, m := range qmsgs {
-		el := m.(map[string]any)
-		role := el["role"].(string)
-		content := el["content"].(string)
-		switch role {
-		case "system":
-			template = strings.Replace(template, "{system}", content, 1)
-		case "user":
-			prompt = content
-		}
+	v, ok = m["prompt"]
+	if !ok {
+		return "", "", params, errors.New("missing mandatory field: prompt")
 	}
+	prompt := v.(string)
 
 	v, ok = m["stream"]
 	if ok {
@@ -113,7 +98,7 @@ func parseParams(m echo.Map) (string, string, string, types.InferParams, error) 
 		params.TailFreeSamplingZ = float32(v.(float64))
 	}
 
-	return model, prompt, template, params, nil
+	return model, prompt, params, nil
 }
 
 // Create an OpenAI api for /v1/chat/completion.
@@ -131,7 +116,7 @@ func CreateCompletionHandler(c echo.Context) error {
 	/*for p, i := range m {
 		fmt.Println(p, ":", i)
 	}*/
-	model, prompt, template, params, err := parseParams(m)
+	model, prompt, params, err := parseParams(m)
 	if err != nil {
 		panic(err)
 	}
@@ -165,7 +150,7 @@ func CreateCompletionHandler(c echo.Context) error {
 	defer close(ch)
 	defer close(errCh)
 
-	go lm.InferOpenAi(prompt, template, params, c, ch, errCh)
+	go lm.InferOpenAi(prompt, params, c, ch, errCh)
 
 	select {
 	case res, ok := <-ch:

@@ -19,11 +19,7 @@ func TestInitConf(t *testing.T) {
 		"models_dir": "./test_models",
 		"origins":    []string{"http://localhost:3000"},
 		"api_key":    "test_key_123",
-		"oai": map[string]any{
-			"enable":   true,
-			"threads":  4,
-			"template": "{system}\n\n{prompt}",
-		},
+		"openai_api": true,
 	}
 
 	configBytes, _ := json.MarshalIndent(configData, "", "    ")
@@ -44,8 +40,6 @@ func TestInitConf(t *testing.T) {
 	assert.Equal(t, []string{"http://localhost:3000"}, config.WebServer.Origins)
 	assert.Equal(t, "test_key_123", config.WebServer.ApiKey)
 	assert.True(t, config.WebServer.EnableApiOpenAi)
-	assert.Equal(t, 4, config.OpenAiConf.Threads)
-	assert.Equal(t, "{system}\n\n{prompt}", config.OpenAiConf.Template)
 }
 
 func TestInitConf_WithDefaults(t *testing.T) {
@@ -72,11 +66,9 @@ func TestInitConf_WithDefaults(t *testing.T) {
 	config, _ := InitConf(".", "goinfer") // ./goinfer.json
 
 	assert.Equal(t, "./test_models", config.ModelsDir)
-	assert.Equal(t, []string{"localhost"}, config.WebServer.Origins)    // Default value
-	assert.Empty(t, config.WebServer.ApiKey)                            // Default empty value
-	assert.False(t, config.WebServer.EnableApiOpenAi)                   // Default value
-	assert.Equal(t, 4, config.OpenAiConf.Threads)                       // Default value
-	assert.Equal(t, "{system}\n\n{prompt}", config.OpenAiConf.Template) // Default value
+	assert.Equal(t, []string{"localhost"}, config.WebServer.Origins) // Default value
+	assert.Empty(t, config.WebServer.ApiKey)                         // Default empty value
+	assert.False(t, config.WebServer.EnableApiOpenAi)                // Default value
 }
 
 func TestInitConf_InvalidConfig(t *testing.T) {
