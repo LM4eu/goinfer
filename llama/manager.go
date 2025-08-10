@@ -31,39 +31,32 @@ func NewLlamaServerManager(config *conf.LlamaConf) *LlamaServerManager {
 	}
 }
 
-// Start - process launch with minimal validation.
-func (m *LlamaServerManager) Start() error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	// fast return if already running
-	if m.process != nil {
-		return nil
-	}
-
-	err := m.Conf.Validate()
+// Restart - restart with minimal downtime.
+func (m *LlamaServerManager) Restart() error {
+	err := m.Stop()
 	if err != nil {
 		return err
 	}
 
-	// Create command
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Create command line
 	m.cmd = exec.Command(m.Conf.BinaryPath, m.Conf.GetCommandArgs()...)
 
 	// Preserve system environment
-	m.cmd.Env = os.Environ()
+	// m.cmd.Env = os.Environ()
 
-	// Start llama-server
+	fmt.Println("Starting...", m.cmd.String())
+
 	err = m.cmd.Start()
 	if err != nil {
-		return ErrStartFailed("failed to start process: " + err.Error())
+		return ErrRestartFailed("failed to restart process: " + err.Error())
 	}
 
 	m.startTime = time.Now()
 	m.process = m.cmd.Process
 	m.startCount++
-
-	// Start monitoring
-	go m.monitor()
 
 	return nil
 }
@@ -103,35 +96,6 @@ func (m *LlamaServerManager) Stop() error {
 		m.cmd = nil
 		return nil
 	}
-}
-
-// Restart - restart with minimal downtime.
-func (m *LlamaServerManager) Restart() error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	// Stop only if running
-	if m.process != nil {
-		err := m.process.Kill()
-		if err != nil && isProcessStillRunning(err) {
-			return ErrRestartFailed("failed to stop process: " + err.Error())
-		}
-	}
-
-	// Create new command
-	m.cmd = exec.Command(m.Conf.BinaryPath, m.Conf.GetCommandArgs()...)
-	m.cmd.Env = os.Environ()
-
-	err := m.cmd.Start()
-	if err != nil {
-		return ErrRestartFailed("failed to restart process: " + err.Error())
-	}
-
-	m.startTime = time.Now()
-	m.process = m.cmd.Process
-	m.startCount++
-
-	return nil
 }
 
 // HealthCheck - health verification in <2ms.

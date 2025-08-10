@@ -153,6 +153,18 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 		}
 	}
 
+	v, ok = m["audios"]
+	if ok {
+		if slice, ok := v.([]any); ok {
+			if len(slice) > 0 {
+				query.InferParams.Audios = make([]byte, len(slice))
+				for i, val := range slice {
+					query.InferParams.Audios[i] = val.(byte)
+				}
+			}
+		}
+	}
+
 	return query, nil
 }
 
@@ -180,32 +192,16 @@ func InferHandler(c echo.Context) error {
 	}
 
 	// Do we need to start/restart llama-server?
-	restart := true
-	if state.IsModelLoaded {
-		if state.LoadedModel == query.ModelConf.Name {
-			if state.ModelConf.Ctx == query.ModelConf.Ctx {
-				restart = false
-			}
-		}
-	}
-
-	if restart {
-		state.ModelConf = query.ModelConf
-		statusCode, err := state.StartLlamaWithModel(query.ModelConf)
+	if state.IsStartNeeded(query.ModelConf) {
+		err := state.RestartLlamaServer(query.ModelConf)
 		if err != nil {
 			if state.IsDebug {
 				fmt.Println("Error loading model:", err)
 			}
-			return c.JSON(statusCode, echo.Map{"error": fmt.Sprintf("failed to load model: %v", err)})
-		}
-
-		if state.IsDebug {
-			fmt.Println("Loaded model with params:")
-			jsonData, err := json.MarshalIndent(state.ModelConf, "", "  ")
-			if err != nil {
-				fmt.Println("Error:", err)
-			}
-			fmt.Println(string(jsonData))
+			return c.JSON(
+				http.StatusInternalServerError,
+				echo.Map{"error": "failed to load model" + err.Error()},
+			)
 		}
 	}
 

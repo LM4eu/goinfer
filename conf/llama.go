@@ -2,33 +2,30 @@ package conf
 
 import (
 	"net"
-	"os/exec"
 	"strconv"
 	"strings"
 )
 
 // LlamaConf - configuration for llama-server proxy.
 type LlamaConf struct {
-	BinaryPath  string // Path to llama-server binary
-	ModelPath   string // Path to model file
-	ContextSize int
-	FlashAttention bool
-	GpuLayers   int
-	DownloadUrl string   // model from HuggingFace
-	Host        string   // Host binding (default: localhost)
-	Port        int      // Port number (default: 8080)
-	Args        []string // Additional arguments
+	BinaryPath     string // Path to llama-server binary
+	Host           string // Host binding (default: localhost)
+	Port           int    // Port number (default: 8080)
+	ModelPath      string // Path to model file OR download url OR from HuggingFace repo
+	ContextSize    int
+	Threads        int  // number of threads to use during generation (default: -1)
+	ThPromptProc   int  // number of threads to use during batch and prompt processing
+	FlashAttention bool // enable Flash Attention
+	GpuLayers      int
+	WebUI          bool
+	Args           []string // Additional arguments
 }
 
-// NewLlamaConfig - Creates a new LlamaConfig with minimal validation.
-func NewLlamaConfig(binaryPath, modelPath string, args ...string) *LlamaConf {
-	return &LlamaConf{
-		BinaryPath: binaryPath,
-		ModelPath:  modelPath,
-		Host:       "localhost",
-		Port:       8080,
-		Args:       args,
-	}
+// ErrInvalidConfig - Error type for configuration validation.
+type ErrInvalidConfig string
+
+func (e ErrInvalidConfig) Error() string {
+	return "invalid config: " + string(e)
 }
 
 // GetAddress - Returns the server address in host:port format.
@@ -39,12 +36,54 @@ func (c *LlamaConf) GetAddress() string {
 // GetCommandArgs - Returns the complete command arguments for llama-server.
 func (c *LlamaConf) GetCommandArgs() []string {
 	args := make([]string, 0, len(c.Args)+5)
-	args = append(args, "-m", c.ModelPath)
 	args = append(args, "-h", c.Host)
 	args = append(args, "-p", strconv.Itoa(c.Port))
+	args = append(args, "--props") // enable changing global properties via POST /props
+
+	if c.Threads != 0 {
+		args = append(args, "-t", strconv.Itoa(c.Threads))
+	}
+	if c.ThPromptProc != 0 {
+		args = append(args, "-tb", strconv.Itoa(c.ThPromptProc))
+	}
+
+	if c.ModelPath != "" {
+		switch IsDownloadURL(c.ModelPath) {
+		case 0:
+			args = append(args, "-m", c.ModelPath)
+		case 1:
+			args = append(args, "-mu", c.ModelPath)
+		default:
+			args = append(args, "-hf", c.ModelPath)
+		}
+	}
+
+	if c.ContextSize != 0 {
+		args = append(args, "-c", strconv.Itoa(c.ContextSize))
+	}
+	if c.GpuLayers != 0 {
+		args = append(args, "-ngl", strconv.Itoa(c.GpuLayers))
+	}
+	if !c.WebUI {
+		args = append(args, "--no-webui")
+	}
+	if c.FlashAttention {
+		args = append(args, "-fa")
+	}
 
 	args = append(args, c.Args...)
 	return args
+}
+
+func IsDownloadURL(modelPath string) int {
+	if modelPath[0:7] == "http://" || modelPath[0:7] == "https://" {
+		return 1
+	} else if modelPath[0] == '/' || modelPath[0:2] == "./" {
+		return 0
+	} else if strings.Contains(modelPath, "/") {
+		return -1
+	}
+	return 0
 }
 
 func (c *LlamaConf) Validate() error {
@@ -70,13 +109,6 @@ func (c *LlamaConf) Validate() error {
 	}
 
 	return nil
-}
-
-// ErrInvalidConfig - Error type for configuration validation.
-type ErrInvalidConfig string
-
-func (e ErrInvalidConfig) Error() string {
-	return "invalid config: " + string(e)
 }
 
 // Clone - cloning for configuration updates.
@@ -126,9 +158,4 @@ func (c *LlamaConf) GetArgValue(key string) string {
 		}
 	}
 	return ""
-}
-
-// GetCommand - Returns a command for llama-server execution.
-func (c *LlamaConf) GetCommand() *exec.Cmd {
-	return exec.Command(c.BinaryPath, c.GetCommandArgs()...)
 }
