@@ -11,19 +11,19 @@ import (
 // TestInferenceParamsConstructor tests the constructor function.
 func TestInferenceParamsConstructor(t *testing.T) {
 	// Test that default values are properly set using the constructor
-	params := NewInferenceParams()
+	params := DefaultInferenceParams
 
 	// Test default values
 	assert.False(t, params.Stream)
-	assert.Equal(t, DefaultNPredict, params.MaxTokens)
-	assert.Equal(t, DefaultTopK, params.TopK)
-	assert.Equal(t, float32(DefaultTopP), params.TopP)
-	assert.Equal(t, float32(DefaultTemperature), params.Temperature)
-	assert.Equal(t, float32(DefaultFrequencyPenalty), params.FrequencyPenalty)
-	assert.Equal(t, float32(DefaultPresencePenalty), params.PresencePenalty)
-	assert.Equal(t, float32(DefaultRepeatPenalty), params.RepeatPenalty)
-	assert.Equal(t, float32(DefaultTailFreeSamplingZ), params.TailFreeSamplingZ)
-	assert.Equal(t, []string{DefaultStopPrompt}, params.StopPrompts)
+	assert.Equal(t, DefaultInferenceParams.MaxTokens, params.MaxTokens)
+	assert.Equal(t, DefaultInferenceParams.TopK, params.TopK)
+	assert.Equal(t, float32(DefaultInferenceParams.TopP), params.TopP)
+	assert.Equal(t, float32(DefaultInferenceParams.Temperature), params.Temperature)
+	assert.Equal(t, float32(DefaultInferenceParams.FrequencyPenalty), params.FrequencyPenalty)
+	assert.Equal(t, float32(DefaultInferenceParams.PresencePenalty), params.PresencePenalty)
+	assert.Equal(t, float32(DefaultInferenceParams.RepeatPenalty), params.RepeatPenalty)
+	assert.Equal(t, float32(DefaultInferenceParams.TailFreeSamplingZ), params.TailFreeSamplingZ)
+	assert.Equal(t, DefaultInferenceParams.StopPrompts, params.StopPrompts)
 }
 
 // TestInferenceParamsCreation tests creating InferenceParams with custom values.
@@ -106,13 +106,13 @@ func TestInferenceParamsReset(t *testing.T) {
 	}
 
 	// Reset to defaults using constructor
-	defaultParams := NewInferenceParams()
+	defaultParams := DefaultInferenceParams
 
 	// Verify they are different
 	assert.NotEqual(t, defaultParams, params)
 
 	// Reset params using constructor
-	params = NewInferenceParams()
+	params = DefaultInferenceParams
 
 	// Verify they are now equal
 	assert.Equal(t, defaultParams, params)
@@ -283,7 +283,7 @@ func TestInferenceParamsImmutability(t *testing.T) {
 
 func TestInferenceParamsWithPartialDefaults(t *testing.T) {
 	// Test creating inference params with some defaults and some custom values
-	defaultParams := NewInferenceParams()
+	defaultParams := DefaultInferenceParams
 
 	// Create custom params based on defaults
 	customParams := defaultParams
@@ -301,15 +301,15 @@ func TestInferenceParamsWithPartialDefaults(t *testing.T) {
 	assert.Equal(t, float32(0.5), customParams.Temperature)
 
 	// Verify other fields retain default values
-	assert.Equal(t, DefaultNPredict, defaultParams.MaxTokens)                           // Default value
-	assert.Equal(t, DefaultTopK, defaultParams.TopK)                                    // Default value
-	assert.Equal(t, float32(DefaultTopP), defaultParams.TopP)                           // Default value
-	assert.Equal(t, float32(DefaultTemperature), defaultParams.Temperature)             // Default value
-	assert.Equal(t, float32(DefaultFrequencyPenalty), defaultParams.FrequencyPenalty)   // Default value
-	assert.Equal(t, float32(DefaultPresencePenalty), defaultParams.PresencePenalty)     // Default value
-	assert.Equal(t, float32(DefaultRepeatPenalty), defaultParams.RepeatPenalty)         // Default value
-	assert.Equal(t, float32(DefaultTailFreeSamplingZ), defaultParams.TailFreeSamplingZ) // Default value
-	assert.Equal(t, []string{DefaultStopPrompt}, defaultParams.StopPrompts)             // Default value
+	assert.Equal(t, DefaultInferenceParams.MaxTokens, defaultParams.MaxTokens)                          // Default value
+	assert.Equal(t, DefaultInferenceParams.TopK, defaultParams.TopK)                                    // Default value
+	assert.Equal(t, float32(DefaultInferenceParams.TopP), defaultParams.TopP)                           // Default value
+	assert.Equal(t, float32(DefaultInferenceParams.Temperature), defaultParams.Temperature)             // Default value
+	assert.Equal(t, float32(DefaultInferenceParams.FrequencyPenalty), defaultParams.FrequencyPenalty)   // Default value
+	assert.Equal(t, float32(DefaultInferenceParams.PresencePenalty), defaultParams.PresencePenalty)     // Default value
+	assert.Equal(t, float32(DefaultInferenceParams.RepeatPenalty), defaultParams.RepeatPenalty)         // Default value
+	assert.Equal(t, float32(DefaultInferenceParams.TailFreeSamplingZ), defaultParams.TailFreeSamplingZ) // Default value
+	assert.Equal(t, DefaultInferenceParams.StopPrompts, defaultParams.StopPrompts)                      // Default value
 }
 
 func TestStopPromptsManipulation(t *testing.T) {

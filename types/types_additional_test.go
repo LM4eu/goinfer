@@ -48,8 +48,8 @@ func TestTask(t *testing.T) {
 func TestModelConf(t *testing.T) {
 	// Test creating a ModelConf
 	modelConf := ModelConf{
-		Name:      "test-model",
-		Ctx:       2048,
+		Name: "test-model",
+		Ctx:  2048,
 	}
 
 	// Test field values
@@ -171,7 +171,7 @@ func TestTaskJSONMarshaling(t *testing.T) {
 	task := InferQuery{
 		Prompt:      "test-template",
 		ModelConf:   ModelConf{Name: "test-model"},
-		InferParams: NewInferenceParams(),
+		InferParams: DefaultInferenceParams,
 	}
 
 	// Marshal to JSON
