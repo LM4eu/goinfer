@@ -13,13 +13,13 @@ import (
 func TestInitConf(t *testing.T) {
 	// Create a temporary config file
 	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "goinfer.json")
+	configPath := filepath.Join(tempDir, "goinfer.yml")
 
 	configData := map[string]any{
-		"models_dir": "./test_models",
-		"origins":    []string{"http://localhost:3000"},
-		"api_key":    "test_key_123",
-		"openai_api": true,
+		"model.dir":      "./test_models",
+		"server.origins": []string{"http://localhost:3000"},
+		"server.api_key": "test_key_123",
+		"server.openai_api":     true,
 	}
 
 	configBytes, _ := json.MarshalIndent(configData, "", "    ")
@@ -34,7 +34,7 @@ func TestInitConf(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test InitConf
-	config, _ := InitConf(".", "goinfer") // ./goinfer.json
+	config, _ := InitConf(".", "goinfer") // ./goinfer.yml
 
 	assert.Equal(t, "./test_models", config.ModelsDir)
 	assert.Equal(t, []string{"http://localhost:3000"}, config.WebServer.Origins)
@@ -45,10 +45,10 @@ func TestInitConf(t *testing.T) {
 func TestInitConf_WithDefaults(t *testing.T) {
 	// Create a minimal config file with only required fields
 	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "goinfer.json")
+	configPath := filepath.Join(tempDir, "goinfer.yml")
 
 	configData := map[string]any{
-		"models_dir": "./test_models",
+		"model.dir": "./test_models",
 	}
 
 	configBytes, _ := json.MarshalIndent(configData, "", "    ")
@@ -63,7 +63,7 @@ func TestInitConf_WithDefaults(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test InitConf with defaults
-	config, _ := InitConf(".", "goinfer") // ./goinfer.json
+	config, _ := InitConf(".", "goinfer") // ./goinfer.yml
 
 	assert.Equal(t, "./test_models", config.ModelsDir)
 	assert.Equal(t, []string{"localhost"}, config.WebServer.Origins) // Default value
@@ -82,16 +82,16 @@ func TestInitConf_InvalidConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test InitConf with invalid config
-	_, err = InitConf(".", "goinfer") // ./goinfer.json
+	_, err = InitConf(".", "goinfer") // ./goinfer.yml
 	assert.Error(t, err)
 }
 
 func TestInitConf_InvalidJSON(t *testing.T) {
 	// Create a temporary config file with invalid JSON
 	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "goinfer.json")
+	configPath := filepath.Join(tempDir, "goinfer.yml")
 
-	invalidJSON := `{"models_dir": "./test_models",` // Missing closing brace
+	invalidJSON := `{"model.dir": "./test_models",` // Missing closing brace
 	err := os.WriteFile(configPath, []byte(invalidJSON), 0o644)
 	require.NoError(t, err)
 
@@ -103,7 +103,7 @@ func TestInitConf_InvalidJSON(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test InitConf with invalid JSON
-	_, err = InitConf(".", "goinfer") // ./goinfer.json
+	_, err = InitConf(".", "goinfer") // ./goinfer.yml
 	assert.Error(t, err)
 }
 
@@ -113,9 +113,9 @@ func TestInitConf_DifferentConfigName(t *testing.T) {
 	configPath := filepath.Join(tempDir, "custom.config.json")
 
 	configData := map[string]any{
-		"models_dir": "./test_models",
-		"origins":    []string{"http://localhost:3000"},
-		"api_key":    "test_key_123",
+		"model.dir":      "./test_models",
+		"server.origins": []string{"http://localhost:3000"},
+		"server.api_key": "test_key_123",
 	}
 
 	configBytes, _ := json.MarshalIndent(configData, "", "    ")
@@ -130,7 +130,7 @@ func TestInitConf_DifferentConfigName(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test InitConf with different config name
-	_, err = InitConf(".", "goinfer") // ./goinfer.json
+	_, err = InitConf(".", "goinfer") // ./goinfer.yml
 	assert.Error(t, err)
 }
 
@@ -146,7 +146,8 @@ func TestCreate(t *testing.T) {
 
 	// Test Create with default=false
 	customFileName := "custom.config.json"
-	Create("/test/models", false, customFileName)
+	err = Create("/test/models", false, customFileName)
+	require.NoError(t, err)
 
 	// Verify config file was created with custom name
 	assert.FileExists(t, customFileName)
@@ -159,9 +160,9 @@ func TestCreate(t *testing.T) {
 	err = json.Unmarshal(configBytes, &config)
 	require.NoError(t, err)
 
-	assert.Equal(t, "/test/models", config["models_dir"])
-	assert.Equal(t, []any{"http://localhost:5173", "http://localhost:5143"}, config["origins"])
-	assert.NotEmpty(t, config["api_key"]) // Should be a random key
+	assert.Equal(t, "/test/models", config["model.dir"])
+	assert.Equal(t, []any{"http://localhost:5173", "http://localhost:5143"}, config["server.origins"])
+	assert.NotEmpty(t, config["server.api_key"]) // Should be a random key
 
 	// Verify cleanup after test
 	t.Cleanup(func() {
@@ -180,26 +181,27 @@ func TestCreate_WithDefaults(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test Create with default=true
-	Create("/test/models", true, "goinfer.json")
+	err = Create("/test/models", true, "goinfer.yml")
+	require.NoError(t, err)
 
 	// Verify config file was created
-	assert.FileExists(t, "goinfer.json")
+	assert.FileExists(t, "goinfer.yml")
 
 	// Read and verify config content
-	configBytes, err := os.ReadFile("goinfer.json")
+	configBytes, err := os.ReadFile("goinfer.yml")
 	require.NoError(t, err)
 
 	var config map[string]any
 	err = json.Unmarshal(configBytes, &config)
 	require.NoError(t, err)
 
-	assert.Equal(t, "/test/models", config["models_dir"])
-	assert.Equal(t, []any{"http://localhost:5173", "http://localhost:5143"}, config["origins"])
-	assert.Equal(t, "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465", config["api_key"]) // Default key
+	assert.Equal(t, "/test/models", config["model.dir"])
+	assert.Equal(t, []any{"http://localhost:5173", "http://localhost:5143"}, config["server.origins"])
+	assert.Equal(t, "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465", config["server.api_key"]) // Default key
 
 	// Verify cleanup after test
 	t.Cleanup(func() {
-		os.Remove("goinfer.json")
+		os.Remove("goinfer.yml")
 	})
 }
 
