@@ -42,7 +42,7 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 		}
 	}
 
-	stream := types.DefaultInferenceParams.Stream
+	stream := types.DefaultInferParams.Stream
 	v, ok = m["stream"]
 	if ok {
 		if s, ok := v.(bool); ok {
@@ -50,7 +50,7 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 		}
 	}
 
-	tokens := types.DefaultInferenceParams.MaxTokens
+	tokens := types.DefaultInferParams.MaxTokens
 	v, ok = m["max_tokens"]
 	if ok {
 		if t, ok := v.(float64); ok {
@@ -58,7 +58,7 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 		}
 	}
 
-	topK := types.DefaultInferenceParams.TopK
+	topK := types.DefaultInferParams.TopK
 	v, ok = m["top_k"]
 	if ok {
 		if k, ok := v.(float64); ok {
@@ -66,7 +66,7 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 		}
 	}
 
-	topP := types.DefaultInferenceParams.TopP
+	topP := types.DefaultInferParams.TopP
 	v, ok = m["top_p"]
 	if ok {
 		if p, ok := v.(float64); ok {
@@ -74,7 +74,7 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 		}
 	}
 
-	minP := types.DefaultInferenceParams.MinP
+	minP := types.DefaultInferParams.MinP
 	v, ok = m["min_p"]
 	if ok {
 		if p, ok := v.(float64); ok {
@@ -82,7 +82,7 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 		}
 	}
 
-	temp := types.DefaultInferenceParams.Temperature
+	temp := types.DefaultInferParams.Temperature
 	v, ok = m["temperature"]
 	if ok {
 		if t, ok := v.(float64); ok {
@@ -90,7 +90,7 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 		}
 	}
 
-	freqPenalty := types.DefaultInferenceParams.FrequencyPenalty
+	freqPenalty := types.DefaultInferParams.FrequencyPenalty
 	v, ok = m["frequency_penalty"]
 	if ok {
 		if fp, ok := v.(float64); ok {
@@ -98,7 +98,7 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 		}
 	}
 
-	presPenalty := types.DefaultInferenceParams.PresencePenalty
+	presPenalty := types.DefaultInferParams.PresencePenalty
 	v, ok = m["presence_penalty"]
 	if ok {
 		if pp, ok := v.(float64); ok {
@@ -106,7 +106,7 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 		}
 	}
 
-	repeatPenalty := types.DefaultInferenceParams.RepeatPenalty
+	repeatPenalty := types.DefaultInferParams.RepeatPenalty
 	v, ok = m["repeat_penalty"]
 	if ok {
 		if rp, ok := v.(float64); ok {
@@ -114,7 +114,7 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 		}
 	}
 
-	tfs := types.DefaultInferenceParams.TailFreeSamplingZ
+	tfs := types.DefaultInferParams.TailFreeSamplingZ
 	v, ok = m["tfs"]
 	if ok {
 		if t, ok := v.(float64); ok {
@@ -122,7 +122,7 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 		}
 	}
 
-	stop := types.DefaultInferenceParams.StopPrompts
+	stop := types.DefaultInferParams.StopPrompts
 	v, ok = m["stop"]
 	if ok {
 		if stopSlice, ok := v.([]any); ok {
@@ -138,7 +138,7 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 	return types.InferQuery{
 		Prompt:    prompt,
 		ModelConf: modelConf,
-		InferParams: types.InferenceParams{
+		InferParams: types.InferParams{
 			Stream:            stream,
 			MaxTokens:         tokens,
 			TopK:              topK,
