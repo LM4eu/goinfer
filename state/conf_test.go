@@ -9,8 +9,7 @@ import (
 func TestDefaultInferenceParams(t *testing.T) {
 	// Test that DefaultInferenceParams has expected values
 	assert.False(t, DefaultInferenceParams.Stream)
-	assert.Equal(t, 4, DefaultInferenceParams.Threads)
-	assert.Equal(t, 512, DefaultInferenceParams.NPredict)
+	assert.Equal(t, 512, DefaultInferenceParams.MaxTokens)
 	assert.Equal(t, 40, DefaultInferenceParams.TopK)
 	assert.Equal(t, float32(0.05), DefaultInferenceParams.MinP)
 	assert.Equal(t, float32(0.95), DefaultInferenceParams.TopP)
@@ -39,12 +38,10 @@ func TestDefaultInferenceParamsImmutability(t *testing.T) {
 
 	// Modify the default params
 	DefaultInferenceParams.Stream = true
-	DefaultInferenceParams.Threads = 8
 
 	// Create a new instance and verify it has the modified values
 	newParams := DefaultInferenceParams
 	assert.True(t, newParams.Stream)
-	assert.Equal(t, 8, newParams.Threads)
 
 	// Restore original values
 	DefaultInferenceParams = originalParams
@@ -88,8 +85,7 @@ func TestDefaultInferenceParamsWithCustomValues(t *testing.T) {
 
 	// Modify only specific fields
 	customParams.Stream = true
-	customParams.Threads = 16
-	customParams.NPredict = 1024
+	customParams.MaxTokens = 1024
 	customParams.TopK = 80
 	customParams.TopP = 0.8
 	customParams.MinP = 0.2
@@ -97,8 +93,7 @@ func TestDefaultInferenceParamsWithCustomValues(t *testing.T) {
 
 	// Verify other fields retain default values
 	assert.True(t, customParams.Stream)
-	assert.Equal(t, 16, customParams.Threads)
-	assert.Equal(t, 1024, customParams.NPredict)
+	assert.Equal(t, 1024, customParams.MaxTokens)
 	assert.Equal(t, 80, customParams.TopK)
 	assert.Equal(t, float32(0.2), customParams.MinP)
 	assert.Equal(t, float32(0.8), customParams.TopP)

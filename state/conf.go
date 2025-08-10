@@ -6,8 +6,7 @@ import (
 
 var DefaultInferenceParams = types.InferenceParams{
 	Stream:            false,
-	Threads:           4,
-	NPredict:          512,
+	MaxTokens:         512,
 	TopK:              40,
 	TopP:              0.95,
 	MinP:              0.05,

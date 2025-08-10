@@ -77,8 +77,7 @@ func Infer(
 		}
 		return state.ContinueInferringController
 	}),
-		llama.SetTokens(prompt.InferParams.NPredict),
-		llama.SetThreads(prompt.InferParams.Threads),
+		llama.SetTokens(prompt.InferParams.MaxTokens),
 		llama.SetMinP(prompt.InferParams.MinP),
 		llama.SetTopP(prompt.InferParams.TopP),
 		llama.SetTopK(prompt.InferParams.TopK),

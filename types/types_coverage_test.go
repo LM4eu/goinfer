@@ -43,8 +43,7 @@ func TestInferenceParamsCloneWithComplexValues(t *testing.T) {
 	// Test Clone with complex values
 	params := InferenceParams{
 		Stream:            true,
-		Threads:           8,
-		NPredict:          1024,
+		MaxTokens:         1024,
 		TopK:              50,
 		TopP:              0.8,
 		Temperature:       0.5,
@@ -60,13 +59,10 @@ func TestInferenceParamsCloneWithComplexValues(t *testing.T) {
 
 	// Modify the clone and ensure original is not affected
 	cloned.Stream = false
-	cloned.Threads = 16
 	cloned.StopPrompts[0] = "MODIFIED"
 
 	assert.True(t, params.Stream)
 	assert.False(t, cloned.Stream)
-	assert.Equal(t, 8, params.Threads)
-	assert.Equal(t, 16, cloned.Threads)
 	assert.Equal(t, "STOP", params.StopPrompts[0])
 	assert.Equal(t, "MODIFIED", cloned.StopPrompts[0])
 }
@@ -74,8 +70,7 @@ func TestInferenceParamsCloneWithComplexValues(t *testing.T) {
 func TestInferenceParamsValidationWithAllFields(t *testing.T) {
 	// Test validation with all fields set to valid values
 	params := InferenceParams{
-		Threads:           4,
-		NPredict:          512,
+		MaxTokens:         512,
 		TopK:              40,
 		TopP:              0.95,
 		Temperature:       0.2,
@@ -92,8 +87,7 @@ func TestInferenceParamsValidationWithAllFields(t *testing.T) {
 func TestInferenceParamsValidationWithMaxValues(t *testing.T) {
 	// Test validation with maximum valid values
 	params := InferenceParams{
-		Threads:           100,
-		NPredict:          4096,
+		MaxTokens:         4096,
 		TopK:              100,
 		TopP:              1.0,
 		Temperature:       100.0,
@@ -109,7 +103,6 @@ func TestInferenceParamsValidationWithMaxValues(t *testing.T) {
 func TestInferenceParamsValidationWithMinValues(t *testing.T) {
 	// Test validation with minimum valid values
 	params := InferenceParams{
-		Threads:           1,
 		TopK:              0,
 		TopP:              0.0,
 		Temperature:       0.0,
@@ -122,41 +115,13 @@ func TestInferenceParamsValidationWithMinValues(t *testing.T) {
 	require.NoError(t, params.Validate())
 }
 
-func TestInferenceParamsEquality(t *testing.T) {
-	// Test equality between two identical params
-	params1 := InferenceParams{
-		Stream:      true,
-		Threads:     8,
-		TopK:        50,
-		TopP:        0.8,
-		Temperature: 0.5,
-		StopPrompts: []string{"STOP", "END"},
-	}
-
-	params2 := InferenceParams{
-		Stream:      true,
-		Threads:     8,
-		TopK:        50,
-		TopP:        0.8,
-		Temperature: 0.5,
-		StopPrompts: []string{"STOP", "END"},
-	}
-
-	assert.Equal(t, params1, params2)
-
-	// Modify one field and ensure they're not equal
-	params2.Threads = 16
-	assert.NotEqual(t, params1, params2)
-}
-
 func TestInferenceParamsResetToDefaults(t *testing.T) {
 	// Reset to defaults
 	params := NewInferenceParams()
 
 	// Verify all fields are set to defaults
 	assert.False(t, params.Stream)
-	assert.Equal(t, DefaultThreads, params.Threads)
-	assert.Equal(t, DefaultNPredict, params.NPredict)
+	assert.Equal(t, DefaultNPredict, params.MaxTokens)
 	assert.Equal(t, DefaultTopK, params.TopK)
 	assert.Equal(t, float32(DefaultTopP), params.TopP)
 	assert.Equal(t, float32(DefaultTemperature), params.Temperature)
@@ -171,8 +136,7 @@ func TestInferenceParamsPartialReset(t *testing.T) {
 	// Test resetting only some fields
 	params := InferenceParams{
 		Stream:            true,
-		Threads:           16,
-		NPredict:          2048,
+		MaxTokens:         2048,
 		TopK:              100,
 		TopP:              0.9,
 		Temperature:       0.7,
@@ -185,16 +149,14 @@ func TestInferenceParamsPartialReset(t *testing.T) {
 
 	// Reset only some fields
 	params.Stream = false
-	params.Threads = DefaultThreads
 	params.TopK = DefaultTopK
 
 	// Verify only the reset fields changed
 	assert.False(t, params.Stream)
-	assert.Equal(t, DefaultThreads, params.Threads)
 	assert.Equal(t, DefaultTopK, params.TopK)
 
 	// Verify other fields remain unchanged
-	assert.Equal(t, 2048, params.NPredict)
+	assert.Equal(t, 2048, params.MaxTokens)
 	assert.Equal(t, DefaultTopK, params.TopK) // This should be DefaultTopK now
 	assert.Equal(t, float32(0.9), params.TopP)
 	assert.Equal(t, float32(0.7), params.Temperature)

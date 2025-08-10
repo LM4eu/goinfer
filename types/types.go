@@ -4,7 +4,6 @@ import "fmt"
 
 // Default values for InferenceParams.
 const (
-	DefaultThreads           = 4
 	DefaultNPredict          = 512
 	DefaultTopK              = 40
 	DefaultTopP              = 0.95
@@ -45,8 +44,7 @@ type LlamaConfig struct {
 // InferenceParams holds parameters for inference.
 type InferenceParams struct {
 	Stream            bool     `json:"stream,omitempty"            yaml:"stream,omitempty"`
-	Threads           int      `json:"threads,omitempty"           yaml:"threads,omitempty"`
-	NPredict          int      `json:"n_predict,omitempty"         yaml:"n_predict,omitempty"`
+	MaxTokens         int      `json:"max_tokens,omitempty"         yaml:"max_tokens,omitempty"`
 	TopK              int      `json:"top_k,omitempty"             yaml:"top_k,omitempty"`
 	TopP              float32  `json:"top_p,omitempty"             yaml:"top_p,omitempty"`
 	MinP              float32  `json:"min_p,omitempty"             yaml:"min_p,omitempty"`
@@ -54,16 +52,16 @@ type InferenceParams struct {
 	FrequencyPenalty  float32  `json:"frequency_penalty,omitempty" yaml:"frequency_penalty,omitempty"`
 	PresencePenalty   float32  `json:"presence_penalty,omitempty"  yaml:"presence_penalty,omitempty"`
 	RepeatPenalty     float32  `json:"repeat_penalty,omitempty"    yaml:"repeat_penalty,omitempty"`
-	TailFreeSamplingZ float32  `json:"tfs_z,omitempty"             yaml:"tfs_z,omitempty"`
+	TailFreeSamplingZ float32  `json:"tfs,omitempty"             yaml:"tfs,omitempty"`
 	StopPrompts       []string `json:"stop,omitempty"              yaml:"stop,omitempty"`
+	Images            []byte   `json:"images,omitempty"              yaml:"images,omitempty"`
 }
 
 // NewInferenceParams creates a new InferenceParams with default values.
 func NewInferenceParams() InferenceParams {
 	return InferenceParams{
 		Stream:            false,
-		Threads:           DefaultThreads,
-		NPredict:          DefaultNPredict,
+		MaxTokens:         DefaultNPredict,
 		TopK:              DefaultTopK,
 		TopP:              DefaultTopP,
 		MinP:              DefaultMinP,
@@ -78,10 +76,6 @@ func NewInferenceParams() InferenceParams {
 
 // Validate validates the InferenceParams and returns an error if invalid.
 func (p InferenceParams) Validate() error {
-	// Threads must be positive if set
-	if p.Threads <= 0 {
-		return fmt.Errorf("threads must be positive, got %d", p.Threads)
-	}
 	// TopK must be non-negative if set
 	if p.TopK < 0 {
 		return fmt.Errorf("top_k must be non-negative, got %d", p.TopK)
@@ -120,8 +114,7 @@ func (p InferenceParams) Clone() InferenceParams {
 
 	return InferenceParams{
 		Stream:            p.Stream,
-		Threads:           p.Threads,
-		NPredict:          p.NPredict,
+		MaxTokens:         p.MaxTokens,
 		TopK:              p.TopK,
 		TopP:              p.TopP,
 		MinP:              p.MinP,
@@ -161,8 +154,8 @@ type InferQuery struct {
 
 // ModelConf holds configuration for a model.
 type ModelConf struct {
-	Name      string `json:"name"                 yaml:"name"`
-	Ctx       int    `json:"ctx,omitempty"        yaml:"ctx,omitempty"`
+	Name string `json:"name"                 yaml:"name"`
+	Ctx  int    `json:"ctx,omitempty"        yaml:"ctx,omitempty"`
 }
 
 // TemplateInfo holds information about a template.

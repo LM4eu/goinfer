@@ -12,14 +12,12 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-// parseInferParams parses inference parameters from echo.Map.
-func parseInferParams(m echo.Map) (types.InferQuery, error) {
+// parseInferQuery parses inference parameters from echo.Map.
+func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 	v, ok := m["prompt"]
 	if !ok {
-		return types.InferQuery{}, errors.New("provide a prompt")
+		return types.InferQuery{}, errors.New("missing mandatory field: prompt")
 	}
-
-	// Type assertion with error checking
 	prompt, ok := v.(string)
 	if !ok {
 		return types.InferQuery{}, errors.New("prompt must be a string")
@@ -28,7 +26,6 @@ func parseInferParams(m echo.Map) (types.InferQuery, error) {
 	modelConf := state.DefaultModelConf
 	modelConfRaw, ok := m["model"]
 	if ok {
-		// Type assertion with error checking
 		if modelMap, ok := modelConfRaw.(map[string]any); ok {
 			for k, v := range modelMap {
 				switch k {
@@ -53,16 +50,8 @@ func parseInferParams(m echo.Map) (types.InferQuery, error) {
 		}
 	}
 
-	threads := state.DefaultInferenceParams.Threads
-	v, ok = m["threads"]
-	if ok {
-		if t, ok := v.(float64); ok {
-			threads = int(t)
-		}
-	}
-
-	tokens := state.DefaultInferenceParams.NPredict
-	v, ok = m["n_predict"]
+	tokens := state.DefaultInferenceParams.MaxTokens
+	v, ok = m["max_tokens"]
 	if ok {
 		if t, ok := v.(float64); ok {
 			tokens = int(t)
@@ -126,7 +115,7 @@ func parseInferParams(m echo.Map) (types.InferQuery, error) {
 	}
 
 	tfs := state.DefaultInferenceParams.TailFreeSamplingZ
-	v, ok = m["tfs_z"]
+	v, ok = m["tfs"]
 	if ok {
 		if t, ok := v.(float64); ok {
 			tfs = float32(t)
@@ -151,8 +140,7 @@ func parseInferParams(m echo.Map) (types.InferQuery, error) {
 		ModelConf: modelConf,
 		InferParams: types.InferenceParams{
 			Stream:            stream,
-			Threads:           threads,
-			NPredict:          tokens,
+			MaxTokens:         tokens,
 			TopK:              topK,
 			TopP:              topP,
 			MinP:              minP,
@@ -180,7 +168,7 @@ func InferHandler(c echo.Context) error {
 		return c.NoContent(http.StatusBadRequest)
 	}
 
-	prompt, err := parseInferParams(m)
+	query, err := parseInferQuery(m)
 	if err != nil {
 		if state.IsDebug {
 			fmt.Println("Inference params parsing error", err)
@@ -191,16 +179,16 @@ func InferHandler(c echo.Context) error {
 	// Do we need to load the model?
 	loadModel := true
 	if state.IsModelLoaded {
-		if state.LoadedModel == prompt.ModelConf.Name {
-			if state.ModelConf.Ctx == prompt.ModelConf.Ctx {
+		if state.LoadedModel == query.ModelConf.Name {
+			if state.ModelConf.Ctx == query.ModelConf.Ctx {
 				loadModel = false
 			}
 		}
 	}
 
 	if loadModel {
-		state.ModelConf = prompt.ModelConf
-		statusCode, err := lm.LoadModel(prompt.ModelConf)
+		state.ModelConf = query.ModelConf
+		statusCode, err := lm.LoadModel(query.ModelConf)
 		if err != nil {
 			if state.IsDebug {
 				fmt.Println("Error loading model:", err)
@@ -218,7 +206,7 @@ func InferHandler(c echo.Context) error {
 		}
 	}
 
-	if prompt.InferParams.Stream {
+	if query.InferParams.Stream {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		c.Response().WriteHeader(http.StatusOK)
 	}
@@ -229,7 +217,7 @@ func InferHandler(c echo.Context) error {
 	defer close(ch)
 	defer close(errCh)
 
-	go lm.Infer(prompt, c, ch, errCh)
+	go lm.Infer(query, c, ch, errCh)
 
 	select {
 	case res, ok := <-ch:
@@ -241,14 +229,14 @@ func InferHandler(c echo.Context) error {
 				}
 				fmt.Println("--------------------------")
 			}
-			if !prompt.InferParams.Stream {
+			if !query.InferParams.Stream {
 				return c.JSON(http.StatusOK, res.Data)
 			}
 		}
 		return nil
 	case err, ok := <-errCh:
 		if ok {
-			if prompt.InferParams.Stream {
+			if query.InferParams.Stream {
 				enc := json.NewEncoder(c.Response())
 				err := lm.StreamMsg(err, c, enc)
 				if err != nil {
