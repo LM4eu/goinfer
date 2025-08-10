@@ -124,7 +124,7 @@ func GetServerStatus() (bool, time.Duration, int) {
 		return false, 0, 0
 	}
 
-	return IsServerRunning, LlamaManager.GetUptime(), LlamaManager.GetRestartCount()
+	return IsServerRunning, LlamaManager.GetUptime(), LlamaManager.GetStartCount()
 }
 
 // CheckServerHealth - Performs a health check on the server.

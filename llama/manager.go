@@ -9,18 +9,18 @@ import (
 	"time"
 )
 
-// LlamaServerManager - Performance-optimized process manager for llama-server.
+// LlamaServerManager - process manager for llama-server.
 type LlamaServerManager struct {
-	config       *LlamaConfig
-	process      *os.Process
-	cmd          *exec.Cmd
-	stopChan     chan struct{}
-	mu           sync.RWMutex
-	startTime    time.Time
-	restartCount int
+	config     *LlamaConfig
+	process    *os.Process
+	cmd        *exec.Cmd
+	stopChan   chan struct{}
+	mu         sync.RWMutex
+	startTime  time.Time
+	startCount int
 }
 
-// NewLlamaServerManager - Creates a new LlamaServerManager with minimal overhead.
+// NewLlamaServerManager - Creates a new LlamaServerManager.
 func NewLlamaServerManager(config *LlamaConfig) *LlamaServerManager {
 	return &LlamaServerManager{
 		config:   config,
@@ -33,7 +33,6 @@ func (m *LlamaServerManager) Start() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	//  validation - only essential checks
 	err := m.config.Validate()
 	if err != nil {
 		return err
@@ -44,28 +43,29 @@ func (m *LlamaServerManager) Start() error {
 		return ErrAlreadyRunning("server is already running")
 	}
 
-	// Create command with minimal overhead
+	// Create command
 	m.cmd = exec.Command(m.config.BinaryPath, m.config.GetCommandArgs()...)
 
-	// Preserve system environment for performance
+	// Preserve system environment
 	m.cmd.Env = os.Environ()
 
-	// Start process with minimal setup
+	// Start llama-server
 	err = m.cmd.Start()
 	if err != nil {
 		return ErrStartFailed("failed to start process: " + err.Error())
 	}
 
-	m.process = m.cmd.Process
 	m.startTime = time.Now()
+	m.process = m.cmd.Process
+	m.startCount++
 
-	// Start monitoring goroutine with minimal overhead
+	// Start monitoring
 	go m.monitor()
 
 	return nil
 }
 
-// Stop - termination with Kill() instead of graceful shutdown.
+// Stop with SIGKILL (9) = faster than Interrupt/SIGINT (graceful shutdown)
 func (m *LlamaServerManager) Stop() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -74,11 +74,9 @@ func (m *LlamaServerManager) Stop() error {
 		return ErrNotRunning("server is not running")
 	}
 
-	//  termination with Kill() for performance
 	err := m.process.Kill()
 	if err != nil {
-		// Process might already be terminated
-		if !isProcessTerminated(err) {
+		if isProcessStillRunning(err) {
 			return ErrStopFailed("failed to stop process: " + err.Error())
 		}
 	}
@@ -90,13 +88,13 @@ func (m *LlamaServerManager) Stop() error {
 	}()
 
 	select {
+	// Terminated successfully
 	case <-done:
-		// Process terminated successfully
 		m.process = nil
 		m.cmd = nil
 		return nil
-	case <-time.After(100 * time.Millisecond):
-		// Timeout - process might be stuck, but we've sent Kill signal
+	// Timeout - process might be stuck, but we've sent Kill signal
+	case <-time.After(500 * time.Millisecond):
 		m.process = nil
 		m.cmd = nil
 		return nil
@@ -111,15 +109,12 @@ func (m *LlamaServerManager) Restart() error {
 	//  stop
 	if m.process != nil {
 		err := m.process.Kill()
-		if err != nil && !isProcessTerminated(err) {
+		if err != nil && isProcessStillRunning(err) {
 			return ErrRestartFailed("failed to stop process: " + err.Error())
 		}
 	}
 
-	// restart
-	m.restartCount++
-
-	// Create new command with minimal overhead
+	// Create new command
 	m.cmd = exec.Command(m.config.BinaryPath, m.config.GetCommandArgs()...)
 	m.cmd.Env = os.Environ()
 
@@ -128,8 +123,9 @@ func (m *LlamaServerManager) Restart() error {
 		return ErrRestartFailed("failed to restart process: " + err.Error())
 	}
 
-	m.process = m.cmd.Process
 	m.startTime = time.Now()
+	m.process = m.cmd.Process
+	m.startCount++
 
 	return nil
 }
@@ -185,22 +181,19 @@ func (m *LlamaServerManager) GetPID() int {
 	return m.process.Pid
 }
 
-// GetStartTime - start time retrieval.
 func (m *LlamaServerManager) GetStartTime() time.Time {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+	// m.mu.RLock()
+	// defer m.mu.RUnlock()
 	return m.startTime
 }
 
-// GetRestartCount - restart count retrieval.
-func (m *LlamaServerManager) GetRestartCount() int {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	return m.restartCount
+// GetStartCount - number of start (and restart) times
+func (m *LlamaServerManager) GetStartCount() int {
+	// m.mu.RLock()
+	// defer m.mu.RUnlock()
+	return m.startCount
 }
 
-// IsRunning - running state check.
 func (m *LlamaServerManager) IsRunning() bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -208,9 +201,9 @@ func (m *LlamaServerManager) IsRunning() bool {
 	return m.process != nil
 }
 
-// monitor - Lightweight monitoring goroutine.
+// monitor goroutine.
 func (m *LlamaServerManager) monitor() {
-	// Non-blocking monitoring with minimal overhead
+	// Non-blocking monitoring
 	for {
 		select {
 		case <-m.stopChan:
@@ -231,7 +224,6 @@ func (m *LlamaServerManager) monitor() {
 	}
 }
 
-// UpdateConfig - configuration update.
 func (m *LlamaServerManager) UpdateConfig(newConfig *LlamaConfig) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -297,13 +289,13 @@ type ErrRestartFailed string
 
 func (e ErrRestartFailed) Error() string { return "restart failed: " + string(e) }
 
-// isProcessTerminated - check if process is terminated.
-func isProcessTerminated(err error) bool {
+// isProcessStillRunning - check if process is terminated.
+func isProcessStillRunning(err error) bool {
 	if err == nil {
-		return true
+		return false
 	}
 	// Check for specific process-related errors
-	return err.Error() == "process already finished" ||
-		err.Error() == "no such process" ||
-		err.Error() == "child process not found"
+	return err.Error() != "process already finished" &&
+		err.Error() != "no such process" &&
+		err.Error() != "child process not found"
 }

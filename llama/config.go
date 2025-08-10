@@ -7,34 +7,27 @@ import (
 	"strings"
 )
 
-// LlamaConfig - Performance-optimized configuration for llama-server proxy.
+// LlamaConfig - configuration for llama-server proxy.
 type LlamaConfig struct {
-	BinaryPath string   // Path to llama-server binary
-	ModelPath  string   // Path to model file
-	Host       string   // Host binding (default: localhost)
-	Port       int      // Port number (default: 8080)
-	Args       []string // Additional arguments
+	BinaryPath  string // Path to llama-server binary
+	ModelPath   string // Path to model file
+	ContextSize int
+	GpuLayers   int
+	DownloadUrl string   // model from HuggingFace
+	Host        string   // Host binding (default: localhost)
+	Port        int      // Port number (default: 8080)
+	Args        []string // Additional arguments
 }
 
 // NewLlamaConfig - Creates a new LlamaConfig with minimal validation.
 func NewLlamaConfig(binaryPath, modelPath string, args ...string) *LlamaConfig {
-	config := &LlamaConfig{
+	return &LlamaConfig{
 		BinaryPath: binaryPath,
 		ModelPath:  modelPath,
 		Host:       "localhost",
 		Port:       8080,
 		Args:       args,
 	}
-
-	// Fast validation - only essential checks
-	if config.Host == "" {
-		config.Host = "localhost"
-	}
-	if config.Port <= 1 || config.Port > 65535 {
-		config.Port = 8080
-	}
-
-	return config
 }
 
 // GetAddress - Returns the server address in host:port format.
@@ -53,7 +46,6 @@ func (c *LlamaConfig) GetCommandArgs() []string {
 	return args
 }
 
-// Validate - Fast validation with minimal overhead.
 func (c *LlamaConfig) Validate() error {
 	// Only essential validation - paths and basic network checks
 	if c.BinaryPath == "" {
@@ -64,9 +56,6 @@ func (c *LlamaConfig) Validate() error {
 	}
 	if c.Host == "" {
 		return ErrInvalidConfig("host cannot be empty")
-	}
-	if c.Port == 0 {
-		return ErrInvalidConfig("port cannot be empty")
 	}
 	if c.Port < 1 || c.Port > 65535 {
 		return ErrInvalidConfig("port must be a valid number")
@@ -89,7 +78,7 @@ func (e ErrInvalidConfig) Error() string {
 	return "invalid config: " + string(e)
 }
 
-// Clone - Fast cloning for configuration updates.
+// Clone - cloning for configuration updates.
 func (c *LlamaConfig) Clone() *LlamaConfig {
 	// Pre-allocate slice to avoid allocations
 	args := make([]string, len(c.Args))
@@ -117,7 +106,7 @@ func (c *LlamaConfig) MergeArgs(additional []string) {
 	c.Args = newArgs
 }
 
-// HasArg - Fast check for existing argument.
+// HasArg - check for existing argument.
 func (c *LlamaConfig) HasArg(arg string) bool {
 	for _, existing := range c.Args {
 		if existing == arg {
@@ -127,7 +116,7 @@ func (c *LlamaConfig) HasArg(arg string) bool {
 	return false
 }
 
-// GetArgValue - Fast retrieval of argument value (key=value format).
+// GetArgValue - retrieval of argument value (key=value format).
 func (c *LlamaConfig) GetArgValue(key string) string {
 	prefix := key + "="
 	for _, arg := range c.Args {
