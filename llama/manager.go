@@ -73,8 +73,9 @@ func (m *LlamaServerManager) Stop() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	// fast return if server is already stopped
 	if m.process == nil {
-		return ErrNotRunning("server is not running")
+		return nil
 	}
 
 	err := m.process.Kill()
@@ -109,7 +110,7 @@ func (m *LlamaServerManager) Restart() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	//  stop
+	// Stop only if running
 	if m.process != nil {
 		err := m.process.Kill()
 		if err != nil && isProcessStillRunning(err) {
