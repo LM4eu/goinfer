@@ -59,18 +59,13 @@ type openAiUsage struct {
 // Main Inference Functions
 
 // InferOpenAi performs OpenAI model inference.
-func InferOpenAi(
-	query types.InferQuery,
-	c echo.Context,
-	ch chan<- OpenAiChatCompletion,
-	errCh chan<- error,
-) {
+func InferOpenAi(query types.InferQuery, c echo.Context, ch chan<- OpenAiChatCompletion, errCh chan<- error) {
 	if !state.IsModelLoaded {
 		errCh <- createErrorMessageOpenAi(1, "no model loaded", nil, ErrCodeModelNotLoaded)
 		return
 	}
 
-	logOpenAiVerboseInfo(query.Prompt, 0, 0, 0) // Initial verbose logging with prompt
+	logOpenAiVerboseInfo(query.Prompt, 0, 0, 0)
 
 	if state.IsDebug {
 		fmt.Println("Inference query:")
@@ -87,13 +82,15 @@ func InferOpenAi(
 	state.IsInferring = true
 	state.ContinueInferringController = true
 
-	res, err := state.Lm.Predict(query, func(token string) bool {
-		err := streamDeltaMsgOpenAi(ntokens, token, enc, c, query.InferParams, startThinking, &thinkingElapsed, &startEmitting)
-		if err != nil {
-			errCh <- createErrorMessageOpenAi(ntokens+1, "streamDeltaMsgOpenAi error", err, ErrStreamDeltaMsgOpenAi)
-		}
-		return state.ContinueInferringController
-	})
+	res, err := state.Lm.Predict(
+		query,
+		func(token string) bool {
+			err := streamDeltaMsgOpenAi(ntokens, token, enc, c, query.InferParams, startThinking, &thinkingElapsed, &startEmitting)
+			if err != nil {
+				errCh <- createErrorMessageOpenAi(ntokens+1, "streamDeltaMsgOpenAi error", err, ErrStreamDeltaMsgOpenAi)
+			}
+			return state.ContinueInferringController
+		})
 
 	state.IsInferring = false
 
@@ -153,26 +150,6 @@ func sendOpenAiStreamTermination(c echo.Context) error {
 	return nil
 }
 
-// createOpenAiDeltaMessage creates a delta message for streaming.
-func createOpenAiDeltaMessage(ntokens int, token string) openAiChatCompletionDeltaResponse {
-	return openAiChatCompletionDeltaResponse{
-		ID:      strconv.Itoa(ntokens),
-		Object:  "chat.completion.chunk",
-		Created: time.Now().Unix(),
-		Model:   state.LoadedModel,
-		Choices: []deltaChoice{
-			{
-				Index:        ntokens,
-				FinishReason: "",
-				Delta: delta{
-					Role:    "assistant",
-					Content: token,
-				},
-			},
-		},
-	}
-}
-
 // streamDeltaMsgOpenAi streams a delta message to the client.
 func streamDeltaMsgOpenAi(ntokens int, token string, enc *json.Encoder, c echo.Context, params types.InferParams, startThinking time.Time, thinkingElapsed *time.Duration, startEmitting *time.Time) error {
 	if ntokens == 0 {
@@ -208,6 +185,26 @@ func streamDeltaMsgOpenAi(ntokens int, token string, enc *json.Encoder, c echo.C
 	}
 
 	return nil
+}
+
+// createOpenAiDeltaMessage creates a delta message for streaming.
+func createOpenAiDeltaMessage(ntokens int, token string) openAiChatCompletionDeltaResponse {
+	return openAiChatCompletionDeltaResponse{
+		ID:      strconv.Itoa(ntokens),
+		Object:  "chat.completion.chunk",
+		Created: time.Now().Unix(),
+		Model:   state.LoadedModel,
+		Choices: []deltaChoice{
+			{
+				Index:        ntokens,
+				FinishReason: "",
+				Delta: delta{
+					Role:    "assistant",
+					Content: token,
+				},
+			},
+		},
+	}
 }
 
 // sendStartEmittingMessageOpenAi sends the start_emitting message to the client.
