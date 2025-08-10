@@ -13,6 +13,51 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
+type OpenAiChatCompletion struct {
+	ID      string         `json:"id"`
+	Object  string         `json:"object"`
+	Created int64          `json:"created"`
+	Model   string         `json:"model"`
+	Choices []openAiChoice `json:"choices"`
+	Usage   openAiUsage    `json:"usage"`
+}
+
+type delta struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type deltaChoice struct {
+	Delta        delta  `json:"delta"`
+	Index        int    `json:"index"`
+	FinishReason string `json:"finish_reason,omitempty"`
+}
+
+type openAiChatCompletionDeltaResponse struct {
+	ID      string        `json:"id"`
+	Object  string        `json:"object"`
+	Created int64         `json:"created"`
+	Model   string        `json:"model"`
+	Choices []deltaChoice `json:"choices"`
+}
+
+type openAiChoice struct {
+	Index        int           `json:"index"`
+	Message      openAiMessage `json:"message"`
+	FinishReason string        `json:"finish_reason"`
+}
+
+type openAiMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type openAiUsage struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
+}
+
 // Main Inference Functions
 
 // InferOpenAi performs OpenAI model inference.
@@ -21,7 +66,7 @@ func InferOpenAi(
 	template string,
 	params types.InferParams,
 	c echo.Context,
-	ch chan<- types.OpenAiChatCompletion,
+	ch chan<- OpenAiChatCompletion,
 	errCh chan<- error,
 ) {
 	if !state.IsModelLoaded {
@@ -93,7 +138,7 @@ func InferOpenAi(
 // Streaming Functions
 
 // streamOpenAiMsg streams a message to the client.
-func streamOpenAiMsg(msg types.OpenAiChatCompletionDeltaResponse, c echo.Context, enc *json.Encoder) error {
+func streamOpenAiMsg(msg openAiChatCompletionDeltaResponse, c echo.Context, enc *json.Encoder) error {
 	_, err := c.Response().Write([]byte("data: "))
 	if err != nil {
 		return fmt.Errorf("failed to write stream begin: %w", err)
@@ -124,17 +169,17 @@ func sendOpenAiStreamTermination(c echo.Context) error {
 }
 
 // createOpenAiDeltaMessage creates a delta message for streaming.
-func createOpenAiDeltaMessage(ntokens int, token string) types.OpenAiChatCompletionDeltaResponse {
-	return types.OpenAiChatCompletionDeltaResponse{
+func createOpenAiDeltaMessage(ntokens int, token string) openAiChatCompletionDeltaResponse {
+	return openAiChatCompletionDeltaResponse{
 		ID:      strconv.Itoa(ntokens),
 		Object:  "chat.completion.chunk",
 		Created: time.Now().Unix(),
 		Model:   state.LoadedModel,
-		Choices: []types.DeltaChoice{
+		Choices: []deltaChoice{
 			{
 				Index:        ntokens,
 				FinishReason: "",
-				Delta: types.Delta{
+				Delta: delta{
 					Role:    "assistant",
 					Content: token,
 				},
@@ -187,16 +232,16 @@ func sendStartEmittingMessageOpenAi(enc *json.Encoder, c echo.Context, params ty
 	}
 
 	// Create a system message similar to the one in infer.go but adapted for OpenAI format
-	smsg := types.OpenAiChatCompletionDeltaResponse{
+	smsg := openAiChatCompletionDeltaResponse{
 		ID:      strconv.Itoa(ntokens),
 		Object:  "chat.completion.chunk",
 		Created: time.Now().Unix(),
 		Model:   state.LoadedModel,
-		Choices: []types.DeltaChoice{
+		Choices: []deltaChoice{
 			{
 				Index:        ntokens,
 				FinishReason: "",
-				Delta: types.Delta{
+				Delta: delta{
 					Role:    "system",
 					Content: "start_emitting",
 				},
@@ -259,24 +304,24 @@ func logOpenAiVerboseInfo(finalPrompt string, thinkingElapsed time.Duration, emi
 // Result Creation Functions
 
 // createOpenAiResult creates the final OpenAI result.
-func createOpenAiResult(ntokens int, res string) types.OpenAiChatCompletion {
+func createOpenAiResult(ntokens int, res string) OpenAiChatCompletion {
 	id := strconv.Itoa(ntokens)
-	return types.OpenAiChatCompletion{
+	return OpenAiChatCompletion{
 		ID:      id,
 		Object:  "chat.completion",
 		Created: time.Now().Unix(),
 		Model:   state.LoadedModel,
-		Choices: []types.OpenAiChoice{
+		Choices: []openAiChoice{
 			{
 				Index: 0,
-				Message: types.OpenAiMessage{
+				Message: openAiMessage{
 					Role:    "assistant",
 					Content: res,
 				},
 				FinishReason: "stop",
 			},
 		},
-		Usage: types.OpenAiUsage{
+		Usage: openAiUsage{
 			PromptTokens:     0,
 			CompletionTokens: 0,
 			TotalTokens:      ntokens,
