@@ -27,7 +27,8 @@ var (
 	IsDebug   = false
 )
 
-// OpenAi api.
+
+// OpenAI api.
 var OpenAiConf types.OpenAiConf
 
 // the language model instance.

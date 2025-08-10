@@ -14,6 +14,14 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
+// openAiModel is used in the HTTP response body
+type openAiModel struct {
+	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Created int64  `json:"created"`
+	OwnedBy string `json:"owned_by"`
+}
+
 func parseParams(m echo.Map) (string, string, string, types.InferParams, error) {
 	// fmt.Println("MAP", m)
 	// fmt.Println("---------")
@@ -151,7 +159,7 @@ func CreateCompletionHandler(c echo.Context) error {
 		return c.NoContent(http.StatusNoContent)
 	}
 
-	ch := make(chan types.OpenAiChatCompletion)
+	ch := make(chan lm.OpenAiChatCompletion)
 	errCh := make(chan error)
 
 	defer close(ch)
@@ -194,10 +202,10 @@ func OpenAiListModels(c echo.Context) error {
 		fmt.Println("Found models:", models)
 	}
 
-	endmodels := []types.OpenAiModel{}
+	endmodels := []openAiModel{}
 	for _, m := range models {
 		endmodels = append(endmodels,
-			types.OpenAiModel{
+			openAiModel{
 				ID:      m,
 				Object:  "model",
 				Created: time.Now().Unix(),
