@@ -29,7 +29,6 @@ func TestTask(t *testing.T) {
 		Prompt:    "Please read this prompt",
 		ModelConf: ModelConf{Name: "test-model", Ctx: 2048},
 		InferParams: InferenceParams{
-			Threads:     4,
 			TopK:        40,
 			TopP:        0.95,
 			MinP:        0.05,
@@ -41,7 +40,6 @@ func TestTask(t *testing.T) {
 	assert.Equal(t, "Please read this prompt", task.Prompt)
 	assert.Equal(t, "test-model", task.ModelConf.Name)
 	assert.Equal(t, 2048, task.ModelConf.Ctx)
-	assert.Equal(t, 4, task.InferParams.Threads)
 	assert.Equal(t, 40, task.InferParams.TopK)
 	assert.Equal(t, float32(0.95), task.InferParams.TopP)
 	assert.Equal(t, float32(0.2), task.InferParams.Temperature)

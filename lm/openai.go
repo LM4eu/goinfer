@@ -54,8 +54,7 @@ func InferOpenAi(
 		}
 		return state.ContinueInferringController
 	}),
-		llama.SetTokens(params.NPredict),
-		llama.SetThreads(params.Threads),
+		llama.SetTokens(params.MaxTokens),
 		llama.SetTopK(params.TopK),
 		llama.SetTopP(params.TopP),
 		llama.SetTemperature(params.Temperature),

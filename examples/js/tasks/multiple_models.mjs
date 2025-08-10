@@ -38,7 +38,7 @@ async function baseQuery(prompt) {
       prompt: prompt,
       template: template,
       temperature: 0.8,
-      tfs_z: 2,
+      tfs: 2,
       model: { name: model }
     })
   });
