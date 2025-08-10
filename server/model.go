@@ -14,7 +14,7 @@ import (
 
 // parseModelParams parses model parameters from echo.Map.
 func parseModelParams(m echo.Map) (types.ModelConf, error) {
-	modelConf := state.DefaultModelConf
+	modelConf := types.DefaultModelConf
 
 	name, ok := m["name"]
 	if !ok {

@@ -13,7 +13,7 @@ func TestStateInitialization(t *testing.T) {
 	assert.Empty(t, ModelsDir)
 	assert.False(t, IsModelLoaded)
 	assert.Empty(t, LoadedModel)
-	assert.Equal(t, DefaultModelConf, ModelConf)
+	assert.Equal(t, types.DefaultModelConf, ModelConf)
 	assert.True(t, ContinueInferringController)
 	assert.False(t, IsInferring)
 	assert.True(t, IsVerbose)

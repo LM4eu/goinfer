@@ -17,7 +17,7 @@ import (
 func parseParams(m echo.Map) (string, string, string, types.InferenceParams, error) {
 	// fmt.Println("MAP", m)
 	// fmt.Println("---------")
-	params := state.DefaultInferenceParams
+	params := types.DefaultInferenceParams
 	v, ok := m["model"]
 	if !ok {
 		return "", "", "", params, errors.New("provide a model")
@@ -129,7 +129,7 @@ func CreateCompletionHandler(c echo.Context) error {
 	}
 
 	if state.LoadedModel != model {
-		modelConf := state.DefaultModelConf
+		modelConf := types.DefaultModelConf
 		modelConf.Name = model
 		_, err = lm.LoadModel(modelConf)
 		if err != nil {

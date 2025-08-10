@@ -117,19 +117,19 @@ func TestInferenceParamsValidationWithMinValues(t *testing.T) {
 
 func TestInferenceParamsResetToDefaults(t *testing.T) {
 	// Reset to defaults
-	params := NewInferenceParams()
+	params := DefaultInferenceParams
 
 	// Verify all fields are set to defaults
 	assert.False(t, params.Stream)
-	assert.Equal(t, DefaultNPredict, params.MaxTokens)
-	assert.Equal(t, DefaultTopK, params.TopK)
-	assert.Equal(t, float32(DefaultTopP), params.TopP)
-	assert.Equal(t, float32(DefaultTemperature), params.Temperature)
-	assert.Equal(t, float32(DefaultFrequencyPenalty), params.FrequencyPenalty)
-	assert.Equal(t, float32(DefaultPresencePenalty), params.PresencePenalty)
-	assert.Equal(t, float32(DefaultRepeatPenalty), params.RepeatPenalty)
-	assert.Equal(t, float32(DefaultTailFreeSamplingZ), params.TailFreeSamplingZ)
-	assert.Equal(t, []string{DefaultStopPrompt}, params.StopPrompts)
+	assert.Equal(t, DefaultInferenceParams.MaxTokens, params.MaxTokens)
+	assert.Equal(t, DefaultInferenceParams.TopK, params.TopK)
+	assert.Equal(t, float32(DefaultInferenceParams.TopP), params.TopP)
+	assert.Equal(t, float32(DefaultInferenceParams.Temperature), params.Temperature)
+	assert.Equal(t, float32(DefaultInferenceParams.FrequencyPenalty), params.FrequencyPenalty)
+	assert.Equal(t, float32(DefaultInferenceParams.PresencePenalty), params.PresencePenalty)
+	assert.Equal(t, float32(DefaultInferenceParams.RepeatPenalty), params.RepeatPenalty)
+	assert.Equal(t, float32(DefaultInferenceParams.TailFreeSamplingZ), params.TailFreeSamplingZ)
+	assert.Equal(t, DefaultInferenceParams.StopPrompts, params.StopPrompts)
 }
 
 func TestInferenceParamsPartialReset(t *testing.T) {
@@ -149,15 +149,15 @@ func TestInferenceParamsPartialReset(t *testing.T) {
 
 	// Reset only some fields
 	params.Stream = false
-	params.TopK = DefaultTopK
+	params.TopK = DefaultInferenceParams.TopK
 
 	// Verify only the reset fields changed
 	assert.False(t, params.Stream)
-	assert.Equal(t, DefaultTopK, params.TopK)
+	assert.Equal(t, DefaultInferenceParams.TopK, params.TopK)
 
 	// Verify other fields remain unchanged
 	assert.Equal(t, 2048, params.MaxTokens)
-	assert.Equal(t, DefaultTopK, params.TopK) // This should be DefaultTopK now
+	assert.Equal(t, DefaultInferenceParams.TopK, params.TopK) // This should be DefaultInferenceParams.TopK now
 	assert.Equal(t, float32(0.9), params.TopP)
 	assert.Equal(t, float32(0.7), params.Temperature)
 	assert.Equal(t, []string{"STOP", "END", "DONE"}, params.StopPrompts)
