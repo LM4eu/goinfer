@@ -6,6 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/synw/goinfer/conf"
 )
 
 // HealthStatus - health status representation.
@@ -24,7 +26,7 @@ type HealthCheckResult struct {
 
 // Monitor - health monitor.
 type Monitor struct {
-	config        *LlamaConfig
+	config        *conf.LlamaConf
 	checkInterval time.Duration
 	timeout       time.Duration
 	healthy       atomic.Bool
@@ -34,7 +36,7 @@ type Monitor struct {
 }
 
 // NewMonitor - Creates a new lightweight monitor.
-func NewMonitor(config *LlamaConfig) *Monitor {
+func NewMonitor(config *conf.LlamaConf) *Monitor {
 	return &Monitor{
 		config:        config,
 		checkInterval: 5 * time.Second,
@@ -43,7 +45,7 @@ func NewMonitor(config *LlamaConfig) *Monitor {
 }
 
 // NewLlamaMonitor - Creates a new llama monitor with custom intervals.
-func NewLlamaMonitor(config *LlamaConfig, checkInterval, timeout time.Duration) *Monitor {
+func NewLlamaMonitor(config *conf.LlamaConf, checkInterval, timeout time.Duration) *Monitor {
 	return &Monitor{
 		config:        config,
 		checkInterval: checkInterval,
