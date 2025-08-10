@@ -12,6 +12,7 @@ type LlamaConf struct {
 	BinaryPath  string // Path to llama-server binary
 	ModelPath   string // Path to model file
 	ContextSize int
+	FlashAttention bool
 	GpuLayers   int
 	DownloadUrl string   // model from HuggingFace
 	Host        string   // Host binding (default: localhost)
