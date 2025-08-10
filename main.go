@@ -49,6 +49,7 @@ func main() {
 	state.Llama = llama.NewLlamaServerManager(&conf.Llama)
 	state.Monitor = llama.NewMonitor(&conf.Llama)
 	state.Monitor.Start()
+	defer state.StopLlamaServer()
 
 	state.ModelsDir = conf.ModelsDir
 	state.IsVerbose = !*quiet
