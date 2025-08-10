@@ -12,17 +12,17 @@ import (
 
 // GoInferConf holds the configuration for GoInfer.
 type GoInferConf struct {
-	ModelsDir string
 	WebServer WebServerConf
+	ModelsDir string
 	Llama     LlamaConf
 }
 
 // WebServerConf holds the configuration for GoInfer web server.
 type WebServerConf struct {
-	Port            string
-	EnableApiOpenAi bool `json:"enableApiOpenAi"`
-	Origins         []string
-	ApiKey          string
+	Origins      []string `json:"origins"`
+	Port         string   `json:"port"`
+	EnableOaiAPI bool     `json:"openai_api"`
+	ApiKey       string   `json:"api_key"`
 }
 
 // InitConf loads the config file.
@@ -30,46 +30,45 @@ type WebServerConf struct {
 func InitConf(path, configFile string) (GoInferConf, error) {
 	viper.SetConfigName(configFile)
 	viper.AddConfigPath(path)
+
 	viper.SetDefault("origins", []string{"localhost"})
+	viper.SetDefault("port", 5143)
 	viper.SetDefault("openai_api", false)
 
-	// Llama configuration defaults
-	viper.SetDefault("llama.binary_path", "")
-	viper.SetDefault("llama.model_path", "")
-	viper.SetDefault("llama.host", "localhost")
-	viper.SetDefault("llama.port", 8080)
-	viper.SetDefault("llama.args", []string{})
+	viper.SetDefault("models_dir", "./models")
+	viper.SetDefault("ctx", 2048)
+	viper.SetDefault("gpu_layers", 999)
+	viper.SetDefault("flash_attention", true)
+
+	viper.SetDefault("llama_path", "./llama-server")
+	viper.SetDefault("llama_host", "localhost")
+	viper.SetDefault("llama_port", 8080)
+	viper.SetDefault("llama_args", []string{"--log-colors", "--no-warmup"})
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		return GoInferConf{}, fmt.Errorf("config file %s/%s.???: %w", path, configFile, err)
+		return GoInferConf{}, fmt.Errorf("config file %s/%s.(json/yaml): %w", path, configFile, err)
 	}
 
-	md := viper.GetString("models_dir")
-	or := viper.GetStringSlice("origins")
-	ak := viper.GetString("api_key")
-	oaiEnable := viper.GetBool("openai_api")
-
-	// Llama configuration
-	llamaBinaryPath := viper.GetString("llama_path")
-	llamaHost := viper.GetString("llama_host")
-	llamaPort := viper.GetInt("llama_port")
-	llamaArgs := viper.GetStringSlice("llama_args")
-
 	return GoInferConf{
-		ModelsDir: md,
 		WebServer: WebServerConf{
-			Port:            ":5143",
-			Origins:         or,
-			ApiKey:          ak,
-			EnableApiOpenAi: oaiEnable,
+			Origins:      viper.GetStringSlice("origins"),
+			Port:         viper.GetString("port"),
+			EnableOaiAPI: viper.GetBool("openai_api"),
+			ApiKey:       viper.GetString("api_key"),
 		},
+		ModelsDir: viper.GetString("models_dir"),
 		Llama: LlamaConf{
-			BinaryPath: llamaBinaryPath,
-			ModelPath:  md,
-			Host:       llamaHost,
-			Port:       llamaPort,
-			Args:       llamaArgs,
+			ModelPath:      viper.GetString("default_model"),
+			DownloadUrl:    viper.GetString("download_url"),
+			ContextSize:    viper.GetInt("ctx"),
+			GpuLayers:      viper.GetInt("gpu_layers"),
+			FlashAttention: viper.GetBool("flash_attention"),
+
+			BinaryPath: viper.GetString("llama_path"),
+			Host:       viper.GetString("llama_host"),
+			Port:       viper.GetInt("llama_port"),
+			Args:       viper.GetStringSlice("llama_args"),
 		},
 	}, nil
 }
@@ -83,16 +82,22 @@ func Create(modelsDir string, isDefault bool, fileName string) {
 
 	// configuration defaults
 	data := map[string]any{
-		"models_dir": modelsDir,
 		"origins":    []string{"http://localhost:5173", "http://localhost:5143"},
+		"port":       "5143",
+		"openai_api": false,
 		"api_key":    key,
-		"llama": map[string]any{
-			"binary_path": "",
-			"model_path":  "",
-			"host":        "localhost",
-			"port":        8080,
-			"args":        []string{},
-		},
+
+		"models_dir":      modelsDir,
+		"default_model":   "",
+		"download_url":    "",
+		"ctx":             2048,
+		"gpu_layers":      999,
+		"flash_attention": true,
+
+		"llama_path": "./llama-server",
+		"llama_host": "localhost",
+		"llama_port": 8080,
+		"llama_args": []string{"--log-colors", "--no-warmup"},
 	}
 	jsonString, _ := json.MarshalIndent(data, "", "    ")
 	err := os.WriteFile(fileName, jsonString, os.ModePerm&^0o111)
