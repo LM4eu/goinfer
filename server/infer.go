@@ -12,17 +12,17 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-// ParseInferParams parses inference parameters from echo.Map.
-func ParseInferParams(m echo.Map) (types.Prompt, error) {
+// parseInferParams parses inference parameters from echo.Map.
+func parseInferParams(m echo.Map) (types.InferQuery, error) {
 	v, ok := m["prompt"]
 	if !ok {
-		return types.Prompt{}, errors.New("provide a prompt")
+		return types.InferQuery{}, errors.New("provide a prompt")
 	}
 
 	// Type assertion with error checking
 	prompt, ok := v.(string)
 	if !ok {
-		return types.Prompt{}, errors.New("prompt must be a string")
+		return types.InferQuery{}, errors.New("prompt must be a string")
 	}
 
 	modelConf := state.DefaultModelConf
@@ -39,10 +39,6 @@ func ParseInferParams(m echo.Map) (types.Prompt, error) {
 				case "ctx":
 					if ctx, ok := v.(float64); ok {
 						modelConf.Ctx = int(ctx)
-					}
-				case "gpu_layers":
-					if gpuLayers, ok := v.(float64); ok {
-						modelConf.GPULayers = int(gpuLayers)
 					}
 				}
 			}
@@ -150,7 +146,7 @@ func ParseInferParams(m echo.Map) (types.Prompt, error) {
 		}
 	}
 
-	return types.Prompt{
+	return types.InferQuery{
 		Prompt:    prompt,
 		ModelConf: modelConf,
 		InferParams: types.InferenceParams{
@@ -169,14 +165,6 @@ func ParseInferParams(m echo.Map) (types.Prompt, error) {
 		}}, nil
 }
 
-// setModelOptions sets model options based on model configuration.
-func setModelOptions(modelConf types.ModelConf) error {
-	opts := state.DefaultModelOptions
-	opts.ContextSize = modelConf.Ctx
-	state.ModelOptions = opts
-	return nil
-}
-
 // InferHandler handles inference requests.
 func InferHandler(c echo.Context) error {
 	if state.IsInferring {
@@ -192,7 +180,7 @@ func InferHandler(c echo.Context) error {
 		return c.NoContent(http.StatusBadRequest)
 	}
 
-	prompt, err := ParseInferParams(m)
+	prompt, err := parseInferParams(m)
 	if err != nil {
 		if state.IsDebug {
 			fmt.Println("Inference params parsing error", err)
@@ -204,36 +192,25 @@ func InferHandler(c echo.Context) error {
 	loadModel := true
 	if state.IsModelLoaded {
 		if state.LoadedModel == prompt.ModelConf.Name {
-			if state.ModelOptions.ContextSize == prompt.ModelConf.Ctx {
+			if state.ModelConf.Ctx == prompt.ModelConf.Ctx {
 				loadModel = false
 			}
 		}
 	}
 
 	if loadModel {
-		err := setModelOptions(prompt.ModelConf)
-		if err != nil {
-			if state.IsDebug {
-				fmt.Println("Error setting model options:", err)
-			}
-			return c.JSON(http.StatusBadRequest, echo.Map{
-				"error": fmt.Sprintf("failed to set model options: %v", err),
-			})
-		}
-
-		_, err = lm.LoadModel(prompt.ModelConf.Name, state.ModelOptions)
+		state.ModelConf = prompt.ModelConf
+		statusCode, err := lm.LoadModel(prompt.ModelConf)
 		if err != nil {
 			if state.IsDebug {
 				fmt.Println("Error loading model:", err)
 			}
-			return c.JSON(http.StatusInternalServerError, echo.Map{
-				"error": fmt.Sprintf("failed to load model: %v", err),
-			})
+			return c.JSON(statusCode, echo.Map{"error": fmt.Sprintf("failed to load model: %v", err)})
 		}
 
 		if state.IsDebug {
 			fmt.Println("Loaded model with params:")
-			jsonData, err := json.MarshalIndent(state.ModelOptions, "", "  ")
+			jsonData, err := json.MarshalIndent(state.ModelConf, "", "  ")
 			if err != nil {
 				fmt.Println("Error:", err)
 			}

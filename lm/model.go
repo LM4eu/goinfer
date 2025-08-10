@@ -9,6 +9,7 @@ import (
 
 	"github.com/synw/goinfer/llama"
 	"github.com/synw/goinfer/state"
+	"github.com/synw/goinfer/types"
 )
 
 // UnloadModel unloads the currently loaded model.
@@ -21,12 +22,12 @@ func UnloadModel() {
 }
 
 // Returns error code and error if any.
-func LoadModel(model string, params llama.ModelOptions) (int, error) {
-	if model == "" {
+func LoadModel(modelConf types.ModelConf) (int, error) {
+	if modelConf.Name == "" {
 		return 400, fmt.Errorf("model name cannot be empty: %w", ErrInvalidInput)
 	}
 
-	mpath := filepath.Join(state.ModelsDir, model)
+	mpath := filepath.Join(state.ModelsDir, modelConf.Name)
 	// check if the model file exists
 	_, err := os.Stat(mpath)
 	if err != nil {
@@ -36,7 +37,7 @@ func LoadModel(model string, params llama.ModelOptions) (int, error) {
 		return 500, fmt.Errorf("error checking model file %s: %w", mpath, err)
 	}
 	// check if the model is already loaded
-	if state.LoadedModel == model {
+	if state.LoadedModel == modelConf.Name {
 		return 202, fmt.Errorf("the model is already loaded: %w", ErrInvalidInput)
 	}
 	if state.IsModelLoaded {
@@ -45,18 +46,18 @@ func LoadModel(model string, params llama.ModelOptions) (int, error) {
 
 	lm, err := llama.New(
 		mpath,
-		llama.SetContext(params.ContextSize),
+		llama.SetContext(modelConf.Ctx),
 		llama.EnableEmbeddings,
-		llama.SetGPULayers(params.NGPULayers),
+		llama.SetGPULayers(99), // TODO modelConf.NGPULayers
 	)
 	if err != nil {
-		return 500, fmt.Errorf("cannot load model %s: %w", model, ErrModelLoadFailed)
+		return 500, fmt.Errorf("cannot load model %s: %w", modelConf.Name, ErrModelLoadFailed)
 	}
 
 	if state.IsVerbose || state.IsDebug {
 		fmt.Println("Loaded model", mpath)
 		if state.IsDebug {
-			jsonData, err := json.MarshalIndent(params, "", "  ")
+			jsonData, err := json.MarshalIndent(modelConf, "", "  ")
 			if err != nil {
 				return 500, fmt.Errorf("error marshalling model params: %w", err)
 			}
@@ -65,9 +66,9 @@ func LoadModel(model string, params llama.ModelOptions) (int, error) {
 	}
 
 	state.Lm = lm
-	state.ModelOptions = params
+	state.ModelConf = modelConf
 	state.IsModelLoaded = true
-	state.LoadedModel = model
+	state.LoadedModel = modelConf.Name
 
 	return 200, nil
 }

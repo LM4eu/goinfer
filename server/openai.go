@@ -108,7 +108,7 @@ func parseParams(m echo.Map) (string, string, string, types.InferenceParams, err
 	return model, prompt, template, params, nil
 }
 
-// Create an Openai api for /v1/chat/completion.
+// Create an OpenAI api for /v1/chat/completion.
 func CreateCompletionHandler(c echo.Context) error {
 	if state.IsInferring {
 		fmt.Println("An inference query is already running")
@@ -129,7 +129,9 @@ func CreateCompletionHandler(c echo.Context) error {
 	}
 
 	if state.LoadedModel != model {
-		_, err = lm.LoadModel(model, state.DefaultModelOptions)
+		modelConf := state.DefaultModelConf
+		modelConf.Name = model
+		_, err = lm.LoadModel(modelConf)
 		if err != nil {
 			if state.IsDebug {
 				fmt.Println("Error loading model:", err)

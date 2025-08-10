@@ -7,59 +7,34 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/synw/goinfer/files"
-	"github.com/synw/goinfer/llama"
 	"github.com/synw/goinfer/lm"
 	"github.com/synw/goinfer/state"
 	"github.com/synw/goinfer/types"
 )
 
 // parseModelParams parses model parameters from echo.Map.
-func parseModelParams(m echo.Map) (string, llama.ModelOptions, error) {
-	var model string
-	v, ok := m["name"]
+func parseModelParams(m echo.Map) (types.ModelConf, error) {
+	modelConf := state.DefaultModelConf
+
+	name, ok := m["name"]
 	if !ok {
-		return "", llama.ModelOptions{}, errors.New("provide a model name")
+		return types.ModelConf{}, errors.New("missing mandatory field: name")
 	}
 
 	// Type assertion with error checking
-	modelName, ok := v.(string)
+	modelConf.Name, ok = name.(string)
 	if !ok {
-		return "", llama.ModelOptions{}, errors.New("model name must be a string")
+		return types.ModelConf{}, errors.New("model name must be a string")
 	}
 
-	model = modelName
-
-	ctx := state.DefaultModelOptions.ContextSize
-	v, ok = m["ctx"]
+	v, ok := m["ctx"]
 	if ok {
 		if ctxVal, ok := v.(float64); ok {
-			ctx = int(ctxVal)
+			modelConf.Ctx = int(ctxVal)
 		}
 	}
 
-	embeddings := state.DefaultModelOptions.Embeddings
-	v, ok = m["embeddings"]
-	if ok {
-		if e, ok := v.(bool); ok {
-			embeddings = e
-		}
-	}
-
-	gpuLayers := state.DefaultModelOptions.NGPULayers
-	v, ok = m["gpu_layers"]
-	if ok {
-		if gpuLayersVal, ok := v.(float64); ok {
-			gpuLayers = int(gpuLayersVal)
-		}
-	}
-
-	params := llama.ModelOptions{
-		ContextSize: ctx,
-		Embeddings:  embeddings,
-		NGPULayers:  gpuLayers,
-	}
-
-	return model, params, nil
+	return modelConf, nil
 }
 
 // LoadModelHandler handles loading a model.
@@ -69,36 +44,26 @@ func LoadModelHandler(c echo.Context) error {
 		return fmt.Errorf("failed to bind model parameters: %w", err)
 	}
 
-	model, params, err := parseModelParams(m)
+	modelConf, err := parseModelParams(m)
 	if err != nil {
 		fmt.Println("error in params:" + err.Error())
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "model params",
-		})
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "model params"})
 	}
 
-	errcode, err := lm.LoadModel(model, params)
+	errcode, err := lm.LoadModel(modelConf)
 	if err != nil {
 		switch errcode {
 		case 500:
 			if state.IsDebug {
 				panic(fmt.Errorf("debug - Error loading model: %w", err))
 			}
-			return c.JSON(http.StatusInternalServerError, echo.Map{
-				"error": "error loading model",
-			})
+			return c.JSON(http.StatusInternalServerError, echo.Map{"error": "error loading model"})
 		case 404:
-			return c.JSON(http.StatusNotFound, echo.Map{
-				"error": err.Error(),
-			})
+			return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
 		case 202:
-			return c.JSON(http.StatusAccepted, echo.Map{
-				"error": err.Error(),
-			})
+			return c.JSON(http.StatusAccepted, echo.Map{"error": err.Error()})
 		case 400:
-			return c.JSON(http.StatusBadRequest, echo.Map{
-				"error": err.Error(),
-			})
+			return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
 		}
 	}
 
@@ -153,6 +118,6 @@ func ModelsStateHandler(c echo.Context) error {
 		"models":        templates,
 		"isModelLoaded": state.IsModelLoaded,
 		"loadedModel":   state.LoadedModel,
-		"ctx":           state.ModelOptions.ContextSize,
+		"ctx":           state.ModelConf.Ctx,
 	})
 }
