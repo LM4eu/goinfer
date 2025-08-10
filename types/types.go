@@ -1,6 +1,40 @@
 package types
 
-import "fmt"
+// ModelConf holds configuration for a model.
+type ModelConf struct {
+	Name string `json:"name"           yaml:"name"`
+	Ctx  int    `json:"ctx,omitempty"  yaml:"ctx,omitempty"`
+}
+
+var DefaultModelConf = ModelConf{
+	Name: "",
+	Ctx:  2048,
+}
+
+// LlamaConfig holds configuration for the Llama server proxy.
+type LlamaConfig struct {
+	BinaryPath string
+	ModelPath  string
+	Host       string
+	Port       int
+	Args       []string
+}
+
+// InferParams holds parameters for inference.
+type InferParams struct {
+	Stream            bool     `json:"stream,omitempty"            yaml:"stream,omitempty"`
+	MaxTokens         int      `json:"max_tokens,omitempty"        yaml:"max_tokens,omitempty"`
+	TopK              int      `json:"top_k,omitempty"             yaml:"top_k,omitempty"`
+	TopP              float32  `json:"top_p,omitempty"             yaml:"top_p,omitempty"`
+	MinP              float32  `json:"min_p,omitempty"             yaml:"min_p,omitempty"`
+	Temperature       float32  `json:"temperature,omitempty"       yaml:"temperature,omitempty"`
+	FrequencyPenalty  float32  `json:"frequency_penalty,omitempty" yaml:"frequency_penalty,omitempty"`
+	PresencePenalty   float32  `json:"presence_penalty,omitempty"  yaml:"presence_penalty,omitempty"`
+	RepeatPenalty     float32  `json:"repeat_penalty,omitempty"    yaml:"repeat_penalty,omitempty"`
+	TailFreeSamplingZ float32  `json:"tfs,omitempty"               yaml:"tfs,omitempty"`
+	StopPrompts       []string `json:"stop,omitempty"              yaml:"stop,omitempty"`
+	Images            []byte   `json:"images,omitempty"            yaml:"images,omitempty"`
+}
 
 var DefaultInferParams = InferParams{
 	Stream:            false,
@@ -17,140 +51,25 @@ var DefaultInferParams = InferParams{
 	Images:            nil,
 }
 
-var DefaultModelConf = ModelConf{
-	Name: "",
-	Ctx:  2048,
-}
-
-// GoInferConf holds the configuration for GoInfer.
-type GoInferConf struct {
-	ModelsDir   string
-	WebServer   WebServerConf
-	OpenAiConf  OpenAiConf
-	LlamaConfig *LlamaConfig
-}
-
-// WebServerConf holds the configuration for GoInfer web server.
-type WebServerConf struct {
-	Port            string
-	EnableApiOpenAi bool `json:"enableApiOpenAi"`
-	Origins         []string
-	ApiKey          string
-}
-
-// LlamaConfig holds configuration for the Llama server proxy.
-type LlamaConfig struct {
-	BinaryPath string
-	ModelPath  string
-	Host       string
-	Port       int
-	Args       []string
-}
-
-// InferParams holds parameters for inference.
-type InferParams struct {
-	Stream            bool     `json:"stream,omitempty"            yaml:"stream,omitempty"`
-	MaxTokens         int      `json:"max_tokens,omitempty"         yaml:"max_tokens,omitempty"`
-	TopK              int      `json:"top_k,omitempty"             yaml:"top_k,omitempty"`
-	TopP              float32  `json:"top_p,omitempty"             yaml:"top_p,omitempty"`
-	MinP              float32  `json:"min_p,omitempty"             yaml:"min_p,omitempty"`
-	Temperature       float32  `json:"temperature,omitempty"       yaml:"temperature,omitempty"`
-	FrequencyPenalty  float32  `json:"frequency_penalty,omitempty" yaml:"frequency_penalty,omitempty"`
-	PresencePenalty   float32  `json:"presence_penalty,omitempty"  yaml:"presence_penalty,omitempty"`
-	RepeatPenalty     float32  `json:"repeat_penalty,omitempty"    yaml:"repeat_penalty,omitempty"`
-	TailFreeSamplingZ float32  `json:"tfs,omitempty"             yaml:"tfs,omitempty"`
-	StopPrompts       []string `json:"stop,omitempty"              yaml:"stop,omitempty"`
-	Images            []byte   `json:"images,omitempty"              yaml:"images,omitempty"`
-}
-
-// Validate validates the InferParams and returns an error if invalid.
-func (p InferParams) Validate() error {
-	// TopK must be non-negative if set
-	if p.TopK < 0 {
-		return fmt.Errorf("top_k must be non-negative, got %d", p.TopK)
-	}
-	// TopP must be between 0.0 and 1.0 if set
-	if p.TopP < 0.0 || p.TopP > 1.0 {
-		return fmt.Errorf("top_p must be between 0.0 and 1.0, got %f", p.TopP)
-	}
-	// MinP must be between 0.0 and 1.0 if set
-	if p.MinP < 0.0 || p.MinP > 1.0 {
-		return fmt.Errorf("min_p must be between 0.0 and 1.0, got %f", p.MinP)
-	}
-	// Temperature must be non-negative if set
-	if p.Temperature < 0.0 {
-		return fmt.Errorf("temperature must be non-negative, got %f", p.Temperature)
-	}
-	// RepeatPenalty must be non-negative if set
-	if p.RepeatPenalty < 0.0 {
-		return fmt.Errorf("repeat_penalty must be non-negative, got %f", p.RepeatPenalty)
-	}
-	// TailFreeSamplingZ must be non-negative if set
-	if p.TailFreeSamplingZ < 0.0 {
-		return fmt.Errorf("tail_free_sampling_z must be non-negative, got %f", p.TailFreeSamplingZ)
-	}
-	return nil
-}
-
-// Clone creates a deep copy of InferParams.
-func (p InferParams) Clone() InferParams {
-	// Create a copy of the slice to avoid sharing references
-	var stopPrompts []string
-	if p.StopPrompts != nil {
-		stopPrompts = make([]string, len(p.StopPrompts))
-		copy(stopPrompts, p.StopPrompts)
-	}
-
-	return InferParams{
-		Stream:            p.Stream,
-		MaxTokens:         p.MaxTokens,
-		TopK:              p.TopK,
-		TopP:              p.TopP,
-		MinP:              p.MinP,
-		Temperature:       p.Temperature,
-		FrequencyPenalty:  p.FrequencyPenalty,
-		PresencePenalty:   p.PresencePenalty,
-		RepeatPenalty:     p.RepeatPenalty,
-		TailFreeSamplingZ: p.TailFreeSamplingZ,
-		StopPrompts:       stopPrompts,
-	}
-}
-
-// InferStats holds statistics about inference.
-type InferStats struct {
-	ThinkingTime       float64 `json:"thinkingTime"`
-	ThinkingTimeFormat string  `json:"thinkingTimeFormat"`
-	EmitTime           float64 `json:"emitTime"`
-	EmitTimeFormat     string  `json:"emitTimeFormat"`
-	TotalTime          float64 `json:"totalTime"`
-	TotalTimeFormat    string  `json:"totalTimeFormat"`
-	TokensPerSecond    float64 `json:"tokensPerSecond"`
-	TotalTokens        int     `json:"totalTokens"`
-}
-
-// InferResult holds the result of inference.
-type InferResult struct {
-	Text  string         `json:"text"`
-	Stats InferStats `json:"stats"`
-}
-
 // InferQuery represents a task to be executed.
 type InferQuery struct {
-	Prompt      string          `json:"prompt"  yaml:"prompt"`
-	ModelConf   ModelConf       `json:"modelConf"   yaml:"modelConf"`
+	Prompt      string      `json:"prompt"      yaml:"prompt"`
+	ModelConf   ModelConf   `json:"modelConf"   yaml:"modelConf"`
 	InferParams InferParams `json:"inferParams" yaml:"inferParams"`
-}
-
-// ModelConf holds configuration for a model.
-type ModelConf struct {
-	Name string `json:"name"                 yaml:"name"`
-	Ctx  int    `json:"ctx,omitempty"        yaml:"ctx,omitempty"`
 }
 
 // TemplateInfo holds information about a template.
 type TemplateInfo struct {
 	Name string `json:"name" yaml:"name"`
 	Ctx  int    `json:"ctx"  yaml:"ctx"`
+}
+
+// StreamedMessage represents a streamed message.
+type StreamedMessage struct {
+	Content string         `json:"content"`
+	Num     int            `json:"num"` // number of tokens
+	MsgType MsgType        `json:"msg_type"`
+	Data    map[string]any `json:"data,omitempty"`
 }
 
 // MsgType represents the type of a message.
@@ -162,18 +81,3 @@ const (
 	ErrorMsgType  MsgType = "error"
 )
 
-// StreamedMessage represents a streamed message.
-type StreamedMessage struct {
-	Content string         `json:"content"`
-	Num     int            `json:"num"` // number of tokens
-	MsgType MsgType        `json:"msg_type"`
-	Data    map[string]any `json:"data,omitempty"`
-}
-
-// ApiType represents the type of API.
-type ApiType string
-
-const (
-	Llama  ApiType = "llama"
-	OpenAi ApiType = "openai"
-)

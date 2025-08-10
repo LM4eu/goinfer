@@ -8,13 +8,13 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
-	"github.com/synw/goinfer/types"
+	"github.com/synw/goinfer/conf"
 )
 
 //go:embed all:dist
 var embeddedFiles embed.FS
 
-func RunServer(conf types.WebServerConf, localMode bool, disableApiKey bool) {
+func RunServer(conf conf.WebServerConf, localMode bool, disableApiKey bool) {
 	e := echo.New()
 	e.HideBanner = true
 

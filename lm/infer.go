@@ -14,6 +14,24 @@ import (
 
 // Type Definitions
 
+// InferResult holds the result of inference.
+type InferResult struct {
+	Text  string     `json:"text"`
+	Stats InferStats `json:"stats"`
+}
+
+// InferStats holds statistics about inference.
+type InferStats struct {
+	ThinkingTime       float64 `json:"thinkingTime"`
+	ThinkingTimeFormat string  `json:"thinkingTimeFormat"`
+	EmitTime           float64 `json:"emitTime"`
+	EmitTimeFormat     string  `json:"emitTimeFormat"`
+	TotalTime          float64 `json:"totalTime"`
+	TotalTimeFormat    string  `json:"totalTimeFormat"`
+	TokensPerSecond    float64 `json:"tokensPerSecond"`
+	TotalTokens        int     `json:"totalTokens"`
+}
+
 // InferError represents a structured error for language model inference.
 type InferError struct {
 	Code       string    `json:"code"`
@@ -263,7 +281,7 @@ func logVerboseInfo(prompt string, thinkingElapsed time.Duration, emittingElapse
 // Statistics Functions
 
 // calculateStats calculates inference statistics.
-func calculateStats(ntokens int, thinkingElapsed time.Duration, startEmitting time.Time) (types.InferStats, float64) {
+func calculateStats(ntokens int, thinkingElapsed time.Duration, startEmitting time.Time) (InferStats, float64) {
 	emittingElapsed := time.Since(startEmitting)
 	tpsRaw := float64(ntokens) / emittingElapsed.Seconds()
 	tps, err := strconv.ParseFloat(fmt.Sprintf("%.2f", tpsRaw), 64)
@@ -273,7 +291,7 @@ func calculateStats(ntokens int, thinkingElapsed time.Duration, startEmitting ti
 
 	totalTime := thinkingElapsed + emittingElapsed
 
-	return types.InferStats{
+	return InferStats{
 		ThinkingTime:       thinkingElapsed.Seconds(),
 		ThinkingTimeFormat: thinkingElapsed.String(),
 		EmitTime:           emittingElapsed.Seconds(),
@@ -288,8 +306,8 @@ func calculateStats(ntokens int, thinkingElapsed time.Duration, startEmitting ti
 // Result Creation Functions
 
 // createResult creates the final result message to the client.
-func createResult(res string, stats types.InferStats, enc *json.Encoder, c echo.Context, params types.InferParams) (types.StreamedMessage, error) {
-	result := types.InferResult{
+func createResult(res string, stats InferStats, enc *json.Encoder, c echo.Context, params types.InferParams) (types.StreamedMessage, error) {
+	result := InferResult{
 		Text:  res,
 		Stats: stats,
 	}
