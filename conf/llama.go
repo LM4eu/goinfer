@@ -1,4 +1,4 @@
-package llama
+package conf
 
 import (
 	"net"
@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-// LlamaConfig - configuration for llama-server proxy.
-type LlamaConfig struct {
+// LlamaConf - configuration for llama-server proxy.
+type LlamaConf struct {
 	BinaryPath  string // Path to llama-server binary
 	ModelPath   string // Path to model file
 	ContextSize int
@@ -20,8 +20,8 @@ type LlamaConfig struct {
 }
 
 // NewLlamaConfig - Creates a new LlamaConfig with minimal validation.
-func NewLlamaConfig(binaryPath, modelPath string, args ...string) *LlamaConfig {
-	return &LlamaConfig{
+func NewLlamaConfig(binaryPath, modelPath string, args ...string) *LlamaConf {
+	return &LlamaConf{
 		BinaryPath: binaryPath,
 		ModelPath:  modelPath,
 		Host:       "localhost",
@@ -31,12 +31,12 @@ func NewLlamaConfig(binaryPath, modelPath string, args ...string) *LlamaConfig {
 }
 
 // GetAddress - Returns the server address in host:port format.
-func (c *LlamaConfig) GetAddress() string {
+func (c *LlamaConf) GetAddress() string {
 	return net.JoinHostPort(c.Host, strconv.Itoa(c.Port))
 }
 
 // GetCommandArgs - Returns the complete command arguments for llama-server.
-func (c *LlamaConfig) GetCommandArgs() []string {
+func (c *LlamaConf) GetCommandArgs() []string {
 	args := make([]string, 0, len(c.Args)+5)
 	args = append(args, "-m", c.ModelPath)
 	args = append(args, "-h", c.Host)
@@ -46,7 +46,7 @@ func (c *LlamaConfig) GetCommandArgs() []string {
 	return args
 }
 
-func (c *LlamaConfig) Validate() error {
+func (c *LlamaConf) Validate() error {
 	// Only essential validation - paths and basic network checks
 	if c.BinaryPath == "" {
 		return ErrInvalidConfig("binary path cannot be empty")
@@ -79,12 +79,12 @@ func (e ErrInvalidConfig) Error() string {
 }
 
 // Clone - cloning for configuration updates.
-func (c *LlamaConfig) Clone() *LlamaConfig {
+func (c *LlamaConf) Clone() *LlamaConf {
 	// Pre-allocate slice to avoid allocations
 	args := make([]string, len(c.Args))
 	copy(args, c.Args)
 
-	return &LlamaConfig{
+	return &LlamaConf{
 		BinaryPath: c.BinaryPath,
 		ModelPath:  c.ModelPath,
 		Host:       c.Host,
@@ -94,7 +94,7 @@ func (c *LlamaConfig) Clone() *LlamaConfig {
 }
 
 // MergeArgs - Efficiently merge additional arguments.
-func (c *LlamaConfig) MergeArgs(additional []string) {
+func (c *LlamaConf) MergeArgs(additional []string) {
 	if len(additional) == 0 {
 		return
 	}
@@ -107,7 +107,7 @@ func (c *LlamaConfig) MergeArgs(additional []string) {
 }
 
 // HasArg - check for existing argument.
-func (c *LlamaConfig) HasArg(arg string) bool {
+func (c *LlamaConf) HasArg(arg string) bool {
 	for _, existing := range c.Args {
 		if existing == arg {
 			return true
@@ -117,7 +117,7 @@ func (c *LlamaConfig) HasArg(arg string) bool {
 }
 
 // GetArgValue - retrieval of argument value (key=value format).
-func (c *LlamaConfig) GetArgValue(key string) string {
+func (c *LlamaConf) GetArgValue(key string) string {
 	prefix := key + "="
 	for _, arg := range c.Args {
 		if strings.HasPrefix(arg, prefix) {
@@ -128,6 +128,6 @@ func (c *LlamaConfig) GetArgValue(key string) string {
 }
 
 // GetCommand - Returns a command for llama-server execution.
-func (c *LlamaConfig) GetCommand() *exec.Cmd {
+func (c *LlamaConf) GetCommand() *exec.Cmd {
 	return exec.Command(c.BinaryPath, c.GetCommandArgs()...)
 }

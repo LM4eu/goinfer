@@ -44,6 +44,7 @@ func main() {
 		panic(err)
 	}
 
+	state.Lm.Conf = &conf.Llama
 	state.ModelsDir = conf.ModelsDir
 	state.IsVerbose = !*quiet
 
