@@ -61,7 +61,7 @@ const (
 
 // Infer performs language model inference.
 func Infer(query types.InferQuery, c echo.Context, ch chan<- types.StreamedMessage, errCh chan<- types.StreamedMessage) {
-	if !state.IsModelLoaded {
+	if !state.Llama.IsRunning() {
 		errCh <- createErrorMessage(1, "no model loaded")
 		return
 	}

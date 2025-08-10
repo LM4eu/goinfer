@@ -120,15 +120,17 @@ func CreateCompletionHandler(c echo.Context) error {
 		panic(err)
 	}
 
-	if state.LoadedModel != query.ModelConf.Name {
-		modelConf := types.DefaultModelConf
-		modelConf.Name = query.ModelConf.Name
-		_, err = state.StartLlamaWithModel(modelConf)
+	// Do we need to start/restart llama-server?
+	if state.IsStartNeeded(query.ModelConf) {
+		err := state.RestartLlamaServer(query.ModelConf)
 		if err != nil {
 			if state.IsDebug {
 				fmt.Println("Error loading model:", err)
 			}
-			return c.JSON(http.StatusInternalServerError, "{error: cannot find model file}")
+			return c.JSON(
+				http.StatusInternalServerError,
+				echo.Map{"error": "failed to load model" + err.Error()},
+			)
 		}
 	}
 

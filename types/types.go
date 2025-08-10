@@ -25,6 +25,7 @@ type InferParams struct {
 	TailFreeSamplingZ float32  `json:"tfs,omitempty"               yaml:"tfs,omitempty"`
 	StopPrompts       []string `json:"stop,omitempty"              yaml:"stop,omitempty"`
 	Images            []byte   `json:"images,omitempty"            yaml:"images,omitempty"`
+	Audios            []byte   `json:"audios,omitempty"            yaml:"audios,omitempty"`
 }
 
 var DefaultInferParams = InferParams{
