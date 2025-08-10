@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestInferenceParamsCloneWithEmptySlice(t *testing.T) {
+func TestInferParamsCloneWithEmptySlice(t *testing.T) {
 	// Test Clone with empty slice
-	params := InferenceParams{
+	params := InferParams{
 		StopPrompts: []string{},
 	}
 
@@ -23,9 +23,9 @@ func TestInferenceParamsCloneWithEmptySlice(t *testing.T) {
 	assert.NotEmpty(t, cloned.StopPrompts)
 }
 
-func TestInferenceParamsCloneWithNilSlice(t *testing.T) {
+func TestInferParamsCloneWithNilSlice(t *testing.T) {
 	// Test Clone with nil slice
-	params := InferenceParams{
+	params := InferParams{
 		StopPrompts: nil,
 	}
 
@@ -39,9 +39,9 @@ func TestInferenceParamsCloneWithNilSlice(t *testing.T) {
 	assert.NotEmpty(t, cloned.StopPrompts)
 }
 
-func TestInferenceParamsCloneWithComplexValues(t *testing.T) {
+func TestInferParamsCloneWithComplexValues(t *testing.T) {
 	// Test Clone with complex values
-	params := InferenceParams{
+	params := InferParams{
 		Stream:            true,
 		MaxTokens:         1024,
 		TopK:              50,
@@ -67,9 +67,9 @@ func TestInferenceParamsCloneWithComplexValues(t *testing.T) {
 	assert.Equal(t, "MODIFIED", cloned.StopPrompts[0])
 }
 
-func TestInferenceParamsValidationWithAllFields(t *testing.T) {
+func TestInferParamsValidationWithAllFields(t *testing.T) {
 	// Test validation with all fields set to valid values
-	params := InferenceParams{
+	params := InferParams{
 		MaxTokens:         512,
 		TopK:              40,
 		TopP:              0.95,
@@ -84,9 +84,9 @@ func TestInferenceParamsValidationWithAllFields(t *testing.T) {
 	require.NoError(t, params.Validate())
 }
 
-func TestInferenceParamsValidationWithMaxValues(t *testing.T) {
+func TestInferParamsValidationWithMaxValues(t *testing.T) {
 	// Test validation with maximum valid values
-	params := InferenceParams{
+	params := InferParams{
 		MaxTokens:         4096,
 		TopK:              100,
 		TopP:              1.0,
@@ -100,9 +100,9 @@ func TestInferenceParamsValidationWithMaxValues(t *testing.T) {
 	require.NoError(t, params.Validate())
 }
 
-func TestInferenceParamsValidationWithMinValues(t *testing.T) {
+func TestInferParamsValidationWithMinValues(t *testing.T) {
 	// Test validation with minimum valid values
-	params := InferenceParams{
+	params := InferParams{
 		TopK:              0,
 		TopP:              0.0,
 		Temperature:       0.0,
@@ -115,26 +115,26 @@ func TestInferenceParamsValidationWithMinValues(t *testing.T) {
 	require.NoError(t, params.Validate())
 }
 
-func TestInferenceParamsResetToDefaults(t *testing.T) {
+func TestInferParamsResetToDefaults(t *testing.T) {
 	// Reset to defaults
-	params := DefaultInferenceParams
+	params := DefaultInferParams
 
 	// Verify all fields are set to defaults
 	assert.False(t, params.Stream)
-	assert.Equal(t, DefaultInferenceParams.MaxTokens, params.MaxTokens)
-	assert.Equal(t, DefaultInferenceParams.TopK, params.TopK)
-	assert.Equal(t, float32(DefaultInferenceParams.TopP), params.TopP)
-	assert.Equal(t, float32(DefaultInferenceParams.Temperature), params.Temperature)
-	assert.Equal(t, float32(DefaultInferenceParams.FrequencyPenalty), params.FrequencyPenalty)
-	assert.Equal(t, float32(DefaultInferenceParams.PresencePenalty), params.PresencePenalty)
-	assert.Equal(t, float32(DefaultInferenceParams.RepeatPenalty), params.RepeatPenalty)
-	assert.Equal(t, float32(DefaultInferenceParams.TailFreeSamplingZ), params.TailFreeSamplingZ)
-	assert.Equal(t, DefaultInferenceParams.StopPrompts, params.StopPrompts)
+	assert.Equal(t, DefaultInferParams.MaxTokens, params.MaxTokens)
+	assert.Equal(t, DefaultInferParams.TopK, params.TopK)
+	assert.Equal(t, float32(DefaultInferParams.TopP), params.TopP)
+	assert.Equal(t, float32(DefaultInferParams.Temperature), params.Temperature)
+	assert.Equal(t, float32(DefaultInferParams.FrequencyPenalty), params.FrequencyPenalty)
+	assert.Equal(t, float32(DefaultInferParams.PresencePenalty), params.PresencePenalty)
+	assert.Equal(t, float32(DefaultInferParams.RepeatPenalty), params.RepeatPenalty)
+	assert.Equal(t, float32(DefaultInferParams.TailFreeSamplingZ), params.TailFreeSamplingZ)
+	assert.Equal(t, DefaultInferParams.StopPrompts, params.StopPrompts)
 }
 
-func TestInferenceParamsPartialReset(t *testing.T) {
+func TestInferParamsPartialReset(t *testing.T) {
 	// Test resetting only some fields
-	params := InferenceParams{
+	params := InferParams{
 		Stream:            true,
 		MaxTokens:         2048,
 		TopK:              100,
@@ -149,15 +149,15 @@ func TestInferenceParamsPartialReset(t *testing.T) {
 
 	// Reset only some fields
 	params.Stream = false
-	params.TopK = DefaultInferenceParams.TopK
+	params.TopK = DefaultInferParams.TopK
 
 	// Verify only the reset fields changed
 	assert.False(t, params.Stream)
-	assert.Equal(t, DefaultInferenceParams.TopK, params.TopK)
+	assert.Equal(t, DefaultInferParams.TopK, params.TopK)
 
 	// Verify other fields remain unchanged
 	assert.Equal(t, 2048, params.MaxTokens)
-	assert.Equal(t, DefaultInferenceParams.TopK, params.TopK) // This should be DefaultInferenceParams.TopK now
+	assert.Equal(t, DefaultInferParams.TopK, params.TopK) // This should be DefaultInferParams.TopK now
 	assert.Equal(t, float32(0.9), params.TopP)
 	assert.Equal(t, float32(0.7), params.Temperature)
 	assert.Equal(t, []string{"STOP", "END", "DONE"}, params.StopPrompts)
