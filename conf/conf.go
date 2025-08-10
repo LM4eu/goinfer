@@ -11,8 +11,8 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-// GoInferConf holds the configuration for GoInfer.
-type GoInferConf struct {
+// goInferConf holds the configuration for GoInfer.
+type goInferConf struct {
 	ModelsDir   string
 	WebServer   WebServerConf
 	OpenAiConf  types.OpenAiConf
@@ -29,7 +29,7 @@ type WebServerConf struct {
 
 // InitConf loads the config file.
 // Does not include extension.
-func InitConf(path, configFile string) (GoInferConf, error) {
+func InitConf(path, configFile string) (goInferConf, error) {
 	viper.SetConfigName(configFile)
 	viper.AddConfigPath(path)
 	viper.SetDefault("origins", []string{"localhost"})
@@ -46,7 +46,7 @@ func InitConf(path, configFile string) (GoInferConf, error) {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		return GoInferConf{}, fmt.Errorf("config file %s/%s.???: %w", path, configFile, err)
+		return goInferConf{}, fmt.Errorf("config file %s/%s.???: %w", path, configFile, err)
 	}
 
 	md := viper.GetString("models_dir")
@@ -63,7 +63,7 @@ func InitConf(path, configFile string) (GoInferConf, error) {
 	llamaPort := viper.GetInt("llama.port")
 	llamaArgs := viper.GetStringSlice("llama.args")
 
-	return GoInferConf{
+	return goInferConf{
 		ModelsDir: md,
 		WebServer: WebServerConf{
 			Port:            ":5143",
