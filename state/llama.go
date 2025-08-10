@@ -32,6 +32,10 @@ func StartLlamaServer() error {
 }
 
 func StopLlamaServer() error {
+	// unloads the currently loaded model if any.
+	IsModelLoaded = false
+	LoadedModel = ""
+
 	// Llama not initialized => llama-server already stopped (never started)
 	if Llama == nil {
 		return nil
@@ -64,12 +68,6 @@ func CheckServerHealth() bool {
 	}
 
 	return Llama.HealthCheck()
-}
-
-// UnloadModel unloads the currently loaded model.
-func UnloadModel() {
-	IsModelLoaded = false
-	LoadedModel = ""
 }
 
 // StartLlamaWithModel returns HTTP status code + Go error.

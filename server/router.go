@@ -55,8 +55,8 @@ func RunServer(conf conf.WebServerConf, localMode bool, disableApiKey bool) {
 	}
 
 	mod.GET("/state", ModelsStateHandler)
-	mod.POST("/load", LoadModelHandler)
-	mod.GET("/unload", UnloadModelHandler)
+	mod.POST("/start", StartLlamaHandler)
+	mod.GET("/stop", StopLlamaHandler)
 
 	// ----- Inference (llama.cpp) -----
 
