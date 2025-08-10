@@ -28,7 +28,7 @@ var (
 )
 
 // the language model instance.
-var Lm llama.LLama
+var Lm llama.LlamaServerManager
 
 // Llama server manager state.
 var (
