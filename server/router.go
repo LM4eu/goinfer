@@ -45,18 +45,6 @@ func RunServer(conf conf.WebServerConf, localMode bool, disableApiKey bool) {
 		}))
 	}
 
-	// ------------ Inference ------------
-
-	inf := e.Group("/infer")
-	if !disableApiKey {
-		inf.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-			return key == conf.ApiKey, nil
-		}))
-	}
-
-	inf.POST("", InferHandler)
-	inf.GET("/abort", AbortHandler)
-
 	// ------------ Models ------------
 
 	mod := e.Group("/model")
@@ -70,7 +58,19 @@ func RunServer(conf conf.WebServerConf, localMode bool, disableApiKey bool) {
 	mod.POST("/load", LoadModelHandler)
 	mod.GET("/unload", UnloadModelHandler)
 
-	// ------------ OpenAI ------------
+	// ----- Inference (llama.cpp) -----
+
+	inf := e.Group("/infer")
+	if !disableApiKey {
+		inf.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+			return key == conf.ApiKey, nil
+		}))
+	}
+
+	inf.POST("", InferHandler)
+	inf.GET("/abort", AbortLlamaHandler)
+
+	// ----- Inference OpenAI API -----
 
 	if conf.EnableApiOpenAi {
 		oai := e.Group("/v1")

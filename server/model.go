@@ -50,7 +50,7 @@ func LoadModelHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "model params"})
 	}
 
-	errcode, err := lm.LoadModel(modelConf)
+	errcode, err := lm.CheckModelFile(modelConf)
 	if err != nil {
 		switch errcode {
 		case 500:

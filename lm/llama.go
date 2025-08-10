@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/synw/goinfer/llama"
 	"github.com/synw/goinfer/state"
 	"github.com/synw/goinfer/types"
 )
@@ -61,21 +60,16 @@ const (
 // Main Inference Functions
 
 // Infer performs language model inference.
-func Infer(
-	prompt types.InferQuery,
-	c echo.Context,
-	ch chan<- types.StreamedMessage,
-	errCh chan<- types.StreamedMessage,
-) {
+func Infer(query types.InferQuery, c echo.Context, ch chan<- types.StreamedMessage, errCh chan<- types.StreamedMessage) {
 	if !state.IsModelLoaded {
 		errCh <- createErrorMessage(1, "no model loaded")
 	}
 
-	logVerboseInfo(prompt.Prompt, 0, 0, 0) // Initial verbose logging with prompt
+	logVerboseInfo(query.Prompt, 0, 0, 0) // Initial verbose logging with prompt
 
 	if state.IsDebug {
 		fmt.Println("Inference params:")
-		fmt.Printf("%+v\n\n", prompt.InferParams)
+		fmt.Printf("%+v\n\n", query.InferParams)
 	}
 
 	ntokens := 0
@@ -88,24 +82,15 @@ func Infer(
 	state.IsInferring = true
 	state.ContinueInferringController = true
 
-	res, err := state.Lm.Predict(prompt.Prompt, llama.SetTokenCallback(func(token string) bool {
-		err := streamDeltaMsg(ntokens, token, enc, c, prompt.InferParams, startThinking, &thinkingElapsed, &startEmitting)
-		if err != nil {
-			errCh <- createErrorMessage(ntokens+1, "streamDeltaMsg error")
-		}
-		return state.ContinueInferringController
-	}),
-		llama.SetTokens(prompt.InferParams.MaxTokens),
-		llama.SetMinP(prompt.InferParams.MinP),
-		llama.SetTopP(prompt.InferParams.TopP),
-		llama.SetTopK(prompt.InferParams.TopK),
-		llama.SetTemperature(prompt.InferParams.Temperature),
-		llama.SetStopWords(prompt.InferParams.StopPrompts...),
-		llama.SetFrequencyPenalty(prompt.InferParams.FrequencyPenalty),
-		llama.SetPresencePenalty(prompt.InferParams.PresencePenalty),
-		llama.SetPenalty(prompt.InferParams.RepeatPenalty),
-		llama.SetRopeFreqBase(1e6),
-	)
+	res, err := state.Lm.Predict(
+		query,
+		func(token string) bool {
+			err := streamDeltaMsg(ntokens, token, enc, c, query.InferParams, startThinking, &thinkingElapsed, &startEmitting)
+			if err != nil {
+				errCh <- createErrorMessage(ntokens+1, "streamDeltaMsg error")
+			}
+			return state.ContinueInferringController
+		})
 
 	state.IsInferring = false
 
@@ -118,7 +103,7 @@ func Infer(
 		return
 	}
 
-	if prompt.InferParams.Stream {
+	if query.InferParams.Stream {
 		err := sendLlamaStreamTermination(c)
 		if err != nil {
 			state.ContinueInferringController = false
@@ -128,7 +113,7 @@ func Infer(
 	}
 
 	stats, _ := calculateStats(ntokens, thinkingElapsed, startEmitting) // Ignore tps return value
-	endmsg, err := createResult(res, stats, enc, c, prompt.InferParams)
+	endmsg, err := createResult(res, stats, enc, c, query.InferParams)
 	if err != nil {
 		state.ContinueInferringController = false
 		errCh <- createErrorMessage(ntokens+1, "cannot create result msg")

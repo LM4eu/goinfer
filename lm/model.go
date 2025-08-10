@@ -7,22 +7,18 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/synw/goinfer/llama"
 	"github.com/synw/goinfer/state"
 	"github.com/synw/goinfer/types"
 )
 
 // UnloadModel unloads the currently loaded model.
 func UnloadModel() {
-	if state.IsModelLoaded {
-		state.Lm.Free()
-	}
 	state.IsModelLoaded = false
 	state.LoadedModel = ""
 }
 
-// Returns error code and error if any.
-func LoadModel(modelConf types.ModelConf) (int, error) {
+// CheckModelFile returns HTTP status code + Go error.
+func CheckModelFile(modelConf types.ModelConf) (int, error) {
 	if modelConf.Name == "" {
 		return 400, fmt.Errorf("model name cannot be empty: %w", ErrInvalidInput)
 	}
@@ -44,16 +40,6 @@ func LoadModel(modelConf types.ModelConf) (int, error) {
 		UnloadModel()
 	}
 
-	lm, err := llama.New(
-		filepath,
-		llama.SetContext(modelConf.Ctx),
-		llama.EnableEmbeddings,
-		llama.SetGPULayers(99),
-	)
-	if err != nil {
-		return 500, fmt.Errorf("cannot load model %s: %w", modelConf.Name, ErrModelLoadFailed)
-	}
-
 	if state.IsVerbose || state.IsDebug {
 		fmt.Println("Loaded model", filepath)
 		if state.IsDebug {
@@ -65,7 +51,6 @@ func LoadModel(modelConf types.ModelConf) (int, error) {
 		}
 	}
 
-	state.Lm = lm
 	state.ModelConf = modelConf
 	state.IsModelLoaded = true
 	state.LoadedModel = modelConf.Name

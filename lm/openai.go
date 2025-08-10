@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/synw/goinfer/llama"
 	"github.com/synw/goinfer/state"
 	"github.com/synw/goinfer/types"
 )
@@ -61,8 +60,7 @@ type openAiUsage struct {
 
 // InferOpenAi performs OpenAI model inference.
 func InferOpenAi(
-	prompt string,
-	params types.InferParams,
+	query types.InferQuery,
 	c echo.Context,
 	ch chan<- OpenAiChatCompletion,
 	errCh chan<- error,
@@ -72,11 +70,11 @@ func InferOpenAi(
 		return
 	}
 
-	logOpenAiVerboseInfo(prompt, 0, 0, 0) // Initial verbose logging with prompt
+	logOpenAiVerboseInfo(query.Prompt, 0, 0, 0) // Initial verbose logging with prompt
 
 	if state.IsDebug {
-		fmt.Println("Inference params:")
-		fmt.Printf("%+v\n\n", params)
+		fmt.Println("Inference query:")
+		fmt.Printf("%+v\n\n", query)
 	}
 
 	ntokens := 0
@@ -89,23 +87,13 @@ func InferOpenAi(
 	state.IsInferring = true
 	state.ContinueInferringController = true
 
-	res, err := state.Lm.Predict(prompt, llama.SetTokenCallback(func(token string) bool {
-		err := streamDeltaMsgOpenAi(ntokens, token, enc, c, params, startThinking, &thinkingElapsed, &startEmitting)
+	res, err := state.Lm.Predict(query, func(token string) bool {
+		err := streamDeltaMsgOpenAi(ntokens, token, enc, c, query.InferParams, startThinking, &thinkingElapsed, &startEmitting)
 		if err != nil {
 			errCh <- createErrorMessageOpenAi(ntokens+1, "streamDeltaMsgOpenAi error", err, ErrStreamDeltaMsgOpenAi)
 		}
 		return state.ContinueInferringController
-	}),
-		llama.SetTokens(params.MaxTokens),
-		llama.SetTopK(params.TopK),
-		llama.SetTopP(params.TopP),
-		llama.SetTemperature(params.Temperature),
-		llama.SetStopWords(params.StopPrompts...),
-		llama.SetFrequencyPenalty(params.FrequencyPenalty),
-		llama.SetPresencePenalty(params.PresencePenalty),
-		llama.SetPenalty(params.RepeatPenalty),
-		llama.SetRopeFreqBase(1e6),
-	)
+	})
 
 	state.IsInferring = false
 
@@ -118,7 +106,7 @@ func InferOpenAi(
 		return
 	}
 
-	if params.Stream {
+	if query.InferParams.Stream {
 		err := sendOpenAiStreamTermination(c)
 		if err != nil {
 			state.ContinueInferringController = false
