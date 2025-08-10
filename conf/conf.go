@@ -3,9 +3,7 @@ package conf
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/spf13/viper"
 )
@@ -19,34 +17,47 @@ type GoInferConf struct {
 
 // WebServerConf holds the configuration for GoInfer web server.
 type WebServerConf struct {
-	Origins      []string `json:"origins"`
+	Origins      []string `json:"server.origins"`
 	Port         string   `json:"port"`
 	EnableOaiAPI bool     `json:"openai_api"`
-	ApiKey       string   `json:"api_key"`
+	ApiKey       string   `json:"server.api_key"`
+}
+
+// setAllDefaults sets all default configuration values in a centralized manner
+func setAllDefaults() {
+	// Web server defaults
+	viper.SetDefault("server.origins", []string{"localhost"})
+	viper.SetDefault("server.port", 5143)
+	viper.SetDefault("server.openai_api", false)
+
+	// Model defaults
+	viper.SetDefault("model.dir", "./models")
+	viper.SetDefault("model.ctx", 2048)
+	viper.SetDefault("model.gpu_layers", 999)
+	viper.SetDefault("model.flash_attention", true)
+
+	// Llama defaults
+	viper.SetDefault("llama.exe", "./llama-server")
+	viper.SetDefault("llama.host", "localhost")
+	viper.SetDefault("llama.port", 8080)
+	viper.SetDefault("llama.web_ui", false)
+	viper.SetDefault("llama.threads", 8)
+	viper.SetDefault("llama.t_prompt", 16)
+	viper.SetDefault("llama.args", []string{"--log-colors", "--no-warmup"})
+}
+
+// setupViper configures Viper with the given path and config file name
+func setupViper(path, configFile string) {
+	viper.SetConfigName(configFile)
+	viper.AddConfigPath(path)
+	viper.AutomaticEnv()
+	setAllDefaults()
 }
 
 // InitConf loads the config file.
 // Does not include extension.
 func InitConf(path, configFile string) (GoInferConf, error) {
-	viper.SetConfigName(configFile)
-	viper.AddConfigPath(path)
-
-	viper.SetDefault("origins", []string{"localhost"})
-	viper.SetDefault("port", 5143)
-	viper.SetDefault("openai_api", false)
-
-	viper.SetDefault("models_dir", "./models")
-	viper.SetDefault("ctx", 2048)
-	viper.SetDefault("gpu_layers", 999)
-	viper.SetDefault("flash_attention", true)
-
-	viper.SetDefault("llama_path", "./llama-server")
-	viper.SetDefault("llama_host", "localhost")
-	viper.SetDefault("llama_port", 8080)
-	viper.SetDefault("llama_webui", false)
-	viper.SetDefault("llama_threads", 8)
-	viper.SetDefault("llama_thrPromptProc", 16)
-	viper.SetDefault("llama_args", []string{"--log-colors", "--no-warmup"})
+	setupViper(path, configFile)
 
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -55,62 +66,59 @@ func InitConf(path, configFile string) (GoInferConf, error) {
 
 	return GoInferConf{
 		WebServer: WebServerConf{
-			Origins:      viper.GetStringSlice("origins"),
-			Port:         viper.GetString("port"),
-			EnableOaiAPI: viper.GetBool("openai_api"),
-			ApiKey:       viper.GetString("api_key"),
+			Origins:      viper.GetStringSlice("server.origins"),
+			Port:         viper.GetString("server.port"),
+			EnableOaiAPI: viper.GetBool("server.openai_api"),
+			ApiKey:       viper.GetString("server.api_key"),
 		},
-		ModelsDir: viper.GetString("models_dir"),
+		ModelsDir: viper.GetString("model.dir"),
 		Llama: LlamaConf{
-			ModelPath:      viper.GetString("default_model"),
-			ContextSize:    viper.GetInt("ctx"),
-			GpuLayers:      viper.GetInt("gpu_layers"),
-			FlashAttention: viper.GetBool("flash_attention"),
-
-			BinaryPath:   viper.GetString("llama_path"),
-			Host:         viper.GetString("llama_host"),
-			Port:         viper.GetInt("llama_port"),
-			WebUI:        viper.GetBool("llama_webui"),
-			Threads:      viper.GetInt("llama_threads"),
-			ThPromptProc: viper.GetInt("llama_thrPromptProc"),
-			Args:         viper.GetStringSlice("llama_args"),
+			ModelPath:      viper.GetString("model.name"),
+			ContextSize:    viper.GetInt("model.ctx"),
+			GpuLayers:      viper.GetInt("model.gpu_layers"),
+			FlashAttention: viper.GetBool("model.flash_attention"),
+			BinaryPath:     viper.GetString("llama.exe"),
+			Host:           viper.GetString("llama.host"),
+			Port:           viper.GetInt("llama.port"),
+			WebUI:          viper.GetBool("llama.web_ui"),
+			Threads:        viper.GetInt("llama.threads"),
+			ThPromptProc:   viper.GetInt("llama.t_prompt"),
+			Args:           viper.GetStringSlice("llama.args"),
 		},
 	}, nil
 }
 
-// Create : create a config file
-func Create(modelsDir string, isDefault bool, fileName string) {
-	key := "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
+// Create creates a configuration file using Viper's WriteConfig functionality
+func Create(modelsDir string, isDefault bool, fileName string) error {
+	// Setup Viper for the target file
+	viper.SetConfigFile(fileName) // Set the full file path
+
+	// Set all defaults consistently
+	setAllDefaults()
+
+	if modelsDir == "" {
+		modelsDir = "./models"
+	}
+	viper.Set("model.dir", modelsDir)
+
+	// Set origins for web server (different from defaults)
+	viper.SetDefault("server.origins", []string{"http://localhost:5173", "http://localhost:5143"})
+
+	viper.SetDefault("model.name", "") // default model name when starting llama-server without specifying a model
+
+	// Generate API key if not default
 	if !isDefault {
-		key = generateRandomKey()
+		viper.SetDefault("server.api_key", generateRandomKey())
+	} else {
+		viper.SetDefault("server.api_key", "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465")
 	}
 
-	// configuration defaults
-	data := map[string]any{
-		"origins":    []string{"http://localhost:5173", "http://localhost:5143"},
-		"port":       "5143",
-		"openai_api": false,
-		"api_key":    key,
-
-		"models_dir":      modelsDir,
-		"default_model":   "",
-		"download_url":    "",
-		"ctx":             2048,
-		"gpu_layers":      999,
-		"flash_attention": true,
-
-		"llama_path":          "./llama-server",
-		"llama_host":          "localhost",
-		"llama_port":          8080,
-		"llama_threads":       8,
-		"llama_thrPromptProc": 16,
-		"llama_args":          []string{"--log-colors", "--no-warmup"},
+	// Write the configuration file using Viper
+	if err := viper.WriteConfigAs(fileName); err != nil {
+		return fmt.Errorf("failed to write config file %s: %w", fileName, err)
 	}
-	jsonString, _ := json.MarshalIndent(data, "", "    ")
-	err := os.WriteFile(fileName, jsonString, os.ModePerm&^0o111)
-	if err != nil {
-		fmt.Printf("Cannot write %s - %v", fileName, err)
-	}
+
+	return nil
 }
 
 func generateRandomKey() string {
