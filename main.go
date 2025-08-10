@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/synw/goinfer/conf"
+	"github.com/synw/goinfer/llama"
 	"github.com/synw/goinfer/server"
 	"github.com/synw/goinfer/state"
 )
@@ -44,7 +45,11 @@ func main() {
 		panic(err)
 	}
 
-	state.Lm.Conf = &conf.Llama
+	// Initializes the Llama server manager.
+	state.Llama = llama.NewLlamaServerManager(&conf.Llama)
+	state.Monitor = llama.NewMonitor(&conf.Llama)
+	state.Monitor.Start()
+
 	state.ModelsDir = conf.ModelsDir
 	state.IsVerbose = !*quiet
 
