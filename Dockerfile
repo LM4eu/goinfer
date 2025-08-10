@@ -10,8 +10,8 @@
 #
 # Run:
 #
-#    docker run --rm -p 5143:5143 -v $PWD/goinfer.json:/app/goinfer.json goinfer-llama
-#    podman run --rm -p 5143:5143 -v $PWD/goinfer.json:/app/goinfer.json goinfer-llama
+#    docker run --rm -p 5143:5143 -v $PWD/goinfer.yml:/app/goinfer.yml goinfer-llama
+#    podman run --rm -p 5143:5143 -v $PWD/goinfer.yml:/app/goinfer.yml goinfer-llama
 
 
 # Arguments:

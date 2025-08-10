@@ -1,4 +1,4 @@
-# - Requirement:  local file ./goinfer.json
+# - Requirement:  local file ./goinfer.yml
 # - Build:        DOCKER_BUILDKIT=1 docker compose build
 # - Run:          docker compose up
 # - Stop:         CTRL + C
@@ -18,11 +18,11 @@ services:
         - UBUNTU_VERSION=24.04
     command: -local
     ports: [5143:5143]
-    configs: [goinfer.json]
+    configs: [goinfer.yml]
     volumes:
-      # goinfer.json must contain: "models_dir":"/models"
-      # Define your custom models_dir in the ".env" file
-      - ${models_dir:-./models}:/models
+      # goinfer.yml must contain: "model":{"dir":"/models"}
+      # Else define your custom env. var. "model.dir" in the ".env" file
+      - ${model.dir:-./models}:/models
       - ${ccache_dir:-./.ccache}:/root/.ccache
       - ${go_cache_dir:-./.go}:/root/go
     environment:
@@ -30,7 +30,7 @@ services:
     # restart: unless-stopped
 
 configs:
-  goinfer.json:
-    # file: ./goinfer.json
-    content: '{"models_dir":"/models"}'
+  goinfer.yml:
+    # file: ./goinfer.yml
+    content: '{"model":{"dir":"/models"}}'
 
