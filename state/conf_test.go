@@ -23,25 +23,14 @@ func TestDefaultInferenceParams(t *testing.T) {
 }
 
 func TestDefaultModelOptions(t *testing.T) {
-	// Test that DefaultModelOptions has expected values
-	assert.Equal(t, 2048, DefaultModelOptions.ContextSize)
-	assert.Equal(t, 0, DefaultModelOptions.Seed)
-	assert.False(t, DefaultModelOptions.F16Memory)
-	assert.False(t, DefaultModelOptions.MLock)
-	assert.True(t, DefaultModelOptions.MMap)
-	assert.False(t, DefaultModelOptions.Embeddings)
-	assert.False(t, DefaultModelOptions.LowVRAM)
-	assert.Equal(t, 512, DefaultModelOptions.NBatch)
-	assert.Equal(t, float32(10000), DefaultModelOptions.FreqRopeBase)
-	assert.Equal(t, float32(1.0), DefaultModelOptions.FreqRopeScale)
-	assert.Equal(t, 0, DefaultModelOptions.NGPULayers)
+	// Test that DefaultModelConf has expected values
+	assert.Equal(t, 2048, DefaultModelConf.Ctx)
 }
 
 func TestDefaultModelConf(t *testing.T) {
 	// Test that DefaultModelConf has expected values
 	assert.Empty(t, DefaultModelConf.Name)
 	assert.Equal(t, 2048, DefaultModelConf.Ctx)
-	assert.Equal(t, 0, DefaultModelConf.GPULayers)
 }
 
 func TestDefaultInferenceParamsImmutability(t *testing.T) {
@@ -62,20 +51,18 @@ func TestDefaultInferenceParamsImmutability(t *testing.T) {
 }
 
 func TestDefaultModelOptionsImmutability(t *testing.T) {
-	// Test that modifying DefaultModelOptions doesn't affect other instances
-	originalOptions := DefaultModelOptions
+	// Test that modifying DefaultModelConf doesn't affect other instances
+	originalOptions := DefaultModelConf
 
 	// Modify the default options
-	DefaultModelOptions.ContextSize = 4096
-	DefaultModelOptions.NGPULayers = 2
+	DefaultModelConf.Ctx = 4096
 
 	// Create a new instance and verify it has the modified values
-	newOptions := DefaultModelOptions
-	assert.Equal(t, 4096, newOptions.ContextSize)
-	assert.Equal(t, 2, newOptions.NGPULayers)
+	newOptions := DefaultModelConf
+	assert.Equal(t, 4096, newOptions.Ctx)
 
 	// Restore original values
-	DefaultModelOptions = originalOptions
+	DefaultModelConf = originalOptions
 }
 
 func TestDefaultModelConfImmutability(t *testing.T) {
@@ -125,28 +112,13 @@ func TestDefaultInferenceParamsWithCustomValues(t *testing.T) {
 
 func TestDefaultModelOptionsWithCustomValues(t *testing.T) {
 	// Test creating custom model options based on defaults
-	customOptions := DefaultModelOptions
+	customOptions := DefaultModelConf
 
 	// Modify only specific fields
-	customOptions.ContextSize = 8192
-	customOptions.Seed = 42
-	customOptions.NBatch = 1024
-	customOptions.NGPULayers = 4
-	customOptions.FreqRopeBase = 20000
-	customOptions.FreqRopeScale = 0.8
+	customOptions.Ctx = 8192
 
 	// Verify other fields retain default values
-	assert.Equal(t, 8192, customOptions.ContextSize)
-	assert.Equal(t, 42, customOptions.Seed)
-	assert.Equal(t, 1024, customOptions.NBatch)
-	assert.Equal(t, 4, customOptions.NGPULayers)
-	assert.Equal(t, float32(20000), customOptions.FreqRopeBase)
-	assert.Equal(t, float32(0.8), customOptions.FreqRopeScale)
-	assert.False(t, customOptions.F16Memory)  // Default value
-	assert.False(t, customOptions.MLock)      // Default value
-	assert.True(t, customOptions.MMap)        // Default value
-	assert.False(t, customOptions.Embeddings) // Default value
-	assert.False(t, customOptions.LowVRAM)    // Default value
+	assert.Equal(t, 8192, customOptions.Ctx)
 }
 
 func TestDefaultModelConfWithCustomValues(t *testing.T) {
@@ -156,10 +128,8 @@ func TestDefaultModelConfWithCustomValues(t *testing.T) {
 	// Modify only specific fields
 	customConf.Name = "custom_model"
 	customConf.Ctx = 4096
-	customConf.GPULayers = 1
 
 	// Verify other fields retain default values
 	assert.Equal(t, "custom_model", customConf.Name)
 	assert.Equal(t, 4096, customConf.Ctx)
-	assert.Equal(t, 1, customConf.GPULayers)
 }

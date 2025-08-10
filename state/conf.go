@@ -1,7 +1,6 @@
 package state
 
 import (
-	"github.com/synw/goinfer/llama"
 	"github.com/synw/goinfer/types"
 )
 
@@ -20,22 +19,7 @@ var DefaultInferenceParams = types.InferenceParams{
 	StopPrompts:       []string{"</s>"},
 }
 
-var DefaultModelOptions = llama.ModelOptions{
-	ContextSize:   2048,
-	Seed:          0,
-	F16Memory:     false,
-	MLock:         false,
-	Embeddings:    false,
-	MMap:          true,
-	LowVRAM:       false,
-	NBatch:        512,
-	FreqRopeBase:  10000,
-	FreqRopeScale: 1.0,
-	NGPULayers:    0,
-}
-
 var DefaultModelConf = types.ModelConf{
-	Name:      "",
-	Ctx:       2048,
-	GPULayers: 0,
+	Name: "",
+	Ctx:  2048,
 }

@@ -25,7 +25,7 @@ func TestGoInferConf(t *testing.T) {
 
 func TestTask(t *testing.T) {
 	// Test creating a Task
-	task := Prompt{
+	task := InferQuery{
 		Prompt:    "Please read this prompt",
 		ModelConf: ModelConf{Name: "test-model", Ctx: 2048},
 		InferParams: InferenceParams{
@@ -52,19 +52,16 @@ func TestModelConf(t *testing.T) {
 	modelConf := ModelConf{
 		Name:      "test-model",
 		Ctx:       2048,
-		GPULayers: 20,
 	}
 
 	// Test field values
 	assert.Equal(t, "test-model", modelConf.Name)
 	assert.Equal(t, 2048, modelConf.Ctx)
-	assert.Equal(t, 20, modelConf.GPULayers)
 
 	// Test creating a ModelConf with minimal values
 	minimalModelConf := ModelConf{Name: "minimal-model"}
 	assert.Equal(t, "minimal-model", minimalModelConf.Name)
 	assert.Equal(t, 0, minimalModelConf.Ctx)
-	assert.Equal(t, 0, minimalModelConf.GPULayers)
 }
 
 func TestTemplateInfo(t *testing.T) {
@@ -173,7 +170,7 @@ func TestInferenceResultJSONMarshaling(t *testing.T) {
 
 func TestTaskJSONMarshaling(t *testing.T) {
 	// Test JSON marshaling and unmarshaling for Task
-	task := Prompt{
+	task := InferQuery{
 		Prompt:      "test-template",
 		ModelConf:   ModelConf{Name: "test-model"},
 		InferParams: NewInferenceParams(),
@@ -184,7 +181,7 @@ func TestTaskJSONMarshaling(t *testing.T) {
 	require.NoError(t, err)
 
 	// Unmarshal from JSON
-	var unmarshalledTask Prompt
+	var unmarshalledTask InferQuery
 	err = json.Unmarshal(jsonData, &unmarshalledTask)
 	require.NoError(t, err)
 

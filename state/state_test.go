@@ -13,7 +13,7 @@ func TestStateInitialization(t *testing.T) {
 	assert.Empty(t, ModelsDir)
 	assert.False(t, IsModelLoaded)
 	assert.Empty(t, LoadedModel)
-	assert.Equal(t, DefaultModelOptions, ModelOptions)
+	assert.Equal(t, DefaultModelConf, ModelConf)
 	assert.True(t, ContinueInferringController)
 	assert.False(t, IsInferring)
 	assert.True(t, IsVerbose)
@@ -30,7 +30,7 @@ func TestStateModification(t *testing.T) {
 	originalModelsDir := ModelsDir
 	originalIsModelLoaded := IsModelLoaded
 	originalLoadedModel := LoadedModel
-	originalModelOptions := ModelOptions
+	originalModelOptions := ModelConf
 	originalContinueInferringController := ContinueInferringController
 	originalIsInferring := IsInferring
 	originalIsVerbose := IsVerbose
@@ -41,7 +41,7 @@ func TestStateModification(t *testing.T) {
 	ModelsDir = "/test/models"
 	IsModelLoaded = true
 	LoadedModel = "test_model"
-	ModelOptions = llama.ModelOptions{ContextSize: 4096}
+	ModelConf = types.ModelConf{Ctx: 4096}
 	ContinueInferringController = false
 	IsInferring = true
 	IsVerbose = false
@@ -52,7 +52,7 @@ func TestStateModification(t *testing.T) {
 	assert.Equal(t, "/test/models", ModelsDir)
 	assert.True(t, IsModelLoaded)
 	assert.Equal(t, "test_model", LoadedModel)
-	assert.Equal(t, llama.ModelOptions{ContextSize: 4096}, ModelOptions)
+	assert.Equal(t, types.ModelConf{Ctx: 4096}, ModelConf)
 	assert.False(t, ContinueInferringController)
 	assert.True(t, IsInferring)
 	assert.False(t, IsVerbose)
@@ -63,7 +63,7 @@ func TestStateModification(t *testing.T) {
 	ModelsDir = originalModelsDir
 	IsModelLoaded = originalIsModelLoaded
 	LoadedModel = originalLoadedModel
-	ModelOptions = originalModelOptions
+	ModelConf = originalModelOptions
 	ContinueInferringController = originalContinueInferringController
 	IsInferring = originalIsInferring
 	IsVerbose = originalIsVerbose
@@ -112,46 +112,18 @@ func TestStateConcurrentAccess(t *testing.T) {
 
 func TestStateModelOptions(t *testing.T) {
 	// Test ModelOptions state variable
-	originalModelOptions := ModelOptions
+	originalModelOptions := ModelConf
 
 	// Modify ModelOptions
-	ModelOptions = llama.ModelOptions{
-		ContextSize:   8192,
-		Seed:          42,
-		NBatch:        1024,
-		F16Memory:     true,
-		MLock:         true,
-		MMap:          false,
-		LowVRAM:       true,
-		Embeddings:    true,
-		NUMA:          true,
-		NGPULayers:    2,
-		MainGPU:       "0",
-		TensorSplit:   "1,1",
-		FreqRopeBase:  10000,
-		FreqRopeScale: 1.0,
-	}
+	ModelConf = types.ModelConf{Ctx: 8192}
 
 	// Assert modification
-	assert.Equal(t, llama.ModelOptions{
-		ContextSize:   8192,
-		Seed:          42,
-		NBatch:        1024,
-		F16Memory:     true,
-		MLock:         true,
-		MMap:          false,
-		LowVRAM:       true,
-		Embeddings:    true,
-		NUMA:          true,
-		NGPULayers:    2,
-		MainGPU:       "0",
-		TensorSplit:   "1,1",
-		FreqRopeBase:  10000,
-		FreqRopeScale: 1.0,
-	}, ModelOptions)
+	assert.Equal(t, types.ModelConf{
+		Ctx: 8192,
+	}, ModelConf)
 
 	// Restore original value
-	ModelOptions = originalModelOptions
+	ModelConf = originalModelOptions
 }
 
 func TestStateInferenceFlags(t *testing.T) {
@@ -245,30 +217,30 @@ func TestStateModelLoadedState(t *testing.T) {
 	// Test model loaded state
 	originalIsModelLoaded := IsModelLoaded
 	originalLoadedModel := LoadedModel
-	originalModelOptions := ModelOptions
+	originalModelOptions := ModelConf
 
 	// Test model loaded state
 	IsModelLoaded = true
 	LoadedModel = "test_model.bin"
-	ModelOptions = llama.ModelOptions{ContextSize: 2048}
+	ModelConf = types.ModelConf{Ctx: 2048}
 
 	assert.True(t, IsModelLoaded)
 	assert.Equal(t, "test_model.bin", LoadedModel)
-	assert.Equal(t, llama.ModelOptions{ContextSize: 2048}, ModelOptions)
+	assert.Equal(t, types.ModelConf{Ctx: 2048}, ModelConf)
 
 	// Test model unloaded state
 	IsModelLoaded = false
 	LoadedModel = ""
-	ModelOptions = llama.ModelOptions{}
+	ModelConf = types.ModelConf{}
 
 	assert.False(t, IsModelLoaded)
 	assert.Empty(t, LoadedModel)
-	assert.Equal(t, llama.ModelOptions{}, ModelOptions)
+	assert.Equal(t, types.ModelConf{}, ModelConf)
 
 	// Restore original values
 	IsModelLoaded = originalIsModelLoaded
 	LoadedModel = originalLoadedModel
-	ModelOptions = originalModelOptions
+	ModelConf = originalModelOptions
 }
 
 func TestStateLLamaInstance(t *testing.T) {
