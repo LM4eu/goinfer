@@ -3,7 +3,6 @@ package state
 import (
 	"time"
 
-	"github.com/synw/goinfer/conf"
 	"github.com/synw/goinfer/llama"
 	"github.com/synw/goinfer/types"
 )
@@ -29,110 +28,67 @@ var (
 )
 
 // the language model instance.
-var Lm llama.LlamaServerManager
-
-// Llama server manager state.
 var (
-	LlamaManager       *llama.LlamaServerManager
-	LlamaConfig        *conf.LlamaConf
-	LlamaMonitor       *llama.Monitor
-	IsServerRunning    = false
-	ServerStartTime    = time.Time{}
-	ServerRestartCount = 0
+	Llama   *llama.LlamaServerManager
+	Monitor *llama.Monitor
 )
-
-// InitializeLlama - Initializes the Llama server manager.
-func InitializeLlama(conf *conf.LlamaConf) error {
-	if LlamaManager != nil {
-		return llama.ErrAlreadyRunning("Llama manager already initialized")
-	}
-
-	// Create manager
-	LlamaManager = llama.NewLlamaServerManager(conf)
-
-	// Create monitor
-	LlamaMonitor = llama.NewMonitor(conf)
-	LlamaMonitor.Start()
-
-	return nil
-}
 
 // StartLlamaServer - Starts the Llama server.
 func StartLlamaServer() error {
-	if LlamaManager == nil {
+	if Llama == nil {
 		return llama.ErrNotRunning("Llama manager not initialized")
 	}
 
-	err := LlamaManager.Start()
+	err := Llama.Start()
 	if err != nil {
 		return err
 	}
-
-	IsServerRunning = true
-	ServerStartTime = time.Now()
 
 	return nil
 }
 
 // StopLlamaServer - Stops the Llama server.
 func StopLlamaServer() error {
-	if LlamaManager == nil {
+	if Llama == nil {
 		return llama.ErrNotRunning("Llama manager not initialized")
 	}
 
-	err := LlamaManager.Stop()
+	err := Llama.Stop()
 	if err != nil {
 		return err
 	}
-
-	IsServerRunning = false
-	ServerRestartCount++
 
 	return nil
 }
 
 // RestartLlamaServer - Restarts the Llama server.
 func RestartLlamaServer() error {
-	if LlamaManager == nil {
+	if Llama == nil {
 		return llama.ErrNotRunning("Llama manager not initialized")
 	}
 
-	err := LlamaManager.Restart()
+	err := Llama.Restart()
 	if err != nil {
 		return err
 	}
-
-	IsServerRunning = true
-	ServerStartTime = time.Now()
-	ServerRestartCount++
 
 	return nil
 }
 
 // GetServerStatus - Gets the current server status.
 func GetServerStatus() (bool, time.Duration, int) {
-	if LlamaManager == nil {
+	if Llama == nil {
 		return false, 0, 0
 	}
 
-	return IsServerRunning, LlamaManager.GetUptime(), LlamaManager.GetStartCount()
+	return Llama.IsRunning(), Llama.GetUptime(), Llama.GetStartCount()
 }
 
 // CheckServerHealth - Performs a health check on the server.
 func CheckServerHealth() bool {
-	if LlamaManager == nil {
+	if Llama == nil {
 		return false
 	}
 
-	return LlamaManager.HealthCheck()
-}
-
-// GetServerManager - Returns the server manager instance.
-func GetServerManager() *llama.LlamaServerManager {
-	return LlamaManager
-}
-
-// GetServerMonitor - Returns the server monitor instance.
-func GetServerMonitor() *llama.Monitor {
-	return LlamaMonitor
+	return Llama.HealthCheck()
 }
