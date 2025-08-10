@@ -7,7 +7,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/synw/goinfer/files"
-	"github.com/synw/goinfer/lm"
 	"github.com/synw/goinfer/state"
 	"github.com/synw/goinfer/types"
 )
@@ -50,7 +49,7 @@ func LoadModelHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "model params"})
 	}
 
-	errcode, err := lm.CheckModelFile(modelConf)
+	errcode, err := state.StartLlamaWithModel(modelConf)
 	if err != nil {
 		switch errcode {
 		case 500:
@@ -72,7 +71,7 @@ func LoadModelHandler(c echo.Context) error {
 
 // UnloadModelHandler unloads the currently loaded model.
 func UnloadModelHandler(c echo.Context) error {
-	lm.UnloadModel()
+	state.UnloadModel()
 	return c.NoContent(http.StatusNoContent)
 }
 

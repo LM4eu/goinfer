@@ -179,19 +179,19 @@ func InferHandler(c echo.Context) error {
 		return c.NoContent(http.StatusBadRequest)
 	}
 
-	// Do we need to load the model?
-	loadModel := true
+	// Do we need to start/restart llama-server?
+	restart := true
 	if state.IsModelLoaded {
 		if state.LoadedModel == query.ModelConf.Name {
 			if state.ModelConf.Ctx == query.ModelConf.Ctx {
-				loadModel = false
+				restart = false
 			}
 		}
 	}
 
-	if loadModel {
+	if restart {
 		state.ModelConf = query.ModelConf
-		statusCode, err := lm.CheckModelFile(query.ModelConf)
+		statusCode, err := state.StartLlamaWithModel(query.ModelConf)
 		if err != nil {
 			if state.IsDebug {
 				fmt.Println("Error loading model:", err)

@@ -123,7 +123,7 @@ func CreateCompletionHandler(c echo.Context) error {
 	if state.LoadedModel != query.ModelConf.Name {
 		modelConf := types.DefaultModelConf
 		modelConf.Name = query.ModelConf.Name
-		_, err = lm.CheckModelFile(modelConf)
+		_, err = state.StartLlamaWithModel(modelConf)
 		if err != nil {
 			if state.IsDebug {
 				fmt.Println("Error loading model:", err)
