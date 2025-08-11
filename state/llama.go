@@ -29,16 +29,22 @@ func RestartLlamaServer(modelConf types.ModelConf) error {
 		return llama.ErrNotRunning("Llama manager not initialized")
 	}
 
+	isURL := conf.IsDownloadURL(modelConf.Name)
+	isLocalFile := (isURL == 0)
+
 	modelPath := modelConf.Name
-	if conf.IsDownloadURL(modelConf.Name) != 0 {
+	if isLocalFile {
 		path, err := searchModelFile(modelConf)
 		if err != nil {
 			return err
 		}
 		modelPath = path
+	} else if IsDebug {
+		fmt.Println("Will download " + modelConf.Name)
 	}
 
 	Llama.Conf.ModelPathname = modelPath
+	Llama.Conf.PathnameType = isURL
 	Llama.Conf.ContextSize = modelConf.Ctx
 	err := Llama.Restart()
 	if err != nil {
