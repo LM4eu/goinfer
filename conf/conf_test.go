@@ -1,14 +1,26 @@
 package conf
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
+
+func init() {
+	// Reset viper before each test
+	viper.Reset()
+}
+
+// resetViper resets viper state to ensure clean test environment
+func resetViper() {
+	viper.Reset()
+}
 
 func TestInitConf(t *testing.T) {
 	// Create a temporary config file
@@ -16,7 +28,7 @@ func TestInitConf(t *testing.T) {
 	configPath := filepath.Join(tempDir, "goinfer.yml")
 
 	configData := map[string]any{
-		"model.dir":         "./test_models",
+		"models_dir":        "./test_models",
 		"server.origins":    []string{"http://localhost:3000"},
 		"server.api_key":    "test_key_123",
 		"server.openai_api": true,
@@ -34,7 +46,7 @@ func TestInitConf(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test InitConf
-	config, _ := InitConf(".", "goinfer") // ./goinfer.yml
+	config, _ := Load(".", "goinfer") // ./goinfer.yml
 
 	assert.Equal(t, "./test_models", config.ModelsDir)
 	assert.Equal(t, []string{"http://localhost:3000"}, config.Server.Origins)
@@ -48,7 +60,7 @@ func TestInitConf_WithDefaults(t *testing.T) {
 	configPath := filepath.Join(tempDir, "goinfer.yml")
 
 	configData := map[string]any{
-		"model.dir": "./test_models",
+		"models_dir": "./test_models",
 	}
 
 	configBytes, _ := yaml.Marshal(configData)
@@ -63,7 +75,7 @@ func TestInitConf_WithDefaults(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test InitConf with defaults
-	config, _ := InitConf(".", "goinfer") // ./goinfer.yml
+	config, _ := Load(".", "goinfer") // ./goinfer.yml
 
 	assert.Equal(t, "./test_models", config.ModelsDir)
 	assert.Equal(t, []string{"localhost"}, config.Server.Origins) // Default value
@@ -82,7 +94,7 @@ func TestInitConf_InvalidConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test InitConf with invalid config
-	_, err = InitConf(".", "goinfer") // ./goinfer.yml
+	_, err = Load(".", "goinfer") // ./goinfer.yml
 	assert.Error(t, err)
 }
 
@@ -91,7 +103,7 @@ func TestInitConf_InvalidJSON(t *testing.T) {
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "goinfer.yml")
 
-	invalidJSON := `{"model.dir": "./test_models",` // Missing closing brace
+	invalidJSON := `{"models_dir": "./test_models",` // Missing closing brace
 	err := os.WriteFile(configPath, []byte(invalidJSON), 0o644)
 	require.NoError(t, err)
 
@@ -103,7 +115,7 @@ func TestInitConf_InvalidJSON(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test InitConf with invalid JSON
-	_, err = InitConf(".", "goinfer") // ./goinfer.yml
+	_, err = Load(".", "goinfer") // ./goinfer.yml
 	assert.Error(t, err)
 }
 
@@ -113,7 +125,7 @@ func TestInitConf_DifferentConfigName(t *testing.T) {
 	configPath := filepath.Join(tempDir, "custom.config.json")
 
 	configData := map[string]any{
-		"model.dir":      "./test_models",
+		"models_dir":     "./test_models",
 		"server.origins": []string{"http://localhost:3000"},
 		"server.api_key": "test_key_123",
 	}
@@ -130,7 +142,7 @@ func TestInitConf_DifferentConfigName(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test InitConf with different config name
-	_, err = InitConf(".", "goinfer") // ./goinfer.yml
+	_, err = Load(".", "goinfer") // ./goinfer.yml
 	assert.Error(t, err)
 }
 
@@ -146,7 +158,8 @@ func TestCreate(t *testing.T) {
 
 	// Test Create with default=false
 	customFileName := "custom.config.json"
-	err = Create("/test/models", false, customFileName)
+	t.Setenv("MODELS_DIR", "/test/models")
+	err = Create(customFileName, false)
 	require.NoError(t, err)
 
 	// Verify config file was created with custom name
@@ -159,10 +172,6 @@ func TestCreate(t *testing.T) {
 	var config map[string]any
 	err = yaml.Unmarshal(configBytes, &config)
 	require.NoError(t, err)
-
-	// Check the nested structure
-	model := config["model"].(map[string]any)
-	assert.Equal(t, "/test/models", model["dir"])
 
 	server := config["server"].(map[string]any)
 	assert.Equal(t, []any{"http://localhost:5173", "http://localhost:5143"}, server["origins"])
@@ -184,8 +193,9 @@ func TestCreate_WithDefaults(t *testing.T) {
 	err := os.Chdir(tempDir)
 	require.NoError(t, err)
 
-	// Test Create with default=true
-	err = Create("/test/models", true, "goinfer.yml")
+	// Test Create with random=true
+	t.Setenv("MODELS_DIR", "/test/models")
+	err = Create("goinfer.yml", false)
 	require.NoError(t, err)
 
 	// Verify config file was created
@@ -198,10 +208,6 @@ func TestCreate_WithDefaults(t *testing.T) {
 	var config map[string]any
 	err = yaml.Unmarshal(configBytes, &config)
 	require.NoError(t, err)
-
-	// Check the nested structure
-	model := config["model"].(map[string]any)
-	assert.Equal(t, "/test/models", model["dir"])
 
 	server := config["server"].(map[string]any)
 	assert.Equal(t, []any{"http://localhost:5173", "http://localhost:5143"}, server["origins"])
@@ -242,4 +248,97 @@ func TestGenerateRandomKey_WithFixedSeed(t *testing.T) {
 		assert.False(t, keys[k], "Duplicate key generated")
 		keys[k] = true
 	}
+}
+
+func TestInitConf_EnvironmentVariablePrecedence(t *testing.T) {
+	// Reset viper to ensure clean test environment
+	resetViper()
+
+	// Create a temporary config file
+	tempDir := t.TempDir()
+	configPath := filepath.Join(tempDir, "goinfer.yml")
+
+	configData := map[string]any{
+		"models_dir":        "./test_models",
+		"llama.exe_path":    "./config-value", // This should be overridden by env var
+		"server.origins":    []string{"http://localhost:3000"},
+		"server.api_key":    "test_key_123",
+		"server.openai_api": true,
+	}
+
+	configBytes, _ := yaml.Marshal(configData)
+	err := os.WriteFile(configPath, configBytes, 0o644)
+	require.NoError(t, err)
+
+	// Change working directory to temp dir
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+
+	// Set environment variable before InitConf
+	t.Setenv("LLAMA_EXE_PATH", "/custom/path/llama")
+	t.Setenv("MODELS_DIR", "/custom/models") // Test top-level env var
+
+	// Debug: Check environment variables
+	fmt.Printf("Debug: LLAMA_EXE_PATH=%s\n", os.Getenv("LLAMA_EXE_PATH"))
+	fmt.Printf("Debug: MODELS_DIR=%s\n", os.Getenv("MODELS_DIR"))
+
+	// Test InitConf
+	config, err := Load(".", "goinfer") // ./goinfer.yml
+	require.NoError(t, err)
+
+	// Debug: Check the actual values
+	fmt.Printf("Debug: config.ModelsDir=%s\n", config.ModelsDir)
+	fmt.Printf("Debug: config.Llama.ExePath=%s\n", config.Llama.ExePath)
+
+	// Environment variable should override config file value
+	assert.Equal(t, "/custom/path/llama", config.Llama.ExePath)
+
+	// Environment variable should override config file value
+	assert.Equal(t, "/custom/models", config.ModelsDir)
+
+	// Config file value should be used when no env var is set
+	assert.Equal(t, []string{"http://localhost:3000"}, config.Server.Origins)
+	assert.Equal(t, "test_key_123", config.Server.ApiKey)
+	assert.True(t, config.Server.EnableOpenAiAPI)
+}
+
+func TestInitConf_EnvironmentVariableNaming(t *testing.T) {
+	// Reset viper to ensure clean test environment
+	resetViper()
+
+	// Create a temporary config file
+	tempDir := t.TempDir()
+	configPath := filepath.Join(tempDir, "goinfer.yml")
+
+	configData := map[string]any{
+		"models_dir": "./test_models",
+	}
+
+	configBytes, _ := yaml.Marshal(configData)
+	err := os.WriteFile(configPath, configBytes, 0o644)
+	require.NoError(t, err)
+
+	// Change working directory to temp dir
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+
+	// Test incorrect naming with double underscores (should not work)
+	t.Setenv("LLAMA__EXE_PATH", "/wrong/path")
+
+	config1, err := Load(".", "goinfer")
+	require.NoError(t, err)
+	assert.Equal(t, "./llama-server", config1.Llama.ExePath) // Should use default
+
+	// Test correct naming (should work)
+	t.Setenv("LLAMA_EXE_PATH", "/correct/path")
+
+	config2, err := Load(".", "goinfer")
+	require.NoError(t, err)
+	assert.Equal(t, "/correct/path", config2.Llama.ExePath) // Should use env var
 }
