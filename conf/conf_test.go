@@ -1,7 +1,6 @@
 package conf
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -281,17 +280,9 @@ func TestInitConf_EnvironmentVariablePrecedence(t *testing.T) {
 	t.Setenv("LLAMA_EXE_PATH", "/custom/path/llama")
 	t.Setenv("MODELS_DIR", "/custom/models") // Test top-level env var
 
-	// Debug: Check environment variables
-	fmt.Printf("Debug: LLAMA_EXE_PATH=%s\n", os.Getenv("LLAMA_EXE_PATH"))
-	fmt.Printf("Debug: MODELS_DIR=%s\n", os.Getenv("MODELS_DIR"))
-
 	// Test InitConf
 	config, err := Load(".", "goinfer") // ./goinfer.yml
 	require.NoError(t, err)
-
-	// Debug: Check the actual values
-	fmt.Printf("Debug: config.ModelsDir=%s\n", config.ModelsDir)
-	fmt.Printf("Debug: config.Llama.ExePath=%s\n", config.Llama.ExePath)
 
 	// Environment variable should override config file value
 	assert.Equal(t, "/custom/path/llama", config.Llama.ExePath)
