@@ -38,9 +38,16 @@ func RestartLlamaServer(modelConf types.ModelConf) error {
 		modelPath = path
 	}
 
-	Llama.Conf.ModelPath = modelPath
+	Llama.Conf.ModelPathname = modelPath
 	Llama.Conf.ContextSize = modelConf.Ctx
-	return Llama.Restart()
+	err := Llama.Restart()
+	if err != nil {
+		return err
+	}
+
+	Monitor.Start()
+
+	return nil
 }
 
 func StopLlamaServer() error {
@@ -85,11 +92,11 @@ func IsStartNeeded(modelConf types.ModelConf) bool {
 		return true
 	}
 
-	if modelConf.Name == Llama.Conf.ModelPath {
+	if modelConf.Name == Llama.Conf.ModelPathname {
 		return false
 	}
 
-	base := filepath.Base(Llama.Conf.ModelPath) // Just the filename without directory
+	base := filepath.Base(Llama.Conf.ModelPathname) // Just the filename without directory
 	if modelConf.Name == base {
 		return false
 	}

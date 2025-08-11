@@ -24,9 +24,8 @@ func main() {
 		state.IsDebug = true
 	}
 
-	if !*quiet {
-		state.IsVerbose = *quiet
-	}
+	// Fix: Correct the logic for verbose mode
+	state.IsVerbose = !*quiet
 
 	if len(*genConfModelsDir) > 0 {
 		if err := conf.Create(*genConfModelsDir, false, "goinfer.yml"); err != nil {
@@ -44,23 +43,28 @@ func main() {
 		return
 	}
 
-	conf, err := conf.InitConf(".", "goinfer") // ./goinfer.json or goinfer.yml ...
+	// Fix: Rename variable to avoid shadowing the imported package
+	cfg, err := conf.InitConf(".", "goinfer") // ./goinfer.json or goinfer.yml ...
 	if err != nil {
 		panic(err)
 	}
 
-	// Initializes the Llama server manager.
-	state.Llama = llama.NewLlamaServerManager(&conf.Llama)
-	state.Monitor = llama.NewMonitor(&conf.Llama)
-	state.Monitor.Start()
-	defer state.StopLlamaServer()
-
-	state.ModelsDir = conf.ModelsDir
-	state.IsVerbose = !*quiet
-
-	if state.IsVerbose {
-		fmt.Println("Starting the http server with allowed origins", conf.WebServer.Origins)
+	if state.IsDebug {
+		if err := cfg.Debug(); err != nil {
+			panic(err)
+		}
 	}
 
-	server.RunServer(conf.WebServer, *local, *disableApiKey)
+	// Initializes the Llama server manager.
+	state.Llama = llama.NewLlamaServerManager(&cfg.Llama)
+	state.Monitor = llama.NewMonitor(&cfg.Llama)
+	defer state.Llama.Close() // Stop llama-server, monitoring and channel
+
+	state.ModelsDir = cfg.ModelsDir
+
+	if state.IsVerbose {
+		fmt.Println("Starting the http server with allowed origins", cfg.Server.Origins)
+	}
+
+	server.RunServer(cfg.Server, *local, *disableApiKey)
 }

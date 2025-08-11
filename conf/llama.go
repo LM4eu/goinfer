@@ -8,17 +8,12 @@ import (
 
 // LlamaConf - configuration for llama-server proxy.
 type LlamaConf struct {
-	BinaryPath     string // Path to llama-server binary
-	Host           string // Host binding (default: localhost)
-	Port           int    // Port number (default: 8080)
-	ModelPath      string // Path to model file OR download url OR from HuggingFace repo
-	ContextSize    int
-	Threads        int  // number of threads to use during generation (default: -1)
-	ThPromptProc   int  // number of threads to use during batch and prompt processing
-	FlashAttention bool // enable Flash Attention
-	GpuLayers      int
-	WebUI          bool
-	Args           []string // Additional arguments
+	ExePath       string   `json:"exe_path"       yaml:"exe_path"`       // Path to llama-server binary
+	ModelPathname string   `json:"model_pathname" yaml:"model_pathname"` // Path to model file OR download url OR from HuggingFace repo
+	ContextSize   int      `json:"ctx"            yaml:"ctx"`
+	Threads       int      `json:"threads"        yaml:"threads"`       // number of threads to use during generation (default: -1)
+	TPromptProc   int      `json:"t_prompt_proc"  yaml:"t_prompt_proc"` // number of threads to use during batch and prompt processing
+	Args          []string // Additional arguments
 }
 
 // ErrInvalidConfig - Error type for configuration validation.
@@ -28,47 +23,44 @@ func (e ErrInvalidConfig) Error() string {
 	return "invalid config: " + string(e)
 }
 
+const (
+	host = "localhost"
+	port = "8080"
+)
+
 // GetAddress - Returns the server address in host:port format.
 func (c *LlamaConf) GetAddress() string {
-	return net.JoinHostPort(c.Host, strconv.Itoa(c.Port))
+	return net.JoinHostPort(host, port)
 }
 
 // GetCommandArgs - Returns the complete command arguments for llama-server.
 func (c *LlamaConf) GetCommandArgs() []string {
-	args := make([]string, 0, len(c.Args)+5)
-	args = append(args, "-h", c.Host)
-	args = append(args, "-p", strconv.Itoa(c.Port))
-	args = append(args, "--props") // enable changing global properties via POST /props
+	args := make([]string, 0, len(c.Args)+14)
+	args = append(args, "-h", host)
+	args = append(args, "-p", port)
+	args = append(args, "--props")    // enable changing global properties via POST /props
+	args = append(args, "--no-webui") // no Web UI server
 
 	if c.Threads != 0 {
 		args = append(args, "-t", strconv.Itoa(c.Threads))
 	}
-	if c.ThPromptProc != 0 {
-		args = append(args, "-tb", strconv.Itoa(c.ThPromptProc))
+	if c.TPromptProc != 0 {
+		args = append(args, "-tb", strconv.Itoa(c.TPromptProc))
 	}
 
-	if c.ModelPath != "" {
-		switch IsDownloadURL(c.ModelPath) {
+	if c.ModelPathname != "" {
+		switch IsDownloadURL(c.ModelPathname) {
 		case 0:
-			args = append(args, "-m", c.ModelPath)
+			args = append(args, "-m", c.ModelPathname)
 		case 1:
-			args = append(args, "-mu", c.ModelPath)
+			args = append(args, "-mu", c.ModelPathname)
 		default:
-			args = append(args, "-hf", c.ModelPath)
+			args = append(args, "-hf", c.ModelPathname)
 		}
 	}
 
 	if c.ContextSize != 0 {
 		args = append(args, "-c", strconv.Itoa(c.ContextSize))
-	}
-	if c.GpuLayers != 0 {
-		args = append(args, "-ngl", strconv.Itoa(c.GpuLayers))
-	}
-	if !c.WebUI {
-		args = append(args, "--no-webui")
-	}
-	if c.FlashAttention {
-		args = append(args, "-fa")
 	}
 
 	args = append(args, c.Args...)
@@ -87,43 +79,14 @@ func IsDownloadURL(modelPath string) int {
 }
 
 func (c *LlamaConf) Validate() error {
-	// Only essential validation - paths and basic network checks
-	if c.BinaryPath == "" {
+	if c.ExePath == "" {
 		return ErrInvalidConfig("binary path cannot be empty")
 	}
-	if c.ModelPath == "" {
+	// TODO: is the model really required?
+	if c.ModelPathname == "" {
 		return ErrInvalidConfig("model path cannot be empty")
 	}
-	if c.Host == "" {
-		return ErrInvalidConfig("host cannot be empty")
-	}
-	if c.Port < 1 || c.Port > 65535 {
-		return ErrInvalidConfig("port must be a valid number")
-	}
-
-	// Fast network validation
-	if c.Host != "" {
-		if _, _, err := net.SplitHostPort(net.JoinHostPort(c.Host, strconv.Itoa(c.Port))); err != nil {
-			return ErrInvalidConfig("invalid host:port combination")
-		}
-	}
-
 	return nil
-}
-
-// Clone - cloning for configuration updates.
-func (c *LlamaConf) Clone() *LlamaConf {
-	// Pre-allocate slice to avoid allocations
-	args := make([]string, len(c.Args))
-	copy(args, c.Args)
-
-	return &LlamaConf{
-		BinaryPath: c.BinaryPath,
-		ModelPath:  c.ModelPath,
-		Host:       c.Host,
-		Port:       c.Port,
-		Args:       args,
-	}
 }
 
 // MergeArgs - Efficiently merge additional arguments.
