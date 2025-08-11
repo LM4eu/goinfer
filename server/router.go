@@ -60,7 +60,7 @@ func RunServer(cfg conf.WebServerConf, localMode bool, disableApiKey bool) {
 
 	// ----- Inference (llama.cpp) -----
 
-	inf := e.Group("/infer")
+	inf := e.Group("/completion")
 	if !disableApiKey {
 		inf.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
 			return key == cfg.ApiKey, nil

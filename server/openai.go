@@ -103,7 +103,7 @@ func parseParams(m echo.Map) (types.InferQuery, error) {
 	return query, nil
 }
 
-// Create an OpenAI api for /v1/chat/completion.
+// Create an OpenAI api for /v1/chat/completions.
 func CreateCompletionHandler(c echo.Context) error {
 	if state.IsInferring {
 		fmt.Println("An inference query is already running")
