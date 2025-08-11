@@ -14,7 +14,7 @@ const api = useApi({ "serverUrl": "http://localhost:5143" });
 api.addHeader('Authorization', `Bearer ${apiKey}`);
 
 async function loadModel() {
-  const res = await api.post("/model/load", {
+  const res = await api.post("/model/start", {
     name: model
   });
   if (!res.ok) {
