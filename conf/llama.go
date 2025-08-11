@@ -10,6 +10,7 @@ import (
 type LlamaConf struct {
 	ExePath       string   `json:"exe_path"       yaml:"exe_path"`       // Path to llama-server binary
 	ModelPathname string   `json:"model_pathname" yaml:"model_pathname"` // Path to model file OR download url OR from HuggingFace repo
+	PathnameType  int      `json:"pathname_type"  yaml:"pathname_type"`  // Positive=URL Zero=LocalFile Negative=HuggingFace repo
 	ContextSize   int      `json:"ctx"            yaml:"ctx"`
 	Threads       int      `json:"threads"        yaml:"threads"`       // number of threads to use during generation (default: -1)
 	TPromptProc   int      `json:"t_prompt_proc"  yaml:"t_prompt_proc"` // use more threads to boost prompt processing
@@ -49,22 +50,17 @@ func (c *LlamaConf) GetCommandArgs() []string {
 	}
 
 	if c.ModelPathname != "" {
-		switch IsDownloadURL(c.ModelPathname) {
-		case 0:
-			args = append(args, "-m", c.ModelPathname)
-		case 1:
+		if c.PathnameType > 0 {
 			args = append(args, "-mu", c.ModelPathname)
-		default:
+		} else if c.PathnameType == 0 {
+			args = append(args, "-m", c.ModelPathname)
+		} else {
 			args = append(args, "-hf", c.ModelPathname)
 		}
-	}
-
-	if c.ContextSize != 0 {
 		args = append(args, "-c", strconv.Itoa(c.ContextSize))
 	}
 
-	args = append(args, c.Args...)
-	return args
+	return append(args, c.Args...)
 }
 
 func IsDownloadURL(modelPath string) int {
