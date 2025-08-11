@@ -14,7 +14,7 @@ import (
 //go:embed all:dist
 var embeddedFiles embed.FS
 
-func RunServer(conf conf.WebServerConf, localMode bool, disableApiKey bool) {
+func RunServer(cfg conf.WebServerConf, localMode bool, disableApiKey bool) {
 	e := echo.New()
 	e.HideBanner = true
 
@@ -28,7 +28,7 @@ func RunServer(conf conf.WebServerConf, localMode bool, disableApiKey bool) {
 	}
 
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     conf.Origins,
+		AllowOrigins:     cfg.Origins,
 		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAuthorization},
 		AllowMethods:     []string{http.MethodGet, http.MethodOptions, http.MethodPost},
 		AllowCredentials: true,
@@ -50,7 +50,7 @@ func RunServer(conf conf.WebServerConf, localMode bool, disableApiKey bool) {
 	mod := e.Group("/model")
 	if !disableApiKey {
 		mod.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-			return key == conf.ApiKey, nil
+			return key == cfg.ApiKey, nil
 		}))
 	}
 
@@ -63,7 +63,7 @@ func RunServer(conf conf.WebServerConf, localMode bool, disableApiKey bool) {
 	inf := e.Group("/infer")
 	if !disableApiKey {
 		inf.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-			return key == conf.ApiKey, nil
+			return key == cfg.ApiKey, nil
 		}))
 	}
 
@@ -72,11 +72,11 @@ func RunServer(conf conf.WebServerConf, localMode bool, disableApiKey bool) {
 
 	// ----- Inference OpenAI API -----
 
-	if conf.EnableOaiAPI {
+	if cfg.EnableOpenAiAPI {
 		oai := e.Group("/v1")
 		if !disableApiKey {
 			oai.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-				return key == conf.ApiKey, nil
+				return key == cfg.ApiKey, nil
 			}))
 		}
 
@@ -84,7 +84,7 @@ func RunServer(conf conf.WebServerConf, localMode bool, disableApiKey bool) {
 		oai.GET("/models", OpenAiListModels)
 	}
 
-	err := e.Start(conf.Port)
+	err := e.Start("localhost:" + cfg.Port)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
