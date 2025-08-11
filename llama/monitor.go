@@ -174,14 +174,14 @@ func (m *Monitor) monitorLoop() {
 }
 
 // BatchHealthCheck - Efficient health check for multiple instances.
-func BatchHealthCheck(managers []*LlamaServerManager) []HealthCheckResult {
+func BatchHealthCheck(managers []*Runner) []HealthCheckResult {
 	results := make([]HealthCheckResult, len(managers))
 
 	// Concurrent health checks with goroutines
 	done := make(chan int, len(managers))
 
 	for i, manager := range managers {
-		go func(idx int, mgr *LlamaServerManager) {
+		go func(idx int, mgr *Runner) {
 			results[idx] = HealthCheckResult{Healthy: mgr.HealthCheck()}
 			done <- idx
 		}(i, manager)

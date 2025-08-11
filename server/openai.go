@@ -24,7 +24,7 @@ type openAiModel struct {
 func parseParams(m echo.Map) (types.InferQuery, error) {
 	query := types.InferQuery{
 		Prompt:      "",
-		ModelConf:   types.DefaultModelConf,
+		ModelParams: types.DefaultModelConf,
 		InferParams: types.DefaultInferParams,
 	}
 
@@ -38,7 +38,7 @@ func parseParams(m echo.Map) (types.InferQuery, error) {
 	if !ok {
 		return query, errors.New("missing mandatory field: model")
 	}
-	query.ModelConf.Name = v.(string)
+	query.ModelParams.Name = v.(string)
 
 	v, ok = m["stream"]
 	if ok {
@@ -121,8 +121,8 @@ func CreateCompletionHandler(c echo.Context) error {
 	}
 
 	// Do we need to start/restart llama-server?
-	if state.IsStartNeeded(query.ModelConf) {
-		err := state.RestartLlamaServer(query.ModelConf)
+	if state.IsStartNeeded(query.ModelParams) {
+		err := state.RestartLlamaServer(query.ModelParams)
 		if err != nil {
 			if state.IsDebug {
 				fmt.Println("Error loading model:", err)
