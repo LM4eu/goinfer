@@ -12,7 +12,7 @@ type LlamaConf struct {
 	ModelPathname string   `json:"model_pathname" yaml:"model_pathname"` // Path to model file OR download url OR from HuggingFace repo
 	ContextSize   int      `json:"ctx"            yaml:"ctx"`
 	Threads       int      `json:"threads"        yaml:"threads"`       // number of threads to use during generation (default: -1)
-	TPromptProc   int      `json:"t_prompt_proc"  yaml:"t_prompt_proc"` // number of threads to use during batch and prompt processing
+	TPromptProc   int      `json:"t_prompt_proc"  yaml:"t_prompt_proc"` // use more threads to boost prompt processing
 	Args          []string // Additional arguments
 }
 
