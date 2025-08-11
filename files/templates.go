@@ -14,8 +14,8 @@ import (
 func readTemplates(m map[string]any) (map[string]types.TemplateInfo, error) {
 	info := map[string]types.TemplateInfo{}
 
-	for model, conf := range m {
-		c := conf.([]any)
+	for model, cfg := range m {
+		c := cfg.([]any)
 		mi := types.TemplateInfo{}
 		for _, vx := range c {
 			val := vx.(map[string]any)
