@@ -16,7 +16,7 @@ import (
 func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 	query := types.InferQuery{
 		Prompt:      "",
-		ModelConf:   types.DefaultModelConf,
+		ModelParams: types.DefaultModelConf,
 		InferParams: types.DefaultInferParams,
 	}
 
@@ -51,12 +51,12 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 
 	v, ok = m["model"]
 	if ok {
-		query.ModelConf.Name = v.(string)
+		query.ModelParams.Name = v.(string)
 	}
 
 	v, ok = m["ctx"]
 	if ok {
-		query.ModelConf.Ctx = v.(int)
+		query.ModelParams.Ctx = v.(int)
 	}
 
 	v, ok = m["stream"]
@@ -192,8 +192,8 @@ func InferHandler(c echo.Context) error {
 	}
 
 	// Do we need to start/restart llama-server?
-	if state.IsStartNeeded(query.ModelConf) {
-		err := state.RestartLlamaServer(query.ModelConf)
+	if state.IsStartNeeded(query.ModelParams) {
+		err := state.RestartLlamaServer(query.ModelParams)
 		if err != nil {
 			if state.IsDebug {
 				fmt.Println("Error loading model:", err)

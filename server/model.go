@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/synw/goinfer/files"
@@ -12,18 +13,18 @@ import (
 )
 
 // parseModelParams parses model parameters from echo.Map.
-func parseModelParams(m echo.Map) (types.ModelConf, error) {
+func parseModelParams(m echo.Map) (types.ModelParams, error) {
 	modelConf := types.DefaultModelConf
 
 	name, ok := m["model"]
 	if !ok {
-		return types.ModelConf{}, errors.New("missing mandatory field: name")
+		return types.ModelParams{}, errors.New("missing mandatory field: name")
 	}
 
 	// Type assertion with error checking
 	modelConf.Name, ok = name.(string)
 	if !ok {
-		return types.ModelConf{}, errors.New("model name must be a string")
+		return types.ModelParams{}, errors.New("model name must be a string")
 	}
 
 	v, ok := m["ctx"]
@@ -68,49 +69,40 @@ func StopLlamaHandler(c echo.Context) error {
 
 // ModelsStateHandler returns the state of models.
 func ModelsStateHandler(c echo.Context) error {
+	count, exe, args, running, uptime := state.GetServerStatus()
+
+	llamaInfo := map[string]any{
+		"jsonrpc": "2.0",
+		"id":      1,
+		"result": map[string]any{
+			"start_count": count,
+			"exe":         exe,
+			"args":        args,
+			"running":     running,
+			"uptime":      fmt.Sprintf("duration: %s", uptime.Round(time.Second)),
+			"conf":        state.Llama.Conf,
+		},
+	}
+
 	if state.IsVerbose {
 		fmt.Println("Reading files in:", state.ModelsDir)
 	}
 
+	modelsInfo := map[string]any{"jsonrpc": "2.0", "id": 2}
+
+	var statusCode int
 	models, err := files.ReadModels(state.ModelsDir)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"error": "reading models",
-		})
-	}
-
-	if state.IsVerbose {
-		fmt.Println("Found models:", models)
-	}
-
-	templates, err := files.ReadTemplates()
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"error": "reading templates",
-		})
-	}
-
-	if state.IsVerbose {
-		fmt.Println("Found templates:", templates)
-	}
-
-	for _, model := range models {
-		_, hasTemplate := templates[model]
-		if !hasTemplate {
-			templates[model] = types.TemplateInfo{
-				Name: "unknown",
-				Ctx:  0,
-			}
+	if err == nil {
+		statusCode = http.StatusOK
+		modelsInfo["result"] = models
+		if state.IsVerbose {
+			fmt.Println("Found models:", models)
 		}
+	} else {
+		statusCode = http.StatusInternalServerError
+		modelsInfo["error"] = "cannot fetch model files: " + err.Error()
+		fmt.Println("Error while reading models:", err)
 	}
 
-	isRunning, uptime, count := state.GetServerStatus()
-
-	return c.JSON(http.StatusOK, echo.Map{
-		"conf": state.Llama.Conf,
-		"llama-server": echo.Map{
-			"running":       isRunning,
-			"uptime":        uptime,
-			"start_counter": count,
-		}})
+	return c.JSON(statusCode, []any{llamaInfo, modelsInfo})
 }

@@ -51,7 +51,7 @@ func main() {
 	}
 
 	// Initializes the Llama server manager.
-	state.Llama = llama.NewLlamaServerManager(&cfg.Llama)
+	state.Llama = llama.NewRunner(&cfg.Llama)
 	state.Monitor = llama.NewMonitor(&cfg.Llama)
 	defer state.Llama.Close() // Stop llama-server, monitoring and channel
 

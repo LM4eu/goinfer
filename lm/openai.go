@@ -193,7 +193,7 @@ func createOpenAiDeltaMessage(query types.InferQuery, ntokens int, token string)
 		ID:      strconv.Itoa(ntokens),
 		Object:  "chat.completion.chunk",
 		Created: time.Now().Unix(),
-		Model:   query.ModelConf.Name,
+		Model:   query.ModelParams.Name,
 		Choices: []deltaChoice{
 			{
 				Index:        ntokens,
@@ -218,7 +218,7 @@ func sendStartEmittingMessageOpenAi(enc *json.Encoder, c echo.Context, query typ
 		ID:      strconv.Itoa(ntokens),
 		Object:  "chat.completion.chunk",
 		Created: time.Now().Unix(),
-		Model:   query.ModelConf.Name,
+		Model:   query.ModelParams.Name,
 		Choices: []deltaChoice{
 			{
 				Index:        ntokens,
@@ -292,7 +292,7 @@ func createOpenAiResult(query types.InferQuery, ntokens int, res string) OpenAiC
 		ID:      id,
 		Object:  "chat.completion",
 		Created: time.Now().Unix(),
-		Model:   query.ModelConf.Name,
+		Model:   query.ModelParams.Name,
 		Choices: []openAiChoice{
 			{
 				Index: 0,

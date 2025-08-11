@@ -1,12 +1,12 @@
 package types
 
-// ModelConf holds configuration for a model.
-type ModelConf struct {
+// ModelParams holds configuration for a model.
+type ModelParams struct {
 	Name string `json:"name"           yaml:"name"`
 	Ctx  int    `json:"ctx,omitempty"  yaml:"ctx,omitempty"`
 }
 
-var DefaultModelConf = ModelConf{
+var DefaultModelConf = ModelParams{
 	Name: "",
 	Ctx:  2048,
 }
@@ -45,15 +45,9 @@ var DefaultInferParams = InferParams{
 
 // InferQuery represents a task to be executed.
 type InferQuery struct {
-	Prompt      string      `json:"prompt"      yaml:"prompt"`
-	ModelConf   ModelConf   `json:"modelConf"   yaml:"modelConf"`
-	InferParams InferParams `json:"inferParams" yaml:"inferParams"`
-}
-
-// TemplateInfo holds information about a template.
-type TemplateInfo struct {
-	Name string `json:"name" yaml:"name"`
-	Ctx  int    `json:"ctx"  yaml:"ctx"`
+	Prompt      string      `json:"prompt"  yaml:"prompt"`
+	ModelParams ModelParams `json:"model"   yaml:"model"`
+	InferParams InferParams `json:"params"  yaml:"params"`
 }
 
 // StreamedMessage represents a streamed message.

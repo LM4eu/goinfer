@@ -15,7 +15,7 @@ import (
 
 // the language model instance.
 var (
-	Llama   *llama.LlamaServerManager
+	Llama   *llama.Runner
 	Monitor *llama.Monitor
 )
 
@@ -24,7 +24,7 @@ var (
 	ErrInvalidInput  = errors.New("invalid input")
 )
 
-func RestartLlamaServer(modelConf types.ModelConf) error {
+func RestartLlamaServer(modelConf types.ModelParams) error {
 	if Llama == nil {
 		return llama.ErrNotRunning("Llama manager not initialized")
 	}
@@ -66,12 +66,18 @@ func StopLlamaServer() error {
 }
 
 // GetServerStatus - Gets the current server status.
-func GetServerStatus() (bool, time.Duration, int) {
+func GetServerStatus() (int, string, []string, bool, time.Duration) {
 	if Llama == nil {
-		return false, 0, 0
+		return 0, "", nil, false, 0
 	}
 
-	return Llama.IsRunning(), Llama.GetUptime(), Llama.GetStartCount()
+	count := Llama.StartCount()
+	exe := Llama.Conf.ExePath
+	args := Llama.Conf.GetCommandArgs()
+	running := Llama.IsRunning()
+	uptime := Llama.Uptime()
+
+	return count, exe, args, running, uptime
 }
 
 // CheckServerHealth - Performs a health check on the server.
@@ -89,7 +95,7 @@ func CheckServerHealth() bool {
 
 // IsStartNeeded returns true if we need to start/restart llama-server.
 // Check if llama-server is already running with the right model and context size.
-func IsStartNeeded(modelConf types.ModelConf) bool {
+func IsStartNeeded(modelConf types.ModelParams) bool {
 	if !Llama.IsRunning() {
 		return true
 	}
@@ -113,7 +119,7 @@ func IsStartNeeded(modelConf types.ModelConf) bool {
 }
 
 // searchModelFile checks if the model file is OK.
-func searchModelFile(modelConf types.ModelConf) (string, error) {
+func searchModelFile(modelConf types.ModelParams) (string, error) {
 	path1 := filepath.Join(ModelsDir, modelConf.Name)
 
 	_, err := os.Stat(path1)
