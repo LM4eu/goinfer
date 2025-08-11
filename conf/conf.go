@@ -3,6 +3,7 @@ package conf
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 
@@ -25,79 +26,76 @@ type WebServerConf struct {
 	ApiKey          string   `json:"api_key"    yaml:"api_key"`
 }
 
-// setAllDefaults sets all default configuration values in a centralized manner
-func setAllDefaults() {
-	// Web server defaults
+// setDefaultConf sets all default configuration values in a centralized manner
+func setDefaultConf() {
 	viper.SetDefault("server.origins", []string{"localhost"})
 	viper.SetDefault("server.port", 5143)
 	viper.SetDefault("server.openai_api", false)
-
-	// Model defaults
-	viper.SetDefault("model.dir", "./models")
-	viper.SetDefault("model.ctx", 2048)
-
-	// Llama defaults
-	viper.SetDefault("llama.exe", "./llama-server")
-	viper.SetDefault("llama.web_ui", false)
+	viper.SetDefault("models_dir", "./models")
+	viper.SetDefault("llama.exe_path", "./llama-server")
 	viper.SetDefault("llama.threads", 8)
-	viper.SetDefault("llama.t_prompt", 16)
+	viper.SetDefault("llama.t_prompt_proc", 16) // more threads to boost prompt processing
 	viper.SetDefault("llama.args", []string{"--log-colors", "--no-warmup"})
+
+	// broken AutomaticEnv() since viper-1.19 (Jun 2024)
+	// https://github.com/spf13/viper/issues/1895
+	// Manual binding:
+	_ = viper.BindEnv("server.origins", "SERVER_ORIGINS")
+	_ = viper.BindEnv("server.port", "SERVER_PORT")
+	_ = viper.BindEnv("server.openai_api", "SERVER_OPENAI_API")
+	_ = viper.BindEnv("server.api_key", "SERVER_API_KEY")
+	_ = viper.BindEnv("models_dir", "MODELS_DIR")
+	_ = viper.BindEnv("llama.exe_path", "LLAMA_EXE_PATH")
+	_ = viper.BindEnv("llama.threads", "LLAMA_THREADS")
+	_ = viper.BindEnv("llama.t_prompt_proc", "LLAMA_T_PROMPT_PROC")
+	_ = viper.BindEnv("llama.args", "LLAMA_ARGS")
 }
 
-// setupViper configures Viper with the given path and config file name
-func setupViper(path, configFile string) {
+// Load the config file having any extension: json, yml, ini...
+func Load(path, configFile string) (GoInferConf, error) {
 	viper.SetConfigName(configFile)
 	viper.AddConfigPath(path)
-	viper.AutomaticEnv()
-	setAllDefaults()
-}
 
-// InitConf loads the config file.
-// Does not include extension.
-func InitConf(path, configFile string) (GoInferConf, error) {
-	setupViper(path, configFile)
+	setDefaultConf() // Set defaults first
 
 	err := viper.ReadInConfig()
 	if err != nil {
 		return GoInferConf{}, fmt.Errorf("config file %s/%s.(json/yaml): %w", path, configFile, err)
 	}
 
-	return GoInferConf{
+	cfg := GoInferConf{
 		Server: WebServerConf{
 			Origins:         viper.GetStringSlice("server.origins"),
 			Port:            viper.GetString("server.port"),
 			EnableOpenAiAPI: viper.GetBool("server.openai_api"),
 			ApiKey:          viper.GetString("server.api_key"),
 		},
-		ModelsDir: viper.GetString("model.dir"),
+		ModelsDir: viper.GetString("models_dir"),
 		Llama: LlamaConf{
-			ContextSize: viper.GetInt("model.ctx"),
-			ExePath:     viper.GetString("llama.exe"),
+			ExePath:     viper.GetString("llama.exe_path"),
 			Threads:     viper.GetInt("llama.threads"),
-			TPromptProc: viper.GetInt("llama.t_prompt"),
+			TPromptProc: viper.GetInt("llama.t_prompt_proc"), // more threads to boost prompt processing
 			Args:        viper.GetStringSlice("llama.args"),
 		},
-	}, nil
+	}
+
+	if cfg.Server.ApiKey == "" {
+		return cfg, errors.New("missing mandatory server.api_key in " + configFile +
+			" (use -conf or -localconf to generate a default config file)")
+	}
+
+	return cfg, nil
 }
 
-// Create creates a configuration file using Viper's WriteConfig functionality
-func Create(modelsDir string, isDefault bool, fileName string) error {
-	// Setup Viper for the target file
-	viper.SetConfigFile(fileName) // Set the full file path
-
-	// Set all defaults consistently
-	setAllDefaults()
-
-	if modelsDir == "" {
-		modelsDir = "./models"
-	}
-	viper.Set("model.dir", modelsDir)
+// Create a YAML configuration file using Viper's WriteConfig functionality
+func Create(fileName string, random bool) error {
+	viper.SetConfigFile(fileName) // full file path
+	setDefaultConf()
 
 	// Set origins for web server (different from defaults)
 	viper.SetDefault("server.origins", []string{"http://localhost:5173", "http://localhost:5143"})
 
-	// Generate API key if not default
-	if !isDefault {
+	if random {
 		viper.SetDefault("server.api_key", generateRandomKey())
 	} else {
 		viper.SetDefault("server.api_key", "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465")
@@ -113,13 +111,13 @@ func Create(modelsDir string, isDefault bool, fileName string) error {
 
 // Debug prints viper debug info and the configuration to stdout in YAML format
 func (cfg *GoInferConf) Debug() error {
+	viper.Debug()
+
 	// Marshal the configuration to YAML
 	bytes, err := yaml.Marshal(&cfg)
 	if err != nil {
 		return fmt.Errorf("error Marshal(cfg) to YAML: %w", err)
 	}
-
-	viper.Debug()
 
 	// Print to stdout
 	_, err = os.Stdout.Write(bytes)
