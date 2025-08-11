@@ -80,7 +80,7 @@ func Load(path, configFile string) (GoInferConf, error) {
 	}
 
 	if cfg.Server.ApiKey == "" {
-		return cfg, errors.New("missing mandatory server.api_key in " + configFile +
+		return cfg, errors.New("missing mandatory server.api_key in config file" +
 			" (use -conf or -localconf to generate a default config file)")
 	}
 
