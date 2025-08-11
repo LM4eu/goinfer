@@ -24,7 +24,7 @@ func (e ErrInvalidConfig) Error() string {
 }
 
 const (
-	host = "localhost"
+	host = "127.0.0.1"
 	port = "8080"
 )
 
@@ -36,8 +36,8 @@ func (c *LlamaConf) GetAddress() string {
 // GetCommandArgs - Returns the complete command arguments for llama-server.
 func (c *LlamaConf) GetCommandArgs() []string {
 	args := make([]string, 0, len(c.Args)+14)
-	args = append(args, "-h", host)
-	args = append(args, "-p", port)
+	args = append(args, "--host", host)
+	args = append(args, "--port", port)
 	args = append(args, "--props")    // enable changing global properties via POST /props
 	args = append(args, "--no-webui") // no Web UI server
 
