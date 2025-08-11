@@ -306,6 +306,7 @@ func TestInitConf_EnvironmentVariableNaming(t *testing.T) {
 
 	configData := map[string]any{
 		"models_dir": "./test_models",
+		"server":     map[string]any{"api_key": "secret"},
 	}
 
 	configBytes, _ := yaml.Marshal(configData)
