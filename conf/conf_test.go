@@ -1,13 +1,13 @@
 package conf
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
 func TestInitConf(t *testing.T) {
@@ -16,13 +16,13 @@ func TestInitConf(t *testing.T) {
 	configPath := filepath.Join(tempDir, "goinfer.yml")
 
 	configData := map[string]any{
-		"model.dir":      "./test_models",
-		"server.origins": []string{"http://localhost:3000"},
-		"server.api_key": "test_key_123",
-		"server.openai_api":     true,
+		"model.dir":         "./test_models",
+		"server.origins":    []string{"http://localhost:3000"},
+		"server.api_key":    "test_key_123",
+		"server.openai_api": true,
 	}
 
-	configBytes, _ := json.MarshalIndent(configData, "", "    ")
+	configBytes, _ := yaml.Marshal(configData)
 	err := os.WriteFile(configPath, configBytes, 0o644)
 	require.NoError(t, err)
 
@@ -37,9 +37,9 @@ func TestInitConf(t *testing.T) {
 	config, _ := InitConf(".", "goinfer") // ./goinfer.yml
 
 	assert.Equal(t, "./test_models", config.ModelsDir)
-	assert.Equal(t, []string{"http://localhost:3000"}, config.WebServer.Origins)
-	assert.Equal(t, "test_key_123", config.WebServer.ApiKey)
-	assert.True(t, config.WebServer.EnableOaiAPI)
+	assert.Equal(t, []string{"http://localhost:3000"}, config.Server.Origins)
+	assert.Equal(t, "test_key_123", config.Server.ApiKey)
+	assert.True(t, config.Server.EnableOpenAiAPI)
 }
 
 func TestInitConf_WithDefaults(t *testing.T) {
@@ -51,7 +51,7 @@ func TestInitConf_WithDefaults(t *testing.T) {
 		"model.dir": "./test_models",
 	}
 
-	configBytes, _ := json.MarshalIndent(configData, "", "    ")
+	configBytes, _ := yaml.Marshal(configData)
 	err := os.WriteFile(configPath, configBytes, 0o644)
 	require.NoError(t, err)
 
@@ -66,9 +66,9 @@ func TestInitConf_WithDefaults(t *testing.T) {
 	config, _ := InitConf(".", "goinfer") // ./goinfer.yml
 
 	assert.Equal(t, "./test_models", config.ModelsDir)
-	assert.Equal(t, []string{"localhost"}, config.WebServer.Origins) // Default value
-	assert.Empty(t, config.WebServer.ApiKey)                         // Default empty value
-	assert.False(t, config.WebServer.EnableOaiAPI)                   // Default value
+	assert.Equal(t, []string{"localhost"}, config.Server.Origins) // Default value
+	assert.Empty(t, config.Server.ApiKey)                         // Default empty value
+	assert.False(t, config.Server.EnableOpenAiAPI)                // Default value
 }
 
 func TestInitConf_InvalidConfig(t *testing.T) {
@@ -118,7 +118,7 @@ func TestInitConf_DifferentConfigName(t *testing.T) {
 		"server.api_key": "test_key_123",
 	}
 
-	configBytes, _ := json.MarshalIndent(configData, "", "    ")
+	configBytes, _ := yaml.Marshal(configData)
 	err := os.WriteFile(configPath, configBytes, 0o644)
 	require.NoError(t, err)
 
@@ -157,12 +157,16 @@ func TestCreate(t *testing.T) {
 	require.NoError(t, err)
 
 	var config map[string]any
-	err = json.Unmarshal(configBytes, &config)
+	err = yaml.Unmarshal(configBytes, &config)
 	require.NoError(t, err)
 
-	assert.Equal(t, "/test/models", config["model.dir"])
-	assert.Equal(t, []any{"http://localhost:5173", "http://localhost:5143"}, config["server.origins"])
-	assert.NotEmpty(t, config["server.api_key"]) // Should be a random key
+	// Check the nested structure
+	model := config["model"].(map[string]any)
+	assert.Equal(t, "/test/models", model["dir"])
+
+	server := config["server"].(map[string]any)
+	assert.Equal(t, []any{"http://localhost:5173", "http://localhost:5143"}, server["origins"])
+	assert.NotEmpty(t, server["api_key"]) // Should be a random key
 
 	// Verify cleanup after test
 	t.Cleanup(func() {
@@ -192,12 +196,16 @@ func TestCreate_WithDefaults(t *testing.T) {
 	require.NoError(t, err)
 
 	var config map[string]any
-	err = json.Unmarshal(configBytes, &config)
+	err = yaml.Unmarshal(configBytes, &config)
 	require.NoError(t, err)
 
-	assert.Equal(t, "/test/models", config["model.dir"])
-	assert.Equal(t, []any{"http://localhost:5173", "http://localhost:5143"}, config["server.origins"])
-	assert.Equal(t, "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465", config["server.api_key"]) // Default key
+	// Check the nested structure
+	model := config["model"].(map[string]any)
+	assert.Equal(t, "/test/models", model["dir"])
+
+	server := config["server"].(map[string]any)
+	assert.Equal(t, []any{"http://localhost:5173", "http://localhost:5143"}, server["origins"])
+	assert.Equal(t, "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465", server["api_key"]) // Default key
 
 	// Verify cleanup after test
 	t.Cleanup(func() {

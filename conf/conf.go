@@ -4,23 +4,25 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"os"
 
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 // GoInferConf holds the configuration for GoInfer.
 type GoInferConf struct {
-	WebServer WebServerConf
-	ModelsDir string
+	Server    WebServerConf
+	ModelsDir string `json:"models_dir" yaml:"models_dir"`
 	Llama     LlamaConf
 }
 
 // WebServerConf holds the configuration for GoInfer web server.
 type WebServerConf struct {
-	Origins      []string `json:"server.origins"`
-	Port         string   `json:"port"`
-	EnableOaiAPI bool     `json:"openai_api"`
-	ApiKey       string   `json:"server.api_key"`
+	Origins         []string `json:"origins"    yaml:"origins"`
+	Port            string   `json:"port"       yaml:"port"`
+	EnableOpenAiAPI bool     `json:"openai_api" yaml:"openai_api"`
+	ApiKey          string   `json:"api_key"    yaml:"api_key"`
 }
 
 // setAllDefaults sets all default configuration values in a centralized manner
@@ -33,13 +35,9 @@ func setAllDefaults() {
 	// Model defaults
 	viper.SetDefault("model.dir", "./models")
 	viper.SetDefault("model.ctx", 2048)
-	viper.SetDefault("model.gpu_layers", 999)
-	viper.SetDefault("model.flash_attention", true)
 
 	// Llama defaults
 	viper.SetDefault("llama.exe", "./llama-server")
-	viper.SetDefault("llama.host", "localhost")
-	viper.SetDefault("llama.port", 8080)
 	viper.SetDefault("llama.web_ui", false)
 	viper.SetDefault("llama.threads", 8)
 	viper.SetDefault("llama.t_prompt", 16)
@@ -65,25 +63,19 @@ func InitConf(path, configFile string) (GoInferConf, error) {
 	}
 
 	return GoInferConf{
-		WebServer: WebServerConf{
-			Origins:      viper.GetStringSlice("server.origins"),
-			Port:         viper.GetString("server.port"),
-			EnableOaiAPI: viper.GetBool("server.openai_api"),
-			ApiKey:       viper.GetString("server.api_key"),
+		Server: WebServerConf{
+			Origins:         viper.GetStringSlice("server.origins"),
+			Port:            viper.GetString("server.port"),
+			EnableOpenAiAPI: viper.GetBool("server.openai_api"),
+			ApiKey:          viper.GetString("server.api_key"),
 		},
 		ModelsDir: viper.GetString("model.dir"),
 		Llama: LlamaConf{
-			ModelPath:      viper.GetString("model.name"),
-			ContextSize:    viper.GetInt("model.ctx"),
-			GpuLayers:      viper.GetInt("model.gpu_layers"),
-			FlashAttention: viper.GetBool("model.flash_attention"),
-			BinaryPath:     viper.GetString("llama.exe"),
-			Host:           viper.GetString("llama.host"),
-			Port:           viper.GetInt("llama.port"),
-			WebUI:          viper.GetBool("llama.web_ui"),
-			Threads:        viper.GetInt("llama.threads"),
-			ThPromptProc:   viper.GetInt("llama.t_prompt"),
-			Args:           viper.GetStringSlice("llama.args"),
+			ContextSize: viper.GetInt("model.ctx"),
+			ExePath:     viper.GetString("llama.exe"),
+			Threads:     viper.GetInt("llama.threads"),
+			TPromptProc: viper.GetInt("llama.t_prompt"),
+			Args:        viper.GetStringSlice("llama.args"),
 		},
 	}, nil
 }
@@ -104,8 +96,6 @@ func Create(modelsDir string, isDefault bool, fileName string) error {
 	// Set origins for web server (different from defaults)
 	viper.SetDefault("server.origins", []string{"http://localhost:5173", "http://localhost:5143"})
 
-	viper.SetDefault("model.name", "") // default model name when starting llama-server without specifying a model
-
 	// Generate API key if not default
 	if !isDefault {
 		viper.SetDefault("server.api_key", generateRandomKey())
@@ -119,6 +109,21 @@ func Create(modelsDir string, isDefault bool, fileName string) error {
 	}
 
 	return nil
+}
+
+// Debug prints viper debug info and the configuration to stdout in YAML format
+func (cfg *GoInferConf) Debug() error {
+	// Marshal the configuration to YAML
+	bytes, err := yaml.Marshal(&cfg)
+	if err != nil {
+		return fmt.Errorf("error Marshal(cfg) to YAML: %w", err)
+	}
+
+	viper.Debug()
+
+	// Print to stdout
+	_, err = os.Stdout.Write(bytes)
+	return err
 }
 
 func generateRandomKey() string {

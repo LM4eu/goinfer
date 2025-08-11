@@ -16,10 +16,8 @@ func TestLlamaServerManager_StartupTime(t *testing.T) {
 	// Note: This is a mock test since we can't actually start a real server
 
 	config := conf.LlamaConf{
-		BinaryPath: "./llama-server",
-		ModelPath:  "./model.bin",
-		Host:       "localhost",
-		Port:       8080,
+		ExePath:       "./llama-server",
+		ModelPathname: "./model.bin",
 	}
 
 	// Test that manager is created quickly
@@ -34,10 +32,8 @@ func TestLlamaServerManager_StartupTime(t *testing.T) {
 
 func TestLlamaServerManager_ConcurrentAccess(t *testing.T) {
 	config := conf.LlamaConf{
-		BinaryPath: "./llama-server",
-		ModelPath:  "./model.bin",
-		Host:       "localhost",
-		Port:       8080,
+		ExePath:       "./llama-server",
+		ModelPathname: "./model.bin",
 	}
 
 	manager := NewLlamaServerManager(&config)
@@ -52,8 +48,11 @@ func TestLlamaServerManager_ConcurrentAccess(t *testing.T) {
 			defer wg.Done()
 
 			// These operations should be thread-safe
-			assert.NotNil(t, manager.GetConfig())
+			assert.Zero(t, manager.GetUptime())
+			assert.Zero(t, manager.GetStartCount())
+			assert.Zero(t, manager.GetStartTime())
 			assert.False(t, manager.IsRunning())
+			assert.False(t, manager.HealthCheck())
 
 			// Mock operations that would be fast
 			manager.GetStartTime()
@@ -66,10 +65,8 @@ func TestLlamaServerManager_ConcurrentAccess(t *testing.T) {
 
 func TestLlamaServerManager_MemoryUsage(t *testing.T) {
 	config := conf.LlamaConf{
-		BinaryPath: "./llama-server",
-		ModelPath:  "./model.bin",
-		Host:       "localhost",
-		Port:       8080,
+		ExePath:       "./llama-server",
+		ModelPathname: "./model.bin",
 	}
 
 	// Measure memory usage during manager creation
@@ -97,10 +94,8 @@ func TestLlamaServerManager_MemoryUsage(t *testing.T) {
 
 func TestLlamaMonitor_HealthCheckSpeed(t *testing.T) {
 	config := conf.LlamaConf{
-		BinaryPath: "./llama-server",
-		ModelPath:  "./model.bin",
-		Host:       "localhost",
-		Port:       8080,
+		ExePath:       "./llama-server",
+		ModelPathname: "./model.bin",
 	}
 
 	monitor := NewLlamaMonitor(&config, 100*time.Millisecond, 50*time.Millisecond)
@@ -117,10 +112,8 @@ func TestLlamaMonitor_HealthCheckSpeed(t *testing.T) {
 
 func TestLlamaMonitor_ConcurrentHealthChecks(t *testing.T) {
 	config := conf.LlamaConf{
-		BinaryPath: "./llama-server",
-		ModelPath:  "./model.bin",
-		Host:       "localhost",
-		Port:       8080,
+		ExePath:       "./llama-server",
+		ModelPathname: "./model.bin",
 	}
 
 	monitor := NewLlamaMonitor(&config, 100*time.Millisecond, 50*time.Millisecond)
@@ -143,10 +136,8 @@ func TestLlamaMonitor_ConcurrentHealthChecks(t *testing.T) {
 
 func TestLlamaMonitor_RateLimiting(t *testing.T) {
 	config := conf.LlamaConf{
-		BinaryPath: "./llama-server",
-		ModelPath:  "./model.bin",
-		Host:       "localhost",
-		Port:       8080,
+		ExePath:       "./llama-server",
+		ModelPathname: "./model.bin",
 	}
 
 	monitor := NewLlamaMonitor(&config, 100*time.Millisecond, 50*time.Millisecond)
@@ -169,10 +160,8 @@ func TestLlamaMonitor_RateLimiting(t *testing.T) {
 
 func TestLlamaMonitor_AtomicOperations(t *testing.T) {
 	config := conf.LlamaConf{
-		BinaryPath: "./llama-server",
-		ModelPath:  "./model.bin",
-		Host:       "localhost",
-		Port:       8080,
+		ExePath:       "./llama-server",
+		ModelPathname: "./model.bin",
 	}
 
 	monitor := NewLlamaMonitor(&config, 100*time.Millisecond, 50*time.Millisecond)

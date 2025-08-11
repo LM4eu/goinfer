@@ -42,7 +42,7 @@ func (m *LlamaServerManager) Restart() error {
 	defer m.mu.Unlock()
 
 	// Create command line
-	m.cmd = exec.Command(m.Conf.BinaryPath, m.Conf.GetCommandArgs()...)
+	m.cmd = exec.Command(m.Conf.ExePath, m.Conf.GetCommandArgs()...)
 
 	// Preserve system environment
 	// m.cmd.Env = os.Environ()
@@ -190,34 +190,6 @@ func (m *LlamaServerManager) monitor() {
 			}
 		}
 	}
-}
-
-func (m *LlamaServerManager) UpdateConfig(newConfig *conf.LlamaConf) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	// Validate new config
-	err := newConfig.Validate()
-	if err != nil {
-		return err
-	}
-
-	// Update config and restart if needed
-	if m.process != nil {
-		m.Conf = newConfig.Clone()
-		return m.Restart()
-	}
-
-	m.Conf = newConfig.Clone()
-	return nil
-}
-
-// GetConfig - config retrieval.
-func (m *LlamaServerManager) GetConfig() *conf.LlamaConf {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	return m.Conf.Clone()
 }
 
 // Close - Cleanup resources.
