@@ -118,6 +118,7 @@ RUN set -ex                                           ;\
 
 RUN cp -v goinfer /app
 
+
 #------------------------------------------
 FROM ${nvidia_dev_image} AS llama-builder
 
@@ -186,7 +187,7 @@ WORKDIR /prj
 
 # Download source code
 # Recent tags: https://github.com/ggml-org/llama.cpp/tags
-ARG llama_git_tag=b6111
+ARG llama_git_tag=b6131
 ADD https://github.com/ggml-org/llama.cpp/archive/refs/tags/${llama_git_tag}.tar.gz .
 RUN tar f ${llama_git_tag}.tar.gz -x --strip-components=1
 RUN rm    ${llama_git_tag}.tar.gz
@@ -297,6 +298,10 @@ RUN set -ex                                           ;\
 
 # RUN find build -name "*.so" -exec cp -v {} /app + || true
 RUN cp -v build/bin/* /app
+
+# llama-server may be run with "--jinja --chat-template-file template.jinja"
+COPY template.jinja /app/
+
 
 # --------------------------------------------------------------------
 # In this tiny image, put only the executable "goinfer",

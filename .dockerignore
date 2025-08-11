@@ -1,11 +1,12 @@
 *
-!go.mod
-!go.sum
 !conf
 !files
+!go.mod
+!go.sum
 !llama
 !lm
+!main.go
 !server
 !state
+!template.jinja
 !types
-!main.go
