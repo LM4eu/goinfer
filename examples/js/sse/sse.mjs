@@ -32,7 +32,7 @@ const parser = createParser(onParse)
 
 async function loadModel() {
   // load the model
-  const response = await fetch(`http://localhost:5143/model/load`, {
+  const response = await fetch(`http://localhost:5143/model/start`, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
