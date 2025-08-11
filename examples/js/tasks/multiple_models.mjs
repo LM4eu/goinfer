@@ -11,7 +11,7 @@ const template = "<|im_start|>system\nYou are a javascript coding assistant<|im_
 
 async function baseQuery(prompt) {
   // load the model
-  /*const response = await fetch(`http://localhost:5143/model/load`, {
+  /*const response = await fetch(`http://localhost:5143/model/start`, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
