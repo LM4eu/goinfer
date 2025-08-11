@@ -20,17 +20,12 @@ services:
         - UBUNTU_VERSION=24.04
     command: -local
     ports: [5143:5143]
-    configs: [goinfer.yml]
     volumes:
       # MODELS_DIR is also used by goinfer
       - ${MODELS_DIR:-./models}:/models
       - ${CCACHE_DIR:-./.ccache}:/root/.ccache
       - ${GO_CACHE_DIR:-./.go}:/root/go
+      - ./goinfer.yml:/app/goinfer.yml
     environment:
       - TZ=UTC0 # time.Unix() uses UTC instead of local time zone
     # restart: unless-stopped
-
-configs:
-  goinfer.yml:
-    # file: ./goinfer.yml
-    content: 'server: {"api_key": "fe4efada8bb2c8daef1acf3c9a847ffea767376ee9e3c109d1225075833e3766"}'
