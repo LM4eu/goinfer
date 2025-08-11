@@ -22,7 +22,7 @@ func TestLlamaServerManager_StartupTime(t *testing.T) {
 
 	// Test that manager is created quickly
 	start := time.Now()
-	manager := NewLlamaServerManager(&config)
+	manager := NewRunner(&config)
 	creationTime := time.Since(start)
 
 	// Manager creation should be very fast (< 1ms)
@@ -36,7 +36,7 @@ func TestLlamaServerManager_ConcurrentAccess(t *testing.T) {
 		ModelPathname: "./model.bin",
 	}
 
-	manager := NewLlamaServerManager(&config)
+	manager := NewRunner(&config)
 
 	var wg sync.WaitGroup
 	iterations := 100
@@ -48,15 +48,15 @@ func TestLlamaServerManager_ConcurrentAccess(t *testing.T) {
 			defer wg.Done()
 
 			// These operations should be thread-safe
-			assert.Zero(t, manager.GetUptime())
-			assert.Zero(t, manager.GetStartCount())
-			assert.Zero(t, manager.GetStartTime())
+			assert.Zero(t, manager.Uptime())
+			assert.Zero(t, manager.StartCount())
+			assert.Zero(t, manager.StartTime())
 			assert.False(t, manager.IsRunning())
 			assert.False(t, manager.HealthCheck())
 
 			// Mock operations that would be fast
-			manager.GetStartTime()
-			manager.GetStartCount()
+			manager.StartTime()
+			manager.StartCount()
 		}(i)
 	}
 
@@ -74,7 +74,7 @@ func TestLlamaServerManager_MemoryUsage(t *testing.T) {
 	runtime.GC()
 	runtime.ReadMemStats(&m1)
 
-	manager := NewLlamaServerManager(&config)
+	manager := NewRunner(&config)
 	runtime.GC()
 	runtime.ReadMemStats(&m2)
 
