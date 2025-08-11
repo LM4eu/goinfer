@@ -14,7 +14,7 @@ type LlamaConf struct {
 	ContextSize   int      `json:"ctx"            yaml:"ctx"`
 	Threads       int      `json:"threads"        yaml:"threads"`       // number of threads to use during generation (default: -1)
 	TPromptProc   int      `json:"t_prompt_proc"  yaml:"t_prompt_proc"` // use more threads to boost prompt processing
-	Args          []string // Additional arguments
+	Args          []string `json:"args"           yaml:"args"`          // Additional arguments
 }
 
 // ErrInvalidConfig - Error type for configuration validation.
