@@ -15,7 +15,7 @@ import (
 func parseModelParams(m echo.Map) (types.ModelConf, error) {
 	modelConf := types.DefaultModelConf
 
-	name, ok := m["name"]
+	name, ok := m["model"]
 	if !ok {
 		return types.ModelConf{}, errors.New("missing mandatory field: name")
 	}
