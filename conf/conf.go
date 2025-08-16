@@ -28,7 +28,7 @@ server:
 		openai:  "5143"
 
 llama:
-	exe_path: ./llama-server
+	exe: ./llama-server
 	args:
 		// --props: enable changing global properties via POST /props
 		// --no-webui: no Web UI server
@@ -53,8 +53,8 @@ type ServerConf struct {
 
 // LlamaConf - configuration for llama-server proxy.
 type LlamaConf struct {
-	ExePath string            `json:"exe_path"       yaml:"exe_path"` // Path to llama-server binary
-	Args    map[string]string `json:"args"           yaml:"args"`     // Additional arguments
+	Exe  string            `json:"exe"       yaml:"exe"`       // Path to llama-server binary
+	Args map[string]string `json:"args"           yaml:"args"` // Additional arguments
 }
 
 // Load the goinfer config file
