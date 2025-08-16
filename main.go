@@ -41,15 +41,13 @@ func main() {
 		return
 	}
 
-	cfg, err := conf.Load("goinfer.yml")
+	cfg, err := conf.Load("goinfer.yml", "llama-swap.yml")
 	if err != nil {
 		panic(err)
 	}
 
 	if state.IsDebug {
-		if err := cfg.Debug(); err != nil {
-			panic(err)
-		}
+		cfg.Print()
 	}
 
 	if state.IsVerbose {

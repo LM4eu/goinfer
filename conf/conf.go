@@ -8,25 +8,9 @@ import (
 	"os"
 
 	"github.com/mostlygeek/llama-swap/proxy"
-	"github.com/teal-finance/garcon/gg"
 
 	"gopkg.in/yaml.v3"
 )
-
-// GoInferConf holds the configuration for GoInfer.
-type GoInferConf struct {
-	ModelsDir string        `json:"models_dir" yaml:"models_dir"`
-	Server    WebServerConf `json:"server"     yaml:"server"`
-	Llama     LlamaConf     `json:"llama"      yaml:"llama"`
-	Swap      *proxy.Config `json:"swap"       yaml:"swap"`
-}
-
-// WebServerConf holds the configuration for GoInfer web server.
-type WebServerConf struct {
-	Origins string            `json:"origins"    yaml:"origins"`
-	Port    map[string]string `json:"port"       yaml:"port"`
-	ApiKey  map[string]string `json:"api_key"    yaml:"api_key"`
-}
 
 const DefaultGoInferConf = `
 models_dir: ./models
@@ -52,54 +36,80 @@ llama:
 		goinfer: --jinja --chat-template-file template.jinja
 `
 
-// Load the config file having any extension: json, yml, ini...
-func Load(cfgFile string) (GoInferConf, error) {
+// GoInferConf holds the configuration for GoInfer.
+type GoInferConf struct {
+	ModelsDir string        `json:"models_dir" yaml:"models_dir"`
+	Server    ServerConf    `json:"server"     yaml:"server"`
+	Llama     LlamaConf     `json:"llama"      yaml:"llama"`
+	Swap      *proxy.Config `json:"swap"       yaml:"swap"`
+}
+
+// ServerConf holds the configuration for GoInfer web server.
+type ServerConf struct {
+	Origins string            `json:"origins"    yaml:"origins"`
+	Port    map[string]string `json:"port"       yaml:"port"`
+	ApiKeys map[string]string `json:"api_key"    yaml:"api_key"`
+}
+
+// LlamaConf - configuration for llama-server proxy.
+type LlamaConf struct {
+	ExePath string            `json:"exe_path"       yaml:"exe_path"` // Path to llama-server binary
+	Args    map[string]string `json:"args"           yaml:"args"`     // Additional arguments
+}
+
+// Load the goinfer config file
+func Load(goinferFile string, swapFile string) (*GoInferConf, error) {
 	var cfg GoInferConf
 
-	// 1. Default values
+	// Default values
 	err := yaml.Unmarshal([]byte(DefaultGoInferConf), &cfg)
 	if err != nil {
-		return cfg, err
+		return nil, fmt.Errorf("Error yaml.Unmarshal(DefaultGoInferConf) %w", err)
 	}
 
-	// 2. config file
-	bytes, err := os.ReadFile(cfgFile)
+	// Config file
+	bytes, err := os.ReadFile(goinferFile)
 	if err != nil {
-		return cfg, err
+		return nil, fmt.Errorf("Error os.ReadFile(%s) %w", goinferFile, err)
 	}
 	err = yaml.Unmarshal(bytes, &cfg)
 	if err != nil {
-		return cfg, err
+		return nil, fmt.Errorf("Error yaml.Unmarshal(%s) %w", goinferFile, err)
 	}
 
-	// 3. env. vars
-	cfg.ModelsDir = gg.EnvStr("GI_MODELS_DIR", cfg.ModelsDir)
-	cfg.Server.Origins = gg.EnvStr("GI_ORIGINS", cfg.Server.Origins)
-	if apiKey, ok := cfg.Server.ApiKey["admin"]; ok {
-		cfg.Server.ApiKey["admin"] = gg.EnvStr("GI_API_KEY_ADMIN", apiKey)
+	// Env. vars
+	if dir, ok := os.LookupEnv("GI_MODELS_DIR"); ok {
+		cfg.ModelsDir = dir
 	}
-	if apiKey, ok := cfg.Server.ApiKey["user"]; ok {
-		cfg.Server.ApiKey["user"] = gg.EnvStr("GI_API_KEY_USER", apiKey)
+	if dir, ok := os.LookupEnv("GI_ORIGINS"); ok {
+		cfg.Server.Origins = dir
+	}
+	if apiKey, ok := os.LookupEnv("GI_API_KEY_ADMIN"); ok {
+		cfg.Server.ApiKeys["admin"] = apiKey
+	}
+	if apiKey, ok := os.LookupEnv("GI_API_KEY_USER"); ok {
+		cfg.Server.ApiKeys["user"] = apiKey
 	}
 
-	cfg.Swap, err = proxy.LoadConfig("llama-swap.yml")
+	// Load also the llama-swap config
+	cfg.Swap, err = proxy.LoadConfig(swapFile)
 	if err != nil {
-		fmt.Printf("Error loading llama-swap.yml config: %v\n", err)
-		os.Exit(1)
+		return nil, fmt.Errorf("Error LoadConfig(%s) %w\n", swapFile, err)
 	}
 
-	err = CheckApiKeys(cfg.Server.ApiKey)
-	return cfg, err
+	err = CheckValues(&cfg)
+	return &cfg, err
 }
 
-func CheckApiKeys(ApiKeys map[string]string) error {
+// CheckValues will check other values, for the moment only API keys
+func CheckValues(cfg *GoInferConf) error {
 	err := errors.New("missing a seriously secured server.api_key.admin")
-	for k, v := range ApiKeys {
+	for k, v := range cfg.Server.ApiKeys {
 		if len(v) < 64 {
 			return errors.New("secured api_key must be 64 bytes: " + v)
 		}
 		if v == DebugApiKey {
-			fmt.Print("WARNING: Conf uses DEBUG api_key = security threat")
+			fmt.Print("WARNING: Config uses DEBUG api_key => security threat")
 		}
 		if k == "admin" {
 			err = nil
@@ -122,22 +132,28 @@ func GenApiKey(random bool) []byte {
 // Create a YAML configuration
 func Create(fileName string, random bool) error {
 	cfg := []byte(DefaultGoInferConf)
+	// Set API keys
 	bytes.Replace(cfg, []byte("PLEASE SET SECURE API KEY"), GenApiKey(random), 1)
 	bytes.Replace(cfg, []byte("PLEASE SET SECURE API KEY"), GenApiKey(random), 1)
 	err := os.WriteFile(fileName, cfg, 0644)
 	return err
 }
 
-// Debug prints viper debug info and the configuration to stdout in YAML format
-func (cfg *GoInferConf) Debug() error {
+// Print prints viper debug info and the configuration to stdout in YAML format
+func (cfg *GoInferConf) Print() {
+
+	// Env. vars
+	fmt.Println("GI_MODELS_DIR    = " + os.Getenv("GI_MODELS_DIR"))
+	fmt.Println("GI_ORIGINS       = " + os.Getenv("GI_ORIGINS"))
+	fmt.Println("GI_API_KEY_ADMIN = " + os.Getenv("GI_API_KEY_ADMIN"))
+	fmt.Println("GI_API_KEY_USER  = " + os.Getenv("GI_API_KEY_USER"))
 
 	// Marshal the configuration to YAML
 	bytes, err := yaml.Marshal(&cfg)
 	if err != nil {
-		return fmt.Errorf("error Marshal(cfg) to YAML: %w", err)
+		fmt.Println("Error yaml.Marshal: " + err.Error())
 	}
 
-	// Print to stdout
-	_, err = os.Stdout.Write(bytes)
-	return err
+	// Print conf
+	_, _ = os.Stdout.Write(bytes)
 }
