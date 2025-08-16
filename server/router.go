@@ -14,7 +14,7 @@ import (
 //go:embed all:dist
 var embeddedFiles embed.FS
 
-func RunServer(cfg conf.WebServerConf, localMode bool, disableApiKey bool) {
+func RunServer(cfg conf.ServerConf, localMode bool, disableApiKey bool) {
 	e := echo.New()
 	e.HideBanner = true
 
@@ -35,7 +35,6 @@ func RunServer(cfg conf.WebServerConf, localMode bool, disableApiKey bool) {
 	}))
 
 	if localMode {
-		// static
 		e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
 			Root:       "dist",
 			Index:      "index.html",
