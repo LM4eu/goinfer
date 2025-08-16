@@ -4,8 +4,9 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/teal-finance/garcon"
+
 	"github.com/synw/goinfer/conf"
-	"github.com/synw/goinfer/llama"
 	"github.com/synw/goinfer/server"
 	"github.com/synw/goinfer/state"
 )
@@ -17,6 +18,7 @@ func main() {
 	genConf := flag.Bool("conf", false, "generate a config file (export MODELS_DIR=/home/me/my/models)")
 	genLocalConf := flag.Bool("localconf", false, "generate a config file for local mode usage (export MODELS_DIR=/home/me/my/models)")
 	disableApiKey := flag.Bool("disable-api-key", false, "disable the api key")
+	garcon.SetVersionFlag()
 	flag.Parse()
 
 	if *debug {
@@ -39,7 +41,7 @@ func main() {
 		return
 	}
 
-	cfg, err := conf.Load(".", "goinfer") // goinfer.json or goinfer.yml
+	cfg, err := conf.Load("goinfer.yml")
 	if err != nil {
 		panic(err)
 	}
@@ -50,16 +52,10 @@ func main() {
 		}
 	}
 
-	// Initializes the Llama server manager.
-	state.Llama = llama.NewRunner(&cfg.Llama)
-	state.Monitor = llama.NewMonitor(&cfg.Llama)
-	defer state.Llama.Close() // Stop llama-server, monitoring and channel
-
-	state.ModelsDir = cfg.ModelsDir
-
 	if state.IsVerbose {
 		fmt.Println("Starting the http server with allowed origins", cfg.Server.Origins)
 	}
 
 	server.RunServer(cfg.Server, *local, *disableApiKey)
+
 }

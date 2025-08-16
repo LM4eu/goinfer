@@ -61,10 +61,10 @@ const (
 
 // Infer performs language model inference.
 func Infer(query types.InferQuery, c echo.Context, ch chan<- types.StreamedMessage, errCh chan<- types.StreamedMessage) {
-	if !state.Llama.IsRunning() {
-		errCh <- createErrorMessage(1, "no model loaded")
-		return
-	}
+	// if !state.Llama.IsRunning() {
+	// 	errCh <- createErrorMessage(1, "no model loaded")
+	// 	return
+	// }
 
 	logVerboseInfo(query.Prompt, 0, 0, 0)
 
@@ -74,31 +74,31 @@ func Infer(query types.InferQuery, c echo.Context, ch chan<- types.StreamedMessa
 	}
 
 	ntokens := 0
-	enc := json.NewEncoder(c.Response())
+	// enc := json.NewEncoder(c.Response())
 
-	startThinking := time.Now()
-	var thinkingElapsed time.Duration
-	var startEmitting time.Time
-
-	state.IsInferring = true
-	state.ContinueInferringController = true
-
-	res, err := state.Llama.Predict(
-		query,
-		func(token string) bool {
-			err := streamDeltaMsg(ntokens, token, enc, c, query.InferParams, startThinking, &thinkingElapsed, &startEmitting)
-			if err != nil {
-				errCh <- createErrorMessage(ntokens+1, "streamDeltaMsg error")
-			}
-			return state.ContinueInferringController
-		})
-
-	state.IsInferring = false
-
-	if err != nil {
-		state.ContinueInferringController = false
-		errCh <- createErrorMessage(ntokens+1, "inference error")
-	}
+	// startThinking := time.Now()
+	// var thinkingElapsed time.Duration
+	// var startEmitting time.Time
+	//
+	// state.IsInferring = true
+	// state.ContinueInferringController = true
+	//
+	//res, err := state.Llama.Predict(
+	//	query,
+	//	func(token string) bool {
+	//		err := streamDeltaMsg(ntokens, token, enc, c, query.InferParams, startThinking, &thinkingElapsed, &startEmitting)
+	//		if err != nil {
+	//			errCh <- createErrorMessage(ntokens+1, "streamDeltaMsg error")
+	//		}
+	//		return state.ContinueInferringController
+	//	})
+	//
+	// state.IsInferring = false
+	//
+	// if err != nil {
+	// 	state.ContinueInferringController = false
+	// 	errCh <- createErrorMessage(ntokens+1, "inference error")
+	// }
 
 	if !state.ContinueInferringController {
 		return
@@ -113,16 +113,16 @@ func Infer(query types.InferQuery, c echo.Context, ch chan<- types.StreamedMessa
 		}
 	}
 
-	stats, _ := calculateStats(ntokens, thinkingElapsed, startEmitting) // Ignore tps return value
-	endmsg, err := createResult(res, stats, enc, c, query.InferParams)
-	if err != nil {
-		state.ContinueInferringController = false
-		errCh <- createErrorMessage(ntokens+1, "cannot create result msg")
-	}
+	// stats, _ := calculateStats(ntokens, thinkingElapsed, startEmitting) // Ignore tps return value
+	// endmsg, err := createResult(res, stats, enc, c, query.InferParams)
+	// if err != nil {
+	// 	state.ContinueInferringController = false
+	// 	errCh <- createErrorMessage(ntokens+1, "cannot create result msg")
+	// }
 
-	if state.ContinueInferringController {
-		ch <- endmsg
-	}
+	// if state.ContinueInferringController {
+	// 	ch <- endmsg
+	// }
 }
 
 // Streaming Functions

@@ -1,117 +1,135 @@
 package conf
 
 import (
+	"bytes"
 	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
 
-	"github.com/spf13/viper"
+	"github.com/mostlygeek/llama-swap/proxy"
+	"github.com/teal-finance/garcon/gg"
+
 	"gopkg.in/yaml.v3"
 )
 
 // GoInferConf holds the configuration for GoInfer.
 type GoInferConf struct {
-	Server    WebServerConf
-	ModelsDir string `json:"models_dir" yaml:"models_dir"`
-	Llama     LlamaConf
+	ModelsDir string        `json:"models_dir" yaml:"models_dir"`
+	Server    WebServerConf `json:"server"     yaml:"server"`
+	Llama     LlamaConf     `json:"llama"      yaml:"llama"`
+	Swap      *proxy.Config `json:"swap"       yaml:"swap"`
 }
 
 // WebServerConf holds the configuration for GoInfer web server.
 type WebServerConf struct {
-	Origins         []string `json:"origins"    yaml:"origins"`
-	Port            string   `json:"port"       yaml:"port"`
-	EnableOpenAiAPI bool     `json:"openai_api" yaml:"openai_api"`
-	ApiKey          string   `json:"api_key"    yaml:"api_key"`
+	Origins string            `json:"origins"    yaml:"origins"`
+	Port    map[string]string `json:"port"       yaml:"port"`
+	ApiKey  map[string]string `json:"api_key"    yaml:"api_key"`
 }
 
-// setDefaultConf sets all default configuration values in a centralized manner
-func setDefaultConf() {
-	viper.SetDefault("server.origins", []string{"localhost"})
-	viper.SetDefault("server.port", 5143)
-	viper.SetDefault("server.openai_api", false)
-	viper.SetDefault("models_dir", "./models")
-	viper.SetDefault("llama.exe_path", "./llama-server")
-	viper.SetDefault("llama.threads", 8)
-	viper.SetDefault("llama.t_prompt_proc", 16) // more threads to boost prompt processing
-	viper.SetDefault("llama.args", []string{"--log-colors", "--no-warmup"})
+const DefaultGoInferConf = `
+models_dir: ./models
 
-	// broken AutomaticEnv() since viper-1.19 (Jun 2024)
-	// https://github.com/spf13/viper/issues/1895
-	// Manual binding:
-	_ = viper.BindEnv("server.origins", "SERVER_ORIGINS")
-	_ = viper.BindEnv("server.port", "SERVER_PORT")
-	_ = viper.BindEnv("server.openai_api", "SERVER_OPENAI_API")
-	_ = viper.BindEnv("server.api_key", "SERVER_API_KEY")
-	_ = viper.BindEnv("models_dir", "MODELS_DIR")
-	_ = viper.BindEnv("llama.exe_path", "LLAMA_EXE_PATH")
-	_ = viper.BindEnv("llama.threads", "LLAMA_THREADS")
-	_ = viper.BindEnv("llama.t_prompt_proc", "LLAMA_T_PROMPT_PROC")
-	_ = viper.BindEnv("llama.args", "LLAMA_ARGS")
-}
+server:
+	api_key:
+		# ⚠️ Set a 64-byte secure API keys 🚨
+		admin: "PLEASE SET SECURE API KEY"
+		user:  "PLEASE SET SECURE API KEY"
+	origins: "localhost"
+	ports:
+		admin:   "9999"
+		goinfer: "2222"
+		mcp:     "3333"
+		openai:  "5143"
+
+llama:
+	exe_path: ./llama-server
+	args:
+		// --props: enable changing global properties via POST /props
+		// --no-webui: no Web UI server
+		common: --props --no-webui --no-warmup
+		goinfer: --jinja --chat-template-file template.jinja
+`
 
 // Load the config file having any extension: json, yml, ini...
-func Load(path, configFile string) (GoInferConf, error) {
-	viper.SetConfigName(configFile)
-	viper.AddConfigPath(path)
+func Load(cfgFile string) (GoInferConf, error) {
+	var cfg GoInferConf
 
-	setDefaultConf() // Set defaults first
-
-	err := viper.ReadInConfig()
+	// 1. Default values
+	err := yaml.Unmarshal([]byte(DefaultGoInferConf), &cfg)
 	if err != nil {
-		return GoInferConf{}, fmt.Errorf("config file %s/%s.(json/yaml): %w", path, configFile, err)
+		return cfg, err
 	}
 
-	cfg := GoInferConf{
-		Server: WebServerConf{
-			Origins:         viper.GetStringSlice("server.origins"),
-			Port:            viper.GetString("server.port"),
-			EnableOpenAiAPI: viper.GetBool("server.openai_api"),
-			ApiKey:          viper.GetString("server.api_key"),
-		},
-		ModelsDir: viper.GetString("models_dir"),
-		Llama: LlamaConf{
-			ExePath:     viper.GetString("llama.exe_path"),
-			Threads:     viper.GetInt("llama.threads"),
-			TPromptProc: viper.GetInt("llama.t_prompt_proc"), // more threads to boost prompt processing
-			Args:        viper.GetStringSlice("llama.args"),
-		},
+	// 2. config file
+	bytes, err := os.ReadFile(cfgFile)
+	if err != nil {
+		return cfg, err
+	}
+	err = yaml.Unmarshal(bytes, &cfg)
+	if err != nil {
+		return cfg, err
 	}
 
-	if cfg.Server.ApiKey == "" {
-		return cfg, errors.New("missing mandatory server.api_key in config file" +
-			" (use -conf or -localconf to generate a default config file)")
+	// 3. env. vars
+	cfg.ModelsDir = gg.EnvStr("GI_MODELS_DIR", cfg.ModelsDir)
+	cfg.Server.Origins = gg.EnvStr("GI_ORIGINS", cfg.Server.Origins)
+	if apiKey, ok := cfg.Server.ApiKey["admin"]; ok {
+		cfg.Server.ApiKey["admin"] = gg.EnvStr("GI_API_KEY_ADMIN", apiKey)
+	}
+	if apiKey, ok := cfg.Server.ApiKey["user"]; ok {
+		cfg.Server.ApiKey["user"] = gg.EnvStr("GI_API_KEY_USER", apiKey)
 	}
 
-	return cfg, nil
+	cfg.Swap, err = proxy.LoadConfig("llama-swap.yml")
+	if err != nil {
+		fmt.Printf("Error loading llama-swap.yml config: %v\n", err)
+		os.Exit(1)
+	}
+
+	err = CheckApiKeys(cfg.Server.ApiKey)
+	return cfg, err
 }
 
-// Create a YAML configuration file using Viper's WriteConfig functionality
-func Create(fileName string, random bool) error {
-	viper.SetConfigFile(fileName) // full file path
-	setDefaultConf()
+func CheckApiKeys(ApiKeys map[string]string) error {
+	err := errors.New("missing a seriously secured server.api_key.admin")
+	for k, v := range ApiKeys {
+		if len(v) < 64 {
+			return errors.New("secured api_key must be 64 bytes: " + v)
+		}
+		if v == DebugApiKey {
+			fmt.Print("WARNING: Conf uses DEBUG api_key = security threat")
+		}
+		if k == "admin" {
+			err = nil
+		}
+	}
+	return err
+}
 
-	// Set origins for web server (different from defaults)
-	viper.SetDefault("server.origins", []string{"http://localhost:5173", "http://localhost:5143"})
+const DebugApiKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
 
+func GenApiKey(random bool) []byte {
 	if random {
-		viper.SetDefault("server.api_key", generateRandomKey())
-	} else {
-		viper.SetDefault("server.api_key", "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465")
+		apiKey := make([]byte, 64)
+		rand.Read(apiKey)
+		return apiKey
 	}
+	return []byte(DebugApiKey)
+}
 
-	// Write the configuration file using Viper
-	if err := viper.WriteConfigAs(fileName); err != nil {
-		return fmt.Errorf("failed to write config file %s: %w", fileName, err)
-	}
-
-	return nil
+// Create a YAML configuration
+func Create(fileName string, random bool) error {
+	cfg := []byte(DefaultGoInferConf)
+	bytes.Replace(cfg, []byte("PLEASE SET SECURE API KEY"), GenApiKey(random), 1)
+	bytes.Replace(cfg, []byte("PLEASE SET SECURE API KEY"), GenApiKey(random), 1)
+	err := os.WriteFile(fileName, cfg, 0644)
+	return err
 }
 
 // Debug prints viper debug info and the configuration to stdout in YAML format
 func (cfg *GoInferConf) Debug() error {
-	viper.Debug()
 
 	// Marshal the configuration to YAML
 	bytes, err := yaml.Marshal(&cfg)
@@ -122,14 +140,4 @@ func (cfg *GoInferConf) Debug() error {
 	// Print to stdout
 	_, err = os.Stdout.Write(bytes)
 	return err
-}
-
-func generateRandomKey() string {
-	bytes := make([]byte, 32)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		panic(err.Error())
-	}
-	key := hex.EncodeToString(bytes)
-	return key
 }
