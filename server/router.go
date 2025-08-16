@@ -2,8 +2,8 @@ package server
 
 import (
 	"embed"
-	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -28,7 +28,7 @@ func RunServer(cfg conf.WebServerConf, localMode bool, disableApiKey bool) {
 	}
 
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     cfg.Origins,
+		AllowOrigins:     strings.Split(cfg.Origins, ","),
 		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAuthorization},
 		AllowMethods:     []string{http.MethodGet, http.MethodOptions, http.MethodPost},
 		AllowCredentials: true,
@@ -45,47 +45,50 @@ func RunServer(cfg conf.WebServerConf, localMode bool, disableApiKey bool) {
 		}))
 	}
 
-	// ------------ Models ------------
-
-	mod := e.Group("/model")
-	if !disableApiKey {
-		mod.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-			return key == cfg.ApiKey, nil
-		}))
-	}
-
-	mod.GET("/state", ModelsStateHandler)
-	mod.POST("/start", StartLlamaHandler)
-	mod.GET("/stop", StopLlamaHandler)
-
-	// ----- Inference (llama.cpp) -----
-
-	inf := e.Group("/completion")
-	if !disableApiKey {
-		inf.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-			return key == cfg.ApiKey, nil
-		}))
-	}
-
-	inf.POST("", InferHandler)
-	inf.GET("/abort", AbortLlamaHandler)
-
-	// ----- Inference OpenAI API -----
-
-	if cfg.EnableOpenAiAPI {
-		oai := e.Group("/v1")
-		if !disableApiKey {
-			oai.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-				return key == cfg.ApiKey, nil
-			}))
-		}
-
-		oai.POST("/chat/completions", CreateCompletionHandler)
-		oai.GET("/models", OpenAiListModels)
-	}
-
-	err := e.Start("localhost:" + cfg.Port)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
+	// // ------------ Models ------------
+	//
+	// mod := e.Group("/model")
+	//
+	//	if !disableApiKey {
+	//		mod.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+	//			return key == cfg.ApiKey, nil
+	//		}))
+	//	}
+	//
+	// mod.GET("/state", ModelsStateHandler)
+	// mod.POST("/start", StartLlamaHandler)
+	// mod.GET("/stop", StopLlamaHandler)
+	//
+	// // ----- Inference (llama.cpp) -----
+	//
+	// inf := e.Group("/completion")
+	//
+	//	if !disableApiKey {
+	//		inf.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+	//			return key == cfg.ApiKey, nil
+	//		}))
+	//	}
+	//
+	// inf.POST("", InferHandler)
+	// inf.GET("/abort", AbortLlamaHandler)
+	//
+	// // ----- Inference OpenAI API -----
+	//
+	//	if cfg.EnableOpenAiAPI {
+	//		oai := e.Group("/v1")
+	//		if !disableApiKey {
+	//			oai.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+	//				return key == cfg.ApiKey, nil
+	//			}))
+	//		}
+	//
+	//		oai.POST("/chat/completions", CreateCompletionHandler)
+	//		oai.GET("/models", OpenAiListModels)
+	//	}
+	//
+	// err := e.Start("localhost:" + cfg.Port)
+	//
+	//	if err != nil {
+	//		fmt.Println(err.Error())
+	//	}
 }

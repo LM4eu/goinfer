@@ -191,19 +191,19 @@ func InferHandler(c echo.Context) error {
 		return c.NoContent(http.StatusBadRequest)
 	}
 
-	// Do we need to start/restart llama-server?
-	if state.IsStartNeeded(query.ModelParams) {
-		err := state.RestartLlamaServer(query.ModelParams)
-		if err != nil {
-			if state.IsDebug {
-				fmt.Println("Error loading model:", err)
-			}
-			return c.JSON(
-				http.StatusInternalServerError,
-				echo.Map{"error": "failed to load model" + err.Error()},
-			)
-		}
-	}
+	// // Do we need to start/restart llama-server?
+	// if state.IsStartNeeded(query.ModelParams) {
+	// 	err := state.RestartLlamaServer(query.ModelParams)
+	// 	if err != nil {
+	// 		if state.IsDebug {
+	// 			fmt.Println("Error loading model:", err)
+	// 		}
+	// 		return c.JSON(
+	// 			http.StatusInternalServerError,
+	// 			echo.Map{"error": "failed to load model" + err.Error()},
+	// 		)
+	// 	}
+	// }
 
 	if query.InferParams.Stream {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)

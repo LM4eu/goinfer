@@ -60,61 +60,64 @@ type openAiUsage struct {
 
 // InferOpenAi performs OpenAI model inference.
 func InferOpenAi(query types.InferQuery, c echo.Context, ch chan<- OpenAiChatCompletion, errCh chan<- error) {
-	if !state.Llama.IsRunning() {
-		errCh <- createErrorMessageOpenAi(1, "no model loaded", nil, ErrCodeModelNotLoaded)
-		return
-	}
 
-	logOpenAiVerboseInfo(query.Prompt, 0, 0, 0)
+	/*
+		if !state.Llama.IsRunning() {
+			errCh <- createErrorMessageOpenAi(1, "no model loaded", nil, ErrCodeModelNotLoaded)
+			return
+		}
 
-	if state.IsDebug {
-		fmt.Println("Inference query:")
-		fmt.Printf("%+v\n\n", query)
-	}
+		logOpenAiVerboseInfo(query.Prompt, 0, 0, 0)
 
-	ntokens := 0
-	enc := json.NewEncoder(c.Response())
+		if state.IsDebug {
+			fmt.Println("Inference query:")
+			fmt.Printf("%+v\n\n", query)
+		}
 
-	startThinking := time.Now()
-	var thinkingElapsed time.Duration
-	var startEmitting time.Time
+		ntokens := 0
+		enc := json.NewEncoder(c.Response())
 
-	state.IsInferring = true
-	state.ContinueInferringController = true
+		startThinking := time.Now()
+		var thinkingElapsed time.Duration
+		var startEmitting time.Time
 
-	res, err := state.Llama.Predict(
-		query,
-		func(token string) bool {
-			err := streamDeltaMsgOpenAi(ntokens, token, enc, c, query, startThinking, &thinkingElapsed, &startEmitting)
-			if err != nil {
-				errCh <- createErrorMessageOpenAi(ntokens+1, "streamDeltaMsgOpenAi error", err, ErrStreamDeltaMsgOpenAi)
-			}
-			return state.ContinueInferringController
-		})
+		state.IsInferring = true
+		state.ContinueInferringController = true
 
-	state.IsInferring = false
+		res, err := state.Llama.Predict(
+			query,
+			func(token string) bool {
+				err := streamDeltaMsgOpenAi(ntokens, token, enc, c, query, startThinking, &thinkingElapsed, &startEmitting)
+				if err != nil {
+					errCh <- createErrorMessageOpenAi(ntokens+1, "streamDeltaMsgOpenAi error", err, ErrStreamDeltaMsgOpenAi)
+				}
+				return state.ContinueInferringController
+			})
 
-	if err != nil {
-		state.ContinueInferringController = false
-		errCh <- createErrorMessageOpenAi(ntokens+1, "inference error", err, ErrCodeInferenceFailed)
-	}
+		state.IsInferring = false
 
-	if !state.ContinueInferringController {
-		return
-	}
-
-	if query.InferParams.Stream {
-		err := sendOpenAiStreamTermination(c)
 		if err != nil {
 			state.ContinueInferringController = false
-			errCh <- createErrorMessageOpenAi(ntokens+1, "cannot send stream termination", err, ErrCodeStreamFailed)
-			fmt.Printf("Error sending stream termination: %v\n", err)
+			errCh <- createErrorMessageOpenAi(ntokens+1, "inference error", err, ErrCodeInferenceFailed)
 		}
-	}
 
-	if state.ContinueInferringController {
-		ch <- createOpenAiResult(query, ntokens, res)
-	}
+		if !state.ContinueInferringController {
+			return
+		}
+
+		if query.InferParams.Stream {
+			err := sendOpenAiStreamTermination(c)
+			if err != nil {
+				state.ContinueInferringController = false
+				errCh <- createErrorMessageOpenAi(ntokens+1, "cannot send stream termination", err, ErrCodeStreamFailed)
+				fmt.Printf("Error sending stream termination: %v\n", err)
+			}
+		}
+
+		if state.ContinueInferringController {
+			ch <- createOpenAiResult(query, ntokens, res)
+		}
+	*/
 }
 
 // Streaming Functions

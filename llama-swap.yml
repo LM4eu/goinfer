@@ -1,0 +1,86 @@
+# Doc: https://github.com/mostlygeek/llama-swap/wiki/Configuration
+
+# macros to reduce common conf settings
+macros:
+  "llama-server-common":  ./llama-server --port ${PORT} --props --no-webui --no-warmup
+  "llama-server-goinfer": ${llama-server-common} --jinja --chat-template-file template.jinja
+  "llama-server-openai":  ${llama-server-common}
+
+# seconds to wait for a model to be ready to serve requests (min=15, default=120)
+healthCheckTimeout: 500
+
+# Valid: debug, info, warn, error
+logLevel: info
+
+# automatically incremented for each model -> automatic ${PORT} macro
+startPort: 10001
+
+# models: a dictionary of model configurations
+models:
+
+  # model names used in API requests
+  "Qwen2.5-1.5B-Instruct-Q4_K_M":
+
+    # alternative model names
+    aliases:
+      - "Qwen2.5-1.5B-Instruct"
+      - "Qwen2.5-1.5B"
+      - "Qwen2.5"
+
+    # overrides the model name that is sent to upstream server, default: ""
+    # useful when the upstream server expects a specific model name or format
+    # useModelName: "qwen:qwq"
+
+    # Hide model name: do not show up in /v1/models or /upstream lists
+    # unlisted: true
+
+    # command to start the inference server
+    cmd: ${llama-server-exe} --model path/to/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf
+
+    # env. vars to inject into cmd's environment
+    env:
+      - "CUDA_VISIBLE_DEVICES=0,1,2"
+
+    # URL where llama-swap routes API requests, default: http://localhost:${PORT}
+    # proxy: http://127.0.0.1:8999
+
+    # URL to check if the server is ready, default: /health
+    # checkEndpoint: /custom-endpoint
+
+    # unload the model after this time in seconds, default: 0 (disables automatic unloading)
+    ttl: 60
+
+    filters:
+      # comma separated list of parameters to remove from the request, default: ""
+      # useful for preventing overriding of default server params by requests
+      # strip_params: "temperature, top_p, top_k"
+
+#   # Keep some models loaded indefinitely, while others are swapped out
+#   # see https://github.com/mostlygeek/llama-swap/pull/109
+#   groups:
+#     # example1: only one model is allowed to run a time (default mode)
+#     "group1":
+#       swap: true
+#       exclusive: true
+#       members:
+#         # models names
+#         - "llama"
+#         - "qwen-unlisted"
+#     # example2: all the models in this group2 can run at the same time
+#     # loading another model => unloads all this group2
+#     "group2":
+#       swap: false
+#       exclusive: false
+#       members:
+#         - "docker-llama"
+#         - "modelA"
+#         - "modelB"
+#     # example3: persistent models are never unloaded
+#     "forever":
+#       persistent: true
+#       swap: false
+#       exclusive: false
+#       members:
+#         - "forever-modelA"
+#         - "forever-modelB"
+#         - "forever-modelc"
