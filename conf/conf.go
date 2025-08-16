@@ -46,15 +46,15 @@ type GoInferConf struct {
 
 // ServerConf holds the configuration for GoInfer web server.
 type ServerConf struct {
-	Origins string            `json:"origins"    yaml:"origins"`
-	Port    map[string]string `json:"port"       yaml:"port"`
-	ApiKeys map[string]string `json:"api_key"    yaml:"api_key"`
+	Origins string            `json:"origins" yaml:"origins"`
+	Port    map[string]string `json:"port"    yaml:"port"`
+	ApiKeys map[string]string `json:"api_key" yaml:"api_key"`
 }
 
 // LlamaConf - configuration for llama-server proxy.
 type LlamaConf struct {
-	Exe  string            `json:"exe"       yaml:"exe"`       // Path to llama-server binary
-	Args map[string]string `json:"args"           yaml:"args"` // Additional arguments
+	Exe  string            `json:"exe"  yaml:"exe"`  // Path to llama-server binary
+	Args map[string]string `json:"args" yaml:"args"` // Additional arguments
 }
 
 // Load the goinfer config file
@@ -64,17 +64,17 @@ func Load(goinferFile string, swapFile string) (*GoInferConf, error) {
 	// Default values
 	err := yaml.Unmarshal([]byte(DefaultGoInferConf), &cfg)
 	if err != nil {
-		return nil, fmt.Errorf("Error yaml.Unmarshal(DefaultGoInferConf) %w", err)
+		return nil, fmt.Errorf("error yaml.Unmarshal(DefaultGoInferConf) %w", err)
 	}
 
 	// Config file
 	bytes, err := os.ReadFile(goinferFile)
 	if err != nil {
-		return nil, fmt.Errorf("Error os.ReadFile(%s) %w", goinferFile, err)
+		return nil, fmt.Errorf("error os.ReadFile(%s) %w", goinferFile, err)
 	}
 	err = yaml.Unmarshal(bytes, &cfg)
 	if err != nil {
-		return nil, fmt.Errorf("Error yaml.Unmarshal(%s) %w", goinferFile, err)
+		return nil, fmt.Errorf("error yaml.Unmarshal(%s) %w", goinferFile, err)
 	}
 
 	// Env. vars
@@ -94,7 +94,7 @@ func Load(goinferFile string, swapFile string) (*GoInferConf, error) {
 	// Load also the llama-swap config
 	cfg.Swap, err = proxy.LoadConfig(swapFile)
 	if err != nil {
-		return nil, fmt.Errorf("Error LoadConfig(%s) %w\n", swapFile, err)
+		return nil, fmt.Errorf("error LoadConfig(%s) %w\n", swapFile, err)
 	}
 
 	err = CheckValues(&cfg)
