@@ -1,15 +1,5 @@
 package state
 
-import (
-	"github.com/synw/goinfer/types"
-)
-
-// models state.
-var (
-	ModelsDir = ""
-	ModelConf = types.DefaultModelConf
-)
-
 // Inference state.
 var (
 	ContinueInferringController = true
@@ -18,6 +8,6 @@ var (
 
 // app state.
 var (
-	IsVerbose = true
-	IsDebug   = false
+	Verbose = true
+	Debug   = false
 )

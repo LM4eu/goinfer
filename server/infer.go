@@ -177,7 +177,7 @@ func InferHandler(c echo.Context) error {
 
 	m := echo.Map{}
 	if err := c.Bind(&m); err != nil {
-		if state.IsDebug {
+		if state.Debug {
 			fmt.Println("Inference params decoding error", err)
 		}
 		return c.NoContent(http.StatusBadRequest)
@@ -185,7 +185,7 @@ func InferHandler(c echo.Context) error {
 
 	query, err := parseInferQuery(m)
 	if err != nil {
-		if state.IsDebug {
+		if state.Debug {
 			fmt.Println("Inference params parsing error", err)
 		}
 		return c.NoContent(http.StatusBadRequest)
@@ -221,7 +221,7 @@ func InferHandler(c echo.Context) error {
 	select {
 	case res, ok := <-ch:
 		if ok {
-			if state.IsVerbose {
+			if state.Verbose {
 				fmt.Println("-------- result ----------")
 				for key, value := range res.Data {
 					fmt.Printf("%s: %v\n", key, value)
@@ -239,7 +239,7 @@ func InferHandler(c echo.Context) error {
 				enc := json.NewEncoder(c.Response())
 				err := lm.StreamMsg(err, c, enc)
 				if err != nil {
-					if state.IsDebug {
+					if state.Debug {
 						fmt.Println("Streaming error", err)
 					}
 					return c.JSON(http.StatusInternalServerError, echo.Map{"error": err})
@@ -262,7 +262,7 @@ func AbortLlamaHandler(c echo.Context) error {
 		fmt.Println("No inference running, nothing to abort")
 		return c.NoContent(http.StatusAccepted)
 	}
-	if state.IsVerbose {
+	if state.Verbose {
 		fmt.Println("Aborting inference")
 	}
 	state.ContinueInferringController = false

@@ -36,20 +36,26 @@ func parseModelParams(m echo.Map) (types.ModelParams, error) {
 	return modelConf, nil
 }
 
+type ModelsDir string
+
+func (dir ModelsDir) Str() string {
+	return string(dir)
+}
+
 // ModelsStateHandler returns the state of models.
-func ModelsStateHandler(c echo.Context) error {
-	if state.IsVerbose {
-		fmt.Println("Reading files in:", state.ModelsDir)
+func (dir ModelsDir) ModelsStateHandler(c echo.Context) error {
+	if state.Verbose {
+		fmt.Println("Reading files in:", dir)
 	}
 
 	modelsInfo := map[string]any{"jsonrpc": "2.0", "id": 1}
 
 	var statusCode int
-	models, err := files.ReadModels(state.ModelsDir)
+	models, err := files.ReadModels(dir.Str())
 	if err == nil {
 		statusCode = http.StatusOK
 		modelsInfo["result"] = models
-		if state.IsVerbose {
+		if state.Verbose {
 			fmt.Println("Found models:", models)
 		}
 	} else {
