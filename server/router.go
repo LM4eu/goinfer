@@ -5,37 +5,39 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"github.com/synw/goinfer/conf"
+	"golang.org/x/sync/errgroup"
 )
 
 //go:embed all:dist
 var embeddedFiles embed.FS
 
 func RunServers(cfg conf.GoInferConf) {
-	var wg sync.WaitGroup
-	wg.Add(len(cfg.Server.Ports))
+	var g errgroup.Group
 
-	for port, services := range cfg.Server.Ports {
-		e := newEcho(cfg, port, services)
-
+	for address, services := range cfg.Server.Listen {
 		if cfg.Verbose {
 			fmt.Println("-----------------------------")
 			fmt.Println("Starting http server:")
 			fmt.Println("- services: ", services)
-			fmt.Println("- port:     ", port)
+			fmt.Println("- listen:   ", address)
 			fmt.Println("- origins:  ", cfg.Server.Origins)
 		}
 
-		go start(e, port)
+		e := newEcho(cfg, address, services)
+		g.Go(func() error { return e.Start(address) })
 	}
 
-	wg.Wait()
-	fmt.Println("All http servers have stoped")
+	err := g.Wait()
+	if err != nil {
+		fmt.Printf("ERROR e.Start() %v\n", err)
+	} else {
+		fmt.Println("All http servers have stoped")
+	}
 }
 
 func newEcho(cfg conf.GoInferConf, port, services string) *echo.Echo {
@@ -109,11 +111,4 @@ func newEcho(cfg conf.GoInferConf, port, services string) *echo.Echo {
 	}
 
 	return e
-}
-
-func start(e *echo.Echo, port string) {
-	err := e.Start("localhost:" + port)
-	if err != nil {
-		fmt.Printf("WARNING e.Start(localhost:%s) %v\n", port, err)
-	}
 }
