@@ -3,6 +3,7 @@ package conf
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -12,7 +13,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const DefaultGoInferConf = `
+const DefaultGoInferConf = `# Configuration of https://github.com/LM4eu/goinfer
+
+# Recursively search *.gguf files in this directory
 models_dir: ./models
 
 server:
@@ -22,10 +25,8 @@ server:
     "user":  PLEASE SET SECURE API KEY
   origins: localhost
   ports:
-    "admin":   "9999"
-    "goinfer": "2222"
-    "mcp":     "3333"
-    "openai":  "5143"
+    "8080": admin
+    "5143": openai,goinfer,mcp
 
 llama:
   exe: ./llama-server
@@ -38,46 +39,48 @@ llama:
 
 // GoInferConf holds the configuration for GoInfer.
 type GoInferConf struct {
-	ModelsDir string        `json:"models_dir" yaml:"models_dir"`
-	Server    ServerConf    `json:"server"     yaml:"server"`
-	Llama     LlamaConf     `json:"llama"      yaml:"llama"`
-	Swap      *proxy.Config `json:"swap"       yaml:"swap"`
+	Verbose   bool          `json:"verbose"    yaml:"verbose"`
+	ModelsDir string        `json:"models_dir" yaml:"models_dir"` // directory
+	Server    ServerConf    `json:"server"     yaml:"server"`     // HTTP server
+	Llama     LlamaConf     `json:"llama"      yaml:"llama"`      // llama.cpp
+	Proxy     *proxy.Config `json:"proxy"      yaml:"proxy"`      // llama-swap proxy
 }
 
-// ServerConf holds the configuration for GoInfer web server.
+// ServerConf = config for the GoInfer http server.
 type ServerConf struct {
-	Origins string            `json:"origins" yaml:"origins"`
-	Port    map[string]string `json:"port"    yaml:"port"`
-	ApiKeys map[string]string `json:"api_key" yaml:"api_key"`
+	Ports   map[string]string `json:"ports"          yaml:"ports"`
+	ApiKeys map[string]string `json:"api_key"        yaml:"api_key"`
+	Origins string            `json:"origins"        yaml:"origins"`
 }
 
 // LlamaConf - configuration for llama-server proxy.
 type LlamaConf struct {
 	Exe  string            `json:"exe"  yaml:"exe"`  // Path to llama-server binary
-	Args map[string]string `json:"args" yaml:"args"` // Additional arguments
+	Args map[string]string `json:"args" yaml:"args"` // llama-server arguments
 }
 
 // Load the goinfer config file
-func Load(goinferFile string, swapFile string) (*GoInferConf, error) {
+func Load(goinferCfgFile string, proxyCfgFile string) GoInferConf {
 	var cfg GoInferConf
 
 	// Default values
 	err := yaml.Unmarshal([]byte(DefaultGoInferConf), &cfg)
 	if err != nil {
-		return nil, fmt.Errorf("error yaml.Unmarshal(DefaultGoInferConf) %w", err)
+		panic(fmt.Errorf("error yaml.Unmarshal(DefaultGoInferConf) %w", err))
 	}
 
 	// Config file
-	bytes, err := os.ReadFile(goinferFile)
+	bytes, err := os.ReadFile(goinferCfgFile)
 	if err != nil {
-		return nil, fmt.Errorf("error os.ReadFile(%s) %w", goinferFile, err)
-	}
-	err = yaml.Unmarshal(bytes, &cfg)
-	if err != nil {
-		return nil, fmt.Errorf("error yaml.Unmarshal(%s) %w", goinferFile, err)
+		fmt.Printf("WARNING os.ReadFile(%s) %v => Ignore config file\n", goinferCfgFile, err)
+	} else {
+		err := yaml.Unmarshal(bytes, &cfg)
+		if err != nil {
+			panic(fmt.Errorf("error yaml.Unmarshal(%s) %w", goinferCfgFile, err))
+		}
 	}
 
-	// Env. vars
+	// Env. vars (prefix GI = GoInfer)
 	if dir, ok := os.LookupEnv("GI_MODELS_DIR"); ok {
 		cfg.ModelsDir = dir
 	}
@@ -92,13 +95,17 @@ func Load(goinferFile string, swapFile string) (*GoInferConf, error) {
 	}
 
 	// Load also the llama-swap config
-	cfg.Swap, err = proxy.LoadConfig(swapFile)
+	cfg.Proxy, err = proxy.LoadConfig(proxyCfgFile)
 	if err != nil {
-		return nil, fmt.Errorf("error LoadConfig(%s) %w\n", swapFile, err)
+		panic(fmt.Errorf("error LoadConfig(%s) %w", proxyCfgFile, err))
 	}
 
 	err = CheckValues(&cfg)
-	return &cfg, err
+	if err != nil {
+		panic(fmt.Errorf("error CheckValues(%s) %w", goinferCfgFile, err))
+	}
+
+	return cfg
 }
 
 // CheckValues will check other values, for the moment only API keys
@@ -109,7 +116,7 @@ func CheckValues(cfg *GoInferConf) error {
 			return errors.New("secured api_key must be 64 bytes: " + v)
 		}
 		if v == DebugApiKey {
-			fmt.Printf("WARNING: Config uses DEBUG api_key[%s] => security threat\n", k)
+			fmt.Printf("WARNING api_key[%s]=DEBUG => security threat\n", k)
 		}
 		if k == "admin" {
 			err = nil
@@ -124,36 +131,60 @@ func GenApiKey(debug bool) []byte {
 	if debug {
 		return []byte(DebugApiKey)
 	}
+	bytes := make([]byte, 32)
+	rand.Read(bytes)
 	apiKey := make([]byte, 64)
-	rand.Read(apiKey)
+	hex.Encode(apiKey, bytes)
 	return apiKey
 }
 
 // Create a YAML configuration
-func Create(fileName string, debug bool) error {
+func Create(goinferCfgFile string, debug bool) {
 	cfg := []byte(DefaultGoInferConf)
+
 	// Set API keys
 	cfg = bytes.Replace(cfg, []byte("PLEASE SET SECURE API KEY"), GenApiKey(debug), 1)
 	cfg = bytes.Replace(cfg, []byte("PLEASE SET SECURE API KEY"), GenApiKey(debug), 1)
-	err := os.WriteFile(fileName, cfg, 0644)
-	return err
+	err := os.WriteFile(goinferCfgFile, cfg, 0600)
+
+	if err != nil {
+		fmt.Printf("WARNING os.WriteFile(%s) %v\n", goinferCfgFile, err)
+	} else if debug {
+		fmt.Println("File " + goinferCfgFile + " created with DEBUG api key")
+	} else {
+		fmt.Println("File " + goinferCfgFile + " created with RANDOM api key")
+	}
 }
 
 // Print prints viper debug info and the configuration to stdout in YAML format
 func (cfg *GoInferConf) Print() {
-
 	// Env. vars
+	fmt.Println("-----------------------------")
 	fmt.Println("GI_MODELS_DIR    = " + os.Getenv("GI_MODELS_DIR"))
 	fmt.Println("GI_ORIGINS       = " + os.Getenv("GI_ORIGINS"))
 	fmt.Println("GI_API_KEY_ADMIN = " + os.Getenv("GI_API_KEY_ADMIN"))
 	fmt.Println("GI_API_KEY_USER  = " + os.Getenv("GI_API_KEY_USER"))
+	fmt.Println("-----------------------------")
 
 	// Marshal the configuration to YAML
 	bytes, err := yaml.Marshal(&cfg)
 	if err != nil {
-		fmt.Println("Error yaml.Marshal: " + err.Error())
+		fmt.Println("ERROR yaml.Marshal: " + err.Error())
+		return
 	}
 
-	// Print conf
-	_, _ = os.Stdout.Write(bytes)
+	// Print the YAML
+	os.Stdout.Write(bytes)
+}
+
+func ApiKey(keys map[string]string, favorite string) string {
+	k, ok := keys[favorite]
+	if ok {
+		return k
+	}
+	k, ok = keys["user"]
+	if ok {
+		return k
+	}
+	return keys["admin"]
 }
