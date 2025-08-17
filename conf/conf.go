@@ -24,9 +24,9 @@ server:
     "admin": PLEASE SET SECURE API KEY
     "user":  PLEASE SET SECURE API KEY
   origins: localhost
-  ports:
-    "8080": admin
-    "5143": openai,goinfer,mcp
+  listen:
+    ":8080": admin
+    ":5143": openai,goinfer,mcp
 
 llama:
   exe: ./llama-server
@@ -39,16 +39,16 @@ llama:
 
 // GoInferConf holds the configuration for GoInfer.
 type GoInferConf struct {
-	Verbose   bool          `json:"verbose"    yaml:"verbose"`
-	ModelsDir string        `json:"models_dir" yaml:"models_dir"` // directory
-	Server    ServerConf    `json:"server"     yaml:"server"`     // HTTP server
-	Llama     LlamaConf     `json:"llama"      yaml:"llama"`      // llama.cpp
-	Proxy     *proxy.Config `json:"proxy"      yaml:"proxy"`      // llama-swap proxy
+	Verbose   bool         `json:"verbose"    yaml:"verbose"`
+	ModelsDir string       `json:"models_dir" yaml:"models_dir"` // directory
+	Server    ServerConf   `json:"server"     yaml:"server"`     // HTTP server
+	Llama     LlamaConf    `json:"llama"      yaml:"llama"`      // llama.cpp
+	Proxy     proxy.Config `json:"proxy"      yaml:"proxy"`      // llama-swap proxy
 }
 
 // ServerConf = config for the GoInfer http server.
 type ServerConf struct {
-	Ports   map[string]string `json:"ports"          yaml:"ports"`
+	Listen  map[string]string `json:"listen"         yaml:"listen"`
 	ApiKeys map[string]string `json:"api_key"        yaml:"api_key"`
 	Origins string            `json:"origins"        yaml:"origins"`
 }
