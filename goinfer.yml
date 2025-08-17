@@ -1,3 +1,6 @@
+# Configuration of https://github.com/LM4eu/goinfer
+
+# Recursively search *.gguf files in this directory
 models_dir: ./models
 
 server:
@@ -7,10 +10,8 @@ server:
     "user":  PLEASE SET SECURE API KEY
   origins: localhost
   ports:
-    "admin":   "9999"
-    "goinfer": "2222"
-    "mcp":     "3333"
-    "openai":  "5143"
+    "8080": admin
+    "5143": openai,goinfer,mcp
 
 llama:
   exe: ./llama-server
