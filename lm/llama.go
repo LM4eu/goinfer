@@ -68,7 +68,7 @@ func Infer(query types.InferQuery, c echo.Context, ch chan<- types.StreamedMessa
 
 	logVerboseInfo(query.Prompt, 0, 0, 0)
 
-	if state.IsDebug {
+	if state.Debug {
 		fmt.Println("Inference params:")
 		fmt.Printf("%+v\n\n", query.InferParams)
 	}
@@ -176,7 +176,7 @@ func streamDeltaMsg(ntokens int, token string, enc *json.Encoder, c echo.Context
 		return nil
 	}
 
-	if state.IsVerbose {
+	if state.Verbose {
 		fmt.Print(token)
 	}
 
@@ -236,7 +236,7 @@ func createErrorMessage(ntokens int, content string) types.StreamedMessage {
 
 // logVerboseInfo logs verbose information about the inference process.
 func logVerboseInfo(prompt string, thinkingElapsed time.Duration, emittingElapsed time.Duration, ntokens int) {
-	if state.IsVerbose {
+	if state.Verbose {
 		fmt.Println("---------- prompt ----------")
 		fmt.Println(prompt)
 		fmt.Println("----------------------------")

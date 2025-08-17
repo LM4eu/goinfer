@@ -171,7 +171,7 @@ func streamDeltaMsgOpenAi(ntokens int, token string, enc *json.Encoder, c echo.C
 		return nil
 	}
 
-	if state.IsVerbose {
+	if state.Verbose {
 		fmt.Print(token)
 	}
 
@@ -257,7 +257,7 @@ func createErrorMessageOpenAi(ntokens int, content string, context any, errorCod
 
 // logOpenAiVerboseInfo logs verbose information about the OpenAI inference process.
 func logOpenAiVerboseInfo(finalPrompt string, thinkingElapsed time.Duration, emittingElapsed time.Duration, ntokens int) {
-	if state.IsVerbose {
+	if state.Verbose {
 		fmt.Println("---------- prompt ----------")
 		fmt.Println(finalPrompt)
 		fmt.Println("----------------------------")
