@@ -1,18 +1,19 @@
 # Doc: https://github.com/mostlygeek/llama-swap/wiki/Configuration
 
+
 # seconds to wait for a model to be ready to serve requests (min=15, default=120)
 healthCheckTimeout: 500
+
 
 # Valid: debug, info, warn, error
 logLevel: info
 
-# automatically incremented for each model -> automatic ${PORT} macro
-startPort: 10001
 
 # maximum number of metrics to keep in memory, default: 1000
 metricsMaxInMemory: 1000
 
-# starting port number for the automatically incremented ${PORT} macro, defaul 5800
+
+# automatically incremented for each model -> automatic ${PORT} macro, defaul 5800
 startPort: 6000
 
 
@@ -66,11 +67,13 @@ models:
       # useful for preventing overriding of default server params by requests
       strip_params: # "temperature, top_p, top_k"
 
+
 # preload some models on startup 
 hooks:
   on_startup:
     preload:
       # - "llama"
+
 
 # Keep some models loaded indefinitely, while others are swapped out
 # see https://github.com/mostlygeek/llama-swap/pull/109
