@@ -16,24 +16,24 @@ const DefaultGoInferConf = `
 models_dir: ./models
 
 server:
-	api_key:
-		# ⚠️ Set 64-byte secure API keys 🚨
-		admin: "PLEASE SET SECURE API KEY"
-		user:  "PLEASE SET SECURE API KEY"
-	origins: "localhost"
-	ports:
-		admin:   "9999"
-		goinfer: "2222"
-		mcp:     "3333"
-		openai:  "5143"
+  api_key:
+    # ⚠️ Set 64-byte secure API keys 🚨
+    "admin": PLEASE SET SECURE API KEY
+    "user":  PLEASE SET SECURE API KEY
+  origins: localhost
+  ports:
+    "admin":   "9999"
+    "goinfer": "2222"
+    "mcp":     "3333"
+    "openai":  "5143"
 
 llama:
-	exe: ./llama-server
-	args:
-		// --props: enable changing global properties via POST /props
-		// --no-webui: no Web UI server
-		common: --props --no-webui --no-warmup
-		goinfer: --jinja --chat-template-file template.jinja
+  exe: ./llama-server
+  args:
+    # --props: enable changing global properties via POST /props
+    # --no-webui: no Web UI server
+    "common": --props --no-webui --no-warmup
+    "goinfer": --jinja --chat-template-file template.jinja
 `
 
 // GoInferConf holds the configuration for GoInfer.
