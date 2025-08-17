@@ -9,9 +9,10 @@ server:
     "admin": PLEASE SET SECURE API KEY
     "user":  PLEASE SET SECURE API KEY
   origins: localhost
-  ports:
-    "8080": admin
-    "5143": openai,goinfer,mcp
+  listen:
+    ":8080": admin
+    ":2222": openai,goinfer,mcp
+    ":5143": llama-swap proxy
 
 llama:
   exe: ./llama-server

@@ -19,9 +19,8 @@ startPort: 6000
 
 # macros to reduce common conf settings
 macros:
-  "llama-server-common":  ./llama-server --port ${PORT} --props --no-webui --no-warmup
-  "llama-server-goinfer": ${llama-server-common} --jinja --chat-template-file template.jinja
-  "llama-server-openai":  ${llama-server-common}
+  "llama-server-openai":  ./llama-server --port ${PORT} --props --no-webui --no-warmup
+  "llama-server-goinfer": ./llama-server --port ${PORT} --props --no-webui --no-warmup --jinja --chat-template-file template.jinja
 
 
 # models: a dictionary of model configurations
@@ -51,7 +50,7 @@ models:
       # - "CUDA_VISIBLE_DEVICES=0,1,2"
 
     # command to start the inference server
-    cmd: ${llama-server-exe} --model path/to/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf
+    cmd: ${llama-server-openai} --model path/to/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf
 
     # URL to proxy the API requests, default: http://localhost:${PORT}
     proxy: http://localhost:${PORT} # http://127.0.0.1:8999
