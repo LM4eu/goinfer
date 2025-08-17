@@ -1,7 +1,6 @@
 .pytest_cache
 /go-llama.cpp
 /goinfer
-/goinfer.json
 /goinfer.yml
 /llama-server
 /models
