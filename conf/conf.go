@@ -109,7 +109,7 @@ func CheckValues(cfg *GoInferConf) error {
 			return errors.New("secured api_key must be 64 bytes: " + v)
 		}
 		if v == DebugApiKey {
-			fmt.Print("WARNING: Config uses DEBUG api_key => security threat")
+			fmt.Printf("WARNING: Config uses DEBUG api_key[%s] => security threat\n", k)
 		}
 		if k == "admin" {
 			err = nil
@@ -120,21 +120,21 @@ func CheckValues(cfg *GoInferConf) error {
 
 const DebugApiKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
 
-func GenApiKey(random bool) []byte {
-	if random {
-		apiKey := make([]byte, 64)
-		rand.Read(apiKey)
-		return apiKey
+func GenApiKey(debug bool) []byte {
+	if debug {
+		return []byte(DebugApiKey)
 	}
-	return []byte(DebugApiKey)
+	apiKey := make([]byte, 64)
+	rand.Read(apiKey)
+	return apiKey
 }
 
 // Create a YAML configuration
-func Create(fileName string, random bool) error {
+func Create(fileName string, debug bool) error {
 	cfg := []byte(DefaultGoInferConf)
 	// Set API keys
-	bytes.Replace(cfg, []byte("PLEASE SET SECURE API KEY"), GenApiKey(random), 1)
-	bytes.Replace(cfg, []byte("PLEASE SET SECURE API KEY"), GenApiKey(random), 1)
+	cfg = bytes.Replace(cfg, []byte("PLEASE SET SECURE API KEY"), GenApiKey(debug), 1)
+	cfg = bytes.Replace(cfg, []byte("PLEASE SET SECURE API KEY"), GenApiKey(debug), 1)
 	err := os.WriteFile(fileName, cfg, 0644)
 	return err
 }

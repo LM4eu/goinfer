@@ -16,7 +16,6 @@ func main() {
 	debug := flag.Bool("debug", false, "debug mode")
 	local := flag.Bool("local", false, "run in local mode with a gui (default is api mode: no gui and no websockets, api key required)")
 	genConf := flag.Bool("conf", false, "generate a config file (export MODELS_DIR=/home/me/my/models)")
-	genLocalConf := flag.Bool("localconf", false, "generate a config file for local mode usage (export MODELS_DIR=/home/me/my/models)")
 	disableApiKey := flag.Bool("disable-api-key", false, "disable the api key")
 	garcon.SetVersionFlag()
 	flag.Parse()
@@ -29,12 +28,12 @@ func main() {
 	// Fix: Correct the logic for verbose mode
 	state.IsVerbose = !*quiet
 
-	if *genLocalConf || *genConf {
-		if err := conf.Create("goinfer.yml", *genLocalConf); err != nil {
+	if *genConf {
+		if err := conf.Create("goinfer.yml", *debug); err != nil {
 			panic(err)
 		}
-		if *genLocalConf {
-			fmt.Println("File goinfer.yml created with default API key")
+		if *debug {
+			fmt.Println("File goinfer.yml created with debug API key")
 		} else {
 			fmt.Println("File goinfer.yml created with random API key")
 		}
@@ -51,7 +50,7 @@ func main() {
 	}
 
 	if state.IsVerbose {
-		fmt.Println("Starting the http server with allowed origins", cfg.Server.Origins)
+		fmt.Println("Starting the http server with allowed origins:", cfg.Server.Origins)
 	}
 
 	server.RunServer(cfg.Server, *local, *disableApiKey)
