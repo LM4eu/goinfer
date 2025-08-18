@@ -20,7 +20,7 @@ import (
 func main() {
 	quiet := flag.Bool("q", false, "disable the verbose output")
 	debug := flag.Bool("debug", false, "debug mode")
-	genConf := flag.Bool("conf", false, "generate a config file (export MODELS_DIR=/home/me/my/models)")
+	genConf := flag.Bool("conf", false, "generate a config file (also use: MODELS_DIR=/home/me/my/models)")
 	disableApiKeys := flag.Bool("disable-api-key", false, "http server will not check the api key")
 	garcon.SetVersionFlag()
 	flag.Parse()

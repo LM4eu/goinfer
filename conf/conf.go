@@ -15,7 +15,7 @@ import (
 
 const DefaultGoInferConf = `# Configuration of https://github.com/LM4eu/goinfer
 
-# Recursively search *.gguf files in this directory
+# Recursively search *.gguf files (one or multiple directories separated by ':')
 models_dir: ./models
 
 server:
@@ -40,7 +40,7 @@ llama:
 // GoInferConf holds the configuration for GoInfer.
 type GoInferConf struct {
 	Verbose   bool         `json:"verbose"    yaml:"verbose"`
-	ModelsDir string       `json:"models_dir" yaml:"models_dir"` // directory
+	ModelsDir string       `json:"models_dir" yaml:"models_dir"` // one or multiple directories separated by ':'
 	Server    ServerConf   `json:"server"     yaml:"server"`     // HTTP server
 	Llama     LlamaConf    `json:"llama"      yaml:"llama"`      // llama.cpp
 	Proxy     proxy.Config `json:"proxy"      yaml:"proxy"`      // llama-swap proxy
