@@ -1,6 +1,6 @@
 # Configuration of https://github.com/LM4eu/goinfer
 
-# Recursively search *.gguf files in this directory
+# Recursively search *.gguf files (one or multiple directories separated by ':')
 models_dir: ./models
 
 server:

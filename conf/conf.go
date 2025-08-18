@@ -7,8 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/mostlygeek/llama-swap/proxy"
+	"github.com/synw/goinfer/model"
+	"github.com/synw/goinfer/state"
 
 	"gopkg.in/yaml.v3"
 )
@@ -39,28 +43,28 @@ llama:
 
 // GoInferConf holds the configuration for GoInfer.
 type GoInferConf struct {
-	Verbose   bool         `json:"verbose"    yaml:"verbose"`
-	ModelsDir string       `json:"models_dir" yaml:"models_dir"` // one or multiple directories separated by ':'
-	Server    ServerConf   `json:"server"     yaml:"server"`     // HTTP server
-	Llama     LlamaConf    `json:"llama"      yaml:"llama"`      // llama.cpp
-	Proxy     proxy.Config `json:"proxy"      yaml:"proxy"`      // llama-swap proxy
+	Verbose   bool         `json:"verbose,omitempty"    yaml:"verbose,omitempty"`
+	ModelsDir string       `json:"models_dir,omitempty" yaml:"models_dir,omitempty"` // one or multiple directories separated by ':'
+	Server    ServerConf   `json:"server,omitempty"     yaml:"server,omitempty"`     // HTTP server
+	Llama     LlamaConf    `json:"llama,omitempty"      yaml:"llama,omitempty"`      // llama.cpp
+	Proxy     proxy.Config `json:"proxy,omitempty"      yaml:"proxy,omitempty"`      // llama-swap proxy
 }
 
 // ServerConf = config for the GoInfer http server.
 type ServerConf struct {
-	Listen  map[string]string `json:"listen"         yaml:"listen"`
-	ApiKeys map[string]string `json:"api_key"        yaml:"api_key"`
-	Origins string            `json:"origins"        yaml:"origins"`
+	Listen  map[string]string `json:"listen,omitempty"  yaml:"listen,omitempty"`
+	ApiKeys map[string]string `json:"api_key,omitempty" yaml:"api_key,omitempty"`
+	Origins string            `json:"origins,omitempty" yaml:"origins,omitempty"`
 }
 
 // LlamaConf - configuration for llama-server proxy.
 type LlamaConf struct {
-	Exe  string            `json:"exe"  yaml:"exe"`  // Path to llama-server binary
-	Args map[string]string `json:"args" yaml:"args"` // llama-server arguments
+	Exe  string            `json:"exe,omitempty"  yaml:"exe,omitempty"`  // Path to llama-server binary
+	Args map[string]string `json:"args,omitempty" yaml:"args,omitempty"` // llama-server arguments
 }
 
 // Load the goinfer config file
-func Load(goinferCfgFile string, proxyCfgFile string) GoInferConf {
+func Load(goinferCfgFile string) GoInferConf {
 	var cfg GoInferConf
 
 	// Default values
@@ -92,12 +96,6 @@ func Load(goinferCfgFile string, proxyCfgFile string) GoInferConf {
 	}
 	if apiKey, ok := os.LookupEnv("GI_API_KEY_USER"); ok {
 		cfg.Server.ApiKeys["user"] = apiKey
-	}
-
-	// Load also the llama-swap config
-	cfg.Proxy, err = proxy.LoadConfig(proxyCfgFile)
-	if err != nil {
-		panic(fmt.Errorf("error LoadConfig(%s) %w", proxyCfgFile, err))
 	}
 
 	err = CheckValues(&cfg)
@@ -187,4 +185,78 @@ func ApiKey(keys map[string]string, favorite string) string {
 		return k
 	}
 	return keys["admin"]
+}
+
+// Generate llama-swap config
+func GenProxyConfFromModelFiles(cfg *GoInferConf, proxyCfgFile string) {
+	//	bytes, err := os.ReadFile(proxyCfgFile)
+	//	if err != nil {
+	//		fmt.Printf("WARNING os.ReadFile(%s) %v => Ignore config file\n", proxyCfgFile, err)
+	//	} else {
+	//		err := yaml.Unmarshal(bytes, &cfg.Proxy)
+	//		if err != nil {
+	//			fmt.Printf("WARNING yaml.Unmarshal(%s) %v => Ignore config file\n", proxyCfgFile, err)
+	//		}
+	//	}
+
+	dir := model.Dir(cfg.ModelsDir)
+	modelFiles, err := dir.SearchModels()
+	if err != nil {
+		fmt.Println("ERROR while searching model files:", err)
+		return
+	}
+
+	if len(modelFiles) == 0 {
+		fmt.Println("WARNING Found zero model file => Do not generate", proxyCfgFile)
+		return
+	}
+
+	for _, m := range modelFiles {
+		base := filepath.Base(m)  // Keep the filename without the directory
+		ext := filepath.Ext(base) // Get the extension
+		stem := strings.TrimSuffix(base, ext)
+
+		// for OpenAI API: list the models
+		if state.Verbose {
+			_, ok := cfg.Proxy.Models[stem]
+			if ok {
+				fmt.Printf("Overwrite model=%s in %s\n", stem, proxyCfgFile)
+			}
+		}
+		cfg.Proxy.Models[stem] = proxy.ModelConfig{
+			Cmd:          "${llama-server-openai} --model " + m,
+			Unlisted:     false,
+			UseModelName: stem,
+		}
+
+		// for goinfer API: hide an prefix models with GI_
+		stem = "GI_" + stem
+		if state.Verbose {
+			_, ok := cfg.Proxy.Models[stem]
+			if ok {
+				fmt.Printf("Overwrite model=%s in %s\n", stem, proxyCfgFile)
+			}
+		}
+		cfg.Proxy.Models[stem] = proxy.ModelConfig{
+			Cmd:          "${llama-server-goinfer} --model " + m,
+			Unlisted:     true,
+			UseModelName: stem,
+		}
+	}
+
+	// Marshal the configuration to YAML
+	bytes, err := yaml.Marshal(&cfg.Proxy)
+	if err != nil {
+		fmt.Println("ERROR yaml.Marshal: " + err.Error())
+		return
+	}
+
+	err = os.WriteFile(proxyCfgFile, bytes, 0644)
+	if err != nil {
+		fmt.Println("ERROR os.WriteFile(" + proxyCfgFile + "): " + err.Error())
+		return
+	}
+
+	fmt.Printf("File %s generated from %d model files found in subdirectories: %s",
+		proxyCfgFile, len(modelFiles), cfg.ModelsDir)
 }

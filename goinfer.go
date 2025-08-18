@@ -9,8 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/teal-finance/garcon"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/mostlygeek/llama-swap/proxy"
+	"github.com/teal-finance/garcon"
 
 	"github.com/synw/goinfer/conf"
 	"github.com/synw/goinfer/server"
@@ -20,7 +22,8 @@ import (
 func main() {
 	quiet := flag.Bool("q", false, "disable the verbose output")
 	debug := flag.Bool("debug", false, "debug mode")
-	genConf := flag.Bool("conf", false, "generate a config file (also use: MODELS_DIR=/home/me/my/models)")
+	genGiConf := flag.Bool("gen-gi-conf", false, "generate the goinfer config file (use: MODELS_DIR=/home/me/my/models)")
+	genPxConf := flag.Bool("gen-px-conf", false, "generate the llama-swap proxy config file")
 	disableApiKeys := flag.Bool("disable-api-key", false, "http server will not check the api key")
 	garcon.SetVersionFlag()
 	flag.Parse()
@@ -30,16 +33,30 @@ func main() {
 		state.Debug = true
 	}
 
-	// Fix: Correct the logic for verbose mode
 	state.Verbose = !*quiet
 
-	if *genConf {
+	if *genGiConf {
 		conf.Create("goinfer.yml", *debug)
+		if state.Verbose {
+			cfg := conf.Load("goinfer.yml")
+			cfg.Print()
+		}
 		return
 	}
 
-	cfg := conf.Load("goinfer.yml", "llama-swap.yml")
+	cfg := conf.Load("goinfer.yml")
 	cfg.Verbose = state.Verbose
+
+	// Load the llama-swap config
+	var err error
+	cfg.Proxy, err = proxy.LoadConfig("llama-swap.yml")
+	if *genPxConf {
+		conf.GenProxyConfFromModelFiles(&cfg, "llama-swap.yml")
+		return
+	}
+	if err != nil {
+		panic(fmt.Errorf("error LoadConfig(llama-swap.yml) %w", err))
+	}
 
 	if *disableApiKeys {
 		cfg.Server.ApiKeys = nil
@@ -101,7 +118,7 @@ func main() {
 	// Wait for exit signal
 	<-exitChan
 
-	err := g.Wait()
+	err = g.Wait()
 	if err != nil {
 		fmt.Printf("ERROR http server %v\n", err)
 	} else {
