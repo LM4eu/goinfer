@@ -118,7 +118,7 @@ func CheckValues(cfg *GoInferConf) error {
 		}
 		if k == "admin" {
 			err = nil
-	}
+		}
 	}
 	return err
 }
@@ -130,7 +130,10 @@ func GenApiKey(debug bool) []byte {
 		return []byte(DebugApiKey)
 	}
 	bytes := make([]byte, 32)
-	rand.Read(bytes)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		panic(err)
+	}
 	apiKey := make([]byte, 64)
 	hex.Encode(apiKey, bytes)
 	return apiKey
@@ -172,7 +175,7 @@ func (cfg *GoInferConf) Print() {
 	}
 
 	// Print the YAML
-	os.Stdout.Write(bytes)
+	_, _ = os.Stdout.Write(bytes)
 }
 
 func ApiKey(keys map[string]string, favorite string) string {
