@@ -3,7 +3,6 @@ package lm
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -19,26 +18,14 @@ type InferResult struct {
 	Stats InferStats `json:"stats"`
 }
 
-// InferStats holds statistics about inference.
-type InferStats struct {
-	ThinkingTime       float64 `json:"thinkingTime"`
-	ThinkingTimeFormat string  `json:"thinkingTimeFormat"`
-	EmitTime           float64 `json:"emitTime"`
-	EmitTimeFormat     string  `json:"emitTimeFormat"`
-	TotalTime          float64 `json:"totalTime"`
-	TotalTimeFormat    string  `json:"totalTimeFormat"`
-	TokensPerSecond    float64 `json:"tokensPerSecond"`
-	TotalTokens        int     `json:"totalTokens"`
-}
+// InferStats holds statistics about inference (alias for unified InferenceStats)
+type InferStats = InferenceStats
 
 // InferError represents a structured error for language model inference.
 type InferError struct {
-	Code       string    `json:"code"`
-	Message    string    `json:"message"`
-	Context    any       `json:"context,omitempty"`
-	Timestamp  time.Time `json:"timestamp"`
-	TokenCount int       `json:"token_count,omitempty"`
-	Stage      string    `json:"stage,omitempty"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Context any    `json:"context,omitempty"`
 }
 
 // Error implements the error interface.
@@ -66,7 +53,9 @@ func Infer(query types.InferQuery, c echo.Context, ch chan<- types.StreamedMessa
 	// 	return
 	// }
 
-	logVerboseInfo(query.Prompt, 0, 0, 0)
+	// Initialize statistics
+	var stats InferenceStats
+	LogVerboseInfo("Llama", &stats, query.Prompt)
 
 	if state.Debug {
 		fmt.Println("Inference params:")
@@ -105,15 +94,15 @@ func Infer(query types.InferQuery, c echo.Context, ch chan<- types.StreamedMessa
 	}
 
 	if query.InferParams.Stream {
-		err := sendLlamaStreamTermination(c)
+		err := SendStreamTermination(c)
 		if err != nil {
 			state.ContinueInferringController = false
 			errCh <- createErrorMessage(ntokens+1, "cannot send stream termination")
-			fmt.Printf("Error sending stream termination: %v\n", err)
+			LogError("Llama", "cannot send stream termination", err)
 		}
 	}
 
-	// stats, _ := calculateStats(ntokens, thinkingElapsed, startEmitting) // Ignore tps return value
+	// stats := statsCollector.GetStats()
 	// endmsg, err := createResult(res, stats, enc, c, query.InferParams)
 	// if err != nil {
 	// 	state.ContinueInferringController = false
@@ -127,14 +116,43 @@ func Infer(query types.InferQuery, c echo.Context, ch chan<- types.StreamedMessa
 
 // Streaming Functions
 
-// StreamMsg streams a message to the client.
-func StreamMsg(msg types.StreamedMessage, c echo.Context, enc *json.Encoder) error {
+
+// streamDeltaMsg handles token processing during prediction.
+func streamDeltaMsg(ntokens int, token string, enc *json.Encoder, c echo.Context, params types.InferParams, startThinking time.Time, startEmitting *time.Time, thinkingElapsed *time.Duration) error {
+	if ntokens == 0 {
+		*startEmitting = time.Now()
+		*thinkingElapsed = time.Since(startThinking)
+
+		err := sendStartEmittingMessage(enc, c, params, ntokens, *thinkingElapsed)
+		if err != nil {
+			LogError("Llama", "cannot emit start message", err)
+			state.ContinueInferringController = false
+			return err
+		}
+	}
+
+	if !state.ContinueInferringController {
+		return nil
+	}
+
+	LogToken(token)
+
+	if !params.Stream {
+		return nil
+	}
+
+	tmsg := types.StreamedMessage{
+		Content: token,
+		Num:     ntokens,
+		MsgType: types.TokenMsgType,
+	}
+
 	_, err := c.Response().Write([]byte("data: "))
 	if err != nil {
 		return fmt.Errorf("failed to write stream begin: %w", err)
 	}
 
-	err = enc.Encode(msg)
+	err = enc.Encode(tmsg)
 	if err != nil {
 		return fmt.Errorf("failed to encode stream message: %w", err)
 	}
@@ -148,76 +166,20 @@ func StreamMsg(msg types.StreamedMessage, c echo.Context, enc *json.Encoder) err
 	return nil
 }
 
-// sendLlamaStreamTermination sends stream termination message.
-func sendLlamaStreamTermination(c echo.Context) error {
-	_, err := c.Response().Write([]byte("data: [DONE]\n\n"))
-	if err != nil {
-		return fmt.Errorf("failed to write stream termination: %w", err)
-	}
-	c.Response().Flush()
-	return nil
-}
-
-// streamDeltaMsg handles token processing during prediction.
-func streamDeltaMsg(ntokens int, token string, enc *json.Encoder, c echo.Context, params types.InferParams, startThinking time.Time, thinkingElapsed *time.Duration, startEmitting *time.Time) error {
-	if ntokens == 0 {
-		*startEmitting = time.Now()
-		*thinkingElapsed = time.Since(startThinking)
-
-		err := sendStartEmittingMessage(enc, c, params, ntokens, *thinkingElapsed)
-		if err != nil {
-			fmt.Printf("Error emitting msg: %v\n", err)
-			state.ContinueInferringController = false
-			return err
-		}
-	}
-
-	if !state.ContinueInferringController {
-		return nil
-	}
-
-	if state.Verbose {
-		fmt.Print(token)
-	}
-
-	if !params.Stream {
-		return nil
-	}
-
-	tmsg := types.StreamedMessage{
-		Content: token,
-		Num:     ntokens,
-		MsgType: types.TokenMsgType,
-	}
-
-	err := StreamMsg(tmsg, c, enc)
-	if err != nil {
-		fmt.Printf("Error streaming delta message: %v\n", err)
-		return err
-	}
-
-	return nil
-}
-
 // sendStartEmittingMessage sends the start_emitting message to the client.
 func sendStartEmittingMessage(enc *json.Encoder, c echo.Context, params types.InferParams, ntokens int, thinkingElapsed time.Duration) error {
 	if !params.Stream || !state.ContinueInferringController {
 		return nil
 	}
 
-	smsg := types.StreamedMessage{
-		Num:     ntokens,
-		Content: "start_emitting",
-		MsgType: types.SystemMsgType,
-		Data: map[string]any{
-			"thinking_time":        thinkingElapsed,
-			"thinking_time_format": thinkingElapsed.String(),
-		},
-	}
+	smsg := StreamSystemMessage("start_emitting", ntokens, map[string]any{
+		"thinking_time":        thinkingElapsed,
+		"thinking_time_format": thinkingElapsed.String(),
+	})
 
 	err := StreamMsg(smsg, c, enc)
 	if err != nil {
-		fmt.Printf("Error streaming start_emitting message: %v\n", err)
+		LogError("Llama", "cannot stream start_emitting message", err)
 	}
 	time.Sleep(2 * time.Millisecond) // Give some time to stream this message
 	return err
@@ -234,60 +196,13 @@ func createErrorMessage(ntokens int, content string) types.StreamedMessage {
 	}
 }
 
-// logVerboseInfo logs verbose information about the inference process.
-func logVerboseInfo(prompt string, thinkingElapsed time.Duration, emittingElapsed time.Duration, ntokens int) {
-	if state.Verbose {
-		fmt.Println("---------- prompt ----------")
-		fmt.Println(prompt)
-		fmt.Println("----------------------------")
-		fmt.Println("Thinking ..")
-
-		if thinkingElapsed > 0 {
-			fmt.Println("Thinking time:", thinkingElapsed)
-			fmt.Println("Emitting ..")
-		}
-
-		if emittingElapsed > 0 {
-			fmt.Println("Emitting time:", emittingElapsed)
-		}
-
-		totalTime := thinkingElapsed + emittingElapsed
-		fmt.Println("Total time:", totalTime)
-
-		tpsRaw := float64(ntokens) / emittingElapsed.Seconds()
-		tps, err := strconv.ParseFloat(fmt.Sprintf("%.2f", tpsRaw), 64)
-		if err != nil {
-			tps = 0.0
-		}
-
-		fmt.Println("Tokens per seconds", tps)
-		fmt.Println("Tokens emitted", ntokens)
-	}
-}
 
 // Statistics Functions
 
-// calculateStats calculates inference statistics.
+// calculateStats calculates inference statistics (now uses the unified function).
 func calculateStats(ntokens int, thinkingElapsed time.Duration, startEmitting time.Time) (InferStats, float64) {
-	emittingElapsed := time.Since(startEmitting)
-	tpsRaw := float64(ntokens) / emittingElapsed.Seconds()
-	tps, err := strconv.ParseFloat(fmt.Sprintf("%.2f", tpsRaw), 64)
-	if err != nil {
-		tps = 0.0
-	}
-
-	totalTime := thinkingElapsed + emittingElapsed
-
-	return InferStats{
-		ThinkingTime:       thinkingElapsed.Seconds(),
-		ThinkingTimeFormat: thinkingElapsed.String(),
-		EmitTime:           emittingElapsed.Seconds(),
-		EmitTimeFormat:     emittingElapsed.String(),
-		TotalTime:          totalTime.Seconds(),
-		TotalTimeFormat:    totalTime.String(),
-		TokensPerSecond:    tps,
-		TotalTokens:        ntokens,
-	}, tps
+	stats, tps := CalculateInferenceStats(ntokens, thinkingElapsed, startEmitting)
+	return stats, tps
 }
 
 // Result Creation Functions
@@ -320,7 +235,7 @@ func createResult(res string, stats InferStats, enc *json.Encoder, c echo.Contex
 	}
 
 	if params.Stream {
-		err := StreamMsg(endmsg, c, enc)
+		err := StreamMsg(&endmsg, c, enc)
 		if err != nil {
 			return endmsg, fmt.Errorf("error streaming result message: %w", err)
 		}

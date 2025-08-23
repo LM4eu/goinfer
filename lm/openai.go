@@ -11,49 +11,50 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
+// OpenAI response structures
+type OpenAiChoice struct {
+	Index        int           `json:"index"`
+	Message      OpenAiMessage `json:"message"`
+	FinishReason string        `json:"finish_reason"`
+}
+
+type OpenAiMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type OpenAiUsage struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
+}
+
 type OpenAiChatCompletion struct {
 	ID      string         `json:"id"`
 	Object  string         `json:"object"`
 	Created int64          `json:"created"`
 	Model   string         `json:"model"`
-	Choices []openAiChoice `json:"choices"`
-	Usage   openAiUsage    `json:"usage"`
+	Choices []OpenAiChoice `json:"choices"`
+	Usage   OpenAiUsage    `json:"usage"`
 }
 
-type delta struct {
+type OpenAiDelta struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
 
-type deltaChoice struct {
-	Delta        delta  `json:"delta"`
-	Index        int    `json:"index"`
-	FinishReason string `json:"finish_reason,omitempty"`
+type OpenAiDeltaChoice struct {
+	Delta        OpenAiDelta `json:"delta"`
+	Index        int         `json:"index"`
+	FinishReason string      `json:"finish_reason,omitempty"`
 }
 
-type openAiChatCompletionDeltaResponse struct {
-	ID      string        `json:"id"`
-	Object  string        `json:"object"`
-	Created int64         `json:"created"`
-	Model   string        `json:"model"`
-	Choices []deltaChoice `json:"choices"`
-}
-
-type openAiChoice struct {
-	Index        int           `json:"index"`
-	Message      openAiMessage `json:"message"`
-	FinishReason string        `json:"finish_reason"`
-}
-
-type openAiMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type openAiUsage struct {
-	PromptTokens     int `json:"prompt_tokens"`
-	CompletionTokens int `json:"completion_tokens"`
-	TotalTokens      int `json:"total_tokens"`
+type OpenAiChatCompletionDeltaResponse struct {
+	ID      string             `json:"id"`
+	Object  string             `json:"object"`
+	Created int64              `json:"created"`
+	Model   string             `json:"model"`
+	Choices []OpenAiDeltaChoice `json:"choices"`
 }
 
 // Main Inference Functions
@@ -67,7 +68,7 @@ func InferOpenAi(query types.InferQuery, c echo.Context, ch chan<- OpenAiChatCom
 			return
 		}
 
-		logOpenAiVerboseInfo(query.Prompt, 0, 0, 0)
+		// LogVerboseInfo("OpenAI", &stats, query.Prompt)
 
 		if state.IsDebug {
 			fmt.Println("Inference query:")
@@ -110,7 +111,7 @@ func InferOpenAi(query types.InferQuery, c echo.Context, ch chan<- OpenAiChatCom
 			if err != nil {
 				state.ContinueInferringController = false
 				errCh <- createErrorMessageOpenAi(ntokens+1, "cannot send stream termination", err, ErrCodeStreamFailed)
-				fmt.Printf("Error sending stream termination: %v\n", err)
+				LogError("OpenAI", "cannot send stream termination", err)
 			}
 		}
 
@@ -122,14 +123,39 @@ func InferOpenAi(query types.InferQuery, c echo.Context, ch chan<- OpenAiChatCom
 
 // Streaming Functions
 
-// streamOpenAiMsg streams a message to the client.
-func streamOpenAiMsg(msg openAiChatCompletionDeltaResponse, c echo.Context, enc *json.Encoder) error {
+
+// streamDeltaMsgOpenAi streams a delta message to the client.
+func streamDeltaMsgOpenAi(ntokens int, token string, enc *json.Encoder, c echo.Context, query types.InferQuery, startThinking time.Time, thinkingElapsed *time.Duration, startEmitting *time.Time) error {
+	if ntokens == 0 {
+		*startEmitting = time.Now()
+		*thinkingElapsed = time.Since(startThinking)
+
+		err := sendStartEmittingMessageOpenAi(enc, c, query, ntokens, *thinkingElapsed)
+		if err != nil {
+			LogError("OpenAI", "cannot emit start message", err)
+			state.ContinueInferringController = false
+			return err
+		}
+	}
+
+	if !state.ContinueInferringController {
+		return nil
+	}
+
+	LogToken(token)
+
+	if !query.InferParams.Stream {
+		return nil
+	}
+
+	tmsg := createOpenAiDeltaMessage(query, ntokens, token)
+
 	_, err := c.Response().Write([]byte("data: "))
 	if err != nil {
 		return fmt.Errorf("failed to write stream begin: %w", err)
 	}
 
-	err = enc.Encode(msg)
+	err = enc.Encode(tmsg)
 	if err != nil {
 		return fmt.Errorf("failed to encode stream message: %w", err)
 	}
@@ -140,68 +166,22 @@ func streamOpenAiMsg(msg openAiChatCompletionDeltaResponse, c echo.Context, enc 
 	}
 
 	c.Response().Flush()
-	return nil
-}
-
-// sendOpenAiStreamTermination sends stream termination message.
-func sendOpenAiStreamTermination(c echo.Context) error {
-	_, err := c.Response().Write([]byte("data: [DONE]\n\n"))
-	if err != nil {
-		return fmt.Errorf("failed to write stream termination: %w", err)
-	}
-	c.Response().Flush()
-	return nil
-}
-
-// streamDeltaMsgOpenAi streams a delta message to the client.
-func streamDeltaMsgOpenAi(ntokens int, token string, enc *json.Encoder, c echo.Context, query types.InferQuery, startThinking time.Time, thinkingElapsed *time.Duration, startEmitting *time.Time) error {
-	if ntokens == 0 {
-		*startEmitting = time.Now()
-		*thinkingElapsed = time.Since(startThinking)
-
-		err := sendStartEmittingMessageOpenAi(enc, c, query, ntokens, *thinkingElapsed)
-		if err != nil {
-			fmt.Printf("Error emitting msg: %v\n", err)
-			state.ContinueInferringController = false
-			return err
-		}
-	}
-
-	if !state.ContinueInferringController {
-		return nil
-	}
-
-	if state.Verbose {
-		fmt.Print(token)
-	}
-
-	if !query.InferParams.Stream {
-		return nil
-	}
-
-	tmsg := createOpenAiDeltaMessage(query, ntokens, token)
-
-	err := streamOpenAiMsg(tmsg, c, enc)
-	if err != nil {
-		fmt.Printf("Error streaming delta message: %v\n", err)
-		return err
-	}
 
 	return nil
 }
 
 // createOpenAiDeltaMessage creates a delta message for streaming.
-func createOpenAiDeltaMessage(query types.InferQuery, ntokens int, token string) openAiChatCompletionDeltaResponse {
-	return openAiChatCompletionDeltaResponse{
+func createOpenAiDeltaMessage(query types.InferQuery, ntokens int, token string) OpenAiChatCompletionDeltaResponse {
+	return OpenAiChatCompletionDeltaResponse{
 		ID:      strconv.Itoa(ntokens),
 		Object:  "chat.completion.chunk",
 		Created: time.Now().Unix(),
 		Model:   query.ModelParams.Name,
-		Choices: []deltaChoice{
+		Choices: []OpenAiDeltaChoice{
 			{
 				Index:        ntokens,
 				FinishReason: "",
-				Delta: delta{
+				Delta: OpenAiDelta{
 					Role:    "assistant",
 					Content: token,
 				},
@@ -217,16 +197,16 @@ func sendStartEmittingMessageOpenAi(enc *json.Encoder, c echo.Context, query typ
 	}
 
 	// Create a system message similar to the one in infer.go but adapted for OpenAI format
-	smsg := openAiChatCompletionDeltaResponse{
+	smsg := OpenAiChatCompletionDeltaResponse{
 		ID:      strconv.Itoa(ntokens),
 		Object:  "chat.completion.chunk",
 		Created: time.Now().Unix(),
 		Model:   query.ModelParams.Name,
-		Choices: []deltaChoice{
+		Choices: []OpenAiDeltaChoice{
 			{
 				Index:        ntokens,
 				FinishReason: "",
-				Delta: delta{
+				Delta: OpenAiDelta{
 					Role:    "system",
 					Content: "start_emitting",
 				},
@@ -234,10 +214,22 @@ func sendStartEmittingMessageOpenAi(enc *json.Encoder, c echo.Context, query typ
 		},
 	}
 
-	err := streamOpenAiMsg(smsg, c, enc)
+	_, err := c.Response().Write([]byte("data: "))
 	if err != nil {
-		fmt.Printf("Error streaming start_emitting message: %v\n", err)
+		return fmt.Errorf("failed to write stream begin: %w", err)
 	}
+
+	err = enc.Encode(smsg)
+	if err != nil {
+		return fmt.Errorf("failed to encode stream message: %w", err)
+	}
+
+	_, err = c.Response().Write([]byte("\n"))
+	if err != nil {
+		return fmt.Errorf("failed to write stream message: %w", err)
+	}
+
+	c.Response().Flush()
 	time.Sleep(2 * time.Millisecond) // Give some time to stream this message
 	return err
 }
@@ -247,44 +239,13 @@ func sendStartEmittingMessageOpenAi(enc *json.Encoder, c echo.Context, query typ
 // createErrorMessageOpenAi creates an InferenceError for OpenAI inference.
 func createErrorMessageOpenAi(ntokens int, content string, context any, errorCode string) *InferError {
 	return &InferError{
-		Code:       errorCode,
-		Message:    content,
-		Context:    context,
-		Timestamp:  time.Now(),
-		TokenCount: ntokens,
+		Code:    errorCode,
+		Message: content,
+		Context: context,
 	}
 }
 
-// logOpenAiVerboseInfo logs verbose information about the OpenAI inference process.
-func logOpenAiVerboseInfo(finalPrompt string, thinkingElapsed time.Duration, emittingElapsed time.Duration, ntokens int) {
-	if state.Verbose {
-		fmt.Println("---------- prompt ----------")
-		fmt.Println(finalPrompt)
-		fmt.Println("----------------------------")
-		fmt.Println("Thinking ..")
 
-		if thinkingElapsed > 0 {
-			fmt.Println("Thinking time:", thinkingElapsed)
-			fmt.Println("Emitting ..")
-		}
-
-		if emittingElapsed > 0 {
-			fmt.Println("Emitting time:", emittingElapsed)
-		}
-
-		totalTime := thinkingElapsed + emittingElapsed
-		fmt.Println("Total time:", totalTime)
-
-		tpsRaw := float64(ntokens) / emittingElapsed.Seconds()
-		tps, err := strconv.ParseFloat(fmt.Sprintf("%.2f", tpsRaw), 64)
-		if err != nil {
-			tps = 0.0
-		}
-
-		fmt.Println("Tokens per seconds", tps)
-		fmt.Println("Tokens emitted", ntokens)
-	}
-}
 
 // Result Creation Functions
 
@@ -296,17 +257,17 @@ func createOpenAiResult(query types.InferQuery, ntokens int, res string) OpenAiC
 		Object:  "chat.completion",
 		Created: time.Now().Unix(),
 		Model:   query.ModelParams.Name,
-		Choices: []openAiChoice{
+		Choices: []OpenAiChoice{
 			{
 				Index: 0,
-				Message: openAiMessage{
+				Message: OpenAiMessage{
 					Role:    "assistant",
 					Content: res,
 				},
 				FinishReason: "stop",
 			},
 		},
-		Usage: openAiUsage{
+		Usage: OpenAiUsage{
 			PromptTokens:     0,
 			CompletionTokens: 0,
 			TotalTokens:      ntokens,
