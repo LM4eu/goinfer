@@ -3,7 +3,6 @@
 /goinfer
 goinfer.yml
 /llama-server
-/models
 /server/dist/*
 /go.work
 /go.work.sum

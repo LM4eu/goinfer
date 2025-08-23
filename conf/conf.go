@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/mostlygeek/llama-swap/proxy"
-	"github.com/synw/goinfer/model"
+	"github.com/synw/goinfer/models"
 	"github.com/synw/goinfer/state"
 
 	"gopkg.in/yaml.v3"
@@ -199,8 +199,7 @@ func GenProxyConfFromModelFiles(cfg *GoInferConf, proxyCfgFile string) {
 	//		}
 	//	}
 
-	dir := model.Dir(cfg.ModelsDir)
-	modelFiles, err := dir.SearchModels()
+	modelFiles, err := models.Dir(cfg.ModelsDir).Search()
 	if err != nil {
 		fmt.Println("ERROR while searching model files:", err)
 		return
