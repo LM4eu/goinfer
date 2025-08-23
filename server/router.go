@@ -9,7 +9,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"github.com/synw/goinfer/conf"
-	"github.com/synw/goinfer/model"
+	"github.com/synw/goinfer/models"
 )
 
 //go:embed all:dist
@@ -58,8 +58,7 @@ func NewEchoServer(cfg conf.GoInferConf, addr, services string) *echo.Echo {
 				return key == apiKey, nil
 			}))
 		}
-		dir := model.Dir(cfg.ModelsDir)
-		grp.GET("/state", dir.ModelsStateHandler)
+		grp.GET("/state", models.Dir(cfg.ModelsDir).StateHandler)
 		atLeastOneService = true
 	}
 
