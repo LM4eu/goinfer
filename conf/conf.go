@@ -111,14 +111,14 @@ func CheckValues(cfg *GoInferConf) error {
 	err := errors.New("missing a seriously secured server.api_key.admin")
 	for k, v := range cfg.Server.ApiKeys {
 		if len(v) < 64 {
-			return errors.New("secured api_key must be 64 bytes: " + v)
+			return errors.New("secured api_key must be 64 hexadecimal digits: " + v)
 		}
 		if v == DebugApiKey {
 			fmt.Printf("WARNING api_key[%s]=DEBUG => security threat\n", k)
 		}
 		if k == "admin" {
 			err = nil
-		}
+	}
 	}
 	return err
 }
