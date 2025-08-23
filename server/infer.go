@@ -12,97 +12,103 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-// parseInferQuery parses inference parameters from echo.Map.
+// parseInferQuery parses inference parameters from echo.Map using simple type assertions.
 func parseInferQuery(m echo.Map) (types.InferQuery, error) {
+var errs []error
+	
 	query := types.InferQuery{
 		Prompt:      "",
 		ModelParams: types.DefaultModelConf,
 		InferParams: types.DefaultInferParams,
 	}
 
-	v, ok := m["prompt"]
-	if !ok {
-		return query, errors.New("missing mandatory field: prompt")
-	}
-	query.Prompt, ok = v.(string)
-	if !ok {
-		return query, errors.New("field prompt must be a string")
-	}
-
-	// Simplify by flattening the "model" sub-struct
-	//
-	//	modelConfRaw, ok := m["model"]
-	//	if ok {
-	//		if modelMap, ok := modelConfRaw.(map[string]any); ok {
-	//			for k, v := range modelMap {
-	//				switch k {
-	//				case "name":
-	//					if name, ok := v.(string); ok {
-	//						query.ModelConf.Name = name
-	//					}
-	//				case "ctx":
-	//					if ctx, ok := v.(float64); ok {
-	//						 = int(ctx)
-	//					}
-	//				}
-	//			}
-	//		}
-	//	}
-
-	v, ok = m["model"]
-	if ok {
-		query.ModelParams.Name = v.(string)
+// Parse prompt (required)
+	if v, ok := m["prompt"]; ok {
+		if prompt, ok := v.(string); ok {
+	query.Prompt = prompt
+		} else {
+		errs = append(errs, errors.New("field prompt must be a string"))
+		}
+	} else {
+		errs = append(errs, errors.New("missing mandatory field: prompt"))
 	}
 
-	v, ok = m["ctx"]
-	if ok {
-		query.ModelParams.Ctx = v.(int)
-	}
-
-	v, ok = m["stream"]
-	if ok {
-		if s, ok := v.(bool); ok {
-			query.InferParams.Stream = s
+	// Parse model parameters
+	if v, ok := m["model"]; ok {
+		if name, ok := v.(string); ok {
+			query.ModelParams.Name = name
 		}
 	}
 
-	v, ok = m["temperature"]
-	if ok {
-		if t, ok := v.(float64); ok {
-			query.InferParams.Temperature = float32(t)
+	if v, ok := m["ctx"]; ok {
+		if ctx, ok := v.(int); ok {
+			query.ModelParams.Ctx = ctx
 		}
 	}
 
-	v, ok = m["min_p"]
-	if ok {
-		if p, ok := v.(float64); ok {
-			query.InferParams.MinP = float32(p)
+	// Parse inference parameters
+	if v, ok := m["stream"]; ok {
+		if stream, ok := v.(bool); ok {
+			query.InferParams.Stream = stream
 		}
 	}
 
-	v, ok = m["top_p"]
-	if ok {
-		if p, ok := v.(float64); ok {
-			query.InferParams.TopP = float32(p)
+	if v, ok := m["temperature"]; ok {
+		if temp, ok := v.(float64); ok {
+	query.InferParams.Temperature = float32(temp)
 		}
 	}
 
-	v, ok = m["top_k"]
-	if ok {
-		if k, ok := v.(float64); ok {
-			query.InferParams.TopK = int(k)
+	if v, ok := m["min_p"]; ok {
+		if minP, ok := v.(float64); ok {
+		query.InferParams.MinP = float32(minP)
+	}
+}
+
+	if v, ok := m["top_p"]; ok {
+	if topP, ok := v.(float64); ok {
+		query.InferParams.TopP = float32(topP)
+	}
+}
+
+	if v, ok := m["top_k"]; ok {
+		if topK, ok := v.(int); ok {
+			query.InferParams.TopK = topK
 		}
 	}
 
-	v, ok = m["max_tokens"]
-	if ok {
-		if t, ok := v.(float64); ok {
-			query.InferParams.MaxTokens = int(t)
+if v, ok := m["max_tokens"]; ok {
+		if maxTokens, ok := v.(int); ok {
+			query.InferParams.MaxTokens = maxTokens
 		}
 	}
 
-	v, ok = m["stop"]
-	if ok {
+if v, ok := m["presence_penalty"]; ok {
+		if penalty, ok := v.(float64); ok {
+			query.InferParams.PresencePenalty = float32(penalty)
+		}
+	}
+
+if v, ok := m["frequency_penalty"]; ok {
+		if penalty, ok := v.(float64); ok {
+			query.InferParams.FrequencyPenalty = float32(penalty)
+		}
+	}
+
+if v, ok := m["repeat_penalty"]; ok {
+		if penalty, ok := v.(float64); ok {
+			query.InferParams.RepeatPenalty = float32(penalty)
+		}
+	}
+
+if v, ok := m["tfs"]; ok {
+		if tfs, ok := v.(float64); ok {
+			query.InferParams.TailFreeSamplingZ = float32(tfs)
+		}
+	}
+
+// Parse stop prompts (special case for slice)
+	if v, ok := m["stop"]; ok {
 		if stopSlice, ok := v.([]any); ok {
 			if len(stopSlice) > 0 {
 				query.InferParams.StopPrompts = make([]string, len(stopSlice))
@@ -110,59 +116,50 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 					query.InferParams.StopPrompts[i] = fmt.Sprint(val)
 				}
 			}
+		} else {
+			errs = append(errs, errors.New("field stop must be an array"))
 		}
 	}
 
-	v, ok = m["presence_penalty"]
-	if ok {
-		if pp, ok := v.(float64); ok {
-			query.InferParams.PresencePenalty = float32(pp)
-		}
-	}
-
-	v, ok = m["frequency_penalty"]
-	if ok {
-		if fp, ok := v.(float64); ok {
-			query.InferParams.FrequencyPenalty = float32(fp)
-		}
-	}
-
-	v, ok = m["repeat_penalty"]
-	if ok {
-		if rp, ok := v.(float64); ok {
-			query.InferParams.RepeatPenalty = float32(rp)
-		}
-	}
-
-	v, ok = m["tfs"]
-	if ok {
-		if t, ok := v.(float64); ok {
-			query.InferParams.TailFreeSamplingZ = float32(t)
-		}
-	}
-
-	v, ok = m["images"]
-	if ok {
+	// Parse images (special case for byte array)
+	if v, ok := m["images"]; ok {
 		if slice, ok := v.([]any); ok {
 			if len(slice) > 0 {
 				query.InferParams.Images = make([]byte, len(slice))
 				for i, val := range slice {
-					query.InferParams.Images[i] = val.(byte)
+if byteVal, ok := val.(byte); ok {
+					query.InferParams.Images[i] = byteVal
+					} else {
+						errs = append(errs, fmt.Errorf("invalid byte value in images array at index %d", i))
 				}
 			}
+}
+		} else {
+			errs = append(errs, errors.New("field images must be an array"))
 		}
 	}
 
-	v, ok = m["audios"]
-	if ok {
+// Parse audios (special case for byte array)
+	if v, ok := m["audios"]; ok {
 		if slice, ok := v.([]any); ok {
 			if len(slice) > 0 {
 				query.InferParams.Audios = make([]byte, len(slice))
 				for i, val := range slice {
-					query.InferParams.Audios[i] = val.(byte)
+if byteVal, ok := val.(byte); ok {
+					query.InferParams.Audios[i] = byteVal
+					} else {
+						errs = append(errs, fmt.Errorf("invalid byte value in audios array at index %d", i))
 				}
 			}
 		}
+} else {
+			errs = append(errs, errors.New("field audios must be an array"))
+		}
+	}
+
+	// If there are any errors, return them all joined
+	if len(errs) > 0 {
+		return query, errors.Join(errs...)
 	}
 
 	return query, nil
