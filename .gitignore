@@ -1,8 +1,10 @@
 .pytest_cache
+/.old-code
 /go-llama.cpp
-/goinfer
-goinfer.yml
-/llama-server
-/server/dist/*
 /go.work
 /go.work.sum
+/goinfer
+/goinfer.yml
+/llama-server
+/llama-swap.yml
+/server/dist
