@@ -17,20 +17,23 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const DefaultGoInferConf = `# Configuration of https://github.com/LM4eu/goinfer
+const (
+	pleaseSetSecureAPIKey = "PLEASE SET SECURE API KEY"
+	defaultGoInferConf    = `# Configuration of https://github.com/LM4eu/goinfer
 
 # Recursively search *.gguf files (one or multiple directories separated by ':')
 models_dir: ./models
 
 server:
   api_key:
-    # ⚠️ Set 64-byte secure API keys 🚨
-    "admin": PLEASE SET SECURE API KEY
-    "user":  PLEASE SET SECURE API KEY
+    # ⚠️ Set your private 32-byte API keys (64 hex digits) 🚨
+    "admin": ` + pleaseSetSecureAPIKey + `
+    "user":  ` + pleaseSetSecureAPIKey + `
   origins: localhost
   listen:
     ":8080": admin
-    ":5143": openai,goinfer,mcp
+    ":2222": openai,goinfer,mcp
+    ":5143": llama-swap proxy
 
 llama:
   exe: ./llama-server
@@ -40,185 +43,212 @@ llama:
     "common": --props --no-webui --no-warmup
     "goinfer": --jinja --chat-template-file template.jinja
 `
+)
 
-// GoInferConf holds the configuration for GoInfer.
-type GoInferConf struct {
+type GoInferCfg struct {
+	Llama     LlamaCfg     `json:"llama,omitempty"      yaml:"llama,omitempty"`
+	Server    ServerCfg    `json:"server,omitempty"     yaml:"server,omitempty"`
+	ModelsDir string       `json:"models_dir,omitempty" yaml:"models_dir,omitempty"`
+	Proxy     proxy.Config `json:"proxy,omitempty"      yaml:"proxy,omitempty"`
 	Verbose   bool         `json:"verbose,omitempty"    yaml:"verbose,omitempty"`
-	ModelsDir string       `json:"models_dir,omitempty" yaml:"models_dir,omitempty"` // one or multiple directories separated by ':'
-	Server    ServerConf   `json:"server,omitempty"     yaml:"server,omitempty"`     // HTTP server
-	Llama     LlamaConf    `json:"llama,omitempty"      yaml:"llama,omitempty"`      // llama.cpp
-	Proxy     proxy.Config `json:"proxy,omitempty"      yaml:"proxy,omitempty"`      // llama-swap proxy
 }
 
-// ServerConf = config for the GoInfer http server.
-type ServerConf struct {
+type ServerCfg struct {
 	Listen  map[string]string `json:"listen,omitempty"  yaml:"listen,omitempty"`
-	ApiKeys map[string]string `json:"api_key,omitempty" yaml:"api_key,omitempty"`
+	APIKeys map[string]string `json:"api_key,omitempty" yaml:"api_key,omitempty"`
 	Origins string            `json:"origins,omitempty" yaml:"origins,omitempty"`
 }
 
-// LlamaConf - configuration for llama-server proxy.
-type LlamaConf struct {
-	Exe  string            `json:"exe,omitempty"  yaml:"exe,omitempty"`  // Path to llama-server binary
-	Args map[string]string `json:"args,omitempty" yaml:"args,omitempty"` // llama-server arguments
+type LlamaCfg struct {
+	Args map[string]string `json:"args,omitempty" yaml:"args,omitempty"`
+	Exe  string            `json:"exe,omitempty"  yaml:"exe,omitempty"`
 }
 
-// Load the goinfer config file
-func Load(goinferCfgFile string) GoInferConf {
-	var cfg GoInferConf
+// Load configuration with simplified loading.
+func Load(goinferCfgFile string) (*GoInferCfg, error) {
+	var cfg *GoInferCfg
 
-	// Default values
-	err := yaml.Unmarshal([]byte(DefaultGoInferConf), &cfg)
+	// Load default config
+	err := yaml.Unmarshal([]byte(defaultGoInferConf), &cfg)
 	if err != nil {
-		panic(fmt.Errorf("error yaml.Unmarshal(DefaultGoInferConf) %w", err))
+		return cfg, fmt.Errorf("failed to parse default config: %w", err)
 	}
 
-	// Config file
-	bytes, err := os.ReadFile(goinferCfgFile)
-	if err != nil {
-		fmt.Printf("WARNING os.ReadFile(%s) %v => Ignore config file\n", goinferCfgFile, err)
-	} else {
-		err := yaml.Unmarshal(bytes, &cfg)
+	// Load from file if specified
+	if goinferCfgFile != "" {
+		bytes, err := os.ReadFile(goinferCfgFile)
 		if err != nil {
-			panic(fmt.Errorf("error yaml.Unmarshal(%s) %w", goinferCfgFile, err))
+			return cfg, fmt.Errorf("failed to read %s: %w", goinferCfgFile, err)
+		}
+
+		if err := yaml.Unmarshal(bytes, &cfg); err != nil {
+			return cfg, fmt.Errorf("failed to unmarshal %s: %w", goinferCfgFile, err)
 		}
 	}
 
-	// Env. vars (prefix GI = GoInfer)
-	if dir, ok := os.LookupEnv("GI_MODELS_DIR"); ok {
+	// Load environment variables
+	if dir := os.Getenv("GI_MODELS_DIR"); dir != "" {
 		cfg.ModelsDir = dir
-	}
-	if dir, ok := os.LookupEnv("GI_ORIGINS"); ok {
-		cfg.Server.Origins = dir
-	}
-	if apiKey, ok := os.LookupEnv("GI_API_KEY_ADMIN"); ok {
-		cfg.Server.ApiKeys["admin"] = apiKey
-	}
-	if apiKey, ok := os.LookupEnv("GI_API_KEY_USER"); ok {
-		cfg.Server.ApiKeys["user"] = apiKey
+		if state.Verbose {
+			fmt.Printf("INFO: GI_MODELS_DIR set to %s\n", dir)
+		}
 	}
 
-	err = CheckValues(&cfg)
+	if origins := os.Getenv("GI_ORIGINS"); origins != "" {
+		cfg.Server.Origins = origins
+		if state.Verbose {
+			fmt.Printf("INFO: GI_ORIGINS set to %s\n", origins)
+		}
+	}
+
+	// Initialize API keys if empty
+	if cfg.Server.APIKeys == nil {
+		cfg.Server.APIKeys = make(map[string]string)
+	}
+
+	// Load API keys from environment
+	if key := os.Getenv("GI_API_KEY_ADMIN"); key != "" {
+		cfg.Server.APIKeys["admin"] = key
+		if state.Verbose {
+			fmt.Printf("INFO: GI_API_KEY_ADMIN set\n")
+		}
+	}
+
+	if key := os.Getenv("GI_API_KEY_USER"); key != "" {
+		cfg.Server.APIKeys["user"] = key
+		if state.Verbose {
+			fmt.Printf("INFO: GI_API_KEY_USER set\n")
+		}
+	}
+
+	// Validate configuration
+	err = validateCfg(cfg)
 	if err != nil {
-		panic(fmt.Errorf("error CheckValues(%s) %w", goinferCfgFile, err))
+		return cfg, fmt.Errorf("failed to validate %s: %w", goinferCfgFile, err)
 	}
 
-	return cfg
+	return cfg, nil
 }
 
-// CheckValues will check other values, for the moment only API keys
-func CheckValues(cfg *GoInferConf) error {
-	err := errors.New("missing a seriously secured server.api_key.admin")
-	for k, v := range cfg.Server.ApiKeys {
+func validateCfg(config *GoInferCfg) error {
+	// Ensure admin API key exists
+	if _, exists := config.Server.APIKeys["admin"]; !exists {
+		return errors.New("admin API key is missing")
+	}
+
+	// Validate API keys
+	for k, v := range config.Server.APIKeys {
+		if v == pleaseSetSecureAPIKey {
+			return fmt.Errorf("please set your private '%s' API key", k)
+		}
 		if len(v) < 64 {
-			return errors.New("secured api_key must be 64 hexadecimal digits: " + v)
+			return fmt.Errorf("invalid API key '%s': must be 64 hex digits", k)
 		}
-		if v == DebugApiKey {
-			fmt.Printf("WARNING api_key[%s]=DEBUG => security threat\n", k)
-		}
-		if k == "admin" {
-			err = nil
+		if v == debugAPIKey {
+			fmt.Printf("WARN: api_key[%s]=DEBUG => security threat\n", k)
 		}
 	}
-	return err
+
+	return nil
 }
 
-const DebugApiKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
+const debugAPIKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
 
-func GenApiKey(debug bool) []byte {
-	if debug {
-		return []byte(DebugApiKey)
+func GenerateAPIKey(debugMode bool) ([]byte, error) {
+	if debugMode {
+		return []byte(debugAPIKey), nil
 	}
+
 	bytes := make([]byte, 32)
 	_, err := rand.Read(bytes)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to generate random bytes: %w", err)
 	}
+
 	apiKey := make([]byte, 64)
 	hex.Encode(apiKey, bytes)
-	return apiKey
+	return apiKey, nil
 }
 
-// Create a YAML configuration
-func Create(goinferCfgFile string, debug bool) {
-	cfg := []byte(DefaultGoInferConf)
+// Create configuration file.
+func Create(goinferCfgFile string, debugMode bool) error {
+	cfg := []byte(defaultGoInferConf)
 
 	// Set API keys
-	cfg = bytes.Replace(cfg, []byte("PLEASE SET SECURE API KEY"), GenApiKey(debug), 1)
-	cfg = bytes.Replace(cfg, []byte("PLEASE SET SECURE API KEY"), GenApiKey(debug), 1)
-	err := os.WriteFile(goinferCfgFile, cfg, 0600)
-
+	key, err := GenerateAPIKey(debugMode)
 	if err != nil {
-		fmt.Printf("WARNING os.WriteFile(%s) %v\n", goinferCfgFile, err)
-	} else if debug {
-		fmt.Println("File " + goinferCfgFile + " created with DEBUG api key")
-	} else {
-		fmt.Println("File " + goinferCfgFile + " created with RANDOM api key")
+		return fmt.Errorf("failed to generate first API key: %w", err)
 	}
+	cfg = bytes.Replace(cfg, []byte(pleaseSetSecureAPIKey), key, 1)
+
+	key, err = GenerateAPIKey(debugMode)
+	if err != nil {
+		return fmt.Errorf("failed to generate second API key: %w", err)
+	}
+	cfg = bytes.Replace(cfg, []byte(pleaseSetSecureAPIKey), key, 1)
+
+	if err := os.WriteFile(goinferCfgFile, cfg, 0o600); err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	if debugMode {
+		fmt.Printf("WARNING: Configuration file %s created with DEBUG api key. This is not suitable for production use.\n", goinferCfgFile)
+	} else {
+		fmt.Printf("Configuration file %s created successfully with secure API keys.\n", goinferCfgFile)
+	}
+
+	return nil
 }
 
-// Print prints viper debug info and the configuration to stdout in YAML format
-func (cfg *GoInferConf) Print() {
-	// Env. vars
+// Print configuration.
+func (cfg *GoInferCfg) Print() {
 	fmt.Println("-----------------------------")
-	fmt.Println("GI_MODELS_DIR    = " + os.Getenv("GI_MODELS_DIR"))
-	fmt.Println("GI_ORIGINS       = " + os.Getenv("GI_ORIGINS"))
-	fmt.Println("GI_API_KEY_ADMIN = " + os.Getenv("GI_API_KEY_ADMIN"))
-	fmt.Println("GI_API_KEY_USER  = " + os.Getenv("GI_API_KEY_USER"))
+	fmt.Println("Environment Variables:")
+	fmt.Printf("  GI_MODELS_DIR    = %s\n", os.Getenv("GI_MODELS_DIR"))
+	fmt.Printf("  GI_ORIGINS       = %s\n", os.Getenv("GI_ORIGINS"))
+	fmt.Printf("  GI_API_KEY_ADMIN = set\n")
+	fmt.Printf("  GI_API_KEY_USER  = set\n")
 	fmt.Println("-----------------------------")
 
-	// Marshal the configuration to YAML
-	bytes, err := yaml.Marshal(&cfg)
+	yml, err := yaml.Marshal(&cfg)
 	if err != nil {
-		fmt.Println("ERROR yaml.Marshal: " + err.Error())
+		fmt.Printf("ERROR yaml.Marshal: %s\n", err.Error())
 		return
 	}
 
-	// Print the YAML
-	_, _ = os.Stdout.Write(bytes)
+	os.Stdout.Write(yml)
 }
 
-func ApiKey(keys map[string]string, favorite string) string {
-	k, ok := keys[favorite]
-	if ok {
-		return k
+// GetAPIKey with preference order.
+func GetAPIKey(apiKeys map[string]string, preferred string) string {
+	if key, exists := apiKeys[preferred]; exists {
+		return key
 	}
-	k, ok = keys["user"]
-	if ok {
-		return k
+
+	if key, exists := apiKeys["user"]; exists {
+		return key
 	}
-	return keys["admin"]
+
+	return apiKeys["admin"]
 }
 
-// Generate llama-swap config
-func GenProxyConfFromModelFiles(cfg *GoInferConf, proxyCfgFile string) {
-	//	bytes, err := os.ReadFile(proxyCfgFile)
-	//	if err != nil {
-	//		fmt.Printf("WARNING os.ReadFile(%s) %v => Ignore config file\n", proxyCfgFile, err)
-	//	} else {
-	//		err := yaml.Unmarshal(bytes, &cfg.Proxy)
-	//		if err != nil {
-	//			fmt.Printf("WARNING yaml.Unmarshal(%s) %v => Ignore config file\n", proxyCfgFile, err)
-	//		}
-	//	}
-
+// GenerateProxyCfg generates the llama-swap-proxy configuration.
+func GenerateProxyCfg(cfg *GoInferCfg, proxyCfgFile string) error {
 	modelFiles, err := models.Dir(cfg.ModelsDir).Search()
 	if err != nil {
-		fmt.Println("ERROR while searching model files:", err)
-		return
+		return fmt.Errorf("failed to find model files: %w", err)
 	}
 
 	if len(modelFiles) == 0 {
-		fmt.Println("WARNING Found zero model file => Do not generate", proxyCfgFile)
-		return
+		return fmt.Errorf("no model files found in directory: %s", cfg.ModelsDir)
 	}
 
-	for _, m := range modelFiles {
-		base := filepath.Base(m)  // Keep the filename without the directory
-		ext := filepath.Ext(base) // Get the extension
+	for _, model := range modelFiles {
+		base := filepath.Base(model)
+		ext := filepath.Ext(base)
 		stem := strings.TrimSuffix(base, ext)
 
-		// for OpenAI API: list the models
+		// OpenAI API
 		if state.Verbose {
 			_, ok := cfg.Proxy.Models[stem]
 			if ok {
@@ -226,39 +256,39 @@ func GenProxyConfFromModelFiles(cfg *GoInferConf, proxyCfgFile string) {
 			}
 		}
 		cfg.Proxy.Models[stem] = proxy.ModelConfig{
-			Cmd:          "${llama-server-openai} --model " + m,
+			Cmd:          "${llama-server-openai} -m " + model,
 			Unlisted:     false,
 			UseModelName: stem,
 		}
 
-		// for goinfer API: hide an prefix models with GI_
-		stem = "GI_" + stem
+		// GoInfer API: hide the model + prefix GI_
+		prefixedModelName := "GI_" + stem
 		if state.Verbose {
 			_, ok := cfg.Proxy.Models[stem]
 			if ok {
 				fmt.Printf("Overwrite model=%s in %s\n", stem, proxyCfgFile)
 			}
 		}
-		cfg.Proxy.Models[stem] = proxy.ModelConfig{
-			Cmd:          "${llama-server-goinfer} --model " + m,
+		cfg.Proxy.Models[prefixedModelName] = proxy.ModelConfig{
+			Cmd:          "${llama-server-goinfer} -m " + model,
 			Unlisted:     true,
-			UseModelName: stem,
+			UseModelName: prefixedModelName,
 		}
 	}
 
-	// Marshal the configuration to YAML
-	bytes, err := yaml.Marshal(&cfg.Proxy)
+	yml, err := yaml.Marshal(&cfg.Proxy)
 	if err != nil {
-		fmt.Println("ERROR yaml.Marshal: " + err.Error())
-		return
+		return fmt.Errorf("failed to marshal the llama-swap-proxy config: %w", err)
 	}
 
-	err = os.WriteFile(proxyCfgFile, bytes, 0644)
+	err = os.WriteFile(proxyCfgFile, yml, 0o600)
 	if err != nil {
-		fmt.Println("ERROR os.WriteFile(" + proxyCfgFile + "): " + err.Error())
-		return
+		return fmt.Errorf("failed to write %s: %w", proxyCfgFile, err)
 	}
 
-	fmt.Printf("File %s generated from %d model files found in subdirectories: %s",
-		proxyCfgFile, len(modelFiles), cfg.ModelsDir)
+	if state.Verbose {
+		fmt.Printf("Generated %s with %d models\n", proxyCfgFile, len(modelFiles))
+	}
+
+	return nil
 }
