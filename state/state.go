@@ -1,13 +1,11 @@
 package state
 
-// Inference state.
 var (
-	ContinueInferringController = true
-	IsInferring                 = false
-)
-
-// app state.
-var (
+	// Global app state.
 	Verbose = true
 	Debug   = false
+
+	// Inference state.
+	ContinueInferringController = true
+	IsInferring                 = false
 )
