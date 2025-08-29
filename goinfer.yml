@@ -5,7 +5,7 @@ models_dir: ./models
 
 server:
   api_key:
-    # ⚠️ Set 64-byte secure API keys 🚨
+    # ⚠️ Set your private 32-byte API keys (64 hex digits) 🚨
     "admin": PLEASE SET SECURE API KEY
     "user":  PLEASE SET SECURE API KEY
   origins: localhost

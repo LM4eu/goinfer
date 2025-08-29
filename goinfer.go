@@ -20,11 +20,11 @@ import (
 )
 
 func main() {
-	quiet := flag.Bool("q", false, "disable the verbose output")
+	quiet := flag.Bool("q", false, "disable verbose output")
 	debug := flag.Bool("debug", false, "debug mode")
-	genGiConf := flag.Bool("gen-gi-conf", false, "generate the goinfer config file (use: MODELS_DIR=/home/me/my/models)")
-	genPxConf := flag.Bool("gen-px-conf", false, "generate the llama-swap proxy config file")
-	disableApiKeys := flag.Bool("disable-api-key", false, "http server will not check the api key")
+	genGiConf := flag.Bool("gen-gi-conf", false, "generate goinfer.yml")
+	genPxConf := flag.Bool("gen-px-conf", false, "generate llama-swap.yml (proxy config file)")
+	noApiKeys := flag.Bool("disable-api-key", false, "disable API key check")
 	garcon.SetVersionFlag()
 	flag.Parse()
 
@@ -35,31 +35,46 @@ func main() {
 
 	state.Verbose = !*quiet
 
+	// Generate config
 	if *genGiConf {
-		conf.Create("goinfer.yml", *debug)
+		err := conf.Create("goinfer.yml", *debug)
+		if err != nil {
+			fmt.Printf("ERROR creating config: %v\n", err)
+			os.Exit(1)
+		}
 		if state.Verbose {
-			cfg := conf.Load("goinfer.yml")
+			cfg, err := conf.Load("goinfer.yml")
+			if err != nil {
+				fmt.Printf("ERROR loading config: %v\n", err)
+				os.Exit(1)
+			}
 			cfg.Print()
 		}
 		return
 	}
 
-	cfg := conf.Load("goinfer.yml")
+	// Load configurations
+	cfg, err := conf.Load("goinfer.yml")
+	if err != nil {
+		fmt.Printf("ERROR loading config: %v\n", err)
+		os.Exit(1)
+	}
 	cfg.Verbose = state.Verbose
 
 	// Load the llama-swap config
-	var err error
 	cfg.Proxy, err = proxy.LoadConfig("llama-swap.yml")
+	// even if err!=nil => generate the config file,
 	if *genPxConf {
-		conf.GenProxyConfFromModelFiles(&cfg, "llama-swap.yml")
+		conf.GenerateProxyCfg(cfg, "llama-swap.yml")
 		return
 	}
 	if err != nil {
-		panic(fmt.Errorf("error LoadConfig(llama-swap.yml) %w", err))
+		fmt.Printf("ERROR loading proxy config: %v\n", err)
+		os.Exit(1)
 	}
 
-	if *disableApiKeys {
-		cfg.Server.ApiKeys = nil
+	if *noApiKeys {
+		cfg.Server.APIKeys = nil
 	}
 
 	if state.Debug {
@@ -68,7 +83,7 @@ func main() {
 
 	proxyServer, proxyHandler := server.NewProxyServer(cfg)
 
-	// Setup channels for server management
+	// Setup signal handling
 	exitChan := make(chan struct{})
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
@@ -77,12 +92,13 @@ func main() {
 	go func() {
 		sig := <-sigChan
 		fmt.Printf("Received signal %v, shutting down...\n", sig)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		if proxyServer != nil {
 			proxyHandler.Shutdown()
-			if err := proxyServer.Shutdown(ctx); err != nil {
+			err := proxyServer.Shutdown(ctx)
+			if err != nil {
 				fmt.Printf("Server shutdown error: %v\n", err)
 			}
 		}
@@ -92,6 +108,7 @@ func main() {
 
 	var g errgroup.Group
 
+	// Start HTTP servers
 	for addr, services := range cfg.Server.Listen {
 		e := server.NewEchoServer(cfg, addr, services)
 		if e != nil {
@@ -105,6 +122,7 @@ func main() {
 			g.Go(func() error { return e.Start(addr) })
 		}
 	}
+
 	if proxyServer != nil {
 		if cfg.Verbose {
 			fmt.Println("-----------------------------")
@@ -117,11 +135,9 @@ func main() {
 
 	// Wait for exit signal
 	<-exitChan
-
-	err = g.Wait()
-	if err != nil {
-		fmt.Printf("ERROR http server %v\n", err)
+	if err := g.Wait(); err != nil {
+		fmt.Printf("ERROR HTTT server: %v\n", err)
 	} else {
-		fmt.Println("All http servers have stoped")
+		fmt.Println("INFO: All HTTP servers stopped")
 	}
 }
