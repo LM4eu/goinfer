@@ -143,16 +143,17 @@ RUN apt-get install -y --no-install-recommends \
     libgcc-14-dev \
     ;
 RUN update-alternatives --remove-all cpp
-RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100 \
-    --slave /usr/bin/cpp cpp /usr/bin/cpp-14 \
-    --slave /usr/bin/g++ g++ /usr/bin/g++-14 \
-    --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-14 \
-    --slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-14 \
-    --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-14 \
+RUN update-alternatives --install \
+            /usr/bin/cpp                         cpp                           /usr/bin/cpp-14 100                      \
+    --slave /usr/bin/gcc                         gcc                           /usr/bin/gcc-14                          \
+    --slave /usr/bin/g++                         g++                           /usr/bin/g++-14                          \
     --slave /usr/bin/gcov                        gcov                          /usr/bin/gcov-14                         \
+    --slave /usr/bin/gcc-ar                      gcc-ar                        /usr/bin/gcc-ar-14                       \
+    --slave /usr/bin/gcc-nm                      gcc-nm                        /usr/bin/gcc-nm-14                       \
     --slave /usr/bin/gcov-dump                   gcov-dump                     /usr/bin/gcov-dump-14                    \
     --slave /usr/bin/gcov-tool                   gcov-tool                     /usr/bin/gcov-tool-14                    \
     --slave /usr/bin/lto-dump                    lto-dump                      /usr/bin/lto-dump-14                     \
+    --slave /usr/bin/gcc-ranlib                  gcc-ranlib                    /usr/bin/gcc-ranlib-14                   \
     --slave /usr/bin/x86_64-linux-gnu-cpp        x86_64-linux-gnu-cpp          /usr/bin/x86_64-linux-gnu-cpp-14         \
     --slave /usr/bin/x86_64-linux-gnu-g++        x86_64-linux-gnu-g++          /usr/bin/x86_64-linux-gnu-g++-14         \
     --slave /usr/bin/x86_64-linux-gnu-gcc        x86_64-linux-gnu-gcc          /usr/bin/x86_64-linux-gnu-gcc-14         \
