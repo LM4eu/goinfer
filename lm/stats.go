@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package lm
 
 import (
@@ -5,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/synw/goinfer/types"
+	"github.com/LM4eu/goinfer/types"
 )
 
 // CalcInfStats calculates infer statistics from raw data.

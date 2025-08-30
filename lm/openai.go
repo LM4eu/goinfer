@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package lm
 
 import (
@@ -7,30 +11,32 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/LM4eu/goinfer/state"
+	"github.com/LM4eu/goinfer/types"
 	"github.com/labstack/echo/v4"
-	"github.com/synw/goinfer/state"
-	"github.com/synw/goinfer/types"
 )
 
-// OpenAI response structures (reduced).
-type ChatCompletion struct {
-	ID      string   `json:"id"`
-	Object  string   `json:"object"`
-	Model   string   `json:"model"`
-	Choices []Choice `json:"choices"`
-	Usage   struct {
-		PromptTokens     int `json:"prompt_tokens"`
-		CompletionTokens int `json:"completion_tokens"`
-		TotalTokens      int `json:"total_tokens"`
-	} `json:"usage"`
-	Created int64 `json:"created"`
-}
+type (
+	// OpenAI response structures (reduced).
+	ChatCompletion struct {
+		ID      string   `json:"id"`
+		Object  string   `json:"object"`
+		Model   string   `json:"model"`
+		Choices []Choice `json:"choices"`
+		Usage   struct {
+			PromptTokens     int `json:"prompt_tokens"`
+			CompletionTokens int `json:"completion_tokens"`
+			TotalTokens      int `json:"total_tokens"`
+		} `json:"usage"`
+		Created int64 `json:"created"`
+	}
 
-type Choice struct {
-	Message      string `json:"message"`
-	FinishReason string `json:"finish_reason"`
-	Index        int    `json:"index"`
-}
+	Choice struct {
+		Message      string `json:"message"`
+		FinishReason string `json:"finish_reason"`
+		Index        int    `json:"index"`
+	}
+)
 
 // inferOpenAI performs OpenAI model inference.
 func inferOpenAI(ctx context.Context, query types.InferQuery, c echo.Context, resultChan chan<- ChatCompletion, errorChan chan<- error) {
@@ -112,7 +118,7 @@ func streamTokenOpenAI(ctx context.Context, ntok int, token string, jsonEncoder 
 				},
 			}
 
-			err := write(ctx, c, jsonEncoder, unifiedMsg)
+			err = write(ctx, c, jsonEncoder, unifiedMsg)
 			if err != nil {
 				logError(ctx, "OpenAI", "cannot emit start message", err)
 				state.ContinueInferringController = false
@@ -164,30 +170,31 @@ func streamTokenOpenAI(ctx context.Context, ntok int, token string, jsonEncoder 
 	return write(ctx, c, jsonEncoder, unifiedMsg)
 }
 
-// sendOpenAITerm sends termination message.
-func sendOpenAITerm(ctx context.Context, c echo.Context) error {
-	// Check context
-	if err := ctx.Err(); err != nil {
-		logError(ctx, "OpenAI", "context canceled during stream termination", err)
-		return fmt.Errorf("context canceled: %w", err)
-	}
-
-	// Create termination message
-	unifiedMsg := &types.StreamedMsg{
-		Content: "[DONE]",
-		Num:     -1,
-		MsgType: types.SystemMsgType,
-		Data: map[string]any{
-			"openai_termination": true,
-		},
-	}
-
-	// Send termination message
-	err := write(ctx, c, nil, unifiedMsg)
-	if err != nil {
-		logError(ctx, "OpenAI", "failed to send stream termination", err)
-		return fmt.Errorf("failed to send stream termination: %w", err)
-	}
-
-	return nil
-}
+// // sendOpenAITerm sends termination message.
+// func sendOpenAITerm(ctx context.Context, c echo.Context) error {
+// 	// Check context
+// 	err := ctx.Err()
+// 	if err != nil {
+// 		logError(ctx, "OpenAI", "context canceled during stream termination", err)
+// 		return fmt.Errorf("context canceled: %w", err)
+// 	}
+//
+// 	// Create termination message
+// 	unifiedMsg := &types.StreamedMsg{
+// 		Content: "[DONE]",
+// 		Num:     -1,
+// 		MsgType: types.SystemMsgType,
+// 		Data: map[string]any{
+// 			"openai_termination": true,
+// 		},
+// 	}
+//
+// 	// Send termination message
+// 	err = write(ctx, c, nil, unifiedMsg)
+// 	if err != nil {
+// 		logError(ctx, "OpenAI", "failed to send stream termination", err)
+// 		return fmt.Errorf("failed to send stream termination: %w", err)
+// 	}
+//
+// 	return nil
+// }

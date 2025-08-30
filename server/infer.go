@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package server
 
 import (
@@ -7,10 +11,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/LM4eu/goinfer/lm"
+	"github.com/LM4eu/goinfer/state"
+	"github.com/LM4eu/goinfer/types"
 	"github.com/labstack/echo/v4"
-	"github.com/synw/goinfer/lm"
-	"github.com/synw/goinfer/state"
-	"github.com/synw/goinfer/types"
 )
 
 // inferHandler handles infer requests.
@@ -27,7 +31,8 @@ func inferHandler(c echo.Context) error {
 
 	// Bind request parameters
 	reqMap := echo.Map{}
-	if err := c.Bind(&reqMap); err != nil {
+	err := c.Bind(&reqMap)
+	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{
 			"error": "Invalid request format",
 			"code":  "INVALID_REQUEST",
@@ -71,8 +76,8 @@ func inferHandler(c echo.Context) error {
 }
 
 // parseInferQuery parses infer parameters from echo.Map directly.
-func parseInferQuery(m echo.Map) (types.InferQuery, error) {
-	req := types.InferQuery{
+func parseInferQuery(m echo.Map) (*types.InferQuery, error) {
+	req := &types.InferQuery{
 		Prompt: "",
 		Model:  types.DefaultModel,
 		Params: types.DefaultInferParams,
@@ -140,22 +145,23 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 
 	// Parse stop prompts array
 	if v, ok := m["stop"]; ok {
-		if slice, ok := v.([]any); ok {
-			if len(slice) > 10 {
-				return req, errors.New("stop array too large (max 10)")
-			}
-			if len(slice) > 0 {
-				req.Params.Generation.StopPrompts = make([]string, len(slice))
-				for i, val := range slice {
-					if strVal, ok := val.(string); ok {
-						req.Params.Generation.StopPrompts[i] = strVal
-					} else {
-						return req, fmt.Errorf("stop[%d] must be a string", i)
-					}
+		slice, ok := v.([]any)
+		if !ok {
+			return req, errors.New("stop must be an array")
+		}
+
+		if len(slice) > 10 {
+			return req, errors.New("stop array too large (max 10)")
+		}
+		if len(slice) > 0 {
+			req.Params.Generation.StopPrompts = make([]string, len(slice))
+			for i, val := range slice {
+				if strVal, ok := val.(string); ok {
+					req.Params.Generation.StopPrompts[i] = strVal
+				} else {
+					return req, fmt.Errorf("stop[%d] must be a string", i)
 				}
 			}
-		} else {
-			return req, errors.New("stop must be an array")
 		}
 	}
 
@@ -164,9 +170,8 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 		if slice, ok := v.([]any); ok && len(slice) > 0 {
 			req.Params.Media.Images = make([]byte, len(slice))
 			for i, val := range slice {
-				if byteVal, ok := val.(byte); ok {
-					req.Params.Media.Images[i] = byteVal
-				} else {
+				req.Params.Media.Images[i], ok = val.(byte)
+				if !ok {
 					return req, fmt.Errorf("images[%d] must be a byte", i)
 				}
 			}
@@ -177,9 +182,8 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 		if slice, ok := v.([]any); ok && len(slice) > 0 {
 			req.Params.Media.Audios = make([]byte, len(slice))
 			for i, val := range slice {
-				if byteVal, ok := val.(byte); ok {
-					req.Params.Media.Audios[i] = byteVal
-				} else {
+				req.Params.Media.Audios[i], ok = val.(byte)
+				if !ok {
 					return req, fmt.Errorf("audios[%d] must be a byte", i)
 				}
 			}
@@ -190,7 +194,7 @@ func parseInferQuery(m echo.Map) (types.InferQuery, error) {
 }
 
 // execute executes inference directly.
-func execute(c echo.Context, ctx context.Context, query types.InferQuery) (*types.StreamedMsg, error) {
+func execute(c echo.Context, ctx context.Context, query *types.InferQuery) (*types.StreamedMsg, error) {
 	// Execute infer in goroutine with timeout
 	inferCtx, cancel := context.WithTimeout(ctx, time.Minute*5)
 	defer cancel()

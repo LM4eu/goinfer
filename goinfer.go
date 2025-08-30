@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package main
 
 import (
@@ -14,9 +18,9 @@ import (
 	"github.com/mostlygeek/llama-swap/proxy"
 	"github.com/teal-finance/garcon"
 
-	"github.com/synw/goinfer/conf"
-	"github.com/synw/goinfer/server"
-	"github.com/synw/goinfer/state"
+	"github.com/LM4eu/goinfer/conf"
+	"github.com/LM4eu/goinfer/server"
+	"github.com/LM4eu/goinfer/state"
 )
 
 func main() {
@@ -24,7 +28,7 @@ func main() {
 	debug := flag.Bool("debug", false, "debug mode")
 	genGiConf := flag.Bool("gen-gi-conf", false, "generate goinfer.yml")
 	genPxConf := flag.Bool("gen-px-conf", false, "generate llama-swap.yml (proxy config file)")
-	noApiKeys := flag.Bool("disable-api-key", false, "disable API key check")
+	noAPIKeys := flag.Bool("disable-api-key", false, "disable API key check")
 	garcon.SetVersionFlag()
 	flag.Parse()
 
@@ -43,9 +47,9 @@ func main() {
 			os.Exit(1)
 		}
 		if state.Verbose {
-			cfg, err := conf.Load("goinfer.yml")
-			if err != nil {
-				fmt.Printf("ERROR loading config: %v\n", err)
+			cfg, er := conf.Load("goinfer.yml")
+			if er != nil {
+				fmt.Printf("ERROR loading config: %v\n", er)
 				os.Exit(1)
 			}
 			cfg.Print()
@@ -65,7 +69,11 @@ func main() {
 	cfg.Proxy, err = proxy.LoadConfig("llama-swap.yml")
 	// even if err!=nil => generate the config file,
 	if *genPxConf {
-		conf.GenerateProxyCfg(cfg, "llama-swap.yml")
+		err = conf.GenerateProxyCfg(cfg, "llama-swap.yml")
+		if err != nil {
+			fmt.Printf("ERROR generating proxy config: %v\n", err)
+			os.Exit(1)
+		}
 		return
 	}
 	if err != nil {
@@ -73,7 +81,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if *noApiKeys {
+	if *noAPIKeys {
 		cfg.Server.APIKeys = nil
 	}
 
@@ -97,7 +105,7 @@ func main() {
 
 		if proxyServer != nil {
 			proxyHandler.Shutdown()
-			err := proxyServer.Shutdown(ctx)
+			err = proxyServer.Shutdown(ctx)
 			if err != nil {
 				fmt.Printf("Server shutdown error: %v\n", err)
 			}
@@ -135,7 +143,8 @@ func main() {
 
 	// Wait for exit signal
 	<-exitChan
-	if err := g.Wait(); err != nil {
+	err = g.Wait()
+	if err != nil {
 		fmt.Printf("ERROR HTTT server: %v\n", err)
 	} else {
 		fmt.Println("INFO: All HTTP servers stopped")

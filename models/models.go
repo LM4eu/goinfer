@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package models
 
 import (
@@ -7,8 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/LM4eu/goinfer/state"
 	"github.com/labstack/echo/v4"
-	"github.com/synw/goinfer/state"
 )
 
 type Dir string
