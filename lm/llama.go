@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package lm
 
 import (
@@ -8,14 +12,14 @@ import (
 	"net/http"
 	"time"
 
+	ctxpkg "github.com/LM4eu/goinfer/ctx"
+	"github.com/LM4eu/goinfer/state"
+	"github.com/LM4eu/goinfer/types"
 	"github.com/labstack/echo/v4"
-	ctxpkg "github.com/synw/goinfer/ctx"
-	"github.com/synw/goinfer/state"
-	"github.com/synw/goinfer/types"
 )
 
 // Infer performs language model inference.
-func Infer(query types.InferQuery, c echo.Context, resultChan, errorChan chan<- types.StreamedMsg) {
+func Infer(query *types.InferQuery, c echo.Context, resultChan, errorChan chan<- types.StreamedMsg) {
 	// Create context with request ID
 	ctx := c.Request().Context()
 	reqID := ctxpkg.GenerateRequestID()
@@ -91,7 +95,7 @@ func Infer(query types.InferQuery, c echo.Context, resultChan, errorChan chan<- 
 }
 
 // runInfer performs the actual inference with token streaming.
-func runInfer(ctx context.Context, c echo.Context, query types.InferQuery) (int, error) {
+func runInfer(ctx context.Context, c echo.Context, query *types.InferQuery) (int, error) {
 	// Start the infer process
 	state.IsInferring = true
 	state.ContinueInferringController = true
@@ -136,7 +140,7 @@ func runInfer(ctx context.Context, c echo.Context, query types.InferQuery) (int,
 			}
 
 			token := fmt.Sprintf("token_%d", i)
-			err := streamToken(ctx, ntok+i, token, jsonEncoder, c, query.Params, startThinking, &startEmitting, &thinkingElapsed)
+			err := streamToken(ctx, ntok+i, token, jsonEncoder, c, &query.Params, startThinking, &startEmitting, &thinkingElapsed)
 			if err != nil {
 				return ntok, err
 			}
@@ -151,13 +155,14 @@ func runInfer(ctx context.Context, c echo.Context, query types.InferQuery) (int,
 
 // completeStream handles streaming termination.
 func completeStream(ctx context.Context, c echo.Context, _ int) error {
-	if err := ctx.Err(); err != nil {
+	err := ctx.Err()
+	if err != nil {
 		streamErr := fmt.Errorf("stream termination canceled: %w", err)
 		ctxpkg.LogContextAwareError(ctx, "stream_termination", streamErr)
 		return streamErr
 	}
 
-	err := sendTerm(ctx, c)
+	err = sendTerm(ctx, c)
 	if err != nil {
 		state.ContinueInferringController = false
 		streamErr := fmt.Errorf("stream termination failed: %w", err)
@@ -170,7 +175,7 @@ func completeStream(ctx context.Context, c echo.Context, _ int) error {
 }
 
 // streamToken handles token processing during prediction.
-func streamToken(ctx context.Context, ntok int, token string, jsonEncoder *json.Encoder, c echo.Context, params types.InferParams, startThinking time.Time, startEmitting *time.Time, thinkingElapsed *time.Duration) error {
+func streamToken(ctx context.Context, ntok int, token string, jsonEncoder *json.Encoder, c echo.Context, params *types.InferParams, startThinking time.Time, startEmitting *time.Time, thinkingElapsed *time.Duration) error {
 	// Check context
 	err := ctx.Err()
 	if err != nil {
@@ -193,7 +198,7 @@ func streamToken(ctx context.Context, ntok int, token string, jsonEncoder *json.
 				},
 			}
 
-			err := write(ctx, c, jsonEncoder, smsg)
+			err = write(ctx, c, jsonEncoder, smsg)
 			if err != nil {
 				return fmt.Errorf("cannot stream start_emitting: %w", err)
 			}

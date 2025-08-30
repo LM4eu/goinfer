@@ -1,4 +1,4 @@
-module github.com/synw/goinfer
+module github.com/LM4eu/goinfer
 
 go 1.24.0
 

@@ -1,11 +1,15 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package server
 
 import (
 	"net/http"
 	"strings"
 
+	"github.com/LM4eu/goinfer/conf"
 	"github.com/mostlygeek/llama-swap/proxy"
-	"github.com/synw/goinfer/conf"
 )
 
 func NewProxyServer(cfg *conf.GoInferCfg) (*http.Server, *proxy.ProxyManager) {

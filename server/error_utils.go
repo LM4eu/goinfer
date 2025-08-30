@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package server
 
 import (
@@ -6,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/LM4eu/goinfer/ctx"
 	"github.com/labstack/echo/v4"
-	"github.com/synw/goinfer/ctx"
 )
 
 // CreateErrorResponse creates a standardized error response with context.
