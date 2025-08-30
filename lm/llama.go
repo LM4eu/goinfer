@@ -69,7 +69,7 @@ func Infer(query *types.InferQuery, c echo.Context, resultChan, errorChan chan<-
 
 	// Handle streaming completion if needed
 	if query.Params.Stream {
-		err := completeStream(ctx, c, ntok)
+		err = completeStream(ctx, c, ntok)
 		if err != nil {
 			return
 		}

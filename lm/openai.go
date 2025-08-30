@@ -87,7 +87,7 @@ func streamTokenOpenAI(ctx context.Context, ntok int, token string, jsonEncoder 
 		*startEmitting = time.Now()
 		*thinkingElapsed = time.Since(startThinking)
 
-		err := ctx.Err()
+		err = ctx.Err()
 		if err != nil {
 			return fmt.Errorf("context canceled: %w", err)
 		}
