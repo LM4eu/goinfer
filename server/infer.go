@@ -1,10 +1,11 @@
 package server
 
 import (
-	"encoding/json"
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/synw/goinfer/lm"
@@ -12,256 +13,237 @@ import (
 	"github.com/synw/goinfer/types"
 )
 
-// parseInferQuery parses inference parameters from echo.Map using simple type assertions.
-func parseInferQuery(m echo.Map) (types.InferQuery, error) {
-	var errs []error
-	
-	query := types.InferQuery{
-		Prompt:      "",
-		ModelParams: types.DefaultModelConf,
-		InferParams: types.DefaultInferParams,
-	}
+// inferHandler handles infer requests.
+func inferHandler(c echo.Context) error {
+	// Initialize context with timeout
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 30*time.Second)
+	defer cancel()
 
-	// Parse prompt (required)
-	if v, ok := m["prompt"]; ok {
-		if prompt, ok := v.(string); ok {
-			query.Prompt = prompt
-		} else {
-			errs = append(errs, errors.New("field prompt must be a string"))
-		}
-	} else {
-		errs = append(errs, errors.New("missing mandatory field: prompt"))
-	}
-
-	// Parse model parameters
-	if v, ok := m["model"]; ok {
-		if name, ok := v.(string); ok {
-			query.ModelParams.Name = name
-		}
-	}
-
-	if v, ok := m["ctx"]; ok {
-		if ctx, ok := v.(int); ok {
-			query.ModelParams.Ctx = ctx
-		}
-	}
-
-	// Parse inference parameters
-	if v, ok := m["stream"]; ok {
-		if stream, ok := v.(bool); ok {
-			query.InferParams.Stream = stream
-		}
-	}
-
-	if v, ok := m["temperature"]; ok {
-		if temp, ok := v.(float64); ok {
-			query.InferParams.Temperature = float32(temp)
-		}
-	}
-
-	if v, ok := m["min_p"]; ok {
-		if minP, ok := v.(float64); ok {
-			query.InferParams.MinP = float32(minP)
-		}
-	}
-
-	if v, ok := m["top_p"]; ok {
-		if topP, ok := v.(float64); ok {
-			query.InferParams.TopP = float32(topP)
-		}
-	}
-
-	if v, ok := m["top_k"]; ok {
-		if topK, ok := v.(int); ok {
-			query.InferParams.TopK = topK
-		}
-	}
-
-	if v, ok := m["max_tokens"]; ok {
-		if maxTokens, ok := v.(int); ok {
-			query.InferParams.MaxTokens = maxTokens
-		}
-	}
-
-	if v, ok := m["presence_penalty"]; ok {
-		if penalty, ok := v.(float64); ok {
-			query.InferParams.PresencePenalty = float32(penalty)
-		}
-	}
-
-	if v, ok := m["frequency_penalty"]; ok {
-		if penalty, ok := v.(float64); ok {
-			query.InferParams.FrequencyPenalty = float32(penalty)
-		}
-	}
-
-	if v, ok := m["repeat_penalty"]; ok {
-		if penalty, ok := v.(float64); ok {
-			query.InferParams.RepeatPenalty = float32(penalty)
-		}
-	}
-
-	if v, ok := m["tfs"]; ok {
-		if tfs, ok := v.(float64); ok {
-			query.InferParams.TailFreeSamplingZ = float32(tfs)
-		}
-	}
-
-	// Parse stop prompts (special case for slice)
-	if v, ok := m["stop"]; ok {
-		if stopSlice, ok := v.([]any); ok {
-			if len(stopSlice) > 0 {
-				query.InferParams.StopPrompts = make([]string, len(stopSlice))
-				for i, val := range stopSlice {
-					query.InferParams.StopPrompts[i] = fmt.Sprint(val)
-				}
-			}
-		} else {
-			errs = append(errs, errors.New("field stop must be an array"))
-		}
-	}
-
-	// Parse images (special case for byte array)
-	if v, ok := m["images"]; ok {
-		if slice, ok := v.([]any); ok {
-			if len(slice) > 0 {
-				query.InferParams.Images = make([]byte, len(slice))
-				for i, val := range slice {
-					if byteVal, ok := val.(byte); ok {
-						query.InferParams.Images[i] = byteVal
-					} else {
-						errs = append(errs, fmt.Errorf("invalid byte value in images array at index %d", i))
-					}
-				}
-			}
-		} else {
-			errs = append(errs, errors.New("field images must be an array"))
-		}
-	}
-
-	// Parse audios (special case for byte array)
-	if v, ok := m["audios"]; ok {
-		if slice, ok := v.([]any); ok {
-			if len(slice) > 0 {
-				query.InferParams.Audios = make([]byte, len(slice))
-				for i, val := range slice {
-					if byteVal, ok := val.(byte); ok {
-						query.InferParams.Audios[i] = byteVal
-					} else {
-						errs = append(errs, fmt.Errorf("invalid byte value in audios array at index %d", i))
-					}
-				}
-			}
-		} else {
-			errs = append(errs, errors.New("field audios must be an array"))
-		}
-	}
-
-	// If there are any errors, return them all joined
-	if len(errs) > 0 {
-		return query, errors.Join(errs...)
-	}
-
-	return query, nil
-}
-
-// InferHandler handles inference requests.
-func InferHandler(c echo.Context) error {
+	// Check if infer is already running
 	if state.IsInferring {
-		fmt.Println("An inference query is already running")
+		fmt.Println("Infer already running")
 		return c.NoContent(http.StatusAccepted)
 	}
 
-	m := echo.Map{}
-	if err := c.Bind(&m); err != nil {
-		if state.Debug {
-			fmt.Println("Inference params decoding error", err)
-		}
-		return c.NoContent(http.StatusBadRequest)
+	// Bind request parameters
+	reqMap := echo.Map{}
+	if err := c.Bind(&reqMap); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"error": "Invalid request format",
+			"code":  "INVALID_REQUEST",
+		})
 	}
 
-	query, err := parseInferQuery(m)
+	// Parse infer parameters directly
+	query, err := parseInferQuery(reqMap)
 	if err != nil {
-		if state.Debug {
-			fmt.Println("Inference params parsing error", err)
-		}
-		return c.NoContent(http.StatusBadRequest)
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"error": "Invalid parameter values",
+			"code":  "INVALID_PARAMS",
+		})
 	}
 
-	// // Do we need to start/restart llama-server?
-	// if state.IsStartNeeded(query.ModelParams) {
-	// 	err := state.RestartLlamaServer(query.ModelParams)
-	// 	if err != nil {
-	// 		if state.IsDebug {
-	// 			fmt.Println("Error loading model:", err)
-	// 		}
-	// 		return c.JSON(
-	// 			http.StatusInternalServerError,
-	// 			echo.Map{"error": "failed to load model" + err.Error()},
-	// 		)
-	// 	}
-	// }
-
-	if query.InferParams.Stream {
+	// Setup streaming response if needed
+	if query.Params.Stream {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		c.Response().WriteHeader(http.StatusOK)
 	}
 
-	ch := make(chan types.StreamedMessage)
-	errCh := make(chan types.StreamedMessage)
+	// Execute infer directly (no retry)
+	result, err := execute(c, ctx, query)
+	if err != nil {
+		return err
+	}
 
-	defer close(ch)
-	defer close(errCh)
-
-	go lm.Infer(query, c, ch, errCh)
-
-	select {
-	case res, ok := <-ch:
-		if ok {
-			if state.Verbose {
-				fmt.Println("-------- result ----------")
-				for key, value := range res.Data {
-					fmt.Printf("%s: %v\n", key, value)
-				}
-				fmt.Println("--------------------------")
-			}
-			if !query.InferParams.Stream {
-				return c.JSON(http.StatusOK, res.Data)
-			}
+	// Handle the infer result
+	if state.Verbose {
+		fmt.Println("-------- result ----------")
+		for key, value := range result.Data {
+			fmt.Printf("%s: %v\n", key, value)
 		}
-		return nil
-	case err, ok := <-errCh:
-		if ok {
-			if query.InferParams.Stream {
-				enc := json.NewEncoder(c.Response())
-				err := lm.StreamMsg(&err, c, enc)
-				if err != nil {
-					if state.Debug {
-						fmt.Println("Streaming error", err)
+		fmt.Println("--------------------------")
+	}
+
+	if !query.Params.Stream {
+		return c.JSON(http.StatusOK, result.Data)
+	}
+	return nil
+}
+
+// parseInferQuery parses infer parameters from echo.Map directly.
+func parseInferQuery(m echo.Map) (types.InferQuery, error) {
+	req := types.InferQuery{
+		Prompt: "",
+		Model:  types.DefaultModel,
+		Params: types.DefaultInferParams,
+	}
+
+	// Check required prompt parameter
+	if _, ok := m["prompt"]; !ok {
+		return req, errors.New("prompt is required")
+	}
+
+	// Parse simple parameters directly
+	if val, ok := m["prompt"].(string); ok {
+		req.Prompt = val
+	} else {
+		return req, errors.New("prompt must be a string")
+	}
+
+	if val, ok := m["model"].(string); ok {
+		req.Model.Name = val
+	}
+
+	if val, ok := m["ctx"].(int); ok {
+		req.Model.Ctx = val
+	}
+
+	if val, ok := m["stream"].(bool); ok {
+		req.Params.Stream = val
+	}
+
+	if val, ok := m["temperature"].(float64); ok {
+		req.Params.Sampling.Temperature = float32(val)
+	}
+
+	if val, ok := m["min_p"].(float64); ok {
+		req.Params.Sampling.MinP = float32(val)
+	}
+
+	if val, ok := m["top_p"].(float64); ok {
+		req.Params.Sampling.TopP = float32(val)
+	}
+
+	if val, ok := m["presence_penalty"].(float64); ok {
+		req.Params.Sampling.PresencePenalty = float32(val)
+	}
+
+	if val, ok := m["frequency_penalty"].(float64); ok {
+		req.Params.Sampling.FrequencyPenalty = float32(val)
+	}
+
+	if val, ok := m["repeat_penalty"].(float64); ok {
+		req.Params.Sampling.RepeatPenalty = float32(val)
+	}
+
+	if val, ok := m["tfs"].(float64); ok {
+		req.Params.Sampling.TailFreeSamplingZ = float32(val)
+	}
+
+	if val, ok := m["top_k"].(int); ok {
+		req.Params.Sampling.TopK = val
+	}
+
+	if val, ok := m["max_tokens"].(int); ok {
+		req.Params.Generation.MaxTokens = val
+	}
+
+	// Parse stop prompts array
+	if v, ok := m["stop"]; ok {
+		if slice, ok := v.([]any); ok {
+			if len(slice) > 10 {
+				return req, errors.New("stop array too large (max 10)")
+			}
+			if len(slice) > 0 {
+				req.Params.Generation.StopPrompts = make([]string, len(slice))
+				for i, val := range slice {
+					if strVal, ok := val.(string); ok {
+						req.Params.Generation.StopPrompts[i] = strVal
+					} else {
+						return req, fmt.Errorf("stop[%d] must be a string", i)
 					}
-					return c.JSON(http.StatusInternalServerError, echo.Map{"error": err})
 				}
-			} else {
-				return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Content})
+			}
+		} else {
+			return req, errors.New("stop must be an array")
+		}
+	}
+
+	// Parse media byte arrays
+	if v, ok := m["images"]; ok {
+		if slice, ok := v.([]any); ok && len(slice) > 0 {
+			req.Params.Media.Images = make([]byte, len(slice))
+			for i, val := range slice {
+				if byteVal, ok := val.(byte); ok {
+					req.Params.Media.Images[i] = byteVal
+				} else {
+					return req, fmt.Errorf("images[%d] must be a byte", i)
+				}
 			}
 		}
-		return nil
+	}
+
+	if v, ok := m["audios"]; ok {
+		if slice, ok := v.([]any); ok && len(slice) > 0 {
+			req.Params.Media.Audios = make([]byte, len(slice))
+			for i, val := range slice {
+				if byteVal, ok := val.(byte); ok {
+					req.Params.Media.Audios[i] = byteVal
+				} else {
+					return req, fmt.Errorf("audios[%d] must be a byte", i)
+				}
+			}
+		}
+	}
+
+	return req, nil
+}
+
+// execute executes inference directly.
+func execute(c echo.Context, ctx context.Context, query types.InferQuery) (*types.StreamedMsg, error) {
+	// Execute infer in goroutine with timeout
+	inferCtx, cancel := context.WithTimeout(ctx, time.Minute*5)
+	defer cancel()
+
+	resultChan := make(chan types.StreamedMsg)
+	errorChan := make(chan types.StreamedMsg)
+	defer close(resultChan)
+	defer close(errorChan)
+
+	go lm.Infer(query, c, resultChan, errorChan)
+
+	// Process response directly
+	select {
+	case response, ok := <-resultChan:
+		if ok {
+			return &response, nil
+		}
+		return nil, errors.New("infer channel closed unexpectedly")
+
+	case message, ok := <-errorChan:
+		if ok {
+			if message.MsgType == types.ErrorMsgType {
+				return nil, fmt.Errorf("infer error: %s", message.Content)
+			}
+			return nil, fmt.Errorf("infer error: %v", message)
+		}
+		return nil, errors.New("error channel closed unexpectedly")
+
+	case <-inferCtx.Done():
+		if state.Debug {
+			fmt.Printf("Infer timeout\n")
+		}
+		return nil, errors.New("infer timeout")
+
 	case <-c.Request().Context().Done():
-		fmt.Println("\nRequest canceled")
+		// Client canceled request
 		state.ContinueInferringController = false
-		return c.NoContent(http.StatusNoContent)
+		return nil, errors.New("req canceled by client")
 	}
 }
 
-// AbortLlamaHandler aborts ongoing inference.
-func AbortLlamaHandler(c echo.Context) error {
+// abortHandler aborts ongoing inference.
+func abortHandler(c echo.Context) error {
 	if !state.IsInferring {
 		fmt.Println("No inference running, nothing to abort")
 		return c.NoContent(http.StatusAccepted)
 	}
+
 	if state.Verbose {
 		fmt.Println("Aborting inference")
 	}
+
 	state.ContinueInferringController = false
+
 	return c.NoContent(http.StatusNoContent)
 }

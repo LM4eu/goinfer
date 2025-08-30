@@ -8,7 +8,7 @@ import (
 	"github.com/synw/goinfer/conf"
 )
 
-func NewProxyServer(cfg conf.GoInferConf) (*http.Server, *proxy.ProxyManager) {
+func NewProxyServer(cfg *conf.GoInferCfg) (*http.Server, *proxy.ProxyManager) {
 	for addr, services := range cfg.Server.Listen {
 		if strings.Contains(services, "swap") {
 			pm := proxy.New(cfg.Proxy)
