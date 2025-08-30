@@ -56,7 +56,7 @@ func appendModels(files *[]string, root string) error {
 
 		if d.IsDir() {
 			if state.Verbose {
-				fmt.Println("Searching model files in:", path)
+				fmt.Println("INFO: Searching model files in:", path)
 			}
 			return nil // => step into this directory
 		}

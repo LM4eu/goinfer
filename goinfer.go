@@ -33,7 +33,7 @@ func main() {
 	flag.Parse()
 
 	if *debug {
-		fmt.Println("Debug mode is on")
+		fmt.Println("INFO: Debug mode is on")
 		state.Debug = true
 	}
 
@@ -99,7 +99,7 @@ func main() {
 	// shutdown on signal
 	go func() {
 		sig := <-sigChan
-		fmt.Printf("Received signal %v, shutting down...\n", sig)
+		fmt.Printf("INFO: Received signal %v, shutting down...\n", sig)
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
@@ -107,7 +107,7 @@ func main() {
 			proxyHandler.Shutdown()
 			err = proxyServer.Shutdown(ctx)
 			if err != nil {
-				fmt.Printf("Server shutdown error: %v\n", err)
+				fmt.Printf("ERROR Server shutdown: %v\n", err)
 			}
 		}
 
@@ -139,6 +139,10 @@ func main() {
 			fmt.Println("- listen:   ", proxyServer.Addr)
 		}
 		g.Go(func() error { return proxyServer.ListenAndServe() })
+	}
+
+	if cfg.Verbose {
+		fmt.Println("-----------------------------")
 	}
 
 	// Wait for exit signal

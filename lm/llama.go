@@ -50,7 +50,7 @@ func Infer(query *types.InferQuery, c echo.Context, resultChan, errorChan chan<-
 
 	if state.Debug {
 		fmt.Println("Infer params:")
-		fmt.Printf("%+v\n\n", query.Params)
+		fmt.Printf("INFO: %+v\n\n", query.Params)
 	}
 
 	// Execute inference
