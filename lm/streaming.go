@@ -1,52 +1,27 @@
 package lm
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/synw/goinfer/types"
 )
 
-// StreamTokenMessage creates a token message for streaming
-func StreamTokenMessage(content string, num int, data map[string]any) *types.StreamedMessage {
-	return &types.StreamedMessage{
-		Content: content,
-		Num:     num,
-		MsgType: types.TokenMsgType,
-		Data:    data,
+// sendStartMsg sends the start_emitting message to the client.
+func sendStartMsg(ctx context.Context, jsonEncoder *json.Encoder, c echo.Context, params types.InferParams, ntok int, thinkingElapsed time.Duration) error {
+	err := ctx.Err()
+	if err != nil {
+		return err
 	}
-}
-
-// StreamSystemMessage creates a system message for streaming
-func StreamSystemMessage(content string, num int, data map[string]any) *types.StreamedMessage {
-	return &types.StreamedMessage{
-		Num:     num,
-		Content: content,
-		MsgType: types.SystemMsgType,
-		Data:    data,
-	}
-}
-
-// StreamErrorMessage creates an error message for streaming
-func StreamErrorMessage(content string, num int) *types.StreamedMessage {
-	return &types.StreamedMessage{
-		Num:     num,
-		Content: content,
-		MsgType: types.ErrorMsgType,
-	}
-}
-
-// SendStartEmittingMessage sends the start_emitting message to the client
-func SendStartEmittingMessage(enc *json.Encoder, c echo.Context, params types.InferParams, ntokens int, thinkingElapsed time.Duration) error {
 	if !params.Stream {
 		return nil
 	}
 
-	smsg := types.StreamedMessage{
+	smsg := &types.StreamedMsg{
 		Content: "start_emitting",
-		Num:     ntokens,
+		Num:     ntok,
 		MsgType: types.SystemMsgType,
 		Data: map[string]any{
 			"thinking_time":        thinkingElapsed,
@@ -54,145 +29,87 @@ func SendStartEmittingMessage(enc *json.Encoder, c echo.Context, params types.In
 		},
 	}
 
-	_, err := c.Response().Write([]byte("data: "))
-	if err != nil {
-		return fmt.Errorf("failed to write stream begin: %w", err)
-	}
-
-	err = enc.Encode(smsg)
-	if err != nil {
-		return fmt.Errorf("failed to encode stream message: %w", err)
-	}
-
-	_, err = c.Response().Write([]byte("\n"))
-	if err != nil {
-		return fmt.Errorf("failed to write stream message: %w", err)
-	}
-
-	c.Response().Flush()
-	time.Sleep(2 * time.Millisecond) // Give some time to stream this message
-	return err
+	return write(ctx, c, jsonEncoder, smsg)
 }
 
-// StreamDeltaMessage handles token processing during prediction
-func StreamDeltaMessage(ntokens int, token string, enc *json.Encoder, c echo.Context, params types.InferParams,
-	startThinking time.Time, thinkingElapsed *time.Duration, startEmitting *time.Time) error {
-	
-	if ntokens == 0 {
-		*startEmitting = time.Now()
-		*thinkingElapsed = time.Since(startThinking)
-
-		err := SendStartEmittingMessage(enc, c, params, ntokens, *thinkingElapsed)
-		if err != nil {
-			fmt.Printf("Error emitting msg: %v\n", err)
-			return err
-		}
-	}
-
-	if !params.Stream {
-		return nil
-	}
-
-	tmsg := types.StreamedMessage{
-		Content: token,
-		Num:     ntokens,
-		MsgType: types.TokenMsgType,
-	}
-
-	_, err := c.Response().Write([]byte("data: "))
+// write writes a stream message to the client.
+func write(ctx context.Context, c echo.Context, jsonEncoder *json.Encoder, msg *types.StreamedMsg) error {
+	err := ctx.Err()
 	if err != nil {
-		return fmt.Errorf("failed to write stream begin: %w", err)
+		return err
 	}
 
-	err = enc.Encode(tmsg)
+	if _, err := c.Response().Write([]byte("data: ")); err != nil {
+		return err
+	}
+	err = jsonEncoder.Encode(msg)
 	if err != nil {
-		return fmt.Errorf("failed to encode stream message: %w", err)
+		return err
 	}
-
-	_, err = c.Response().Write([]byte("\n"))
-	if err != nil {
-		return fmt.Errorf("failed to write stream message: %w", err)
+	if _, err := c.Response().Write([]byte("\n")); err != nil {
+		return err
 	}
-
 	c.Response().Flush()
 	return nil
 }
 
-// CreateResultMessage creates the final result message
-func CreateResultMessage(res string, stats InferStats, enc *json.Encoder, c echo.Context, params types.InferParams) (types.StreamedMessage, error) {
-	result := InferResult{
-		Text:  res,
-		Stats: stats,
-	}
-
-	endmsg := types.StreamedMessage{}
-
-	b, err := json.Marshal(&result)
+// streamDelta handles token processing during prediction.
+func streamDelta(ctx context.Context, ntok int, token string, jsonEncoder *json.Encoder, c echo.Context, params types.InferParams,
+	startThinking time.Time, thinkingElapsed *time.Duration, startEmitting *time.Time,
+) error {
+	err := ctx.Err()
 	if err != nil {
-		return endmsg, fmt.Errorf("error marshalling result: %w", err)
+		return err
 	}
 
-	var _res map[string]any
-	err = json.Unmarshal(b, &_res)
-	if err != nil {
-		return endmsg, fmt.Errorf("error unmarshalling result: %w", err)
+	if ntok == 0 {
+		*startEmitting = time.Now()
+		*thinkingElapsed = time.Since(startThinking)
+		return sendStartMsg(ctx, jsonEncoder, c, params, ntok, *thinkingElapsed)
+	}
+	if !params.Stream {
+		return nil
 	}
 
-	endmsg = types.StreamedMessage{
+	tmsg := &types.StreamedMsg{
+		Content: token,
+		Num:     ntok,
+		MsgType: types.TokenMsgType,
+	}
+
+	return write(ctx, c, jsonEncoder, tmsg)
+}
+
+// createResult creates the final result message.
+func createResult(ctx context.Context, res string, stats types.InferStat, jsonEncoder *json.Encoder, c echo.Context, params types.InferParams) (types.StreamedMsg, error) {
+	endmsg := types.StreamedMsg{
 		Content: "result",
 		Num:     stats.TotalTokens + 1,
 		MsgType: types.SystemMsgType,
-		Data:    _res,
+		Data: map[string]any{
+			"text":  res,
+			"stats": stats,
+		},
 	}
 
 	if params.Stream {
-		_, err := c.Response().Write([]byte("data: "))
+		err := write(ctx, c, jsonEncoder, &endmsg)
 		if err != nil {
-			return endmsg, fmt.Errorf("failed to write stream begin: %w", err)
+			return endmsg, err
 		}
-
-		err = enc.Encode(endmsg)
-		if err != nil {
-			return endmsg, fmt.Errorf("failed to encode stream message: %w", err)
-		}
-
-		_, err = c.Response().Write([]byte("\n"))
-		if err != nil {
-			return endmsg, fmt.Errorf("failed to write stream message: %w", err)
-		}
-
-		c.Response().Flush()
 	}
 
 	return endmsg, nil
 }
 
-// StreamMsg streams a message to the client
-func StreamMsg(msg *types.StreamedMessage, c echo.Context, enc *json.Encoder) error {
-	_, err := c.Response().Write([]byte("data: "))
+// sendTerm sends a stream termination message.
+func sendTerm(ctx context.Context, c echo.Context) error {
+	err := ctx.Err()
 	if err != nil {
-		return fmt.Errorf("failed to write stream begin: %w", err)
+		return err
 	}
-
-	err = enc.Encode(msg)
-	if err != nil {
-		return fmt.Errorf("failed to encode stream message: %w", err)
-	}
-
-	_, err = c.Response().Write([]byte("\n"))
-	if err != nil {
-		return fmt.Errorf("failed to write stream message: %w", err)
-	}
-
-	c.Response().Flush()
-	return nil
-}
-
-// SendStreamTermination sends a stream termination message
-func SendStreamTermination(c echo.Context) error {
-	_, err := c.Response().Write([]byte("data: [DONE]\n\n"))
-	if err != nil {
-		return fmt.Errorf("failed to write stream termination: %w", err)
+	if _, err := c.Response().Write([]byte("data: [DONE]\n\n")); err != nil {
+		return err
 	}
 	c.Response().Flush()
 	return nil
