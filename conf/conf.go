@@ -201,9 +201,9 @@ func Create(goinferCfgFile string, debugMode bool) error {
 	}
 
 	if debugMode {
-		fmt.Printf("WARNING: Configuration file %s created with DEBUG api key. This is not suitable for production use.\n", goinferCfgFile)
+		fmt.Printf("WARN: Configuration file %s created with DEBUG api key. This is not suitable for production use.\n", goinferCfgFile)
 	} else {
-		fmt.Printf("Configuration file %s created successfully with secure API keys.\n", goinferCfgFile)
+		fmt.Printf("INFO: Configuration file %s created successfully with secure API keys.\n", goinferCfgFile)
 	}
 
 	return nil
@@ -261,7 +261,7 @@ func GenerateProxyCfg(cfg *GoInferCfg, proxyCfgFile string) error {
 		if state.Verbose {
 			_, ok := cfg.Proxy.Models[stem]
 			if ok {
-				fmt.Printf("Overwrite model=%s in %s\n", stem, proxyCfgFile)
+				fmt.Printf("INFO: Overwrite model=%s in %s\n", stem, proxyCfgFile)
 			}
 		}
 		cfg.Proxy.Models[stem] = proxy.ModelConfig{
@@ -275,7 +275,7 @@ func GenerateProxyCfg(cfg *GoInferCfg, proxyCfgFile string) error {
 		if state.Verbose {
 			_, ok := cfg.Proxy.Models[stem]
 			if ok {
-				fmt.Printf("Overwrite model=%s in %s\n", stem, proxyCfgFile)
+				fmt.Printf("INFO: Overwrite model=%s in %s\n", stem, proxyCfgFile)
 			}
 		}
 		cfg.Proxy.Models[prefixedModelName] = proxy.ModelConfig{
@@ -296,7 +296,7 @@ func GenerateProxyCfg(cfg *GoInferCfg, proxyCfgFile string) error {
 	}
 
 	if state.Verbose {
-		fmt.Printf("Generated %s with %d models\n", proxyCfgFile, len(modelFiles))
+		fmt.Printf("INFO: Generated %s with %d models\n", proxyCfgFile, len(modelFiles))
 	}
 
 	return nil

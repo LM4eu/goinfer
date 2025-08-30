@@ -62,11 +62,11 @@ func inferHandler(c echo.Context) error {
 
 	// Handle the infer result
 	if state.Verbose {
-		fmt.Println("-------- result ----------")
+		fmt.Println("INFO: -------- result ----------")
 		for key, value := range result.Data {
-			fmt.Printf("%s: %v\n", key, value)
+			fmt.Printf("INFO: %s: %v\n", key, value)
 		}
-		fmt.Println("--------------------------")
+		fmt.Println("INFO: --------------------------")
 	}
 
 	if !query.Params.Stream {
@@ -239,12 +239,12 @@ func execute(c echo.Context, ctx context.Context, query *types.InferQuery) (*typ
 // abortHandler aborts ongoing inference.
 func abortHandler(c echo.Context) error {
 	if !state.IsInferring {
-		fmt.Println("No inference running, nothing to abort")
+		fmt.Println("INFO: No inference running, nothing to abort")
 		return c.NoContent(http.StatusAccepted)
 	}
 
 	if state.Verbose {
-		fmt.Println("Aborting inference")
+		fmt.Println("INFO: Aborting inference")
 	}
 
 	state.ContinueInferringController = false
