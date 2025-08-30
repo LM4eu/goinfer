@@ -175,7 +175,11 @@ func completeStream(ctx context.Context, c echo.Context, _ int) error {
 }
 
 // streamToken handles token processing during prediction.
-func streamToken(ctx context.Context, ntok int, token string, jsonEncoder *json.Encoder, c echo.Context, params *types.InferParams, startThinking time.Time, startEmitting *time.Time, thinkingElapsed *time.Duration) error {
+func streamToken(
+	ctx context.Context, ntok int, token string, jsonEncoder *json.Encoder,
+	c echo.Context, params *types.InferParams, startThinking time.Time,
+	startEmitting *time.Time, thinkingElapsed *time.Duration,
+) error {
 	// Check context
 	err := ctx.Err()
 	if err != nil {
