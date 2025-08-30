@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package conf
 
 import (
@@ -10,16 +14,40 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/LM4eu/goinfer/models"
+	"github.com/LM4eu/goinfer/state"
 	"github.com/mostlygeek/llama-swap/proxy"
-	"github.com/synw/goinfer/models"
-	"github.com/synw/goinfer/state"
 
 	"gopkg.in/yaml.v3"
 )
 
+type (
+	GoInferCfg struct {
+		Llama     LlamaCfg     `json:"llama,omitempty"      yaml:"llama,omitempty"`
+		Server    ServerCfg    `json:"server,omitempty"     yaml:"server,omitempty"`
+		ModelsDir string       `json:"models_dir,omitempty" yaml:"models_dir,omitempty"`
+		Proxy     proxy.Config `json:"proxy,omitempty"      yaml:"proxy,omitempty"`
+		Verbose   bool         `json:"verbose,omitempty"    yaml:"verbose,omitempty"`
+	}
+
+	ServerCfg struct {
+		Listen  map[string]string `json:"listen,omitempty"  yaml:"listen,omitempty"`
+		APIKeys map[string]string `json:"api_key,omitempty" yaml:"api_key,omitempty"`
+		Origins string            `json:"origins,omitempty" yaml:"origins,omitempty"`
+	}
+
+	LlamaCfg struct {
+		Args map[string]string `json:"args,omitempty" yaml:"args,omitempty"`
+		Exe  string            `json:"exe,omitempty"  yaml:"exe,omitempty"`
+	}
+)
+
 const (
 	pleaseSetSecureAPIKey = "PLEASE SET SECURE API KEY"
-	defaultGoInferConf    = `# Configuration of https://github.com/LM4eu/goinfer
+
+	debugAPIKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
+
+	defaultGoInferConf = `# Configuration of https://github.com/LM4eu/goinfer
 
 # Recursively search *.gguf files (one or multiple directories separated by ':')
 models_dir: ./models
@@ -45,25 +73,6 @@ llama:
 `
 )
 
-type GoInferCfg struct {
-	Llama     LlamaCfg     `json:"llama,omitempty"      yaml:"llama,omitempty"`
-	Server    ServerCfg    `json:"server,omitempty"     yaml:"server,omitempty"`
-	ModelsDir string       `json:"models_dir,omitempty" yaml:"models_dir,omitempty"`
-	Proxy     proxy.Config `json:"proxy,omitempty"      yaml:"proxy,omitempty"`
-	Verbose   bool         `json:"verbose,omitempty"    yaml:"verbose,omitempty"`
-}
-
-type ServerCfg struct {
-	Listen  map[string]string `json:"listen,omitempty"  yaml:"listen,omitempty"`
-	APIKeys map[string]string `json:"api_key,omitempty" yaml:"api_key,omitempty"`
-	Origins string            `json:"origins,omitempty" yaml:"origins,omitempty"`
-}
-
-type LlamaCfg struct {
-	Args map[string]string `json:"args,omitempty" yaml:"args,omitempty"`
-	Exe  string            `json:"exe,omitempty"  yaml:"exe,omitempty"`
-}
-
 // Load configuration with simplified loading.
 func Load(goinferCfgFile string) (*GoInferCfg, error) {
 	var cfg *GoInferCfg
@@ -75,13 +84,14 @@ func Load(goinferCfgFile string) (*GoInferCfg, error) {
 	}
 
 	// Load from file if specified
-	if goinferCfgFile != "" {
-		bytes, err := os.ReadFile(goinferCfgFile)
-		if err != nil {
-			return cfg, fmt.Errorf("failed to read %s: %w", goinferCfgFile, err)
+	if goinferCfgFile != "" { // Use OpenFileIn() from Go-1.25
+		data, er := os.ReadFile(filepath.Clean(goinferCfgFile))
+		if er != nil {
+			return cfg, fmt.Errorf("failed to read %s: %w", goinferCfgFile, er)
 		}
 
-		if err := yaml.Unmarshal(bytes, &cfg); err != nil {
+		err = yaml.Unmarshal(data, &cfg)
+		if err != nil {
 			return cfg, fmt.Errorf("failed to unmarshal %s: %w", goinferCfgFile, err)
 		}
 	}
@@ -152,21 +162,19 @@ func validateCfg(config *GoInferCfg) error {
 	return nil
 }
 
-const debugAPIKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
-
 func GenerateAPIKey(debugMode bool) ([]byte, error) {
 	if debugMode {
 		return []byte(debugAPIKey), nil
 	}
 
-	bytes := make([]byte, 32)
-	_, err := rand.Read(bytes)
+	buf := make([]byte, 32)
+	_, err := rand.Read(buf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate random bytes: %w", err)
 	}
 
 	apiKey := make([]byte, 64)
-	hex.Encode(apiKey, bytes)
+	hex.Encode(apiKey, buf)
 	return apiKey, nil
 }
 
@@ -187,7 +195,8 @@ func Create(goinferCfgFile string, debugMode bool) error {
 	}
 	cfg = bytes.Replace(cfg, []byte(pleaseSetSecureAPIKey), key, 1)
 
-	if err := os.WriteFile(goinferCfgFile, cfg, 0o600); err != nil {
+	err = os.WriteFile(goinferCfgFile, cfg, 0o600)
+	if err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
 
