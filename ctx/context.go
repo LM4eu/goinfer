@@ -1,0 +1,49 @@
+package ctx
+
+import (
+	"context"
+	"fmt"
+	"strconv"
+	"time"
+)
+
+// GenerateRequestID generates a unique request ID for correlation.
+func GenerateRequestID() string {
+	return strconv.FormatInt(time.Now().UnixNano(), 10)
+}
+
+// getRequestID extracts the request ID from context or generates a new one.
+func getRequestID(ctx context.Context) string {
+	requestID := ctx.Value("requestID")
+	if requestID == nil {
+		return GenerateRequestID()
+	}
+	return requestID.(string)
+}
+
+// CreateContextAwareError wraps an error with context information.
+func CreateContextAwareError(ctx context.Context, operation string, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	return fmt.Errorf("[%s] %s: %w", getRequestID(ctx), operation, err)
+}
+
+// LogContextAwareError logs an error with context information.
+func LogContextAwareError(ctx context.Context, operation string, err error) {
+	if err == nil {
+		return
+	}
+
+	fmt.Printf("[%s] %s: %v\n", getRequestID(ctx), operation, err)
+}
+
+// CheckContextCancelled checks if context is canceled and returns an appropriate error.
+func CheckContextCancelled(ctx context.Context, operation string) error {
+	err := ctx.Err()
+	if err != nil {
+		return CreateContextAwareError(ctx, operation, fmt.Errorf("context canceled: %w", err))
+	}
+	return nil
+}
