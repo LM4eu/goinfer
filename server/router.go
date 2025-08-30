@@ -15,11 +15,11 @@ import (
 //go:embed all:dist
 var embeddedFiles embed.FS
 
-func NewEchoServer(cfg conf.GoInferConf, addr, services string) *echo.Echo {
+func NewEchoServer(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true
 
-	// logger
+	// Add middleware logger
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "${method} ${status} ${uri}  ${latency_human} ${remote_ip} ${error}\n",
 	}))
@@ -35,7 +35,7 @@ func NewEchoServer(cfg conf.GoInferConf, addr, services string) *echo.Echo {
 		AllowCredentials: true,
 	}))
 
-	atLeastOneService := false
+	configured := false
 
 	// ------- Admin web frontend -------
 	if strings.Contains(services, "admin") {
@@ -46,52 +46,50 @@ func NewEchoServer(cfg conf.GoInferConf, addr, services string) *echo.Echo {
 			HTML5:      true,
 			Filesystem: http.FS(embeddedFiles),
 		}))
-		atLeastOneService = true
+
+		configured = true
 	}
 
 	// ------------ Models ------------
 	if strings.Contains(services, "model") {
 		grp := e.Group("/model")
-		apiKey := conf.ApiKey(cfg.Server.ApiKeys, "model")
-		if apiKey != "" {
-			grp.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-				return key == apiKey, nil
-			}))
-		}
-		grp.GET("/state", models.Dir(cfg.ModelsDir).StateHandler)
-		atLeastOneService = true
+		setupAPIKeyAuth(grp, cfg, "model")
+		grp.GET("/state", models.Dir(cfg.ModelsDir).Handler)
+
+		configured = true
 	}
 
 	// ----- Inference (llama.cpp) -----
 	if strings.Contains(services, "goinfer") {
 		grp := e.Group("/completion")
-		apiKey := conf.ApiKey(cfg.Server.ApiKeys, "goinfer")
-		if apiKey != "" {
-			grp.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-				return key == apiKey, nil
-			}))
-		}
-		grp.POST("", InferHandler)
-		grp.GET("/abort", AbortLlamaHandler)
-		atLeastOneService = true
+		setupAPIKeyAuth(grp, cfg, "goinfer")
+		grp.POST("", inferHandler)
+		grp.GET("/abort", abortHandler)
+
+		configured = true
 	}
 
 	// ----- Inference OpenAI API -----
 	if strings.Contains(services, "openai") {
-		oai := e.Group("/v1")
-		apiKey := conf.ApiKey(cfg.Server.ApiKeys, "openai")
-		if apiKey != "" {
-			oai.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-				return key == apiKey, nil
-			}))
-		}
-		// oai.POST("/chat/completions", CreateCompletionHandler)
-		// oai.GET("/models", OpenAiListModels)
-		atLeastOneService = true
+		grp := e.Group("/v1")
+		setupAPIKeyAuth(grp, cfg, "openai")
+
+		configured = true
 	}
 
-	if atLeastOneService {
+	if configured {
 		return e
 	}
+
 	return nil
+}
+
+// setupAPIKeyAuth sets up API key authentication for a grp.
+func setupAPIKeyAuth(grp *echo.Group, cfg *conf.GoInferCfg, service string) {
+	apiKey := conf.GetAPIKey(cfg.Server.APIKeys, service)
+	if apiKey != "" {
+		grp.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+			return key == apiKey, nil
+		}))
+	}
 }
