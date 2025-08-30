@@ -1,6 +1,6 @@
 const libName = "goinfer";
 const libTitle = "Goinfer";
-const repoUrl = "https://github.com/synw/goinfer";
+const repoUrl = "https://github.com/LM4eu/goinfer";
 
 const links: Array<{ href: string; name: string }> = [
   // { href: "/python", name: "Python api" },

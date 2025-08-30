@@ -1,10 +1,9 @@
 # Goinfer
 
-Inference api server for local gguf language models. Based on [Llama.cpp](https://github.com/ggerganov/llama.cpp)
+Inference api server for local gguf language models. Based on [llama.cpp](https://github.com/ggml-org/llama.cpp) and [llama-swap](https://github.com/mostlygeek/llama-swap).
 
 - **Multi models**: switch between models at runtime
 - **Inference queries**: http api and websockets support
-- **Tasks**: predefined language model tasks
 
 ## Quickstart
 
