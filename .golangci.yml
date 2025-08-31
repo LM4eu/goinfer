@@ -138,8 +138,7 @@ linters:
     - zerologlint
 
   settings:
-
-  ##### ORDER ######
+    ##### ORDER ######
 
     decorder:
       # Default: `type`, `const`, `var` and `func`
@@ -147,11 +146,11 @@ linters:
         - type
         - const
         - var
-        - func   
+        - func
       ignore-underscore-vars: false # Default: false (underscore vars are not ignored)
       disable-dec-order-check: false # Default: true (order of declarations is not checked at all)
       disable-init-func-first-check: false # Default: true = `init` func can be anywhere in file (does not have to be declared before all other functions)
-      disable-dec-num-check: false # Default: true = multiple global `type`, `const` and `var` declarations are allowed    
+      disable-dec-num-check: false # Default: true = multiple global `type`, `const` and `var` declarations are allowed
       disable-type-dec-num-check: false # Default: false (type statements are not ignored)
       disable-const-dec-num-check: false # Default: false (const statements are not ignored)
       disable-var-dec-num-check: false # Default: false (var statements are not ignored)
@@ -162,10 +161,9 @@ linters:
       # constructors after the structure declaration.
       constructor: true # Default: true
       # exported methods of a structure before the non-exported ones.
-      struct-method: true  # Default: true
+      struct-method: true # Default: true
       # alphabetically sorted
       alphabetical: true # Default: false
-
 
     # https://golangci-lint.run/docs/linters/configuration/#copyloopvar
     copyloopvar: # detects places where loop variables are copied
@@ -330,12 +328,6 @@ linters:
       # Instead of matching the literal source code, use type information to handle import renaming.
       analyze-types: false # Default: false
 
-    # https://golangci-lint.run/docs/linters/configuration/#funlen
-    funlen:
-      lines: 100
-      statements: 50
-      ignore-comments: true # Default: true
-
     gochecksumtype:
       # Presence of `default` case in switch statements satisfies exhaustiveness, if all members are not listed.
       # Default: true
@@ -349,19 +341,25 @@ linters:
       min-len: 2
       min-occurrences: 5
 
+    # https://golangci-lint.run/docs/linters/configuration/#funlen
+    funlen:
+      lines: 100
+      statements: 50
+      ignore-comments: true # Default: true
+
     # cognitive complexity: function only
     gocognit:
-      min-complexity: 50 # Default: 30 (but we recommend 10-20)
+      min-complexity: 40 # Default: 30 (but we recommend 10-20)
 
     # cyclomatic complexity: function only
     gocyclo:
-      min-complexity: 50 # Default: 30 (but we recommend 10-20)
+      min-complexity: 40 # Default: 30 (but we recommend 10-20)
 
     # cyclomatic complexity: function and package
     cyclop:
       # The maximal code complexity to report.
       # Default: 10
-      max-complexity: 50
+      max-complexity: 40
       # The maximal average package complexity.
       # If it's higher than 0.0 (float) the check is enabled.
       # Default: 0.0
@@ -399,7 +397,7 @@ linters:
       # Check that each sentence starts with a capital letter.
       # Default: false
       capital: true
-    
+
     # Detects FIXME, TODO, BUG inside comments that might be left in the code accidentally and should be resolved before merging
     godox:
       keywords: ["TODO", "FIXME", "BUG", "HACK"]
@@ -660,53 +658,29 @@ linters:
 
     # https://golangci-lint.run/docs/linters/configuration/#varnamelen
     varnamelen:
-      # The longest distance, in source lines, that is being considered a "small scope".
-      # Variables used in at most this many lines will be ignored.
-      # Default: 5
-      max-distance: 14
-      # The minimum length of a variable's name that is considered "long".
-      # Variable names that are at least this long will be ignored.
-      # Default: 3
-      min-name-length: 2
-      # Check method receivers.
-      # Default: false
-      check-receiver: true
-      # Check named return values.
-      # Default: false
-      check-return: true
-      # Check type parameters.
-      # Default: false
-      check-type-param: true
-      # Ignore "ok" variables that hold the bool return value of a type assertion.
-      # Default: false
-      ignore-type-assert-ok: true
-      # Ignore "ok" variables that hold the bool return value of a map index.
-      # Default: false
-      ignore-map-index-ok: true
-      # Ignore "ok" variables that hold the bool return value of a channel receive.
-      # Default: false
-      ignore-chan-recv-ok: true
-      # Optional list of variable names that should be ignored completely.
-      # Default: []
-      ignore-names:
-        - err
-      # Optional list of variable declarations that should be ignored completely.
-      # Entries must be in one of the following forms (see below for examples):
-      # - for variables, parameters, named return values, method receivers, or type parameters:
-      #   <name> <type>  (<type> can also be a pointer/slice/map/chan/...)
-      # - for constants: const <name>
-      #
-      # Default: []
-      ignore-decls:
+      max-distance: 5 # Ignore variables in "small scope" of this number of lines (max), Default: 5
+      min-name-length: 3 # Ignore variables having this minimum name length, Default: 3
+      check-receiver: true # Check method receivers, Default: false
+      check-return: true # Check named return values, Default: false
+      check-type-param: true # Check type parameters, Default: false
+      ignore-type-assert-ok: true # Ignore "ok" variables that hold the bool return value of a type assertion, Default: false
+      ignore-map-index-ok: true # Ignore "ok" variables that hold the bool return value of a map index, Default: false
+      ignore-chan-recv-ok: true # Ignore "ok" variables that hold the bool return value of a channel receive, Default: false
+      ignore-names: # Ignore these variable names.
+        - e
+      ignore-decls: # Ignore these variable declarations.
+        - err error
         - c echo.Context
-        - t testing.T
-        - e error
         - e *echo.Echo
         - i int
+        - k string
+        - m echo.Map
+        - v string
+      other:
         - const C
-        - T any
         - m map[string]int
-        - g errgroup.Group
+        - T any
+        - t testing.T
 
     wastedassign:
       check-all: true
