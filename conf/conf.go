@@ -49,14 +49,14 @@ const (
 
 	defaultGoInferConf = `# Configuration of https://github.com/LM4eu/goinfer
 
-# Recursively search *.gguf files (one or multiple directories separated by ':')
+# Recursively search *.gguf files in one or multiple folders separated by ':'
 models_dir: ./models
 
 server:
   api_key:
     # ⚠️ Set your private 32-byte API keys (64 hex digits) 🚨
-    "admin": ` + pleaseSetSecureAPIKey + `
-    "user":  ` + pleaseSetSecureAPIKey + `
+    admin: ` + pleaseSetSecureAPIKey + `
+    user:  ` + pleaseSetSecureAPIKey + `
   origins: localhost
   listen:
     ":8080": admin
@@ -66,10 +66,10 @@ server:
 llama:
   exe: ./llama-server
   args:
-    # --props: enable changing global properties via POST /props
+    # --props: enable /props endpoint to change global properties at runtime
     # --no-webui: no Web UI server
-    "common": --props --no-webui --no-warmup
-    "goinfer": --jinja --chat-template-file template.jinja
+    common: --props --no-webui --no-warmup
+    goinfer: --jinja --chat-template-file template.jinja
 `
 )
 
