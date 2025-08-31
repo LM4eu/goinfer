@@ -77,7 +77,9 @@ func NewEchoServer(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
 	if strings.Contains(services, "openai") {
 		grp := e.Group("/v1")
 		setupAPIKeyAuth(grp, cfg, "openai")
-
+		// OpenAI compatible endpoint
+		grp.POST("/chat/completions", openAIChatHandler)
+	
 		configured = true
 	}
 

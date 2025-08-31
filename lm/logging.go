@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/LM4eu/goinfer/state"
-	"github.com/LM4eu/goinfer/types"
 )
 
 // logMsg formats and logs a message with common context.
@@ -30,41 +29,6 @@ func logMsg(ctx context.Context, format string, args ...any) {
 		time.Now().Format(time.RFC3339), fmt.Sprintf("c-%d", time.Now().UnixNano()), reqID, fmt.Sprintf(format, args...))
 }
 
-// logVerbose logs verbose information.
-func logVerbose(ctx context.Context, prefix string, stats *types.InferStat, finalPrompt string) {
-	if !state.Verbose {
-		return
-	}
-
-	reqID := "req"
-	if id := ctx.Value("requestID"); id != nil {
-		if str, ok := id.(string); ok {
-			reqID = str
-		}
-	}
-
-	// Log header
-	fmt.Printf("INFO: [%s] %s | c: %s | r: %s\n",
-		time.Now().Format(time.RFC3339), prefix, fmt.Sprintf("c-%d", time.Now().UnixNano()), reqID)
-
-	// Log prompt
-	fmt.Println("INFO: ----------", prefix, "prompt ----------")
-	fmt.Println(finalPrompt)
-	fmt.Println("INFO: ----------------------------")
-
-	// Log statistics
-	fmt.Println("INFO: Thinking ..")
-	fmt.Printf("INFO: Thinking time: %s (%.2f seconds)\n", stats.ThinkingTimeFormat, stats.ThinkingTime)
-	fmt.Println("Emitting ..")
-	fmt.Printf("Emitting time: %s (%.2f seconds)\n", stats.EmitTimeFormat, stats.EmitTime)
-	fmt.Printf("INFO: Total time: %s (%.2f seconds)\n", stats.TotalTimeFormat, stats.TotalTime)
-	fmt.Printf("INFO: Tokens per second: %.2f\n", stats.TokensPerSecond)
-	fmt.Printf("INFO: Tokens emitted: %d\n", stats.TotalTokens)
-
-	// Log completion
-	fmt.Printf("INFO: [%s] %s | c: %s | r: %s | completed\n",
-		time.Now().Format(time.RFC3339), prefix, fmt.Sprintf("c-%d", time.Now().UnixNano()), reqID)
-}
 
 // logError logs error information.
 func logError(ctx context.Context, prefix, message string, err error) {

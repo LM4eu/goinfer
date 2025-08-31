@@ -145,49 +145,49 @@ func parseInferQuery(m echo.Map) (*types.InferQuery, error) {
 
 	// Parse stop prompts array
 	if v, ok := m["stop"]; ok {
-		slice, ok := v.([]any)
-		if !ok {
-			return req, errors.New("stop must be an array")
-		}
-
-		if len(slice) > 10 {
-			return req, errors.New("stop array too large (max 10)")
-		}
-		if len(slice) > 0 {
-			req.Params.Generation.StopPrompts = make([]string, len(slice))
-			for i, val := range slice {
-				if strVal, ok := val.(string); ok {
-					req.Params.Generation.StopPrompts[i] = strVal
-				} else {
-					return req, fmt.Errorf("stop[%d] must be a string", i)
-				}
-			}
-		}
+	    stopSlice, okSlice := v.([]any)
+	    if !okSlice {
+	        return req, errors.New("stop must be an array")
+	    }
+	
+	    if len(stopSlice) > 10 {
+	        return req, errors.New("stop array too large (max 10)")
+	    }
+	    if len(stopSlice) > 0 {
+	        req.Params.Generation.StopPrompts = make([]string, len(stopSlice))
+	        for i, val := range stopSlice {
+	            if strVal, okStr := val.(string); okStr {
+	                req.Params.Generation.StopPrompts[i] = strVal
+	            } else {
+	                return req, fmt.Errorf("stop[%d] must be a string", i)
+	            }
+	        }
+	    }
 	}
 
 	// Parse media byte arrays
 	if v, ok := m["images"]; ok {
-		if slice, ok := v.([]any); ok && len(slice) > 0 {
-			req.Params.Media.Images = make([]byte, len(slice))
-			for i, val := range slice {
-				req.Params.Media.Images[i], ok = val.(byte)
-				if !ok {
-					return req, fmt.Errorf("images[%d] must be a byte", i)
-				}
-			}
-		}
+	    if imgSlice, okImg := v.([]any); okImg && len(imgSlice) > 0 {
+	        req.Params.Media.Images = make([]byte, len(imgSlice))
+	        for i, val := range imgSlice {
+	            req.Params.Media.Images[i], okImg = val.(byte)
+	            if !okImg {
+	                return req, fmt.Errorf("images[%d] must be a byte", i)
+	            }
+	        }
+	    }
 	}
 
 	if v, ok := m["audios"]; ok {
-		if slice, ok := v.([]any); ok && len(slice) > 0 {
-			req.Params.Media.Audios = make([]byte, len(slice))
-			for i, val := range slice {
-				req.Params.Media.Audios[i], ok = val.(byte)
-				if !ok {
-					return req, fmt.Errorf("audios[%d] must be a byte", i)
-				}
-			}
-		}
+	    if audSlice, okAud := v.([]any); okAud && len(audSlice) > 0 {
+	        req.Params.Media.Audios = make([]byte, len(audSlice))
+	        for i, val := range audSlice {
+	            req.Params.Media.Audios[i], okAud = val.(byte)
+	            if !okAud {
+	                return req, fmt.Errorf("audios[%d] must be a byte", i)
+	            }
+	        }
+	    }
 	}
 
 	return req, nil
