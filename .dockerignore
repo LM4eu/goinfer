@@ -3,9 +3,9 @@
 !files
 !go.mod
 !go.sum
+!goinfer.go
 !llama
 !lm
-!main.go
 !server
 !state
 !template.jinja
