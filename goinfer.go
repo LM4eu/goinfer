@@ -23,11 +23,16 @@ import (
 	"github.com/LM4eu/goinfer/state"
 )
 
+const (
+	goinfCfgFile = "goinfer.yml"
+	proxyCfgFile = "llama-swap.yml"
+)
+
 func main() {
-	quiet := flag.Bool("q", false, "disable verbose output")
+	quiet := flag.Bool("q", false, "quiet mode (disable verbose output)")
 	debug := flag.Bool("debug", false, "debug mode")
-	genGiConf := flag.Bool("gen-gi-conf", false, "generate goinfer.yml")
-	genPxConf := flag.Bool("gen-px-conf", false, "generate llama-swap.yml (proxy config file)")
+	genGiConf := flag.Bool("gen-gi-cfg", false, "generate "+goinfCfgFile)
+	genPxConf := flag.Bool("gen-px-cfg", false, "generate "+proxyCfgFile+" (proxy config file)")
 	noAPIKeys := flag.Bool("disable-api-key", false, "disable API key check")
 	garcon.SetVersionFlag()
 	flag.Parse()
@@ -39,26 +44,32 @@ func main() {
 
 	state.Verbose = !*quiet
 
+	cfg := manageCfg(*debug, *genGiConf, *genPxConf, *noAPIKeys)
+
+	runHTTPServers(cfg)
+}
+
+func manageCfg(debug, genGiConf, genPxConf, noAPIKeys bool) *conf.GoInferCfg {
 	// Generate config
-	if *genGiConf {
-		err := conf.Create("goinfer.yml", *debug)
+	if genGiConf {
+		err := conf.Create(goinfCfgFile, debug)
 		if err != nil {
 			fmt.Printf("ERROR creating config: %v\n", err)
 			os.Exit(1)
 		}
 		if state.Verbose {
-			cfg, er := conf.Load("goinfer.yml")
+			cfg, er := conf.Load(goinfCfgFile)
 			if er != nil {
 				fmt.Printf("ERROR loading config: %v\n", er)
 				os.Exit(1)
 			}
 			cfg.Print()
 		}
-		return
+		os.Exit(0)
 	}
 
 	// Load configurations
-	cfg, err := conf.Load("goinfer.yml")
+	cfg, err := conf.Load(goinfCfgFile)
 	if err != nil {
 		fmt.Printf("ERROR loading config: %v\n", err)
 		os.Exit(1)
@@ -66,22 +77,22 @@ func main() {
 	cfg.Verbose = state.Verbose
 
 	// Load the llama-swap config
-	cfg.Proxy, err = proxy.LoadConfig("llama-swap.yml")
+	cfg.Proxy, err = proxy.LoadConfig(proxyCfgFile)
 	// even if err!=nil => generate the config file,
-	if *genPxConf {
-		err = conf.GenerateProxyCfg(cfg, "llama-swap.yml")
+	if genPxConf {
+		err = conf.GenerateProxyCfg(cfg, proxyCfgFile)
 		if err != nil {
 			fmt.Printf("ERROR generating proxy config: %v\n", err)
 			os.Exit(1)
 		}
-		return
+		os.Exit(0)
 	}
 	if err != nil {
 		fmt.Printf("ERROR loading proxy config: %v\n", err)
 		os.Exit(1)
 	}
 
-	if *noAPIKeys {
+	if noAPIKeys {
 		cfg.Server.APIKeys = nil
 	}
 
@@ -89,6 +100,10 @@ func main() {
 		cfg.Print()
 	}
 
+	return cfg
+}
+
+func runHTTPServers(cfg *conf.GoInferCfg) {
 	// Create context with cancel for graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -103,10 +118,10 @@ func main() {
 	go func() {
 		sig := <-sigChan
 		fmt.Printf("INFO: Received signal %v, initiating graceful shutdown...\n", sig)
-		
+
 		// Cancel context to trigger shutdown
 		cancel()
-		
+
 		// Wait for graceful shutdown completion or timeout
 		select {
 		case <-time.After(10 * time.Second):
@@ -117,7 +132,7 @@ func main() {
 		}
 	}()
 
-	var g errgroup.Group
+	var grp errgroup.Group
 
 	// Start HTTP servers
 	for addr, services := range cfg.Server.Listen {
@@ -130,15 +145,15 @@ func main() {
 				fmt.Println("- listen:   ", addr)
 				fmt.Println("- origins:  ", cfg.Server.Origins)
 			}
-			
+
 			// Use the parent context for server shutdown
-			g.Go(func() error {
+			grp.Go(func() error {
 				// Start server in a goroutine
 				serverErr := make(chan error, 1)
 				go func() {
 					serverErr <- e.Start(addr)
 				}()
-				
+
 				// Wait for either server error or context cancellation
 				select {
 				case err := <-serverErr:
@@ -169,15 +184,15 @@ func main() {
 			fmt.Println("- services: llama-swap proxy")
 			fmt.Println("- listen:   ", proxyServer.Addr)
 		}
-		
+
 		// Use the parent context for proxy server shutdown
-		g.Go(func() error {
+		grp.Go(func() error {
 			// Start proxy server in a goroutine
 			proxyErr := make(chan error, 1)
 			go func() {
 				proxyErr <- proxyServer.ListenAndServe()
 			}()
-			
+
 			// Wait for either proxy server error or context cancellation
 			select {
 			case err := <-proxyErr:
@@ -209,7 +224,7 @@ func main() {
 	}
 
 	// Wait for all servers to complete
-	err = g.Wait()
+	err := grp.Wait()
 	if err != nil {
 		fmt.Printf("ERROR: Server error: %v\n", err)
 	} else {
