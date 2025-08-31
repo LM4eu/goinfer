@@ -82,7 +82,7 @@ COPY lm      lm
 COPY server  server
 COPY state   state
 COPY types   types
-COPY main.go .
+COPY goinfer.go .
 
 COPY --from=infergui-builder  dist  server/dist
 
