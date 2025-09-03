@@ -35,11 +35,8 @@ func (dir Dir) Handler(c echo.Context) error {
 func (dir Dir) Search() ([]string, error) {
 	var modelFiles []string
 
-	// dir = one or multiple directories separated by ':'
-	directories := strings.Split(string(dir), ":")
-
-	for _, d := range directories {
-		err := appendModels(&modelFiles, strings.TrimSpace(d))
+	for d := range strings.Split(string(dir), ":") {
+		err := search(&modelFiles, strings.TrimSpace(d))
 		if err != nil {
 			return nil, fmt.Errorf("failed to search in '%s': %w", d, err)
 		}
@@ -48,7 +45,7 @@ func (dir Dir) Search() ([]string, error) {
 	return modelFiles, nil
 }
 
-func appendModels(files *[]string, root string) error {
+func search(files *[]string, root string) error {
 	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
