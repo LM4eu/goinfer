@@ -43,7 +43,7 @@ type (
 )
 
 const (
-	pleaseSetSecureAPIKey = "PLEASE SET SECURE API KEY"
+	secureAPIPlaceholder = "PLEASE SET SECURE API KEY"
 
 	debugAPIKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
 
@@ -55,8 +55,8 @@ models_dir: ./models
 server:
   api_key:
     # ⚠️ Set your private 32-byte API keys (64 hex digits) 🚨
-    admin: ` + pleaseSetSecureAPIKey + `
-    user:  ` + pleaseSetSecureAPIKey + `
+    admin: ` + secureAPIPlaceholder + `
+    user:  ` + secureAPIPlaceholder + `
   origins: localhost
   listen:
     ":8080": admin
@@ -187,13 +187,13 @@ func Create(goinferCfgFile string, debugMode bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to generate first API key: %w", err)
 	}
-	cfg = bytes.Replace(cfg, []byte(pleaseSetSecureAPIKey), key, 1)
+	cfg = bytes.Replace(cfg, []byte(secureAPIPlaceholder), key, 1)
 
 	key, err = GenerateAPIKey(debugMode)
 	if err != nil {
 		return fmt.Errorf("failed to generate second API key: %w", err)
 	}
-	cfg = bytes.Replace(cfg, []byte(pleaseSetSecureAPIKey), key, 1)
+	cfg = bytes.Replace(cfg, []byte(secureAPIPlaceholder), key, 1)
 
 	err = os.WriteFile(goinferCfgFile, cfg, 0o600)
 	if err != nil {
