@@ -76,6 +76,7 @@ func NewEchoServer(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
 	// ----- Inference OpenAI API -----
 	if strings.Contains(services, "openai") {
 		grp := e.Group("/v1")
+		grp.POST("/chat/completions", handleChatCompletions)
 		setupAPIKeyAuth(grp, cfg, "openai")
 
 		configured = true
