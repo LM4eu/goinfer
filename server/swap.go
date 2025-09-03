@@ -12,7 +12,7 @@ import (
 	"github.com/mostlygeek/llama-swap/proxy"
 )
 
-func NewProxyServer(cfg *conf.GoInferCfg) (*http.Server, *proxy.ProxyManager) {
+func NewProxy(cfg *conf.GoInferCfg) (*http.Server, *proxy.ProxyManager) {
 	for addr, services := range cfg.Server.Listen {
 		if strings.Contains(services, "swap") {
 			pm := proxy.New(cfg.Proxy)

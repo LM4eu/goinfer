@@ -8,6 +8,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,6 +16,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/labstack/echo/v4"
 	"github.com/mostlygeek/llama-swap/proxy"
 	"github.com/teal-finance/garcon"
 
@@ -52,13 +54,13 @@ func main() {
 func manageCfg(debug, genGiConf, genPxConf, noAPIKeys bool) *conf.GoInferCfg {
 	// Generate config
 	if genGiConf {
-		err := conf.Create(goinfCfgFile, debug)
+		err := conf.CreateCfg(goinfCfgFile, debug)
 		if err != nil {
 			fmt.Printf("ERROR creating config: %v\n", err)
 			os.Exit(1)
 		}
 		if state.Verbose {
-			cfg, er := conf.Load(goinfCfgFile)
+			cfg, er := conf.LoadCfg(goinfCfgFile)
 			if er != nil {
 				fmt.Printf("ERROR loading config: %v\n", er)
 				os.Exit(1)
@@ -69,7 +71,7 @@ func manageCfg(debug, genGiConf, genPxConf, noAPIKeys bool) *conf.GoInferCfg {
 	}
 
 	// Load configurations
-	cfg, err := conf.Load(goinfCfgFile)
+	cfg, err := conf.LoadCfg(goinfCfgFile)
 	if err != nil {
 		fmt.Printf("ERROR loading config: %v\n", err)
 		os.Exit(1)
@@ -80,7 +82,7 @@ func manageCfg(debug, genGiConf, genPxConf, noAPIKeys bool) *conf.GoInferCfg {
 	cfg.Proxy, err = proxy.LoadConfig(proxyCfgFile)
 	// even if err!=nil => generate the config file,
 	if genPxConf {
-		err = conf.GenerateProxyCfg(cfg, proxyCfgFile)
+		err = conf.GenProxyCfg(cfg, proxyCfgFile)
 		if err != nil {
 			fmt.Printf("ERROR generating proxy config: %v\n", err)
 			os.Exit(1)
@@ -108,35 +110,36 @@ func runHTTPServers(cfg *conf.GoInferCfg) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	proxyServer, proxyHandler := server.NewProxyServer(cfg)
+	// Setup signal handling and start shutdown handler
+	sigChan := setupSignalHandling()
+	go handleShutdown(sigChan, ctx, cancel)
 
-	// Setup signal handling with context
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	// Start signal handling goroutine
-	go func() {
-		sig := <-sigChan
-		fmt.Printf("INFO: Received signal %v, initiating graceful shutdown...\n", sig)
-
-		// Cancel context to trigger shutdown
-		cancel()
-
-		// Wait for graceful shutdown completion or timeout
-		select {
-		case <-time.After(10 * time.Second):
-			fmt.Println("WARNING: Graceful shutdown timed out, forcing exit")
-			os.Exit(1)
-		case <-ctx.Done():
-			fmt.Println("INFO: Graceful shutdown completed")
-		}
-	}()
-
+	// Start all servers using errgroup for coordination
 	var grp errgroup.Group
 
-	// Start HTTP servers
+	// Start HTTP servers and proxy server if configured
+	startHTTPServers(ctx, cfg, &grp)
+
+	// Wait for all servers to complete
+	err := grp.Wait()
+	if err != nil {
+		fmt.Printf("ERROR: Server error: %v\n", err)
+	} else {
+		fmt.Println("INFO: All HTTP servers stopped gracefully")
+	}
+}
+
+// setupSignalHandling sets up signal handling for graceful shutdown.
+func setupSignalHandling() chan os.Signal {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	return sigChan
+}
+
+// startHTTPServers starts all HTTP servers configured in the config.
+func startHTTPServers(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.Group) {
 	for addr, services := range cfg.Server.Listen {
-		e := server.NewEchoServer(cfg, addr, services)
+		e := server.NewEcho(cfg, addr, services)
 		if e != nil {
 			if cfg.Verbose {
 				fmt.Println("-----------------------------")
@@ -145,37 +148,14 @@ func runHTTPServers(cfg *conf.GoInferCfg) {
 				fmt.Println("- listen:   ", addr)
 				fmt.Println("- origins:  ", cfg.Server.Origins)
 			}
-
-			// Use the parent context for server shutdown
 			grp.Go(func() error {
-				// Start server in a goroutine
-				serverErr := make(chan error, 1)
-				go func() {
-					serverErr <- e.Start(addr)
-				}()
-
-				// Wait for either server error or context cancellation
-				select {
-				case err := <-serverErr:
-					return err
-				case <-ctx.Done():
-					if cfg.Verbose {
-						fmt.Printf("INFO: Shutting down Echo server on %s\n", addr)
-					}
-					// Graceful shutdown of Echo server
-					shutdownErr := e.Shutdown(ctx)
-					if shutdownErr != nil {
-						fmt.Printf("ERROR: Echo server shutdown error on %s: %v\n", addr, shutdownErr)
-						return shutdownErr
-					}
-					if cfg.Verbose {
-						fmt.Printf("INFO: Echo server on %s stopped gracefully\n", addr)
-					}
-					return nil
-				}
+				return runServerWithGracefulShutdown(ctx, cfg, e, addr)
 			})
 		}
 	}
+
+	// Initialize proxy server
+	proxyServer, proxyHandler := server.NewProxy(cfg)
 
 	if proxyServer != nil {
 		if cfg.Verbose {
@@ -184,50 +164,103 @@ func runHTTPServers(cfg *conf.GoInferCfg) {
 			fmt.Println("- services: llama-swap proxy")
 			fmt.Println("- listen:   ", proxyServer.Addr)
 		}
-
-		// Use the parent context for proxy server shutdown
 		grp.Go(func() error {
-			// Start proxy server in a goroutine
-			proxyErr := make(chan error, 1)
-			go func() {
-				proxyErr <- proxyServer.ListenAndServe()
-			}()
-
-			// Wait for either proxy server error or context cancellation
-			select {
-			case err := <-proxyErr:
-				return err
-			case <-ctx.Done():
-				if cfg.Verbose {
-					fmt.Printf("INFO: Shutting down proxy server on %s\n", proxyServer.Addr)
-				}
-				// Graceful shutdown of proxy server
-				if proxyHandler != nil {
-					proxyHandler.Shutdown()
-				}
-				shutdownErr := proxyServer.Shutdown(ctx)
-				if shutdownErr != nil {
-					fmt.Printf("ERROR: Proxy server shutdown error: %v\n", shutdownErr)
-					return shutdownErr
-				}
-				if cfg.Verbose {
-					fmt.Printf("INFO: Proxy server on %s stopped gracefully\n", proxyServer.Addr)
-				}
-				return nil
-			}
+			return runProxyServerWithGracefulShutdown(ctx, cfg, proxyServer, proxyHandler)
 		})
 	}
 
+	// prints a startup message when all servers are running.
 	if cfg.Verbose {
 		fmt.Println("-----------------------------")
 		fmt.Println("INFO: All servers started. Press CTRL+C to stop.")
 	}
+}
 
-	// Wait for all servers to complete
-	err := grp.Wait()
+// runServerWithGracefulShutdown runs a server with graceful shutdown handling.
+func runServerWithGracefulShutdown(ctx context.Context, cfg *conf.GoInferCfg, e *echo.Echo, addr string) error {
+	err := make(chan error, 1)
+	go func() {
+		err <- e.Start(addr)
+	}()
+
+	select {
+	case er := <-err:
+		return er
+	case <-ctx.Done():
+		return gracefulShutdownEchoServer(ctx, cfg, e, addr)
+	}
+}
+
+// runProxyServerWithGracefulShutdown runs a proxy server with graceful shutdown handling.
+func runProxyServerWithGracefulShutdown(ctx context.Context, cfg *conf.GoInferCfg, proxyServer *http.Server, proxyHandler http.Handler) error {
+	err := make(chan error, 1)
+	go func() {
+		err <- proxyServer.ListenAndServe()
+	}()
+
+	select {
+	case er := <-err:
+		return er
+	case <-ctx.Done():
+		return gracefulShutdownProxyServer(ctx, cfg, proxyServer, proxyHandler)
+	}
+}
+
+// gracefulShutdownEchoServer performs graceful shutdown of an Echo server.
+func gracefulShutdownEchoServer(ctx context.Context, cfg *conf.GoInferCfg, e *echo.Echo, addr string) error {
+	if cfg.Verbose {
+		fmt.Printf("INFO: Shutting down Echo server on %s\n", addr)
+	}
+
+	err := e.Shutdown(ctx)
 	if err != nil {
-		fmt.Printf("ERROR: Server error: %v\n", err)
-	} else {
-		fmt.Println("INFO: All HTTP servers stopped gracefully")
+		fmt.Printf("ERROR: Echo server shutdown error on %s: %v\n", addr, err)
+		return err
+	}
+
+	if cfg.Verbose {
+		fmt.Printf("INFO: Echo server on %s stopped gracefully\n", addr)
+	}
+	return nil
+}
+
+// gracefulShutdownProxyServer performs graceful shutdown of a proxy server.
+func gracefulShutdownProxyServer(ctx context.Context, cfg *conf.GoInferCfg, proxyServer *http.Server, proxyHandler http.Handler) error {
+	if cfg.Verbose {
+		fmt.Printf("INFO: Shutting down proxy server on %s\n", proxyServer.Addr)
+	}
+
+	// Check if proxyHandler has a Shutdown method
+	if shutdownHandler, ok := proxyHandler.(interface{ Shutdown() }); ok {
+		shutdownHandler.Shutdown()
+	}
+
+	err := proxyServer.Shutdown(ctx)
+	if err != nil {
+		fmt.Printf("ERROR: Proxy server shutdown error: %v\n", err)
+		return err
+	}
+
+	if cfg.Verbose {
+		fmt.Printf("INFO: Proxy server on %s stopped gracefully\n", proxyServer.Addr)
+	}
+	return nil
+}
+
+// handleShutdown handles graceful shutdown upon receiving a signal.
+func handleShutdown(sigChan <-chan os.Signal, ctx context.Context, cancel context.CancelFunc) {
+	sig := <-sigChan
+	fmt.Printf("INFO: Received signal %v, initiating graceful shutdown...\n", sig)
+
+	// Cancel context to trigger shutdown
+	cancel()
+
+	// Wait for graceful shutdown completion or timeout
+	select {
+	case <-time.After(10 * time.Second):
+		fmt.Println("WARNING: Graceful shutdown timed out, forcing exit")
+		os.Exit(1)
+	case <-ctx.Done():
+		fmt.Println("INFO: Graceful shutdown completed")
 	}
 }

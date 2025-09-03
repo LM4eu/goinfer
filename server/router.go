@@ -10,16 +10,23 @@ import (
 	"strings"
 
 	"github.com/LM4eu/goinfer/conf"
+	"github.com/LM4eu/goinfer/errors"
 	"github.com/LM4eu/goinfer/models"
+	"github.com/LM4eu/goinfer/proxy"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 )
 
-//go:embed all:dist
-var embeddedFiles embed.FS
+var (
+	// The proxyManager is the shared ProxyManager instance for all server handlers.
+	proxyManager = proxy.NewProxyManager()
 
-func NewEchoServer(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
+	//go:embed all:dist
+	embeddedFiles embed.FS
+)
+
+func NewEcho(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true
 
@@ -38,6 +45,17 @@ func NewEchoServer(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
 		AllowMethods:     []string{http.MethodGet, http.MethodOptions, http.MethodPost},
 		AllowCredentials: true,
 	}))
+
+	// Add unified error handling middleware
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			err := next(c)
+			if err != nil {
+				return errors.ErrorHandler(err, c)
+			}
+			return nil
+		}
+	})
 
 	configured := false
 
