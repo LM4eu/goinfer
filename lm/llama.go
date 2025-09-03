@@ -7,42 +7,41 @@ package lm
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	ctxpkg "github.com/LM4eu/goinfer/ctx"
+	"github.com/LM4eu/goinfer/errors"
 	"github.com/LM4eu/goinfer/state"
 	"github.com/LM4eu/goinfer/types"
 	"github.com/labstack/echo/v4"
 )
 
 // Infer performs language model inference.
-func Infer(query *types.InferQuery, c echo.Context, resultChan, errorChan chan<- types.StreamedMsg) {
+func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resultChan, errorChan chan<- types.StreamedMsg) {
 	// Create context with request ID
-	ctx := c.Request().Context()
 	reqID := ctxpkg.GenerateRequestID()
 	ctx = context.WithValue(ctx, "requestID", reqID)
 
 	// Early validation checks
 	err := ctx.Err()
 	if err != nil {
-		inferErr := fmt.Errorf("infer canceled: %w", err)
-		ctxpkg.LogContextAwareError(ctx, "infer_start", inferErr)
+		wrappedErr := errors.Wrap(errors.ErrClientCanceled, errors.TypeInference, "CTX_CANCELED", "infer canceled")
+		ctxpkg.LogContextAwareError(ctx, "infer_start", wrappedErr)
 		errorChan <- types.StreamedMsg{
 			Num:     0,
-			Content: inferErr.Error(),
+			Content: wrappedErr.Error(),
 			MsgType: types.ErrorMsgType,
 		}
 		return
 	}
 
 	if query.Model.Name == "" {
-		modelErr := fmt.Errorf("model not loaded: %s", query.Model.Name)
+		err = errors.Wrap(errors.ErrModelNotLoaded, errors.TypeValidation, "MODEL_NOT_LOADED", "model not loaded: "+query.Model.Name)
 		errorChan <- types.StreamedMsg{
 			Num:     0,
-			Content: modelErr.Error(),
+			Content: err.Error(),
 			MsgType: types.ErrorMsgType,
 		}
 		return
@@ -54,14 +53,14 @@ func Infer(query *types.InferQuery, c echo.Context, resultChan, errorChan chan<-
 	}
 
 	// Execute inference
-	ntok, inferErr := runInfer(ctx, c, query)
+	ntok, er := runInfer(ctx, c, query)
 
 	// Handle infer completion or failure
-	if inferErr != nil {
+	if er != nil {
 		state.ContinueInferringController = false
 		errorChan <- types.StreamedMsg{
 			Num:     ntok + 1,
-			Content: fmt.Sprintf("infer failed: %v", inferErr),
+			Content: errors.Wrap(er, errors.TypeInference, "INFERENCE_FAILED", "infer failed").Error(),
 			MsgType: types.ErrorMsgType,
 		}
 		return
@@ -69,8 +68,8 @@ func Infer(query *types.InferQuery, c echo.Context, resultChan, errorChan chan<-
 
 	// Handle streaming completion if needed
 	if query.Params.Stream {
-		err = completeStream(ctx, c, ntok)
-		if err != nil {
+		er = completeStream(ctx, c, ntok)
+		if er != nil {
 			return
 		}
 	}
@@ -112,12 +111,12 @@ func runInfer(ctx context.Context, c echo.Context, query *types.InferQuery) (int
 		// Check context
 		err := ctx.Err()
 		if err != nil {
-			inferErr = fmt.Errorf("infer canceled: %w", err)
+			inferErr = errors.Wrap(errors.ErrClientCanceled, errors.TypeInference, "CTX_CANCELED", "infer canceled")
 			break
 		}
 
 		if !state.ContinueInferringController {
-			inferErr = errors.New("infer stopped by controller")
+			inferErr = errors.Wrap(errors.ErrInferenceStopped, errors.TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
 			break
 		}
 
@@ -157,18 +156,18 @@ func runInfer(ctx context.Context, c echo.Context, query *types.InferQuery) (int
 func completeStream(ctx context.Context, c echo.Context, _ int) error {
 	err := ctx.Err()
 	if err != nil {
-		streamErr := fmt.Errorf("stream termination canceled: %w", err)
-		ctxpkg.LogContextAwareError(ctx, "stream_termination", streamErr)
-		return streamErr
+		er := errors.Wrap(errors.ErrClientCanceled, errors.TypeInference, "STREAM_CANCELED", "stream termination canceled")
+		ctxpkg.LogContextAwareError(ctx, "stream_termination", er)
+		return er
 	}
 
 	err = sendTerm(ctx, c)
 	if err != nil {
 		state.ContinueInferringController = false
-		streamErr := fmt.Errorf("stream termination failed: %w", err)
-		ctxpkg.LogContextAwareError(ctx, "stream_termination", streamErr)
-		logError(ctx, "Llama", "cannot send stream termination", streamErr)
-		return streamErr
+		er := errors.Wrap(err, errors.TypeInference, "STREAM_TERMINATION_FAILED", "stream termination failed")
+		ctxpkg.LogContextAwareError(ctx, "stream_termination", er)
+		logError(ctx, "Llama", "cannot send stream termination", er)
+		return er
 	}
 
 	return nil
@@ -183,7 +182,7 @@ func streamToken(
 	// Check context
 	err := ctx.Err()
 	if err != nil {
-		return fmt.Errorf("context canceled: %w", err)
+		return errors.Wrap(errors.ErrClientCanceled, errors.TypeInference, "CTX_CANCELED", "context canceled")
 	}
 
 	// Handle first token
@@ -204,7 +203,7 @@ func streamToken(
 
 			err = write(ctx, c, jsonEncoder, smsg)
 			if err != nil {
-				return fmt.Errorf("cannot stream start_emitting: %w", err)
+				return errors.Wrap(err, errors.TypeInference, "STREAM_START_FAILED", "cannot stream start_emitting")
 			}
 		}
 	}
