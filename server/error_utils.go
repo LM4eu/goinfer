@@ -27,9 +27,9 @@ func CreateErrorResponse(c echo.Context, err error, code, suggestion string) err
 
 // CreateTimeoutResponse creates a standardized timeout response.
 func CreateTimeoutResponse(c echo.Context, suggestion string) error {
-	timeoutErr := errors.New("request timeout after 30 seconds")
+	err := errors.New("request timeout after 30 seconds")
 	return c.JSON(http.StatusRequestTimeout, echo.Map{
-		"error":      timeoutErr.Error(),
+		"error":      err.Error(),
 		"code":       "REQUEST_TIMEOUT",
 		"request_id": ctx.GenerateRequestID(),
 		"timestamp":  strconv.FormatInt(time.Now().Unix(), 10),
