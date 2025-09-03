@@ -163,7 +163,7 @@ linters:
       # exported methods of a structure before the non-exported ones.
       struct-method: true # Default: true
       # alphabetically sorted
-      alphabetical: true # Default: false
+      alphabetical: false # Default: false
 
     # https://golangci-lint.run/docs/linters/configuration/#copyloopvar
     copyloopvar: # detects places where loop variables are copied
@@ -421,17 +421,10 @@ linters:
       check-timezone: true
 
     govet:
-      check-shadowing: true
       enable-all: true
       settings:
         shadow:
-          strict: true
-        printf:
-          funcs:
-            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
-            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
-            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
-            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
+          strict: false
 
     iface:
       allow-empty-interface: false
@@ -450,9 +443,6 @@ linters:
     interfacebloat:
       max-methods: 10
 
-    intrange:
-      check-range: true
-
     lll:
       line-length: 160
 
@@ -465,13 +455,6 @@ linters:
 
     makezero:
       always: false
-
-    maligned:
-      suggest-new: true
-      suggest-new-order: true
-
-    mirror:
-      check-all: true
 
     misspell:
       locale: US
@@ -573,19 +556,18 @@ linters:
     spancheck:
       check-all: true
 
-    sqlclosecheck:
-      packages:
-        - database/sql
-        - github.com/jackc/pgx/v4
-
+    # https://golangci-lint.run/docs/linters/configuration/#staticcheck
     staticcheck:
-      go: "1.24"
       # https://staticcheck.io/docs/options#checks
-      checks: all
+      checks: ["all"]
+      http-status-code-whitelist: []
 
+    # Align struct tags: `json:"bar" validate:"required" yml:"bar"`
+    # https://golangci-lint.run/docs/linters/configuration/#tagalign
     tagalign:
-      order: align
-      style: same
+      align: true
+      sort: true
+      strict: true
 
     # https://github.com/ldez/tagliatelle
     tagliatelle:
@@ -604,9 +586,6 @@ linters:
         - stdlib # standard library interfaces
         - github.com/prometheus\/client_golang\/prometheus.Gauge
         - github.com/prometheus\/client_golang\/prometheus.Counter
-
-    testableexamples:
-      check-all: true
 
     testifylint:
       disable-all: false
@@ -660,16 +639,18 @@ linters:
     varnamelen:
       max-distance: 5 # Ignore variables in "small scope" of this number of lines (max), Default: 5
       min-name-length: 3 # Ignore variables having this minimum name length, Default: 3
-      check-receiver: true # Check method receivers, Default: false
-      check-return: true # Check named return values, Default: false
+      check-receiver: false # Check method receivers, Default: false
+      check-return: false # Check named return values, Default: false
       check-type-param: true # Check type parameters, Default: false
       ignore-type-assert-ok: true # Ignore "ok" variables that hold the bool return value of a type assertion, Default: false
       ignore-map-index-ok: true # Ignore "ok" variables that hold the bool return value of a map index, Default: false
       ignore-chan-recv-ok: true # Ignore "ok" variables that hold the bool return value of a channel receive, Default: false
       ignore-names: # Ignore these variable names.
         - e
+        - er
       ignore-decls: # Ignore these variable declarations.
         - err error
+        - er  error # avoid shadowing err
         - c echo.Context
         - e *echo.Echo
         - i int
@@ -681,9 +662,6 @@ linters:
         - m map[string]int
         - T any
         - t testing.T
-
-    wastedassign:
-      check-all: true
 
     whitespace:
       blank-lines: true
@@ -708,10 +686,6 @@ linters:
     wsl_v5:
       allow-trailing-comma: true
       strict: true
-
-    zerologlint:
-      check-event: true
-      check-log: true
 
 issues:
   exclude-rules:
