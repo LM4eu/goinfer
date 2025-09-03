@@ -22,11 +22,16 @@ func getRequestID(ctx context.Context) string {
 	if requestID == nil {
 		return GenerateRequestID()
 	}
-	return requestID.(string)
+	rid, ok := requestID.(string)
+	if ok {
+		return rid
+	}
+	// Fallback – generate a new ID if the stored value is not a string
+	return GenerateRequestID()
 }
 
-// CreateContextAwareError wraps an error with context information.
-func CreateContextAwareError(ctx context.Context, operation string, err error) error {
+// wrapErr wraps an error with context information.
+func wrapErr(ctx context.Context, operation string, err error) error {
 	if err == nil {
 		return nil
 	}
@@ -47,7 +52,7 @@ func LogContextAwareError(ctx context.Context, operation string, err error) {
 func CheckContextCancelled(ctx context.Context, operation string) error {
 	err := ctx.Err()
 	if err != nil {
-		return CreateContextAwareError(ctx, operation, fmt.Errorf("context canceled: %w", err))
+		return wrapErr(ctx, operation, fmt.Errorf("context canceled: %w", err))
 	}
 	return nil
 }
