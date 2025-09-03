@@ -1,17 +1,15 @@
 // Copyright 2025 The contributors of Goinfer.
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
-
 package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/LM4eu/goinfer/lm"
+	"github.com/LM4eu/goinfer/errors"
 	"github.com/LM4eu/goinfer/state"
 	"github.com/LM4eu/goinfer/types"
 	"github.com/labstack/echo/v4"
@@ -23,8 +21,8 @@ func inferHandler(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(c.Request().Context(), 30*time.Second)
 	defer cancel()
 
-	// Check if infer is already running
-	if state.IsInferring {
+	// Check if infer is already running using ProxyManager
+	if proxyManager.IsInferring() {
 		fmt.Println("Infer already running")
 		return c.NoContent(http.StatusAccepted)
 	}
@@ -33,19 +31,13 @@ func inferHandler(c echo.Context) error {
 	reqMap := echo.Map{}
 	err := c.Bind(&reqMap)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid request format",
-			"code":  "INVALID_REQUEST",
-		})
+		return errors.HandleValidationError(c, errors.ErrInvalidFormat)
 	}
 
 	// Parse infer parameters directly
 	query, err := parseInferQuery(reqMap)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid parameter values",
-			"code":  "INVALID_PARAMS",
-		})
+		return errors.HandleValidationError(c, errors.ErrInvalidParams)
 	}
 
 	// Setup streaming response if needed
@@ -85,14 +77,14 @@ func parseInferQuery(m echo.Map) (*types.InferQuery, error) {
 
 	// Check required prompt parameter
 	if _, ok := m["prompt"]; !ok {
-		return req, errors.New("prompt is required")
+		return req, errors.ErrPromptRequired
 	}
 
 	// Parse simple parameters directly
 	if val, ok := m["prompt"].(string); ok {
 		req.Prompt = val
 	} else {
-		return req, errors.New("prompt must be a string")
+		return req, errors.ErrInvalidPrompt
 	}
 
 	if val, ok := m["model"].(string); ok {
@@ -144,48 +136,34 @@ func parseInferQuery(m echo.Map) (*types.InferQuery, error) {
 	}
 
 	// Parse stop prompts array
-	if v, ok := m["stop"]; ok {
-		slice, ok := v.([]any)
-		if !ok {
-			return req, errors.New("stop must be an array")
-		}
-
-		if len(slice) > 10 {
-			return req, errors.New("stop array too large (max 10)")
-		}
-		if len(slice) > 0 {
-			req.Params.Generation.StopPrompts = make([]string, len(slice))
-			for i, val := range slice {
-				if strVal, ok := val.(string); ok {
-					req.Params.Generation.StopPrompts[i] = strVal
-				} else {
-					return req, fmt.Errorf("stop[%d] must be a string", i)
-				}
-			}
-		}
+	err := populateStopPrompts(m, &req.Params.Generation)
+	if err != nil {
+		return req, err
 	}
 
 	// Parse media byte arrays
 	if v, ok := m["images"]; ok {
-		if slice, ok := v.([]any); ok && len(slice) > 0 {
-			req.Params.Media.Images = make([]byte, len(slice))
-			for i, val := range slice {
-				req.Params.Media.Images[i], ok = val.(byte)
-				if !ok {
+		if sliceImg, okImg := v.([]any); okImg && len(sliceImg) > 0 {
+			req.Params.Media.Images = make([]byte, len(sliceImg))
+			for i, val := range sliceImg {
+				imgByte, okImg := val.(byte)
+				if !okImg {
 					return req, fmt.Errorf("images[%d] must be a byte", i)
 				}
+				req.Params.Media.Images[i] = imgByte
 			}
 		}
 	}
 
 	if v, ok := m["audios"]; ok {
-		if slice, ok := v.([]any); ok && len(slice) > 0 {
-			req.Params.Media.Audios = make([]byte, len(slice))
-			for i, val := range slice {
-				req.Params.Media.Audios[i], ok = val.(byte)
-				if !ok {
+		if sliceAud, okAud := v.([]any); okAud && len(sliceAud) > 0 {
+			req.Params.Media.Audios = make([]byte, len(sliceAud))
+			for i, val := range sliceAud {
+				audioByte, okAud := val.(byte)
+				if !okAud {
 					return req, fmt.Errorf("audios[%d] must be a byte", i)
 				}
+				req.Params.Media.Audios[i] = audioByte
 			}
 		}
 	}
@@ -193,53 +171,48 @@ func parseInferQuery(m echo.Map) (*types.InferQuery, error) {
 	return req, nil
 }
 
-// execute executes inference directly.
+// execute executes inference using ProxyManager.
 func execute(c echo.Context, ctx context.Context, query *types.InferQuery) (*types.StreamedMsg, error) {
-	// Execute infer in goroutine with timeout
-	inferCtx, cancel := context.WithTimeout(ctx, time.Minute*5)
-	defer cancel()
-
+	// Execute infer through ProxyManager
 	resultChan := make(chan types.StreamedMsg)
 	errorChan := make(chan types.StreamedMsg)
 	defer close(resultChan)
 	defer close(errorChan)
 
-	go lm.Infer(query, c, resultChan, errorChan)
+	err := proxyManager.ForwardInference(ctx, query, c, resultChan, errorChan)
+	if err != nil {
+		return nil, errors.Wrap(err, errors.TypeInference, "PROXY_FORWARD_FAILED", "proxy manager forward inference failed")
+	}
 
-	// Process response directly
+	// Process response from ProxyManager
 	select {
 	case response, ok := <-resultChan:
 		if ok {
 			return &response, nil
 		}
-		return nil, errors.New("infer channel closed unexpectedly")
+		return nil, errors.ErrChannelClosed
 
 	case message, ok := <-errorChan:
 		if ok {
 			if message.MsgType == types.ErrorMsgType {
-				return nil, fmt.Errorf("infer error: %s", message.Content)
+				return nil, errors.Wrap(errors.ErrInferenceFailed, errors.TypeInference, "INFERENCE_ERROR", "infer error: "+message.Content)
 			}
-			return nil, fmt.Errorf("infer error: %v", message)
+			return nil, errors.Wrap(errors.ErrInferenceFailed, errors.TypeInference, "INFERENCE_ERROR", fmt.Sprintf("infer error: %v", message))
 		}
-		return nil, errors.New("error channel closed unexpectedly")
+		return nil, errors.ErrChannelClosed
 
-	case <-inferCtx.Done():
-		if state.Debug {
-			fmt.Printf("Infer timeout\n")
-		}
-		return nil, errors.New("infer timeout")
-
-	case <-c.Request().Context().Done():
+	case <-ctx.Done():
 		// Client canceled request
 		state.ContinueInferringController = false
-		return nil, errors.New("req canceled by client")
+		return nil, errors.ErrClientCanceled
 	}
 }
 
-// abortHandler aborts ongoing inference.
+// abortHandler aborts ongoing inference using ProxyManager.
 func abortHandler(c echo.Context) error {
-	if !state.IsInferring {
-		fmt.Println("INFO: No inference running, nothing to abort")
+	err := proxyManager.AbortInference()
+	if err != nil {
+		fmt.Printf("INFO: %v\n", err)
 		return c.NoContent(http.StatusAccepted)
 	}
 
@@ -247,7 +220,32 @@ func abortHandler(c echo.Context) error {
 		fmt.Println("INFO: Aborting inference")
 	}
 
-	state.ContinueInferringController = false
-
 	return c.NoContent(http.StatusNoContent)
+}
+
+// populateStopPrompts extracts and validates the "stop" parameter from the request map.
+func populateStopPrompts(m echo.Map, gen *types.Generation) error {
+	v, ok := m["stop"]
+	if !ok {
+		return nil
+	}
+	slice, ok := v.([]any)
+	if !ok {
+		return errors.Wrap(errors.ErrInvalidParams, errors.TypeValidation, "STOP_INVALID_TYPE", "stop must be an array")
+	}
+	if len(slice) > 10 {
+		return errors.Wrap(errors.ErrInvalidParams, errors.TypeValidation, "STOP_TOO_LARGE", "stop array too large (max 10)")
+	}
+	if len(slice) == 0 {
+		return nil
+	}
+	gen.StopPrompts = make([]string, len(slice))
+	for i, val := range slice {
+		str, ok := val.(string)
+		if !ok {
+			return errors.Wrap(errors.ErrInvalidParams, errors.TypeValidation, "STOP_INVALID_ELEMENT", fmt.Sprintf("stop[%d] must be a string", i))
+		}
+		gen.StopPrompts[i] = str
+	}
+	return nil
 }
