@@ -32,6 +32,30 @@ func (dir Dir) Handler(c echo.Context) error {
 	})
 }
 
+// ExtractFlags extracts flags from a model filename.
+// It looks for a pattern starting with "&" and splits the remaining string
+// by "&" to get individual flag components. Each component is then split
+// by "=" to separate key and value, with the key prefixed by "-" to form
+// command-line style flags. Returns a slice of strings representing the extracted flags.
+func ExtractFlags(modelStem string) string {
+	var flags []string
+
+	p := strings.Index(modelStem, "&")
+	if p < 0 {
+		return ""
+	}
+
+	for f := range strings.SplitSeq(modelStem[p:], "&") {
+		kv := strings.SplitN(f, "=", 2)
+		if len(kv) > 0 {
+			kv[0] = "-" + kv[0]
+			flags = append(flags, kv...)
+		}
+	}
+
+	return strings.Join(flags, " ")
+}
+
 func (dir Dir) Search() ([]string, error) {
 	var modelFiles []string
 

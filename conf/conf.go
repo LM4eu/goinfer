@@ -257,6 +257,8 @@ func GenerateProxyCfg(cfg *GoInferCfg, proxyCfgFile string) error {
 		ext := filepath.Ext(base)
 		stem := strings.TrimSuffix(base, ext)
 
+		flags := models.ExtractFlags(model)
+
 		// OpenAI API
 		if state.Verbose {
 			_, ok := cfg.Proxy.Models[stem]
@@ -265,7 +267,7 @@ func GenerateProxyCfg(cfg *GoInferCfg, proxyCfgFile string) error {
 			}
 		}
 		cfg.Proxy.Models[stem] = proxy.ModelConfig{
-			Cmd:          "${llama-server-openai} -m " + model,
+			Cmd:          "${llama-server-openai} -m " + model + " " + flags,
 			Unlisted:     false,
 			UseModelName: stem,
 		}
@@ -279,7 +281,7 @@ func GenerateProxyCfg(cfg *GoInferCfg, proxyCfgFile string) error {
 			}
 		}
 		cfg.Proxy.Models[prefixedModelName] = proxy.ModelConfig{
-			Cmd:          "${llama-server-goinfer} -m " + model,
+			Cmd:          "${llama-server-goinfer} -m " + model + " " + flags,
 			Unlisted:     true,
 			UseModelName: prefixedModelName,
 		}
