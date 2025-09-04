@@ -139,6 +139,9 @@ func setupSignalHandling() chan os.Signal {
 // startHTTPServers starts all HTTP servers configured in the config.
 func startHTTPServers(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.Group) {
 	for addr, services := range cfg.Server.Listen {
+		if len(addr) == 0 || addr[0] == ':' {
+			addr = cfg.Server.Host + addr
+		}
 		e := server.NewEcho(cfg, addr, services)
 		if e != nil {
 			if cfg.Verbose {

@@ -33,6 +33,7 @@ type (
 	ServerCfg struct {
 		Listen  map[string]string `json:"listen,omitempty"  yaml:"listen,omitempty"`
 		APIKeys map[string]string `json:"api_key,omitempty" yaml:"api_key,omitempty"`
+		Host    string            `json:"host,omitempty"    yaml:"host,omitempty"`
 		Origins string            `json:"origins,omitempty" yaml:"origins,omitempty"`
 	}
 
@@ -101,6 +102,13 @@ func LoadCfg(goinferCfgFile string) (*GoInferCfg, error) {
 		cfg.ModelsDir = dir
 		if state.Verbose {
 			fmt.Printf("INF: GI_MODELS_DIR set to %s\n", dir)
+		}
+	}
+
+	if host := os.Getenv("GI_HOST"); host != "" {
+		cfg.Server.Host = host
+		if state.Verbose {
+			fmt.Printf("INF: GI_HOST set to %s\n", host)
 		}
 	}
 
@@ -231,6 +239,7 @@ func (cfg *GoInferCfg) Print() {
 	fmt.Println("-----------------------------")
 	fmt.Println("Environment Variables:")
 	fmt.Printf("  GI_MODELS_DIR    = %s\n", os.Getenv("GI_MODELS_DIR"))
+	fmt.Printf("  GI_HOST          = %s\n", os.Getenv("GI_HOST"))
 	fmt.Printf("  GI_ORIGINS       = %s\n", os.Getenv("GI_ORIGINS"))
 	fmt.Printf("  GI_API_KEY_ADMIN = set\n")
 	fmt.Printf("  GI_API_KEY_USER  = set\n")
