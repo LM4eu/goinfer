@@ -120,14 +120,21 @@ func LoadCfg(goinferCfgFile string) (*GoInferCfg, error) {
 	if key := os.Getenv("GI_API_KEY_ADMIN"); key != "" {
 		cfg.Server.APIKeys["admin"] = key
 		if state.Verbose {
-			fmt.Printf("INFO: GI_API_KEY_ADMIN set\n")
+			fmt.Println("INFO: GI_API_KEY_ADMIN set")
 		}
 	}
 
 	if key := os.Getenv("GI_API_KEY_USER"); key != "" {
 		cfg.Server.APIKeys["user"] = key
 		if state.Verbose {
-			fmt.Printf("INFO: GI_API_KEY_USER set\n")
+			fmt.Println("INFO: GI_API_KEY_USER set")
+		}
+	}
+
+	if exe := os.Getenv("GI_LLAMA_EXE"); exe != "" {
+		cfg.Llama.Exe = exe
+		if state.Verbose {
+			fmt.Printf("INFO: GI_LLAMA_EXE =%s\n", exe)
 		}
 	}
 
@@ -227,6 +234,8 @@ func (cfg *GoInferCfg) Print() {
 	fmt.Printf("  GI_ORIGINS       = %s\n", os.Getenv("GI_ORIGINS"))
 	fmt.Printf("  GI_API_KEY_ADMIN = set\n")
 	fmt.Printf("  GI_API_KEY_USER  = set\n")
+	fmt.Printf("  GI_LLAMA_EXE     =%s\n", os.Getenv("GI_LLAMA_EXE"))
+
 	fmt.Println("-----------------------------")
 
 	yml, err := yaml.Marshal(&cfg)
