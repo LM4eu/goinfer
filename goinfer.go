@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -139,6 +140,9 @@ func setupSignalHandling() chan os.Signal {
 // startHTTPServers starts all HTTP servers configured in the config.
 func startHTTPServers(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.Group) {
 	for addr, services := range cfg.Server.Listen {
+		if strings.Contains(services, "swap") {
+			continue // reserved for llama-swap proxy
+		}
 		if len(addr) == 0 || addr[0] == ':' {
 			addr = cfg.Server.Host + addr
 		}
