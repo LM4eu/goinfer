@@ -59,7 +59,7 @@ func ExtractFlags(modelStem string) string {
 func (dir Dir) Search() ([]string, error) {
 	var modelFiles []string
 
-	for d := range strings.Split(string(dir), ":") {
+	for d := range strings.SplitSeq(string(dir), ":") {
 		err := search(&modelFiles, strings.TrimSpace(d))
 		if err != nil {
 			return nil, fmt.Errorf("failed to search in '%s': %w", d, err)
