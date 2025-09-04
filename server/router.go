@@ -74,9 +74,9 @@ func NewEcho(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
 
 	// ------------ Models ------------
 	if strings.Contains(services, "model") {
-		grp := e.Group("/model")
+		grp := e.Group("/models")
 		setupAPIKeyAuth(grp, cfg, "model")
-		grp.GET("/state", models.Dir(cfg.ModelsDir).Handler)
+		grp.GET("", models.Dir(cfg.ModelsDir).Handler)
 
 		configured = true
 	}
