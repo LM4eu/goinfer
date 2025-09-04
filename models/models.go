@@ -59,10 +59,13 @@ func ExtractFlags(modelStem string) string {
 func (dir Dir) Search() ([]string, error) {
 	var modelFiles []string
 
-	for d := range strings.SplitSeq(string(dir), ":") {
-		err := search(&modelFiles, strings.TrimSpace(d))
+	for root := range strings.SplitSeq(string(dir), ":") {
+		err := search(&modelFiles, strings.TrimSpace(root))
 		if err != nil {
-			return nil, fmt.Errorf("failed to search in '%s': %w", d, err)
+			if state.Verbose {
+				fmt.Println("INFO: Searching model files in:", root)
+			}
+			return nil, fmt.Errorf("failed to search in '%s': %w", root, err)
 		}
 	}
 
@@ -76,13 +79,13 @@ func search(files *[]string, root string) error {
 		}
 
 		if d.IsDir() {
-			if state.Verbose {
-				fmt.Println("INFO: Searching model files in:", path)
-			}
 			return nil // => step into this directory
 		}
 
 		if strings.HasSuffix(path, ".gguf") {
+			if state.Verbose {
+				fmt.Println("INFO: Found model:", path)
+			}
 			*files = append(*files, path)
 		}
 
