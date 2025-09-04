@@ -55,13 +55,13 @@ func main() {
 func manageCfg(debug, genGiConf, genPxConf, noAPIKeys bool) *conf.GoInferCfg {
 	// Generate config
 	if genGiConf {
-		err := conf.CreateCfg(goinfCfgFile, debug)
+		err := conf.Create(goinfCfgFile, debug)
 		if err != nil {
 			fmt.Printf("ERROR creating config: %v\n", err)
 			os.Exit(1)
 		}
 		if state.Verbose {
-			cfg, er := conf.LoadCfg(goinfCfgFile)
+			cfg, er := conf.Load(goinfCfgFile)
 			if er != nil {
 				fmt.Printf("ERROR loading config: %v\n", er)
 				os.Exit(1)
@@ -72,7 +72,7 @@ func manageCfg(debug, genGiConf, genPxConf, noAPIKeys bool) *conf.GoInferCfg {
 	}
 
 	// Load configurations
-	cfg, err := conf.LoadCfg(goinfCfgFile)
+	cfg, err := conf.Load(goinfCfgFile)
 	if err != nil {
 		fmt.Printf("ERROR loading config: %v\n", err)
 		os.Exit(1)

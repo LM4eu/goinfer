@@ -74,8 +74,8 @@ llama:
 `
 )
 
-// Load configuration with simplified loading.
-func LoadCfg(goinferCfgFile string) (*GoInferCfg, error) {
+// Load the configuration file.
+func Load(goinferCfgFile string) (*GoInferCfg, error) {
 	var cfg *GoInferCfg
 
 	// Load default config
@@ -97,7 +97,6 @@ func LoadCfg(goinferCfgFile string) (*GoInferCfg, error) {
 	return applyEnvVars(yml)
 }
 
-// Load configuration with simplified loading.
 func applyEnvVars(yml []byte) (*GoInferCfg, error) {
 	var cfg *GoInferCfg
 
@@ -214,8 +213,8 @@ func GenAPIKey(debugMode bool) ([]byte, error) {
 	return apiKey, nil
 }
 
-// Create configuration file.
-func CreateCfg(goinferCfgFile string, debugMode bool) error {
+// Create a configuration file.
+func Create(goinferCfgFile string, debugMode bool) error {
 	yml := []byte(defaultGoInferConf)
 
 	// Set API keys
