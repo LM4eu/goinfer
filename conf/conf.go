@@ -84,16 +84,27 @@ func LoadCfg(goinferCfgFile string) (*GoInferCfg, error) {
 		return cfg, errors.Wrap(err, errors.TypeConfiguration, "DEFAULT_CONFIG_PARSE_FAILED", "failed to parse default config")
 	}
 
-	// Load from file if specified
-	if goinferCfgFile != "" { // Use OpenFileIn() from Go-1.25
-		data, er := os.ReadFile(filepath.Clean(goinferCfgFile))
-		if er != nil {
-			return cfg, errors.Wrap(er, errors.TypeConfiguration, "CONFIG_FILE_READ_FAILED", "failed to read "+goinferCfgFile)
-		}
+	var yml []byte
 
-		er = yaml.Unmarshal(data, &cfg)
-		if er != nil {
-			return cfg, errors.Wrap(er, errors.TypeConfiguration, "CONFIG_UNMARSHAL_FAILED", "failed to unmarshal "+goinferCfgFile)
+	// Load from file if specified
+	if goinferCfgFile != "" { //TODO: Use OpenFileIn() from Go-1.25
+		yml, err = os.ReadFile(filepath.Clean(goinferCfgFile))
+		if err != nil {
+			return cfg, errors.Wrap(err, errors.TypeConfiguration, "CONFIG_FILE_READ_FAILED", "failed to read "+goinferCfgFile)
+		}
+	}
+
+	return applyEnvVars(yml)
+}
+
+// Load configuration with simplified loading.
+func applyEnvVars(yml []byte) (*GoInferCfg, error) {
+	var cfg *GoInferCfg
+
+	if len(yml) > 0 {
+		err := yaml.Unmarshal(yml, &cfg)
+		if err != nil {
+			return cfg, errors.Wrap(err, errors.TypeConfiguration, "CONFIG_UNMARSHAL_FAILED", "failed to unmarshal YAML data: "+string(yml[:100]))
 		}
 	}
 
@@ -147,9 +158,9 @@ func LoadCfg(goinferCfgFile string) (*GoInferCfg, error) {
 	}
 
 	// Validate configuration
-	er := validate(cfg)
-	if er != nil {
-		return cfg, errors.Wrap(er, errors.TypeConfiguration, "CONFIG_VALIDATION_FAILED", "failed to validate configuration")
+	err := validate(cfg)
+	if err != nil {
+		return cfg, errors.Wrap(err, errors.TypeConfiguration, "CONFIG_VALIDATION_FAILED", "failed to validate configuration")
 	}
 
 	return cfg, nil
@@ -205,22 +216,34 @@ func GenAPIKey(debugMode bool) ([]byte, error) {
 
 // Create configuration file.
 func CreateCfg(goinferCfgFile string, debugMode bool) error {
-	cfg := []byte(defaultGoInferConf)
+	yml := []byte(defaultGoInferConf)
 
 	// Set API keys
 	key, err := GenAPIKey(debugMode)
 	if err != nil {
 		return errors.Wrap(err, errors.TypeConfiguration, "API_KEY_GEN_1_FAILED", "failed to generate first API key")
 	}
-	cfg = bytes.Replace(cfg, []byte(secureAPIPlaceholder), key, 1)
+	yml = bytes.Replace(yml, []byte(secureAPIPlaceholder), key, 1)
 
 	key, er := GenAPIKey(debugMode)
 	if er != nil {
 		return errors.Wrap(er, errors.TypeConfiguration, "API_KEY_GEN_2_FAILED", "failed to generate second API key")
 	}
-	cfg = bytes.Replace(cfg, []byte(secureAPIPlaceholder), key, 1)
+	yml = bytes.Replace(yml, []byte(secureAPIPlaceholder), key, 1)
 
-	err = os.WriteFile(goinferCfgFile, cfg, 0o600)
+	// convert raw YAML to struct Cfg
+	cfg, err := applyEnvVars(yml)
+	if err != nil {
+		return errors.Wrap(err, errors.TypeConfiguration, "CONFIG_ENV_VALIDATE", "failed to write config file")
+	}
+
+	// convert back struct Cfg to YAML data
+	yml, err = yaml.Marshal(&cfg)
+	if err != nil {
+		return errors.Wrap(err, errors.TypeConfiguration, "CONFIG_MARSHAL", "failed to write config file")
+	}
+
+	err = os.WriteFile(goinferCfgFile, yml, 0o600)
 	if err != nil {
 		return errors.Wrap(err, errors.TypeConfiguration, "CONFIG_WRITE_FAILED", "failed to write config file")
 	}
