@@ -19,6 +19,10 @@ type Dir string
 
 // Handler returns the state of models.
 func (dir Dir) Handler(c echo.Context) error {
+	if state.Debug {
+		fmt.Println("DBG: Search model files. input=", string(dir))
+	}
+
 	models, err := dir.Search()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{
