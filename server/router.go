@@ -39,12 +39,14 @@ func NewEcho(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
 		l.SetHeader("[${time_rfc3339}] ${level}")
 	}
 
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     strings.Split(cfg.Server.Origins, ","),
-		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAuthorization},
-		AllowMethods:     []string{http.MethodGet, http.MethodOptions, http.MethodPost},
-		AllowCredentials: true,
-	}))
+	if cfg.Server.Origins != "" {
+		e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+			AllowOrigins:     strings.Split(cfg.Server.Origins, ","),
+			AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAuthorization},
+			AllowMethods:     []string{http.MethodGet, http.MethodOptions, http.MethodPost},
+			AllowCredentials: true,
+		}))
+	}
 
 	// Add unified error handling middleware
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
