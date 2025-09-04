@@ -35,7 +35,7 @@ func main() {
 	debug := flag.Bool("debug", false, "debug mode")
 	genGiConf := flag.Bool("gen-gi-cfg", false, "generate "+goinfCfgFile)
 	genPxConf := flag.Bool("gen-px-cfg", false, "generate "+proxyCfgFile+" (proxy config file)")
-	noAPIKeys := flag.Bool("disable-api-key", false, "disable API key check")
+	noAPIKeys := flag.Bool("no-api-key", false, "disable API key check")
 	garcon.SetVersionFlag()
 	flag.Parse()
 
