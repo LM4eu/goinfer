@@ -60,7 +60,7 @@ server:
     user:  ` + secureAPIPlaceholder + `
   origins: localhost
   listen:
-    ":8080": admin
+    ":8888": admin
     ":2222": openai,goinfer,mcp
     ":5143": llama-swap proxy
 
