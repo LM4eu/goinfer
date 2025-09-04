@@ -48,8 +48,8 @@ func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resultC
 	}
 
 	if state.Debug {
-		fmt.Println("Infer params:")
-		fmt.Printf("INFO: %+v\n\n", query.Params)
+		fmt.Println("DBG: Infer params:")
+		fmt.Printf("DBG: %+v\n\n", query.Params)
 	}
 
 	// Execute inference

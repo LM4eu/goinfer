@@ -25,7 +25,7 @@ func logMsg(ctx context.Context, format string, args ...any) {
 		}
 	}
 
-	fmt.Printf("INFO: [%s] | c: %s | r: %s | %s\n",
+	fmt.Printf("INF: [%s] | c: %s | r: %s | %s\n",
 		time.Now().Format(time.RFC3339), fmt.Sprintf("c-%d", time.Now().UnixNano()), reqID, fmt.Sprintf(format, args...))
 }
 

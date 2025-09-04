@@ -40,7 +40,7 @@ func main() {
 	flag.Parse()
 
 	if *debug {
-		fmt.Println("INFO: Debug mode is on")
+		fmt.Println("DBG: Debug mode is on")
 		state.Debug = true
 	}
 
@@ -125,7 +125,7 @@ func runHTTPServers(cfg *conf.GoInferCfg) {
 	if err != nil {
 		fmt.Printf("ERROR: Server error: %v\n", err)
 	} else {
-		fmt.Println("INFO: All HTTP servers stopped gracefully")
+		fmt.Println("INF: All HTTP servers stopped gracefully")
 	}
 }
 
@@ -172,7 +172,7 @@ func startHTTPServers(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.G
 	// prints a startup message when all servers are running.
 	if cfg.Verbose {
 		fmt.Println("-----------------------------")
-		fmt.Println("INFO: All servers started. Press CTRL+C to stop.")
+		fmt.Println("INF: All servers started. Press CTRL+C to stop.")
 	}
 }
 
@@ -209,7 +209,7 @@ func runProxyServerWithGracefulShutdown(ctx context.Context, cfg *conf.GoInferCf
 // gracefulShutdownEchoServer performs graceful shutdown of an Echo server.
 func gracefulShutdownEchoServer(ctx context.Context, cfg *conf.GoInferCfg, e *echo.Echo, addr string) error {
 	if cfg.Verbose {
-		fmt.Printf("INFO: Shutting down Echo server on %s\n", addr)
+		fmt.Printf("INF: Shutting down Echo server on %s\n", addr)
 	}
 
 	err := e.Shutdown(ctx)
@@ -219,7 +219,7 @@ func gracefulShutdownEchoServer(ctx context.Context, cfg *conf.GoInferCfg, e *ec
 	}
 
 	if cfg.Verbose {
-		fmt.Printf("INFO: Echo server on %s stopped gracefully\n", addr)
+		fmt.Printf("INF: Echo server on %s stopped gracefully\n", addr)
 	}
 	return nil
 }
@@ -227,7 +227,7 @@ func gracefulShutdownEchoServer(ctx context.Context, cfg *conf.GoInferCfg, e *ec
 // gracefulShutdownProxyServer performs graceful shutdown of a proxy server.
 func gracefulShutdownProxyServer(ctx context.Context, cfg *conf.GoInferCfg, proxyServer *http.Server, proxyHandler http.Handler) error {
 	if cfg.Verbose {
-		fmt.Printf("INFO: Shutting down proxy server on %s\n", proxyServer.Addr)
+		fmt.Printf("INF: Shutting down proxy server on %s\n", proxyServer.Addr)
 	}
 
 	// Check if proxyHandler has a Shutdown method
@@ -242,7 +242,7 @@ func gracefulShutdownProxyServer(ctx context.Context, cfg *conf.GoInferCfg, prox
 	}
 
 	if cfg.Verbose {
-		fmt.Printf("INFO: Proxy server on %s stopped gracefully\n", proxyServer.Addr)
+		fmt.Printf("INF: Proxy server on %s stopped gracefully\n", proxyServer.Addr)
 	}
 	return nil
 }
@@ -250,7 +250,7 @@ func gracefulShutdownProxyServer(ctx context.Context, cfg *conf.GoInferCfg, prox
 // handleShutdown handles graceful shutdown upon receiving a signal.
 func handleShutdown(sigChan <-chan os.Signal, ctx context.Context, cancel context.CancelFunc) {
 	sig := <-sigChan
-	fmt.Printf("INFO: Received signal %v, initiating graceful shutdown...\n", sig)
+	fmt.Printf("INF: Received signal %v, initiating graceful shutdown...\n", sig)
 
 	// Cancel context to trigger shutdown
 	cancel()
@@ -261,6 +261,6 @@ func handleShutdown(sigChan <-chan os.Signal, ctx context.Context, cancel contex
 		fmt.Println("WARNING: Graceful shutdown timed out, forcing exit")
 		os.Exit(1)
 	case <-ctx.Done():
-		fmt.Println("INFO: Graceful shutdown completed")
+		fmt.Println("INF: Graceful shutdown completed")
 	}
 }

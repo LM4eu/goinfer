@@ -72,7 +72,7 @@ func (pm *ProxyManager) ForwardInference(ctx context.Context, query *types.Infer
 		}
 	case <-inferCtx.Done():
 		if state.Debug {
-			fmt.Printf("Infer timeout\n")
+			fmt.Printf("DBG: Infer timeout\n")
 		}
 		errorChan <- types.StreamedMsg{
 			Num:     0,
@@ -99,7 +99,7 @@ func (pm *ProxyManager) AbortInference() error {
 	}
 
 	if state.Verbose {
-		fmt.Println("INFO: Aborting inference")
+		fmt.Println("INF: Aborting inference")
 	}
 
 	state.ContinueInferringController = false

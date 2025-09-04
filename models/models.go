@@ -63,7 +63,7 @@ func (dir Dir) Search() ([]string, error) {
 		err := search(&modelFiles, strings.TrimSpace(root))
 		if err != nil {
 			if state.Verbose {
-				fmt.Println("INFO: Searching model files in:", root)
+				fmt.Println("INF: Searching model files in:", root)
 			}
 			return nil, fmt.Errorf("failed to search in '%s': %w", root, err)
 		}
@@ -84,7 +84,7 @@ func search(files *[]string, root string) error {
 
 		if strings.HasSuffix(path, ".gguf") {
 			if state.Verbose {
-				fmt.Println("INFO: Found model:", path)
+				fmt.Println("INF: Found model:", path)
 			}
 			*files = append(*files, path)
 		}

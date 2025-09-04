@@ -100,14 +100,14 @@ func LoadCfg(goinferCfgFile string) (*GoInferCfg, error) {
 	if dir := os.Getenv("GI_MODELS_DIR"); dir != "" {
 		cfg.ModelsDir = dir
 		if state.Verbose {
-			fmt.Printf("INFO: GI_MODELS_DIR set to %s\n", dir)
+			fmt.Printf("INF: GI_MODELS_DIR set to %s\n", dir)
 		}
 	}
 
 	if origins := os.Getenv("GI_ORIGINS"); origins != "" {
 		cfg.Server.Origins = origins
 		if state.Verbose {
-			fmt.Printf("INFO: GI_ORIGINS set to %s\n", origins)
+			fmt.Printf("INF: GI_ORIGINS set to %s\n", origins)
 		}
 	}
 
@@ -120,21 +120,21 @@ func LoadCfg(goinferCfgFile string) (*GoInferCfg, error) {
 	if key := os.Getenv("GI_API_KEY_ADMIN"); key != "" {
 		cfg.Server.APIKeys["admin"] = key
 		if state.Verbose {
-			fmt.Println("INFO: GI_API_KEY_ADMIN set")
+			fmt.Println("INF: GI_API_KEY_ADMIN set")
 		}
 	}
 
 	if key := os.Getenv("GI_API_KEY_USER"); key != "" {
 		cfg.Server.APIKeys["user"] = key
 		if state.Verbose {
-			fmt.Println("INFO: GI_API_KEY_USER set")
+			fmt.Println("INF: GI_API_KEY_USER set")
 		}
 	}
 
 	if exe := os.Getenv("GI_LLAMA_EXE"); exe != "" {
 		cfg.Llama.Exe = exe
 		if state.Verbose {
-			fmt.Printf("INFO: GI_LLAMA_EXE =%s\n", exe)
+			fmt.Printf("INF: GI_LLAMA_EXE =%s\n", exe)
 		}
 	}
 
@@ -153,9 +153,9 @@ func validate(cfg *GoInferCfg) error {
 		return errors.Wrap(err, errors.TypeValidation, "MODEL_SEARCH_FAILED", "failed to find model files")
 	}
 	if len(modelFiles) == 0 {
-		fmt.Printf("WARN: No *.gguf files found in %s\n", cfg.ModelsDir)
+		fmt.Printf("WRN: No *.gguf files found in %s\n", cfg.ModelsDir)
 	} else if cfg.Verbose {
-		fmt.Printf("INFO: Found %d model files in %s\n", len(modelFiles), cfg.ModelsDir)
+		fmt.Printf("INF: Found %d model files in %s\n", len(modelFiles), cfg.ModelsDir)
 	}
 
 	// Ensure admin API key exists
@@ -172,7 +172,7 @@ func validate(cfg *GoInferCfg) error {
 			return errors.Wrap(errors.ErrInvalidAPIKey, errors.TypeConfiguration, "API_KEY_INVALID", fmt.Sprintf("invalid API key '%s': must be 64 hex digits", k))
 		}
 		if v == debugAPIKey {
-			fmt.Printf("WARN: api_key[%s]=DEBUG => security threat\n", k)
+			fmt.Printf("WRN: api_key[%s]=DEBUG => security threat\n", k)
 		}
 	}
 
@@ -218,9 +218,9 @@ func CreateCfg(goinferCfgFile string, debugMode bool) error {
 	}
 
 	if debugMode {
-		fmt.Printf("WARN: Configuration file %s created with DEBUG api key. This is not suitable for production use.\n", goinferCfgFile)
+		fmt.Printf("WRN: Configuration file %s created with DEBUG api key. This is not suitable for production use.\n", goinferCfgFile)
 	} else {
-		fmt.Printf("INFO: Configuration file %s created successfully with secure API keys.\n", goinferCfgFile)
+		fmt.Printf("INF: Configuration file %s created successfully with secure API keys.\n", goinferCfgFile)
 	}
 
 	return nil
@@ -282,7 +282,7 @@ func GenProxyCfg(cfg *GoInferCfg, proxyCfgFile string) error {
 		if state.Verbose {
 			_, ok := cfg.Proxy.Models[stem]
 			if ok {
-				fmt.Printf("INFO: Overwrite model=%s in %s\n", stem, proxyCfgFile)
+				fmt.Printf("INF: Overwrite model=%s in %s\n", stem, proxyCfgFile)
 			}
 		}
 		cfg.Proxy.Models[stem] = proxy.ModelConfig{
@@ -296,7 +296,7 @@ func GenProxyCfg(cfg *GoInferCfg, proxyCfgFile string) error {
 		if state.Verbose {
 			_, ok := cfg.Proxy.Models[stem]
 			if ok {
-				fmt.Printf("INFO: Overwrite model=%s in %s\n", stem, proxyCfgFile)
+				fmt.Printf("INF: Overwrite model=%s in %s\n", stem, proxyCfgFile)
 			}
 		}
 		cfg.Proxy.Models[prefixedModelName] = proxy.ModelConfig{
@@ -317,7 +317,7 @@ func GenProxyCfg(cfg *GoInferCfg, proxyCfgFile string) error {
 	}
 
 	if state.Verbose {
-		fmt.Printf("INFO: Generated %s with %d models\n", proxyCfgFile, len(modelFiles))
+		fmt.Printf("INF: Generated %s with %d models\n", proxyCfgFile, len(modelFiles))
 	}
 
 	return nil

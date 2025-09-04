@@ -45,7 +45,7 @@ func LogContextAwareError(ctx context.Context, operation string, err error) {
 		return
 	}
 
-	fmt.Printf("INFO: [%s] %s: %v\n", getRequestID(ctx), operation, err)
+	fmt.Printf("INF: [%s] %s: %v\n", getRequestID(ctx), operation, err)
 }
 
 // CheckContextCancelled checks if context is canceled and returns an appropriate error.
