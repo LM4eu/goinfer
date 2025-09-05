@@ -1,9 +1,10 @@
 .pytest_cache
 /.old-code
+/.vscode
+/docsite/dist
 /go-llama.cpp
 /goinfer
 /goinfer.yml
 /llama-server
 /llama-swap.yml
 /server/dist
-/docsite/dist
