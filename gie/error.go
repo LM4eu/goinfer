@@ -2,6 +2,7 @@
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
 
+// gie is the Go Infer Error package.
 package gie
 
 import (
