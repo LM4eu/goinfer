@@ -5,12 +5,12 @@ models_dir: ./models
 
 server:
   api_key:
-    # ⚠️ Set your private 32-byte API keys (64 hex digits) 🚨
+    # ⚠️ Set your private 64-hex-digit API keys (32 bytes) 🚨
     admin: PLEASE SET SECURE API KEY
     user:  PLEASE SET SECURE API KEY
   origins: localhost
   listen:
-    :8080: admin
+    :8080: admin,models
     :2222: openai,goinfer,mcp
     :5143: llama-swap proxy
 
