@@ -27,14 +27,14 @@ import (
 )
 
 const (
-	goinfCfgFile = "goinfer.yml"
+	goInferCfgFile = "goinfer.yml"
 	proxyCfgFile = "llama-swap.yml"
 )
 
 func main() {
 	quiet := flag.Bool("q", false, "quiet mode (disable verbose output)")
 	debug := flag.Bool("debug", false, "debug mode")
-	genGiConf := flag.Bool("gen-gi-cfg", false, "generate "+goinfCfgFile)
+	genGiConf := flag.Bool("gen-gi-cfg", false, "generate "+goInferCfgFile)
 	genPxConf := flag.Bool("gen-px-cfg", false, "generate "+proxyCfgFile+" (proxy config file)")
 	noAPIKeys := flag.Bool("no-api-key", false, "disable API key check")
 	garcon.SetVersionFlag()
@@ -55,24 +55,25 @@ func main() {
 func manageCfg(debug, genGiConf, genPxConf, noAPIKeys bool) *conf.GoInferCfg {
 	// Generate config
 	if genGiConf {
-		err := conf.Create(goinfCfgFile, debug)
+		err := conf.Create(goInferCfgFile, debug)
 		if err != nil {
 			fmt.Printf("ERROR creating config: %v\n", err)
 			os.Exit(1)
 		}
 		if state.Verbose {
-			cfg, er := conf.Load(goinfCfgFile)
+			cfg, er := conf.Load(goInferCfgFile)
 			if er != nil {
 				fmt.Printf("ERROR loading config: %v\n", er)
 				os.Exit(1)
 			}
 			cfg.Print()
 		}
+		fmt.Printf("INF: Configuration file %s created successfully.\n", goInferCfgFile)
 		os.Exit(0)
 	}
 
 	// Load configurations
-	cfg, err := conf.Load(goinfCfgFile)
+	cfg, err := conf.Load(goInferCfgFile)
 	if err != nil {
 		fmt.Printf("ERROR loading config: %v\n", err)
 		os.Exit(1)

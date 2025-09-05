@@ -6,6 +6,7 @@ package server
 
 import (
 	"embed"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -111,10 +112,30 @@ func NewEcho(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
 
 // setupAPIKeyAuth sets up API key authentication for a grp.
 func setupAPIKeyAuth(grp *echo.Group, cfg *conf.GoInferCfg, service string) {
-	apiKey := conf.GetAPIKey(cfg.Server.APIKeys, service)
-	if apiKey != "" {
-		grp.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
-			return key == apiKey, nil
-		}))
+	// Select the API key with preference order
+	key, exists := cfg.Server.APIKeys[service]
+	if !exists {
+		key, exists = cfg.Server.APIKeys["user"]
+		if !exists {
+			key, exists = cfg.Server.APIKeys["admin"]
+			if !exists {
+				fmt.Printf("WRN: No API key for %q, neither for user, nor admin => disable API key security\n", service)
+				return
+			}
+		}
 	}
+
+	if key == "" {
+		fmt.Printf("WRN: Empty API key => disable API key for %q\n", service)
+		return
+	}
+
+	grp.Use(middleware.KeyAuth(func(received_key string, c echo.Context) (bool, error) {
+		if received_key == key {
+			return true, nil
+		}
+
+		fmt.Printf("WRN: Received API key is NOT the configured one for %q\n", service)
+		return false, nil
+	}))
 }

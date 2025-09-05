@@ -5,7 +5,6 @@
 package conf
 
 import (
-	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -43,70 +42,103 @@ type (
 	}
 )
 
-const (
-	secureAPIPlaceholder = "PLEASE SET SECURE API KEY"
+const debugAPIKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
 
-	debugAPIKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
+var defaultGoInferConf = GoInferCfg{
+	ModelsDir: "./models",
+	Server: ServerCfg{
+		Listen: map[string]string{
+			":8888": "admin",
+			":2222": "openai,goinfer,mcp",
+			":5143": "llama-swap proxy"},
+		APIKeys: map[string]string{},
+		Host:    "",
+		Origins: "localhost"},
+	Llama: LlamaCfg{
+		Exe: "./llama-server",
+		Args: map[string]string{
+			"common":  "--no-webui --no-warmup",
+			"goinfer": "--jinja --chat-template-file template.jinja",
+		}},
+}
 
-	defaultGoInferConf = `# Configuration of https://github.com/LM4eu/goinfer
+// Create a configuration file.
+func Create(goinferCfgFile string, debugMode bool) error {
+	cfg, err := applyEnvVars(&defaultGoInferConf)
+	if err != nil {
+		return err
+	}
 
-# Recursively search *.gguf files in one or multiple folders separated by ':'
-models_dir: ./models
+	// Set API keys
+	if len(cfg.Server.APIKeys) == 0 {
+		key, err := genAPIKey(debugMode)
+		if err != nil {
+			return err
+		}
+		cfg.Server.APIKeys["admin"] = key
 
-server:
-  api_key:
-    # ⚠️ Set your private 32-byte API keys (64 hex digits) 🚨
-    admin: ` + secureAPIPlaceholder + `
-    user:  ` + secureAPIPlaceholder + `
-  origins: localhost
-  listen:
-    ":8888": admin
-    ":2222": openai,goinfer,mcp
-    ":5143": llama-swap proxy
+		key, err = genAPIKey(debugMode)
+		if err != nil {
+			return err
+		}
+		cfg.Server.APIKeys["user"] = key
 
-llama:
-  exe: ./llama-server
-  args:
-    # --props: enable /props endpoint to change global properties at runtime
-    # --no-webui: no Web UI server
-    common: --props --no-webui --no-warmup
-    goinfer: --jinja --chat-template-file template.jinja
-`
-)
+		if debugMode {
+			fmt.Printf("WRN: Configuration file %s with DEBUG api key. This is not suitable for production use.\n", goinferCfgFile)
+		} else {
+			fmt.Printf("INF: Configuration file %s with secure API keys.\n", goinferCfgFile)
+		}
+	} else {
+		fmt.Printf("INF: Configuration file %s use API keys from environment.\n", goinferCfgFile)
+	}
+
+	yml, er := yaml.Marshal(&cfg)
+	if er != nil {
+		return errors.Wrap(er, errors.TypeConfiguration, "CONFIG_MARSHAL", "failed to write config file")
+	}
+
+	err = os.WriteFile(goinferCfgFile, yml, 0o600)
+	if err != nil {
+		return errors.Wrap(err, errors.TypeConfiguration, "CONFIG_WRITE_FAILED", "failed to write config file")
+	}
+
+	return validate(cfg)
+}
 
 // Load the configuration file.
 func Load(goinferCfgFile string) (*GoInferCfg, error) {
 	var cfg *GoInferCfg
 
-	// Load default config
-	err := yaml.Unmarshal([]byte(defaultGoInferConf), &cfg)
-	if err != nil {
-		return cfg, errors.Wrap(err, errors.TypeConfiguration, "DEFAULT_CONFIG_PARSE_FAILED", "failed to parse default config")
-	}
-
-	var yml []byte
-
 	// Load from file if specified
-	if goinferCfgFile != "" { //TODO: Use OpenFileIn() from Go-1.25
-		yml, err = os.ReadFile(filepath.Clean(goinferCfgFile))
+	if goinferCfgFile != "" {
+		yml, err := os.ReadFile(filepath.Clean(goinferCfgFile)) //TODO: Use OpenFileIn() from Go-1.25
 		if err != nil {
 			return cfg, errors.Wrap(err, errors.TypeConfiguration, "CONFIG_FILE_READ_FAILED", "failed to read "+goinferCfgFile)
 		}
-	}
 
-	return applyEnvVars(yml)
-}
-
-func applyEnvVars(yml []byte) (*GoInferCfg, error) {
-	var cfg *GoInferCfg
-
-	if len(yml) > 0 {
-		err := yaml.Unmarshal(yml, &cfg)
-		if err != nil {
-			return cfg, errors.Wrap(err, errors.TypeConfiguration, "CONFIG_UNMARSHAL_FAILED", "failed to unmarshal YAML data: "+string(yml[:100]))
+		if len(yml) > 0 {
+			err := yaml.Unmarshal(yml, &cfg)
+			if err != nil {
+				return cfg, errors.Wrap(err, errors.TypeConfiguration, "CONFIG_UNMARSHAL_FAILED", "failed to unmarshal YAML data: "+string(yml[:100]))
+			}
 		}
 	}
 
+	cfg, err := applyEnvVars(cfg)
+	if err != nil {
+		return cfg, err
+	}
+
+	// Validate configuration
+	err = validate(cfg)
+	if err != nil {
+		return cfg, err
+	}
+
+	return cfg, nil
+}
+
+func applyEnvVars(cfg *GoInferCfg) (*GoInferCfg, error) {
 	// Load environment variables
 	if dir := os.Getenv("GI_MODELS_DIR"); dir != "" {
 		cfg.ModelsDir = dir
@@ -129,23 +161,25 @@ func applyEnvVars(yml []byte) (*GoInferCfg, error) {
 		}
 	}
 
-	// Initialize API keys if empty
-	if cfg.Server.APIKeys == nil {
-		cfg.Server.APIKeys = make(map[string]string)
-	}
-
-	// Load API keys from environment
-	if key := os.Getenv("GI_API_KEY_ADMIN"); key != "" {
-		cfg.Server.APIKeys["admin"] = key
+	// Load user API key from environment
+	if key := os.Getenv("GI_API_KEY_USER"); key != "" {
+		if cfg.Server.APIKeys == nil {
+			cfg.Server.APIKeys = make(map[string]string, 2)
+		}
+		cfg.Server.APIKeys["user"] = key
 		if state.Verbose {
-			fmt.Println("INF: GI_API_KEY_ADMIN set")
+			fmt.Println("INF: api_key[user] = GI_API_KEY_USER")
 		}
 	}
 
-	if key := os.Getenv("GI_API_KEY_USER"); key != "" {
-		cfg.Server.APIKeys["user"] = key
+	// Load admin API key from environment
+	if key := os.Getenv("GI_API_KEY_ADMIN"); key != "" {
+		if cfg.Server.APIKeys == nil {
+			cfg.Server.APIKeys = make(map[string]string, 1)
+		}
+		cfg.Server.APIKeys["admin"] = key
 		if state.Verbose {
-			fmt.Println("INF: GI_API_KEY_USER set")
+			fmt.Println("INF: api_key[admin] = GI_API_KEY_ADMIN")
 		}
 	}
 
@@ -156,19 +190,13 @@ func applyEnvVars(yml []byte) (*GoInferCfg, error) {
 		}
 	}
 
-	// Validate configuration
-	err := validate(cfg)
-	if err != nil {
-		return cfg, errors.Wrap(err, errors.TypeConfiguration, "CONFIG_VALIDATION_FAILED", "failed to validate configuration")
-	}
-
 	return cfg, nil
 }
 
 func validate(cfg *GoInferCfg) error {
 	modelFiles, err := models.Dir(cfg.ModelsDir).Search()
 	if err != nil {
-		return errors.Wrap(err, errors.TypeValidation, "MODEL_SEARCH_FAILED", "failed to find model files")
+		return err
 	}
 	if len(modelFiles) == 0 {
 		fmt.Printf("WRN: No *.gguf files found in %s\n", cfg.ModelsDir)
@@ -183,7 +211,7 @@ func validate(cfg *GoInferCfg) error {
 
 	// Validate API keys
 	for k, v := range cfg.Server.APIKeys {
-		if v == secureAPIPlaceholder {
+		if strings.Contains(v, "PLEASE") {
 			return errors.Wrap(errors.ErrInvalidAPIKey, errors.TypeConfiguration, "API_KEY_NOT_SET", fmt.Sprintf("please set your private '%s' API key", k))
 		}
 		if len(v) < 64 {
@@ -197,63 +225,20 @@ func validate(cfg *GoInferCfg) error {
 	return nil
 }
 
-func GenAPIKey(debugMode bool) ([]byte, error) {
+func genAPIKey(debugMode bool) (string, error) {
 	if debugMode {
-		return []byte(debugAPIKey), nil
+		return debugAPIKey, nil
 	}
 
 	buf := make([]byte, 32)
 	_, err := rand.Read(buf)
 	if err != nil {
-		return nil, errors.Wrap(err, errors.TypeConfiguration, "RANDOM_READ_FAILED", "failed to generate random bytes")
+		return "", errors.Wrap(err, errors.TypeConfiguration, "RANDOM_READ_FAILED", "failed to generate random bytes")
 	}
 
-	apiKey := make([]byte, 64)
-	hex.Encode(apiKey, buf)
-	return apiKey, nil
-}
-
-// Create a configuration file.
-func Create(goinferCfgFile string, debugMode bool) error {
-	yml := []byte(defaultGoInferConf)
-
-	// Set API keys
-	key, err := GenAPIKey(debugMode)
-	if err != nil {
-		return errors.Wrap(err, errors.TypeConfiguration, "API_KEY_GEN_1_FAILED", "failed to generate first API key")
-	}
-	yml = bytes.Replace(yml, []byte(secureAPIPlaceholder), key, 1)
-
-	key, er := GenAPIKey(debugMode)
-	if er != nil {
-		return errors.Wrap(er, errors.TypeConfiguration, "API_KEY_GEN_2_FAILED", "failed to generate second API key")
-	}
-	yml = bytes.Replace(yml, []byte(secureAPIPlaceholder), key, 1)
-
-	// convert raw YAML to struct Cfg
-	cfg, err := applyEnvVars(yml)
-	if err != nil {
-		return errors.Wrap(err, errors.TypeConfiguration, "CONFIG_ENV_VALIDATE", "failed to write config file")
-	}
-
-	// convert back struct Cfg to YAML data
-	yml, err = yaml.Marshal(&cfg)
-	if err != nil {
-		return errors.Wrap(err, errors.TypeConfiguration, "CONFIG_MARSHAL", "failed to write config file")
-	}
-
-	err = os.WriteFile(goinferCfgFile, yml, 0o600)
-	if err != nil {
-		return errors.Wrap(err, errors.TypeConfiguration, "CONFIG_WRITE_FAILED", "failed to write config file")
-	}
-
-	if debugMode {
-		fmt.Printf("WRN: Configuration file %s created with DEBUG api key. This is not suitable for production use.\n", goinferCfgFile)
-	} else {
-		fmt.Printf("INF: Configuration file %s created successfully with secure API keys.\n", goinferCfgFile)
-	}
-
-	return nil
+	key := make([]byte, 64)
+	hex.Encode(key, buf)
+	return string(key), nil
 }
 
 // Print configuration.
@@ -278,28 +263,15 @@ func (cfg *GoInferCfg) Print() {
 	os.Stdout.Write(yml)
 }
 
-// GetAPIKey with preference order.
-func GetAPIKey(apiKeys map[string]string, preferred string) string {
-	if key, exists := apiKeys[preferred]; exists {
-		return key
-	}
-
-	if key, exists := apiKeys["user"]; exists {
-		return key
-	}
-
-	return apiKeys["admin"]
-}
-
 // GenerateProxyCfg generates the llama-swap-proxy configuration.
 func GenProxyCfg(cfg *GoInferCfg, proxyCfgFile string) error {
 	modelFiles, err := models.Dir(cfg.ModelsDir).Search()
 	if err != nil {
-		return errors.Wrap(err, errors.TypeConfiguration, "MODEL_SEARCH_FAILED", "failed to find model files")
+		return err
 	}
 
 	if len(modelFiles) == 0 {
-		return errors.Wrap(errors.ErrModelFilesNotFound, errors.TypeConfiguration, "NO_MODEL_FILES", "no model files found in directory: "+cfg.ModelsDir)
+		return err
 	}
 
 	for _, model := range modelFiles {
