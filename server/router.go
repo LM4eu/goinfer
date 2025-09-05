@@ -28,10 +28,20 @@ var (
 )
 
 func NewEcho(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
+	enableAdminWebUI := strings.Contains(services, "admin")
+	enableModelsEndpoint := strings.Contains(services, "model")
+	enableGoinferEndpoint := strings.Contains(services, "goinfer")
+	enableOpenAPIEndpoint := strings.Contains(services, "openai")
+
+	if !enableAdminWebUI && !enableModelsEndpoint && !enableGoinferEndpoint && !enableOpenAPIEndpoint {
+		fmt.Printf("WRN: Unexpected service %q because does not contain any of: model, goinfer, openai, admin\n", services)
+		return nil
+	}
+
 	e := echo.New()
 	e.HideBanner = true
 
-	// Add middleware logger
+	// Middleware logger
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "${method} ${status} ${uri}  ${latency_human} ${remote_ip} ${error}\n",
 	}))
@@ -40,6 +50,7 @@ func NewEcho(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
 		l.SetHeader("[${time_rfc3339}] ${level}")
 	}
 
+	// Middleware CORS
 	if cfg.Server.Origins != "" {
 		e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 			AllowOrigins:     strings.Split(cfg.Server.Origins, ","),
@@ -49,7 +60,7 @@ func NewEcho(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
 		}))
 	}
 
-	// Add unified error handling middleware
+	// Middleware unified errors
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			err := next(c)
@@ -60,10 +71,8 @@ func NewEcho(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
 		}
 	})
 
-	configured := false
-
 	// ------- Admin web frontend -------
-	if strings.Contains(services, "admin") {
+	if enableAdminWebUI {
 		e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
 			Root:       "dist",
 			Index:      "index.html",
@@ -71,43 +80,36 @@ func NewEcho(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
 			HTML5:      true,
 			Filesystem: http.FS(embeddedFiles),
 		}))
-
-		configured = true
+		fmt.Printf("INF: Listen GET %s/ (web UI)\n", addr)
 	}
 
 	// ------------ Models ------------
-	if strings.Contains(services, "model") {
+	if enableModelsEndpoint {
 		grp := e.Group("/models")
 		setupAPIKeyAuth(grp, cfg, "model")
 		grp.GET("", models.Dir(cfg.ModelsDir).Handler)
-
-		configured = true
+		fmt.Printf("INF: Listen GET %s/models (model files)\n", addr)
 	}
 
 	// ----- Inference (llama.cpp) -----
-	if strings.Contains(services, "goinfer") {
-		grp := e.Group("/completion")
+	if enableGoinferEndpoint {
+		grp := e.Group("/goinfer")
 		setupAPIKeyAuth(grp, cfg, "goinfer")
 		grp.POST("", inferHandler)
 		grp.GET("/abort", abortHandler)
-
-		configured = true
+		fmt.Printf("INF: Listen POST %s/goinfer (inference)\n", addr)
+		fmt.Printf("INF: Listen GET  %s/goinfer/abort\n", addr)
 	}
 
 	// ----- Inference OpenAI API -----
-	if strings.Contains(services, "openai") {
+	if enableOpenAPIEndpoint {
 		grp := e.Group("/v1")
 		grp.POST("/chat/completions", handleChatCompletions)
 		setupAPIKeyAuth(grp, cfg, "openai")
-
-		configured = true
+		fmt.Printf("INF: Listen POST %s/v1/chat/completions (inference)\n", addr)
 	}
 
-	if configured {
-		return e
-	}
-
-	return nil
+	return e
 }
 
 // setupAPIKeyAuth sets up API key authentication for a grp.
