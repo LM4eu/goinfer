@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"time"
 
-	ctxpkg "github.com/LM4eu/goinfer/ctx"
+	"github.com/LM4eu/goinfer/gic"
 	"github.com/LM4eu/goinfer/gie"
 	"github.com/LM4eu/goinfer/state"
 	"github.com/LM4eu/goinfer/types"
@@ -21,14 +21,13 @@ import (
 // Infer performs language model inference.
 func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resultChan, errorChan chan<- types.StreamedMsg) {
 	// Create context with request ID
-	reqID := ctxpkg.GenerateRequestID()
+	reqID := gic.GenReqID()
 	ctx = context.WithValue(ctx, "requestID", reqID)
 
 	// Early validation checks
-	err := ctx.Err()
-	if err != nil {
+	if ctx.Err() != nil {
 		giErr := gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CTX_CANCELED", "infer canceled")
-		ctxpkg.LogContextAwareError(ctx, "infer_start", giErr)
+		gic.LogCtxAwareError(ctx, "infer_start", giErr)
 		errorChan <- types.StreamedMsg{
 			Num:     0,
 			Content: giErr.Error(),
@@ -38,7 +37,7 @@ func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resultC
 	}
 
 	if query.Model.Name == "" {
-		err = gie.Wrap(gie.ErrModelNotLoaded, gie.TypeValidation, "MODEL_NOT_LOADED", "model not loaded: "+query.Model.Name)
+		err := gie.Wrap(gie.ErrModelNotLoaded, gie.TypeValidation, "MODEL_NOT_LOADED", "model not loaded: "+query.Model.Name)
 		errorChan <- types.StreamedMsg{
 			Num:     0,
 			Content: err.Error(),
@@ -53,14 +52,14 @@ func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resultC
 	}
 
 	// Execute inference
-	ntok, er := runInfer(ctx, c, query)
+	ntok, err := runInfer(ctx, c, query)
 
 	// Handle infer completion or failure
-	if er != nil {
+	if err != nil {
 		state.ContinueInferringController = false
 		errorChan <- types.StreamedMsg{
 			Num:     ntok + 1,
-			Content: gie.Wrap(er, gie.TypeInference, "INFERENCE_FAILED", "infer failed").Error(),
+			Content: gie.Wrap(err, gie.TypeInference, "INFERENCE_FAILED", "infer failed").Error(),
 			MsgType: types.ErrorMsgType,
 		}
 		return
@@ -68,8 +67,8 @@ func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resultC
 
 	// Handle streaming completion if needed
 	if query.Params.Stream {
-		er = completeStream(ctx, c, ntok)
-		if er != nil {
+		err = completeStream(ctx, c, ntok)
+		if err != nil {
 			return
 		}
 	}
@@ -109,8 +108,7 @@ func runInfer(ctx context.Context, c echo.Context, query *types.InferQuery) (int
 	maxRetries := 3
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		// Check context
-		err := ctx.Err()
-		if err != nil {
+		if ctx.Err() != nil {
 			giErr = gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CTX_CANCELED", "infer canceled")
 			break
 		}
@@ -154,18 +152,17 @@ func runInfer(ctx context.Context, c echo.Context, query *types.InferQuery) (int
 
 // completeStream handles streaming termination.
 func completeStream(ctx context.Context, c echo.Context, _ int) error {
-	err := ctx.Err()
-	if err != nil {
+	if ctx.Err() != nil {
 		er := gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "STREAM_CANCELED", "stream termination canceled")
-		ctxpkg.LogContextAwareError(ctx, "stream_termination", er)
+		gic.LogCtxAwareError(ctx, "stream_termination", er)
 		return er
 	}
 
-	err = sendTerm(ctx, c)
+	err := sendTerm(ctx, c)
 	if err != nil {
 		state.ContinueInferringController = false
 		er := gie.Wrap(err, gie.TypeInference, "STREAM_TERMINATION_FAILED", "stream termination failed")
-		ctxpkg.LogContextAwareError(ctx, "stream_termination", er)
+		gic.LogCtxAwareError(ctx, "stream_termination", er)
 		logError(ctx, "Llama", "cannot send stream termination", er)
 		return er
 	}
@@ -179,9 +176,8 @@ func streamToken(
 	c echo.Context, params *types.InferParams, startThinking time.Time,
 	startEmitting *time.Time, thinkingElapsed *time.Duration,
 ) error {
-	// Check context
-	err := ctx.Err()
-	if err != nil {
+	// Check context	err := 
+	if ctx.Err() != nil {
 		return gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CTX_CANCELED", "context canceled")
 	}
 
@@ -201,7 +197,7 @@ func streamToken(
 				},
 			}
 
-			err = write(ctx, c, jsonEncoder, smsg)
+			err := write(ctx, c, jsonEncoder, smsg)
 			if err != nil {
 				return gie.Wrap(err, gie.TypeInference, "STREAM_START_FAILED", "cannot stream start_emitting")
 			}
