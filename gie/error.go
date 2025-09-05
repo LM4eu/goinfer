@@ -2,30 +2,22 @@
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
 
-package gierr
+package gie
 
 import (
 	"fmt"
-	"net/http"
 )
 
-// ErrorType represents the type of error.
 type (
+	// ErrorType represents the type of error.
 	ErrorType string
 
-	// GoInferError is a structured error that includes type, code, and message.
-	GoInferError struct {
-		Cause   error     `json:"cause,omitempty"`
-		Type    ErrorType `json:"type"`
-		Code    string    `json:"code"`
-		Message string    `json:"message"`
-	}
-
-	// HTTPError represents an error with HTTP status code.
-	HTTPError struct {
-		*GoInferError
-
-		StatusCode int
+	// GogiError is a structured error that includes type, code, and message.
+	GogiError struct {
+		Cause   error     `json:"details,omitempty"` // Cause is serialized "details" in HTTP error response (JSON)
+		Type    ErrorType `json:"type,omitempty"`
+		Code    string    `json:"code,omitempty"`
+		Message string    `json:"message,omitempty"`
 	}
 )
 
@@ -87,69 +79,20 @@ var (
 	// Unauthorized errors.
 	ErrUnauthorized       = New(TypeUnauthorized, "UNAUTHORIZED", "unauthorized")
 	ErrInvalidCredentials = New(TypeUnauthorized, "INVALID_CREDENTIALS", "invalid credentials")
-
-	// Common HTTP error mappings.
-
-	HTTPBadRequest = func(err *GoInferError) *HTTPError {
-		return NewHTTPError(err.Type, err.Code, err.Message, http.StatusBadRequest)
-	}
-	HTTPUnauthorized = func(err *GoInferError) *HTTPError {
-		return NewHTTPError(err.Type, err.Code, err.Message, http.StatusUnauthorized)
-	}
-	HTTPNotFound = func(err *GoInferError) *HTTPError {
-		return NewHTTPError(err.Type, err.Code, err.Message, http.StatusNotFound)
-	}
-	HTTPStatusRequestTimeout = func(err *GoInferError) *HTTPError {
-		return NewHTTPError(err.Type, err.Code, err.Message, http.StatusRequestTimeout)
-	}
-	HTTPInternalServerError = func(err *GoInferError) *HTTPError {
-		return NewHTTPError(err.Type, err.Code, err.Message, http.StatusInternalServerError)
-	}
 )
 
-// ErrorToHTTP converts an AppError to an HTTPError with appropriate status code.
-func ErrorToHTTP(err *GoInferError) *HTTPError {
-	switch err.Type {
-	case TypeValidation:
-		return HTTPBadRequest(err)
-	case TypeUnauthorized:
-		return HTTPUnauthorized(err)
-	case TypeNotFound:
-		return HTTPNotFound(err)
-	case TypeTimeout:
-		return HTTPStatusRequestTimeout(err)
-	case TypeConfiguration, TypeInference, TypeServer:
-		return HTTPInternalServerError(err)
-	default:
-		return HTTPInternalServerError(err)
-	}
-}
-
-// Error implements the error interface.
-func (e *GoInferError) Error() string {
-	if e.Cause != nil {
-		return fmt.Sprintf("%s: %s (cause: %v)", e.Code, e.Message, e.Cause)
-	}
-	return fmt.Sprintf("%s: %s", e.Code, e.Message)
-}
-
-// Unwrap returns the underlying error for error unwrapping.
-func (e *GoInferError) Unwrap() error {
-	return e.Cause
-}
-
-// New creates a new AppError.
-func New(errType ErrorType, code, message string) *GoInferError {
-	return &GoInferError{
+// New creates a new GogiError.
+func New(errType ErrorType, code string, message string) *GogiError {
+	return &GogiError{
 		Type:    errType,
 		Code:    code,
 		Message: message,
 	}
 }
 
-// Wrap wraps an existing error with an AppError.
-func Wrap(err error, errType ErrorType, code, message string) *GoInferError {
-	return &GoInferError{
+// Wrap wraps an existing error with an GogiError.
+func Wrap(err error, errType ErrorType, code, message string) *GogiError {
+	return &GogiError{
 		Type:    errType,
 		Code:    code,
 		Message: message,
@@ -157,18 +100,15 @@ func Wrap(err error, errType ErrorType, code, message string) *GoInferError {
 	}
 }
 
-// NewHTTPError creates a new HTTPError.
-func NewHTTPError(errType ErrorType, code, message string, statusCode int) *HTTPError {
-	return &HTTPError{
-		GoInferError: New(errType, code, message),
-		StatusCode:   statusCode,
+// Error implements the error interface.
+func (e *GogiError) Error() string {
+	if e.Cause != nil {
+		return fmt.Sprintf("%s: %s (cause: %v)", e.Code, e.Message, e.Cause)
 	}
+	return fmt.Sprintf("%s: %s", e.Code, e.Message)
 }
 
-// WrapHTTPError wraps an existing error with an HTTPError.
-func WrapHTTPError(err error, errType ErrorType, code, message string, statusCode int) *HTTPError {
-	return &HTTPError{
-		GoInferError: Wrap(err, errType, code, message),
-		StatusCode:   statusCode,
-	}
+// Unwrap returns the underlying error for error unwrapping.
+func (e *GogiError) Unwrap() error {
+	return e.Cause
 }

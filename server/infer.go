@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/LM4eu/goinfer/gierr"
+	"github.com/LM4eu/goinfer/gie"
 	"github.com/LM4eu/goinfer/state"
 	"github.com/LM4eu/goinfer/types"
 	"github.com/labstack/echo/v4"
@@ -31,13 +31,13 @@ func inferHandler(c echo.Context) error {
 	reqMap := echo.Map{}
 	err := c.Bind(&reqMap)
 	if err != nil {
-		return gierr.HandleValidationError(c, gierr.ErrInvalidFormat)
+		return gie.HandleValidationError(c, gie.ErrInvalidFormat)
 	}
 
 	// Parse infer parameters directly
 	query, err := parseInferQuery(reqMap)
 	if err != nil {
-		return gierr.HandleValidationError(c, gierr.ErrInvalidParams)
+		return gie.HandleValidationError(c, gie.ErrInvalidParams)
 	}
 
 	// Setup streaming response if needed
@@ -77,14 +77,14 @@ func parseInferQuery(m echo.Map) (*types.InferQuery, error) {
 
 	// Check required prompt parameter
 	if _, ok := m["prompt"]; !ok {
-		return req, gierr.ErrPromptRequired
+		return req, gie.ErrPromptRequired
 	}
 
 	// Parse simple parameters directly
 	if val, ok := m["prompt"].(string); ok {
 		req.Prompt = val
 	} else {
-		return req, gierr.ErrInvalidPrompt
+		return req, gie.ErrInvalidPrompt
 	}
 
 	if val, ok := m["model"].(string); ok {
@@ -181,7 +181,7 @@ func execute(c echo.Context, ctx context.Context, query *types.InferQuery) (*typ
 
 	err := proxyManager.ForwardInference(ctx, query, c, resultChan, errorChan)
 	if err != nil {
-		return nil, gierr.Wrap(err, gierr.TypeInference, "PROXY_FORWARD_FAILED", "proxy manager forward inference failed")
+		return nil, gie.Wrap(err, gie.TypeInference, "PROXY_FORWARD_FAILED", "proxy manager forward inference failed")
 	}
 
 	// Process response from ProxyManager
@@ -190,21 +190,21 @@ func execute(c echo.Context, ctx context.Context, query *types.InferQuery) (*typ
 		if ok {
 			return &response, nil
 		}
-		return nil, gierr.ErrChannelClosed
+		return nil, gie.ErrChannelClosed
 
 	case message, ok := <-errorChan:
 		if ok {
 			if message.MsgType == types.ErrorMsgType {
-				return nil, gierr.Wrap(gierr.ErrInferenceFailed, gierr.TypeInference, "INFERENCE_ERROR", "infer error: "+message.Content)
+				return nil, gie.Wrap(gie.ErrInferenceFailed, gie.TypeInference, "INFERENCE_ERROR", "infer error: "+message.Content)
 			}
-			return nil, gierr.Wrap(gierr.ErrInferenceFailed, gierr.TypeInference, "INFERENCE_ERROR", fmt.Sprintf("infer error: %v", message))
+			return nil, gie.Wrap(gie.ErrInferenceFailed, gie.TypeInference, "INFERENCE_ERROR", fmt.Sprintf("infer error: %v", message))
 		}
-		return nil, gierr.ErrChannelClosed
+		return nil, gie.ErrChannelClosed
 
 	case <-ctx.Done():
 		// Client canceled request
 		state.ContinueInferringController = false
-		return nil, gierr.ErrClientCanceled
+		return nil, gie.ErrClientCanceled
 	}
 }
 
@@ -231,10 +231,10 @@ func populateStopPrompts(m echo.Map, gen *types.Generation) error {
 	}
 	slice, ok := v.([]any)
 	if !ok {
-		return gierr.Wrap(gierr.ErrInvalidParams, gierr.TypeValidation, "STOP_INVALID_TYPE", "stop must be an array")
+		return gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "STOP_INVALID_TYPE", "stop must be an array")
 	}
 	if len(slice) > 10 {
-		return gierr.Wrap(gierr.ErrInvalidParams, gierr.TypeValidation, "STOP_TOO_LARGE", "stop array too large (max 10)")
+		return gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "STOP_TOO_LARGE", "stop array too large (max 10)")
 	}
 	if len(slice) == 0 {
 		return nil
@@ -243,7 +243,7 @@ func populateStopPrompts(m echo.Map, gen *types.Generation) error {
 	for i, val := range slice {
 		str, ok := val.(string)
 		if !ok {
-			return gierr.Wrap(gierr.ErrInvalidParams, gierr.TypeValidation, "STOP_INVALID_ELEMENT", fmt.Sprintf("stop[%d] must be a string", i))
+			return gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "STOP_INVALID_ELEMENT", fmt.Sprintf("stop[%d] must be a string", i))
 		}
 		gen.StopPrompts[i] = str
 	}

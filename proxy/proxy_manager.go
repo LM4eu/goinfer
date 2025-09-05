@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/LM4eu/goinfer/gierr"
+	"github.com/LM4eu/goinfer/gie"
 	"github.com/LM4eu/goinfer/lm"
 	"github.com/LM4eu/goinfer/state"
 	"github.com/LM4eu/goinfer/types"
@@ -30,7 +30,7 @@ func (pm *ProxyManager) ForwardInference(ctx context.Context, query *types.Infer
 	if state.IsInferring {
 		errorChan <- types.StreamedMsg{
 			Num:     0,
-			Content: gierr.Wrap(gierr.ErrInferenceRunning, gierr.TypeInference, "INFERENCE_RUNNING", "infer already running").Error(),
+			Content: gie.Wrap(gie.ErrInferenceRunning, gie.TypeInference, "INFERENCE_RUNNING", "infer already running").Error(),
 			MsgType: types.ErrorMsgType,
 		}
 		return nil
@@ -56,7 +56,7 @@ func (pm *ProxyManager) ForwardInference(ctx context.Context, query *types.Infer
 		} else {
 			errorChan <- types.StreamedMsg{
 				Num:     0,
-				Content: gierr.Wrap(gierr.ErrChannelClosed, gierr.TypeInference, "CHANNEL_CLOSED", "infer channel closed unexpectedly").Error(),
+				Content: gie.Wrap(gie.ErrChannelClosed, gie.TypeInference, "CHANNEL_CLOSED", "infer channel closed unexpectedly").Error(),
 				MsgType: types.ErrorMsgType,
 			}
 		}
@@ -66,7 +66,7 @@ func (pm *ProxyManager) ForwardInference(ctx context.Context, query *types.Infer
 		} else {
 			errorChan <- types.StreamedMsg{
 				Num:     0,
-				Content: gierr.Wrap(gierr.ErrChannelClosed, gierr.TypeInference, "CHANNEL_CLOSED", "error channel closed unexpectedly").Error(),
+				Content: gie.Wrap(gie.ErrChannelClosed, gie.TypeInference, "CHANNEL_CLOSED", "error channel closed unexpectedly").Error(),
 				MsgType: types.ErrorMsgType,
 			}
 		}
@@ -76,7 +76,7 @@ func (pm *ProxyManager) ForwardInference(ctx context.Context, query *types.Infer
 		}
 		errorChan <- types.StreamedMsg{
 			Num:     0,
-			Content: gierr.Wrap(gierr.ErrRequestTimeout, gierr.TypeTimeout, "INFERENCE_TIMEOUT", "infer timeout").Error(),
+			Content: gie.Wrap(gie.ErrRequestTimeout, gie.TypeTimeout, "INFERENCE_TIMEOUT", "infer timeout").Error(),
 			MsgType: types.ErrorMsgType,
 		}
 	case <-ctx.Done():
@@ -84,7 +84,7 @@ func (pm *ProxyManager) ForwardInference(ctx context.Context, query *types.Infer
 		state.ContinueInferringController = false
 		errorChan <- types.StreamedMsg{
 			Num:     0,
-			Content: gierr.Wrap(gierr.ErrClientCanceled, gierr.TypeInference, "CLIENT_CANCELED", "req canceled by client").Error(),
+			Content: gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CLIENT_CANCELED", "req canceled by client").Error(),
 			MsgType: types.ErrorMsgType,
 		}
 	}
@@ -95,7 +95,7 @@ func (pm *ProxyManager) ForwardInference(ctx context.Context, query *types.Infer
 // AbortInference aborts an ongoing inference.
 func (pm *ProxyManager) AbortInference() error {
 	if !state.IsInferring {
-		return gierr.Wrap(gierr.ErrInferenceNotRunning, gierr.TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
+		return gie.Wrap(gie.ErrInferenceNotRunning, gie.TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
 	}
 
 	if state.Verbose {

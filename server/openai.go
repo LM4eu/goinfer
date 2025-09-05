@@ -7,7 +7,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/LM4eu/goinfer/gierr"
+	"github.com/LM4eu/goinfer/gie"
 	"github.com/LM4eu/goinfer/types"
 	"github.com/labstack/echo/v4"
 )
@@ -17,26 +17,26 @@ func handleChatCompletions(c echo.Context) error {
 	// Parse the OpenAI request into an InferQuery.
 	query, err := parseOpenAIRequest(c)
 	if err != nil {
-		return gierr.HandleValidationError(c, gierr.Wrap(err, gierr.TypeValidation, "OPENAI_PARSE_ERROR", "failed to parse OpenAI request"))
+		return gie.HandleValidationError(c, gie.Wrap(err, gie.TypeValidation, "OPENAI_PARSE_ERROR", "failed to parse OpenAI request"))
 	}
 
 	// Reuse the existing inference flow through ProxyManager.
 	// Create channels for streaming results.
-	resultChan := make(chan types.StreamedMsg)
-	errorChan := make(chan types.StreamedMsg)
+	resChan := make(chan types.StreamedMsg)
+	errChan := make(chan types.StreamedMsg)
 
 	// Execute inference with request context using ProxyManager.
-	err = proxyManager.ForwardInference(c.Request().Context(), query, c, resultChan, errorChan)
+	err = proxyManager.ForwardInference(c.Request().Context(), query, c, resChan, errChan)
 	if err != nil {
-		return gierr.HandleInferenceError(c, gierr.Wrap(err, gierr.TypeInference, "PROXY_FORWARD_FAILED", "proxy manager forward inference failed"))
+		return gie.HandleInferenceError(c, gie.Wrap(err, gie.TypeInference, "PROXY_FORWARD_FAILED", "proxy manager forward inference failed"))
 	}
 
 	// Wait for the first result or error to respond.
 	select {
-	case res := <-resultChan:
+	case res := <-resChan:
 		return c.JSON(http.StatusOK, res.Data)
-	case err := <-errorChan:
-		return gierr.HandleInferenceError(c, gierr.Wrap(gierr.ErrInferenceFailed, gierr.TypeInference, "INFERENCE_ERROR", err.Content))
+	case err := <-errChan:
+		return gie.HandleInferenceError(c, gie.Wrap(gie.ErrInferenceFailed, gie.TypeInference, "INFERENCE_ERROR", err.Content))
 	}
 }
 
@@ -53,7 +53,7 @@ func parseOpenAIRequest(c echo.Context) (*types.InferQuery, error) {
 	}
 	err := c.Bind(&req)
 	if err != nil {
-		return nil, gierr.Wrap(err, gierr.TypeValidation, "OPENAI_BIND_ERROR", "failed to bind OpenAI request")
+		return nil, gie.Wrap(err, gie.TypeValidation, "OPENAI_BIND_ERROR", "failed to bind OpenAI request")
 	}
 
 	query := &types.InferQuery{
