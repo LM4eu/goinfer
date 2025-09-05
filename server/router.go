@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/LM4eu/goinfer/conf"
-	"github.com/LM4eu/goinfer/errors"
+	"github.com/LM4eu/goinfer/gierr"
 	"github.com/LM4eu/goinfer/models"
 	"github.com/LM4eu/goinfer/proxy"
 	"github.com/labstack/echo/v4"
@@ -54,7 +54,7 @@ func NewEcho(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
 		return func(c echo.Context) error {
 			err := next(c)
 			if err != nil {
-				return errors.ErrorHandler(err, c)
+				return gierr.ErrorHandler(err, c)
 			}
 			return nil
 		}

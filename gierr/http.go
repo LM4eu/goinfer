@@ -2,7 +2,7 @@
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
 
-package errors
+package gierr
 
 import (
 	"errors"
@@ -20,7 +20,7 @@ type HTTPResponse struct {
 
 // ErrorToEchoResponse converts an AppError to an Echo error response.
 func ErrorToEchoResponse(c echo.Context, err error) error {
-	var appErr *AppError
+	var appErr *GoInferError
 	if errors.As(err, &appErr) {
 		httpErr := ErrorToHTTP(appErr)
 		response := HTTPResponse{
@@ -48,7 +48,7 @@ func ErrorToEchoResponse(c echo.Context, err error) error {
 
 // handleError centralizes error handling for HTTP responses.
 func handleError(c echo.Context, err error, expectedType ErrorType, wrapCode, wrapMsg string) error {
-	var appErr *AppError
+	var appErr *GoInferError
 	if errors.As(err, &appErr) && appErr.Type == expectedType {
 		httpErr := ErrorToHTTP(appErr)
 		resp := HTTPResponse{

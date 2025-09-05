@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/LM4eu/goinfer/errors"
+	"github.com/LM4eu/goinfer/gierr"
 	"github.com/LM4eu/goinfer/models"
 	"github.com/LM4eu/goinfer/state"
 	"github.com/mostlygeek/llama-swap/proxy"
@@ -94,12 +94,12 @@ func Create(goinferCfgFile string, debugMode bool) error {
 
 	yml, er := yaml.Marshal(&cfg)
 	if er != nil {
-		return errors.Wrap(er, errors.TypeConfiguration, "CONFIG_MARSHAL", "failed to write config file")
+		return gierr.Wrap(er, gierr.TypeConfiguration, "CONFIG_MARSHAL", "failed to write config file")
 	}
 
 	err = os.WriteFile(goinferCfgFile, yml, 0o600)
 	if err != nil {
-		return errors.Wrap(err, errors.TypeConfiguration, "CONFIG_WRITE_FAILED", "failed to write config file")
+		return gierr.Wrap(err, gierr.TypeConfiguration, "CONFIG_WRITE_FAILED", "failed to write config file")
 	}
 
 	return validate(cfg)
@@ -113,13 +113,13 @@ func Load(goinferCfgFile string) (*GoInferCfg, error) {
 	if goinferCfgFile != "" {
 		yml, err := os.ReadFile(filepath.Clean(goinferCfgFile)) //TODO: Use OpenFileIn() from Go-1.25
 		if err != nil {
-			return cfg, errors.Wrap(err, errors.TypeConfiguration, "CONFIG_FILE_READ_FAILED", "failed to read "+goinferCfgFile)
+			return cfg, gierr.Wrap(err, gierr.TypeConfiguration, "CONFIG_FILE_READ_FAILED", "failed to read "+goinferCfgFile)
 		}
 
 		if len(yml) > 0 {
 			err := yaml.Unmarshal(yml, &cfg)
 			if err != nil {
-				return cfg, errors.Wrap(err, errors.TypeConfiguration, "CONFIG_UNMARSHAL_FAILED", "failed to unmarshal YAML data: "+string(yml[:100]))
+				return cfg, gierr.Wrap(err, gierr.TypeConfiguration, "CONFIG_UNMARSHAL_FAILED", "failed to unmarshal YAML data: "+string(yml[:100]))
 			}
 		}
 	}
@@ -206,16 +206,16 @@ func validate(cfg *GoInferCfg) error {
 
 	// Ensure admin API key exists
 	if _, exists := cfg.Server.APIKeys["admin"]; !exists {
-		return errors.Wrap(errors.ErrAPIKeyMissing, errors.TypeConfiguration, "ADMIN_API_MISSING", "admin API key is missing")
+		return gierr.Wrap(gierr.ErrAPIKeyMissing, gierr.TypeConfiguration, "ADMIN_API_MISSING", "admin API key is missing")
 	}
 
 	// Validate API keys
 	for k, v := range cfg.Server.APIKeys {
 		if strings.Contains(v, "PLEASE") {
-			return errors.Wrap(errors.ErrInvalidAPIKey, errors.TypeConfiguration, "API_KEY_NOT_SET", fmt.Sprintf("please set your private '%s' API key", k))
+			return gierr.Wrap(gierr.ErrInvalidAPIKey, gierr.TypeConfiguration, "API_KEY_NOT_SET", fmt.Sprintf("please set your private '%s' API key", k))
 		}
 		if len(v) < 64 {
-			return errors.Wrap(errors.ErrInvalidAPIKey, errors.TypeConfiguration, "API_KEY_INVALID", fmt.Sprintf("invalid API key '%s': must be 64 hex digits", k))
+			return gierr.Wrap(gierr.ErrInvalidAPIKey, gierr.TypeConfiguration, "API_KEY_INVALID", fmt.Sprintf("invalid API key '%s': must be 64 hex digits", k))
 		}
 		if v == debugAPIKey {
 			fmt.Printf("WRN: api_key[%s]=DEBUG => security threat\n", k)
@@ -233,7 +233,7 @@ func genAPIKey(debugMode bool) (string, error) {
 	buf := make([]byte, 32)
 	_, err := rand.Read(buf)
 	if err != nil {
-		return "", errors.Wrap(err, errors.TypeConfiguration, "RANDOM_READ_FAILED", "failed to generate random bytes")
+		return "", gierr.Wrap(err, gierr.TypeConfiguration, "RANDOM_READ_FAILED", "failed to generate random bytes")
 	}
 
 	key := make([]byte, 64)
@@ -311,12 +311,12 @@ func GenProxyCfg(cfg *GoInferCfg, proxyCfgFile string) error {
 
 	yml, er := yaml.Marshal(&cfg.Proxy)
 	if er != nil {
-		return errors.Wrap(er, errors.TypeConfiguration, "CONFIG_MARSHAL_FAILED", "failed to marshal the llama-swap-proxy config")
+		return gierr.Wrap(er, gierr.TypeConfiguration, "CONFIG_MARSHAL_FAILED", "failed to marshal the llama-swap-proxy config")
 	}
 
 	err = os.WriteFile(proxyCfgFile, yml, 0o600)
 	if err != nil {
-		return errors.Wrap(err, errors.TypeConfiguration, "PROXY_WRITE_FAILED", "failed to write "+proxyCfgFile)
+		return gierr.Wrap(err, gierr.TypeConfiguration, "PROXY_WRITE_FAILED", "failed to write "+proxyCfgFile)
 	}
 
 	if state.Verbose {

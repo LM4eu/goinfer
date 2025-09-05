@@ -12,7 +12,7 @@ import (
 	"time"
 
 	ctxpkg "github.com/LM4eu/goinfer/ctx"
-	"github.com/LM4eu/goinfer/errors"
+	"github.com/LM4eu/goinfer/gierr"
 	"github.com/LM4eu/goinfer/state"
 	"github.com/LM4eu/goinfer/types"
 	"github.com/labstack/echo/v4"
@@ -27,7 +27,7 @@ func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resultC
 	// Early validation checks
 	err := ctx.Err()
 	if err != nil {
-		wrappedErr := errors.Wrap(errors.ErrClientCanceled, errors.TypeInference, "CTX_CANCELED", "infer canceled")
+		wrappedErr := gierr.Wrap(gierr.ErrClientCanceled, gierr.TypeInference, "CTX_CANCELED", "infer canceled")
 		ctxpkg.LogContextAwareError(ctx, "infer_start", wrappedErr)
 		errorChan <- types.StreamedMsg{
 			Num:     0,
@@ -38,7 +38,7 @@ func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resultC
 	}
 
 	if query.Model.Name == "" {
-		err = errors.Wrap(errors.ErrModelNotLoaded, errors.TypeValidation, "MODEL_NOT_LOADED", "model not loaded: "+query.Model.Name)
+		err = gierr.Wrap(gierr.ErrModelNotLoaded, gierr.TypeValidation, "MODEL_NOT_LOADED", "model not loaded: "+query.Model.Name)
 		errorChan <- types.StreamedMsg{
 			Num:     0,
 			Content: err.Error(),
@@ -60,7 +60,7 @@ func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resultC
 		state.ContinueInferringController = false
 		errorChan <- types.StreamedMsg{
 			Num:     ntok + 1,
-			Content: errors.Wrap(er, errors.TypeInference, "INFERENCE_FAILED", "infer failed").Error(),
+			Content: gierr.Wrap(er, gierr.TypeInference, "INFERENCE_FAILED", "infer failed").Error(),
 			MsgType: types.ErrorMsgType,
 		}
 		return
@@ -111,12 +111,12 @@ func runInfer(ctx context.Context, c echo.Context, query *types.InferQuery) (int
 		// Check context
 		err := ctx.Err()
 		if err != nil {
-			inferErr = errors.Wrap(errors.ErrClientCanceled, errors.TypeInference, "CTX_CANCELED", "infer canceled")
+			inferErr = gierr.Wrap(gierr.ErrClientCanceled, gierr.TypeInference, "CTX_CANCELED", "infer canceled")
 			break
 		}
 
 		if !state.ContinueInferringController {
-			inferErr = errors.Wrap(errors.ErrInferenceStopped, errors.TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
+			inferErr = gierr.Wrap(gierr.ErrInferenceStopped, gierr.TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
 			break
 		}
 
@@ -156,7 +156,7 @@ func runInfer(ctx context.Context, c echo.Context, query *types.InferQuery) (int
 func completeStream(ctx context.Context, c echo.Context, _ int) error {
 	err := ctx.Err()
 	if err != nil {
-		er := errors.Wrap(errors.ErrClientCanceled, errors.TypeInference, "STREAM_CANCELED", "stream termination canceled")
+		er := gierr.Wrap(gierr.ErrClientCanceled, gierr.TypeInference, "STREAM_CANCELED", "stream termination canceled")
 		ctxpkg.LogContextAwareError(ctx, "stream_termination", er)
 		return er
 	}
@@ -164,7 +164,7 @@ func completeStream(ctx context.Context, c echo.Context, _ int) error {
 	err = sendTerm(ctx, c)
 	if err != nil {
 		state.ContinueInferringController = false
-		er := errors.Wrap(err, errors.TypeInference, "STREAM_TERMINATION_FAILED", "stream termination failed")
+		er := gierr.Wrap(err, gierr.TypeInference, "STREAM_TERMINATION_FAILED", "stream termination failed")
 		ctxpkg.LogContextAwareError(ctx, "stream_termination", er)
 		logError(ctx, "Llama", "cannot send stream termination", er)
 		return er
@@ -182,7 +182,7 @@ func streamToken(
 	// Check context
 	err := ctx.Err()
 	if err != nil {
-		return errors.Wrap(errors.ErrClientCanceled, errors.TypeInference, "CTX_CANCELED", "context canceled")
+		return gierr.Wrap(gierr.ErrClientCanceled, gierr.TypeInference, "CTX_CANCELED", "context canceled")
 	}
 
 	// Handle first token
@@ -203,7 +203,7 @@ func streamToken(
 
 			err = write(ctx, c, jsonEncoder, smsg)
 			if err != nil {
-				return errors.Wrap(err, errors.TypeInference, "STREAM_START_FAILED", "cannot stream start_emitting")
+				return gierr.Wrap(err, gierr.TypeInference, "STREAM_START_FAILED", "cannot stream start_emitting")
 			}
 		}
 	}

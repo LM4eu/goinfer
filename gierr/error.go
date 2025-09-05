@@ -2,7 +2,7 @@
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
 
-package errors
+package gierr
 
 import (
 	"fmt"
@@ -13,8 +13,8 @@ import (
 type (
 	ErrorType string
 
-	// AppError is a structured error that includes type, code, and message.
-	AppError struct {
+	// GoInferError is a structured error that includes type, code, and message.
+	GoInferError struct {
 		Cause   error     `json:"cause,omitempty"`
 		Type    ErrorType `json:"type"`
 		Code    string    `json:"code"`
@@ -23,7 +23,7 @@ type (
 
 	// HTTPError represents an error with HTTP status code.
 	HTTPError struct {
-		*AppError
+		*GoInferError
 
 		StatusCode int
 	}
@@ -90,25 +90,25 @@ var (
 
 	// Common HTTP error mappings.
 
-	HTTPBadRequest = func(err *AppError) *HTTPError {
+	HTTPBadRequest = func(err *GoInferError) *HTTPError {
 		return NewHTTPError(err.Type, err.Code, err.Message, http.StatusBadRequest)
 	}
-	HTTPUnauthorized = func(err *AppError) *HTTPError {
+	HTTPUnauthorized = func(err *GoInferError) *HTTPError {
 		return NewHTTPError(err.Type, err.Code, err.Message, http.StatusUnauthorized)
 	}
-	HTTPNotFound = func(err *AppError) *HTTPError {
+	HTTPNotFound = func(err *GoInferError) *HTTPError {
 		return NewHTTPError(err.Type, err.Code, err.Message, http.StatusNotFound)
 	}
-	HTTPStatusRequestTimeout = func(err *AppError) *HTTPError {
+	HTTPStatusRequestTimeout = func(err *GoInferError) *HTTPError {
 		return NewHTTPError(err.Type, err.Code, err.Message, http.StatusRequestTimeout)
 	}
-	HTTPInternalServerError = func(err *AppError) *HTTPError {
+	HTTPInternalServerError = func(err *GoInferError) *HTTPError {
 		return NewHTTPError(err.Type, err.Code, err.Message, http.StatusInternalServerError)
 	}
 )
 
 // ErrorToHTTP converts an AppError to an HTTPError with appropriate status code.
-func ErrorToHTTP(err *AppError) *HTTPError {
+func ErrorToHTTP(err *GoInferError) *HTTPError {
 	switch err.Type {
 	case TypeValidation:
 		return HTTPBadRequest(err)
@@ -126,7 +126,7 @@ func ErrorToHTTP(err *AppError) *HTTPError {
 }
 
 // Error implements the error interface.
-func (e *AppError) Error() string {
+func (e *GoInferError) Error() string {
 	if e.Cause != nil {
 		return fmt.Sprintf("%s: %s (cause: %v)", e.Code, e.Message, e.Cause)
 	}
@@ -134,13 +134,13 @@ func (e *AppError) Error() string {
 }
 
 // Unwrap returns the underlying error for error unwrapping.
-func (e *AppError) Unwrap() error {
+func (e *GoInferError) Unwrap() error {
 	return e.Cause
 }
 
 // New creates a new AppError.
-func New(errType ErrorType, code, message string) *AppError {
-	return &AppError{
+func New(errType ErrorType, code, message string) *GoInferError {
+	return &GoInferError{
 		Type:    errType,
 		Code:    code,
 		Message: message,
@@ -148,8 +148,8 @@ func New(errType ErrorType, code, message string) *AppError {
 }
 
 // Wrap wraps an existing error with an AppError.
-func Wrap(err error, errType ErrorType, code, message string) *AppError {
-	return &AppError{
+func Wrap(err error, errType ErrorType, code, message string) *GoInferError {
+	return &GoInferError{
 		Type:    errType,
 		Code:    code,
 		Message: message,
@@ -160,15 +160,15 @@ func Wrap(err error, errType ErrorType, code, message string) *AppError {
 // NewHTTPError creates a new HTTPError.
 func NewHTTPError(errType ErrorType, code, message string, statusCode int) *HTTPError {
 	return &HTTPError{
-		AppError:   New(errType, code, message),
-		StatusCode: statusCode,
+		GoInferError: New(errType, code, message),
+		StatusCode:   statusCode,
 	}
 }
 
 // WrapHTTPError wraps an existing error with an HTTPError.
 func WrapHTTPError(err error, errType ErrorType, code, message string, statusCode int) *HTTPError {
 	return &HTTPError{
-		AppError:   Wrap(err, errType, code, message),
-		StatusCode: statusCode,
+		GoInferError: Wrap(err, errType, code, message),
+		StatusCode:   statusCode,
 	}
 }
