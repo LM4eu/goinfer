@@ -248,9 +248,9 @@ func (cfg *GoInferCfg) Print() {
 	fmt.Printf("  GI_MODELS_DIR    = %s\n", os.Getenv("GI_MODELS_DIR"))
 	fmt.Printf("  GI_HOST          = %s\n", os.Getenv("GI_HOST"))
 	fmt.Printf("  GI_ORIGINS       = %s\n", os.Getenv("GI_ORIGINS"))
-	fmt.Printf("  GI_API_KEY_ADMIN = set\n")
-	fmt.Printf("  GI_API_KEY_USER  = set\n")
-	fmt.Printf("  GI_LLAMA_EXE     =%s\n", os.Getenv("GI_LLAMA_EXE"))
+	fmt.Printf("  GI_API_KEY_ADMIN = %d characters\n", len(os.Getenv("GI_API_KEY_ADMIN")))
+	fmt.Printf("  GI_API_KEY_USER  = %d characters\n", len(os.Getenv("GI_API_KEY_USER")))
+	fmt.Printf("  GI_LLAMA_EXE     = %s\n", os.Getenv("GI_LLAMA_EXE"))
 
 	fmt.Println("-----------------------------")
 
@@ -261,6 +261,8 @@ func (cfg *GoInferCfg) Print() {
 	}
 
 	os.Stdout.Write(yml)
+
+	fmt.Println("-----------------------------")
 }
 
 // GenerateProxyCfg generates the llama-swap-proxy configuration.
