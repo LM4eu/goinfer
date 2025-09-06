@@ -22,10 +22,10 @@ import (
 
 type (
 	GoInferCfg struct {
-		Llama     LlamaCfg     `json:"llama,omitempty"      yaml:"llama,omitempty"`
-		Server    ServerCfg    `json:"server,omitempty"     yaml:"server,omitempty"`
+		Llama     LlamaCfg     `json:"llama"                yaml:"llama"`
+		Server    ServerCfg    `json:"server"               yaml:"server"`
+		Proxy     proxy.Config `json:"proxy"                yaml:"proxy"`
 		ModelsDir string       `json:"models_dir,omitempty" yaml:"models_dir,omitempty"`
-		Proxy     proxy.Config `json:"proxy,omitempty"      yaml:"proxy,omitempty"`
 		Verbose   bool         `json:"verbose,omitempty"    yaml:"verbose,omitempty"`
 	}
 
