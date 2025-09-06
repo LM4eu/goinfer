@@ -1,4 +1,4 @@
-.pytest_cache
+*.gguf
 /.old-code
 /.vscode
 /docsite/dist
