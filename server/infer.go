@@ -22,7 +22,7 @@ func inferHandler(c echo.Context) error {
 	defer cancel()
 
 	// Check if infer is already running using ProxyManager
-	if proxyManager.IsInferring() {
+	if proxyManager.IsInferring {
 		fmt.Println("Infer already running")
 		return c.NoContent(http.StatusAccepted)
 	}

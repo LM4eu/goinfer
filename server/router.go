@@ -21,7 +21,7 @@ import (
 
 var (
 	// The proxyManager is the shared ProxyManager instance for all server handlers.
-	proxyManager = proxy.NewProxyManager()
+	proxyManager = &proxy.ProxyManager{}
 
 	//go:embed all:dist
 	embeddedFiles embed.FS

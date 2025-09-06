@@ -17,17 +17,12 @@ import (
 )
 
 // ProxyManager manages proxying requests to the backend LLM engine.
-type ProxyManager struct{}
-
-// NewProxyManager creates a new ProxyManager instance.
-func NewProxyManager() *ProxyManager {
-	return &ProxyManager{}
-}
+type ProxyManager struct{ IsInferring bool }
 
 // ForwardInference forwards an inference request to the backend.
 func (pm *ProxyManager) ForwardInference(ctx context.Context, query *types.InferQuery, c echo.Context, resultChan, errorChan chan<- types.StreamedMsg) error {
 	// Check if infer is already running
-	if state.IsInferring {
+	if pm.IsInferring {
 		errorChan <- types.StreamedMsg{
 			Num:     0,
 			Content: gie.Wrap(gie.ErrInferenceRunning, gie.TypeInference, "INFERENCE_RUNNING", "infer already running").Error(),
@@ -94,7 +89,7 @@ func (pm *ProxyManager) ForwardInference(ctx context.Context, query *types.Infer
 
 // AbortInference aborts an ongoing inference.
 func (pm *ProxyManager) AbortInference() error {
-	if !state.IsInferring {
+	if !pm.IsInferring {
 		return gie.Wrap(gie.ErrInferenceNotRunning, gie.TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
 	}
 
@@ -104,19 +99,4 @@ func (pm *ProxyManager) AbortInference() error {
 
 	state.ContinueInferringController = false
 	return nil
-}
-
-// IsInferring returns true if an inference is currently running.
-func (pm *ProxyManager) IsInferring() bool {
-	return state.IsInferring
-}
-
-// ForwardToLlama forwards a request to the llama backend.
-// This function is kept for backward compatibility but delegates to the ProxyManager.
-func ForwardToLlama(c echo.Context) error {
-	// This function is deprecated and kept for backward compatibility.
-	// New code should use the ProxyManager interface directly.
-	// For simple requests, we can't use the full ProxyManager here without
-	// the proper context and query structure, so we return a meaningful error
-	return c.String(501, "ForwardToLlama deprecated: Use ProxyManager interface instead")
 }

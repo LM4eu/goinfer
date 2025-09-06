@@ -18,6 +18,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+var IsInferringTODO bool
+
 // Infer performs language model inference.
 func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resultChan, errorChan chan<- types.StreamedMsg) {
 	// Create context with request ID
@@ -95,7 +97,7 @@ func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resultC
 // runInfer performs the actual inference with token streaming.
 func runInfer(ctx context.Context, c echo.Context, query *types.InferQuery) (int, error) {
 	// Start the infer process
-	state.IsInferring = true
+	IsInferringTODO = true
 	state.ContinueInferringController = true
 
 	ntok := 0
@@ -146,7 +148,7 @@ func runInfer(ctx context.Context, c echo.Context, query *types.InferQuery) (int
 		}
 	}
 
-	state.IsInferring = false
+	IsInferringTODO = false
 	return ntok, giErr
 }
 

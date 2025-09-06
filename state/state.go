@@ -11,5 +11,4 @@ var (
 
 	// Inference state.
 	ContinueInferringController = true
-	IsInferring                 = false
 )
