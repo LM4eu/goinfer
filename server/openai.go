@@ -36,7 +36,7 @@ func handleChatCompletions(c echo.Context) error {
 	case res := <-resChan:
 		return c.JSON(http.StatusOK, res.Data)
 	case err := <-errChan:
-		return gie.HandleInferenceError(c, gie.Wrap(gie.ErrInferenceFailed, gie.TypeInference, "INFERENCE_ERROR", err.Content))
+		return gie.HandleInferenceError(c, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", err.Content))
 	}
 }
 

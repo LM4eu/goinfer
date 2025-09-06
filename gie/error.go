@@ -56,13 +56,13 @@ var (
 	ErrProxyConfigFailed  = newGIE(TypeConfiguration, "PROXY_CONFIG_FAILED", "failed to configure proxy")
 
 	// Inference errors.
-	ErrInferenceRunning    = newGIE(TypeInference, "INFERENCE_RUNNING", "infer already running")
-	ErrInferenceNotRunning = newGIE(TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
-	ErrInferenceFailed     = newGIE(TypeInference, "INFERENCE_FAILED", "infer failed")
-	ErrInferenceCanceled   = newGIE(TypeInference, "INFERENCE_CANCELED", "infer canceled")
-	ErrInferenceStopped    = newGIE(TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
-	ErrChannelClosed       = newGIE(TypeInference, "CHANNEL_CLOSED", "channel closed unexpectedly")
-	ErrClientCanceled      = newGIE(TypeInference, "CLIENT_CANCELED", "request canceled by client")
+	ErrInferRunning    = newGIE(TypeInference, "INFERENCE_RUNNING", "infer already running")
+	ErrInferNotRunning = newGIE(TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
+	ErrInferFailed     = newGIE(TypeInference, "INFERENCE_FAILED", "infer failed")
+	ErrInferCanceled   = newGIE(TypeInference, "INFERENCE_CANCELED", "infer canceled")
+	ErrInferStopped    = newGIE(TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
+	ErrChanClosed      = newGIE(TypeInference, "CHANNEL_CLOSED", "channel closed unexpectedly")
+	ErrClientCanceled  = newGIE(TypeInference, "CLIENT_CANCELED", "request canceled by client")
 
 	// Server errors.
 	ErrServerStart    = newGIE(TypeServer, "SERVER_START_FAILED", "failed to start server")
@@ -70,8 +70,8 @@ var (
 	ErrProxyShutdown  = newGIE(TypeServer, "PROXY_SHUTDOWN_FAILED", "failed to shutdown proxy")
 
 	// Timeout errors.
-	ErrRequestTimeout = newGIE(TypeTimeout, "REQUEST_TIMEOUT", "request timeout")
-	ErrStreamTimeout  = newGIE(TypeTimeout, "STREAM_TIMEOUT", "stream timeout")
+	ErrReqTimeout    = newGIE(TypeTimeout, "REQUEST_TIMEOUT", "request timeout")
+	ErrStreamTimeout = newGIE(TypeTimeout, "STREAM_TIMEOUT", "stream timeout")
 
 	// NotFound errors.
 	ErrModelNotFound    = newGIE(TypeNotFound, "MODEL_NOT_FOUND", "model not found")

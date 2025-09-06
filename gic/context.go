@@ -28,13 +28,13 @@ func LogCtxAwareError(ctx context.Context, operation string, err error) {
 
 // getReqID extracts the request ID from context or generates a new one.
 func getReqID(ctx context.Context) string {
-	requestID := ctx.Value("requestID")
-	if requestID == nil {
+	reqID := ctx.Value("requestID")
+	if reqID == nil {
 		return GenReqID()
 	}
-	rid, ok := requestID.(string)
+	id, ok := reqID.(string)
 	if ok {
-		return rid
+		return id
 	}
 	// Fallback – generate a new ID if the stored value is not a string
 	return GenReqID()

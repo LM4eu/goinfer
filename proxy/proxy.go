@@ -20,12 +20,12 @@ import (
 type ProxyManager struct{ IsInferring bool }
 
 // ForwardInference forwards an inference request to the backend.
-func (pm *ProxyManager) ForwardInference(ctx context.Context, query *types.InferQuery, c echo.Context, resultChan, errorChan chan<- types.StreamedMsg) error {
+func (pm *ProxyManager) ForwardInference(ctx context.Context, query *types.InferQuery, c echo.Context, resChan, errChan chan<- types.StreamedMsg) error {
 	// Check if infer is already running
 	if pm.IsInferring {
-		errorChan <- types.StreamedMsg{
+		errChan <- types.StreamedMsg{
 			Num:     0,
-			Content: gie.Wrap(gie.ErrInferenceRunning, gie.TypeInference, "INFERENCE_RUNNING", "infer already running").Error(),
+			Content: gie.Wrap(gie.ErrInferRunning, gie.TypeInference, "INFERENCE_RUNNING", "infer already running").Error(),
 			MsgType: types.ErrorMsgType,
 		}
 		return nil
@@ -35,33 +35,33 @@ func (pm *ProxyManager) ForwardInference(ctx context.Context, query *types.Infer
 	inferCtx, cancel := context.WithTimeout(ctx, time.Minute*5)
 	defer cancel()
 
-	resultChanInternal := make(chan types.StreamedMsg)
-	errorChanInternal := make(chan types.StreamedMsg)
-	defer close(resultChanInternal)
-	defer close(errorChanInternal)
+	resChanInternal := make(chan types.StreamedMsg)
+	errChanInternal := make(chan types.StreamedMsg)
+	defer close(resChanInternal)
+	defer close(errChanInternal)
 
 	// Call the existing lm.Infer function through the proxy
-	go lm.Infer(inferCtx, query, c, resultChanInternal, errorChanInternal)
+	go lm.Infer(inferCtx, query, c, resChanInternal, errChanInternal)
 
 	// Process response and forward to caller channels
 	select {
-	case response, ok := <-resultChanInternal:
+	case response, ok := <-resChanInternal:
 		if ok {
-			resultChan <- response
+			resChan <- response
 		} else {
-			errorChan <- types.StreamedMsg{
+			errChan <- types.StreamedMsg{
 				Num:     0,
-				Content: gie.Wrap(gie.ErrChannelClosed, gie.TypeInference, "CHANNEL_CLOSED", "infer channel closed unexpectedly").Error(),
+				Content: gie.Wrap(gie.ErrChanClosed, gie.TypeInference, "CHANNEL_CLOSED", "infer channel closed unexpectedly").Error(),
 				MsgType: types.ErrorMsgType,
 			}
 		}
-	case message, ok := <-errorChanInternal:
+	case message, ok := <-errChanInternal:
 		if ok {
-			errorChan <- message
+			errChan <- message
 		} else {
-			errorChan <- types.StreamedMsg{
+			errChan <- types.StreamedMsg{
 				Num:     0,
-				Content: gie.Wrap(gie.ErrChannelClosed, gie.TypeInference, "CHANNEL_CLOSED", "error channel closed unexpectedly").Error(),
+				Content: gie.Wrap(gie.ErrChanClosed, gie.TypeInference, "CHANNEL_CLOSED", "error channel closed unexpectedly").Error(),
 				MsgType: types.ErrorMsgType,
 			}
 		}
@@ -69,15 +69,15 @@ func (pm *ProxyManager) ForwardInference(ctx context.Context, query *types.Infer
 		if state.Debug {
 			fmt.Printf("DBG: Infer timeout\n")
 		}
-		errorChan <- types.StreamedMsg{
+		errChan <- types.StreamedMsg{
 			Num:     0,
-			Content: gie.Wrap(gie.ErrRequestTimeout, gie.TypeTimeout, "INFERENCE_TIMEOUT", "infer timeout").Error(),
+			Content: gie.Wrap(gie.ErrReqTimeout, gie.TypeTimeout, "INFERENCE_TIMEOUT", "infer timeout").Error(),
 			MsgType: types.ErrorMsgType,
 		}
 	case <-ctx.Done():
 		// Client canceled request
 		state.ContinueInferringController = false
-		errorChan <- types.StreamedMsg{
+		errChan <- types.StreamedMsg{
 			Num:     0,
 			Content: gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CLIENT_CANCELED", "req canceled by client").Error(),
 			MsgType: types.ErrorMsgType,
@@ -90,7 +90,7 @@ func (pm *ProxyManager) ForwardInference(ctx context.Context, query *types.Infer
 // AbortInference aborts an ongoing inference.
 func (pm *ProxyManager) AbortInference() error {
 	if !pm.IsInferring {
-		return gie.Wrap(gie.ErrInferenceNotRunning, gie.TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
+		return gie.Wrap(gie.ErrInferNotRunning, gie.TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
 	}
 
 	if state.Verbose {

@@ -174,32 +174,32 @@ func parseInferQuery(m echo.Map) (*types.InferQuery, error) {
 // execute executes inference using ProxyManager.
 func execute(c echo.Context, ctx context.Context, query *types.InferQuery) (*types.StreamedMsg, error) {
 	// Execute infer through ProxyManager
-	resultChan := make(chan types.StreamedMsg)
+	resChan := make(chan types.StreamedMsg)
 	errorChan := make(chan types.StreamedMsg)
-	defer close(resultChan)
+	defer close(resChan)
 	defer close(errorChan)
 
-	err := proxyManager.ForwardInference(ctx, query, c, resultChan, errorChan)
+	err := proxyManager.ForwardInference(ctx, query, c, resChan, errorChan)
 	if err != nil {
 		return nil, gie.Wrap(err, gie.TypeInference, "PROXY_FORWARD_FAILED", "proxy manager forward inference failed")
 	}
 
 	// Process response from ProxyManager
 	select {
-	case response, ok := <-resultChan:
+	case response, ok := <-resChan:
 		if ok {
 			return &response, nil
 		}
-		return nil, gie.ErrChannelClosed
+		return nil, gie.ErrChanClosed
 
 	case message, ok := <-errorChan:
 		if ok {
 			if message.MsgType == types.ErrorMsgType {
-				return nil, gie.Wrap(gie.ErrInferenceFailed, gie.TypeInference, "INFERENCE_ERROR", "infer error: "+message.Content)
+				return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", "infer error: "+message.Content)
 			}
-			return nil, gie.Wrap(gie.ErrInferenceFailed, gie.TypeInference, "INFERENCE_ERROR", fmt.Sprintf("infer error: %v", message))
+			return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", fmt.Sprintf("infer error: %v", message))
 		}
-		return nil, gie.ErrChannelClosed
+		return nil, gie.ErrChanClosed
 
 	case <-ctx.Done():
 		// Client canceled request

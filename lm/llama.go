@@ -21,7 +21,7 @@ import (
 var IsInferringTODO bool
 
 // Infer performs language model inference.
-func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resultChan, errorChan chan<- types.StreamedMsg) {
+func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resChan, errorChan chan<- types.StreamedMsg) {
 	// Create context with request ID
 	reqID := gic.GenReqID()
 	ctx = context.WithValue(ctx, "requestID", reqID)
@@ -90,7 +90,7 @@ func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resultC
 			"timestamp":  time.Now().UTC().Format(time.RFC3339),
 		},
 	}
-	resultChan <- successMsg
+	resChan <- successMsg
 }
 
 // runInfer performs the actual inference with token streaming.
@@ -115,7 +115,7 @@ func runInfer(ctx context.Context, c echo.Context, query *types.InferQuery) (int
 		}
 
 		if !state.ContinueInferringController {
-			giErr = gie.Wrap(gie.ErrInferenceStopped, gie.TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
+			giErr = gie.Wrap(gie.ErrInferStopped, gie.TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
 			break
 		}
 
