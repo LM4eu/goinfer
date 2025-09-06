@@ -28,7 +28,7 @@ import (
 
 const (
 	goInferCfgFile = "goinfer.yml"
-	proxyCfgFile = "llama-swap.yml"
+	proxyCfgFile   = "llama-swap.yml"
 )
 
 func main() {
@@ -144,7 +144,7 @@ func startHTTPServers(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.G
 		if strings.Contains(services, "swap") {
 			continue // reserved for llama-swap proxy
 		}
-		if len(addr) == 0 || addr[0] == ':' {
+		if addr == "" || addr[0] == ':' {
 			addr = cfg.Server.Host + addr
 		}
 		e := server.NewEcho(cfg, addr, services)

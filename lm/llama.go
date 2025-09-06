@@ -55,7 +55,6 @@ func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resultC
 
 	// Execute inference
 	ntok, err := runInfer(ctx, c, query)
-
 	// Handle infer completion or failure
 	if err != nil {
 		state.ContinueInferringController = false
@@ -178,7 +177,7 @@ func streamToken(
 	c echo.Context, params *types.InferParams, startThinking time.Time,
 	startEmitting *time.Time, thinkingElapsed *time.Duration,
 ) error {
-	// Check context	err := 
+	// Check context	err :=
 	if ctx.Err() != nil {
 		return gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CTX_CANCELED", "context canceled")
 	}

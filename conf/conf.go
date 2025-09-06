@@ -22,10 +22,10 @@ import (
 
 type (
 	GoInferCfg struct {
-		Llama     LlamaCfg     `json:"llama"                yaml:"llama"`
 		Server    ServerCfg    `json:"server"               yaml:"server"`
-		Proxy     proxy.Config `json:"proxy"                yaml:"proxy"`
+		Llama     LlamaCfg     `json:"llama"                yaml:"llama"`
 		ModelsDir string       `json:"models_dir,omitempty" yaml:"models_dir,omitempty"`
+		Proxy     proxy.Config `json:"proxy"                yaml:"proxy"`
 		Verbose   bool         `json:"verbose,omitempty"    yaml:"verbose,omitempty"`
 	}
 
@@ -50,38 +50,30 @@ var defaultGoInferConf = GoInferCfg{
 		Listen: map[string]string{
 			":8888": "admin",
 			":2222": "openai,goinfer,mcp",
-			":5143": "llama-swap proxy"},
+			":5143": "llama-swap proxy",
+		},
 		APIKeys: map[string]string{},
 		Host:    "",
-		Origins: "localhost"},
+		Origins: "localhost",
+	},
 	Llama: LlamaCfg{
 		Exe: "./llama-server",
 		Args: map[string]string{
 			"common":  "--no-webui --no-warmup",
 			"goinfer": "--jinja --chat-template-file template.jinja",
-		}},
+		},
+	},
 }
 
 // Create a configuration file.
 func Create(goinferCfgFile string, debugMode bool) error {
-	cfg, err := applyEnvVars(&defaultGoInferConf)
-	if err != nil {
-		return err
-	}
+	cfg := defaultGoInferConf
+	applyEnvVars(&cfg)
 
 	// Set API keys
 	if len(cfg.Server.APIKeys) == 0 {
-		key, err := genAPIKey(debugMode)
-		if err != nil {
-			return err
-		}
-		cfg.Server.APIKeys["admin"] = key
-
-		key, err = genAPIKey(debugMode)
-		if err != nil {
-			return err
-		}
-		cfg.Server.APIKeys["user"] = key
+		cfg.Server.APIKeys["admin"] = genAPIKey(debugMode)
+		cfg.Server.APIKeys["user"] = genAPIKey(debugMode)
 
 		if debugMode {
 			fmt.Printf("WRN: Configuration file %s with DEBUG api key. This is not suitable for production use.\n", goinferCfgFile)
@@ -92,9 +84,9 @@ func Create(goinferCfgFile string, debugMode bool) error {
 		fmt.Printf("INF: Configuration file %s use API keys from environment.\n", goinferCfgFile)
 	}
 
-	yml, er := yaml.Marshal(&cfg)
-	if er != nil {
-		return gie.Wrap(er, gie.TypeConfiguration, "CONFIG_MARSHAL", "failed to write config file")
+	yml, err := yaml.Marshal(&cfg)
+	if err != nil {
+		return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_MARSHAL", "failed to write config file")
 	}
 
 	err = os.WriteFile(goinferCfgFile, yml, 0o600)
@@ -102,7 +94,7 @@ func Create(goinferCfgFile string, debugMode bool) error {
 		return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_WRITE_FAILED", "failed to write config file")
 	}
 
-	return validate(cfg)
+	return validate(&cfg)
 }
 
 // Load the configuration file.
@@ -111,7 +103,7 @@ func Load(goinferCfgFile string) (*GoInferCfg, error) {
 
 	// Load from file if specified
 	if goinferCfgFile != "" {
-		yml, err := os.ReadFile(filepath.Clean(goinferCfgFile)) //TODO: Use OpenFileIn() from Go-1.25
+		yml, err := os.ReadFile(filepath.Clean(goinferCfgFile)) // TODO: Use OpenFileIn() from Go-1.25
 		if err != nil {
 			return cfg, gie.Wrap(err, gie.TypeConfiguration, "CONFIG_FILE_READ_FAILED", "failed to read "+goinferCfgFile)
 		}
@@ -124,13 +116,10 @@ func Load(goinferCfgFile string) (*GoInferCfg, error) {
 		}
 	}
 
-	cfg, err := applyEnvVars(cfg)
-	if err != nil {
-		return cfg, err
-	}
+	applyEnvVars(cfg)
 
 	// Validate configuration
-	err = validate(cfg)
+	err := validate(cfg)
 	if err != nil {
 		return cfg, err
 	}
@@ -138,7 +127,7 @@ func Load(goinferCfgFile string) (*GoInferCfg, error) {
 	return cfg, nil
 }
 
-func applyEnvVars(cfg *GoInferCfg) (*GoInferCfg, error) {
+func applyEnvVars(cfg *GoInferCfg) {
 	// Load environment variables
 	if dir := os.Getenv("GI_MODELS_DIR"); dir != "" {
 		cfg.ModelsDir = dir
@@ -189,8 +178,6 @@ func applyEnvVars(cfg *GoInferCfg) (*GoInferCfg, error) {
 			fmt.Printf("INF: GI_LLAMA_EXE =%s\n", exe)
 		}
 	}
-
-	return cfg, nil
 }
 
 func validate(cfg *GoInferCfg) error {
@@ -225,20 +212,21 @@ func validate(cfg *GoInferCfg) error {
 	return nil
 }
 
-func genAPIKey(debugMode bool) (string, error) {
+func genAPIKey(debugMode bool) string {
 	if debugMode {
-		return debugAPIKey, nil
+		return debugAPIKey
 	}
 
 	buf := make([]byte, 32)
 	_, err := rand.Read(buf)
 	if err != nil {
-		return "", gie.Wrap(err, gie.TypeConfiguration, "RANDOM_READ_FAILED", "failed to generate random bytes")
+		fmt.Printf("WRN: rand.Read %v\n", err)
+		return ""
 	}
 
 	key := make([]byte, 64)
 	hex.Encode(key, buf)
-	return string(key), nil
+	return string(key)
 }
 
 // Print configuration.
