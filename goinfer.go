@@ -163,7 +163,7 @@ func startHTTPServers(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.G
 	}
 
 	// Initialize proxy server
-	proxyServer, proxyHandler := server.NewProxy(cfg)
+	proxyServer, proxyHandler := NewProxy(cfg)
 
 	if proxyServer != nil {
 		if cfg.Verbose {
@@ -271,4 +271,18 @@ func handleShutdown(sigChan <-chan os.Signal, ctx context.Context, cancel contex
 	case <-ctx.Done():
 		fmt.Println("INF: Graceful shutdown completed")
 	}
+}
+
+func NewProxy(cfg *conf.GoInferCfg) (*http.Server, *proxy.ProxyManager) {
+	for addr, services := range cfg.Server.Listen {
+		if strings.Contains(services, "swap") {
+			pm := proxy.New(cfg.Proxy)
+			srv := &http.Server{
+				Addr:    addr,
+				Handler: pm,
+			}
+			return srv, pm
+		}
+	}
+	return nil, nil // llama-swap not present => not enabled
 }
