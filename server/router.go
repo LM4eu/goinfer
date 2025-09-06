@@ -13,7 +13,6 @@ import (
 	"github.com/LM4eu/goinfer/conf"
 	"github.com/LM4eu/goinfer/gie"
 	"github.com/LM4eu/goinfer/models"
-	"github.com/LM4eu/goinfer/proxy"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -21,7 +20,7 @@ import (
 
 var (
 	// The proxyManager is the shared ProxyManager instance for all server handlers.
-	proxyManager = &proxy.ProxyManager{}
+	proxyManager = &ProxyManager{}
 
 	//go:embed all:dist
 	embeddedFiles embed.FS

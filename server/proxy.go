@@ -2,7 +2,7 @@
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
 
-package proxy
+package server
 
 import (
 	"context"
