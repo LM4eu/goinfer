@@ -13,8 +13,8 @@ type (
 	// ErrorType represents the type of error.
 	ErrorType string
 
-	// GogiError is a structured error that includes type, code, and message.
-	GogiError struct {
+	// GoInferError is a structured error that includes type, code, and message.
+	GoInferError struct {
 		Cause   error     `json:"details,omitempty"` // Cause is serialized "details" in HTTP error response (JSON)
 		Type    ErrorType `json:"type,omitempty"`
 		Code    string    `json:"code,omitempty"`
@@ -41,59 +41,59 @@ const (
 
 var (
 	// Validation errors.
-	ErrPromptRequired = New(TypeValidation, "PROMPT_REQUIRED", "prompt is required")
-	ErrInvalidPrompt  = New(TypeValidation, "INVALID_PROMPT", "prompt must be a string")
-	ErrModelNotLoaded = New(TypeValidation, "MODEL_NOT_LOADED", "model not loaded")
-	ErrInvalidFormat  = New(TypeValidation, "INVALID_FORMAT", "invalid request format")
-	ErrInvalidParams  = New(TypeValidation, "INVALID_PARAMS", "invalid parameter values")
+	ErrPromptRequired = newGIE(TypeValidation, "PROMPT_REQUIRED", "prompt is required")
+	ErrInvalidPrompt  = newGIE(TypeValidation, "INVALID_PROMPT", "prompt must be a string")
+	ErrModelNotLoaded = newGIE(TypeValidation, "MODEL_NOT_LOADED", "model not loaded")
+	ErrInvalidFormat  = newGIE(TypeValidation, "INVALID_FORMAT", "invalid request format")
+	ErrInvalidParams  = newGIE(TypeValidation, "INVALID_PARAMS", "invalid parameter values")
 
 	// Configuration errors.
-	ErrConfigLoadFailed   = New(TypeConfiguration, "CONFIG_LOAD_FAILED", "failed to load configuration")
-	ErrConfigValidation   = New(TypeConfiguration, "CONFIG_VALIDATION", "configuration validation failed")
-	ErrAPIKeyMissing      = New(TypeConfiguration, "API_KEY_MISSING", "API key is missing")
-	ErrInvalidAPIKey      = New(TypeConfiguration, "INVALID_API_KEY", "invalid API key format")
-	ErrModelFilesNotFound = New(TypeConfiguration, "MODEL_FILES_NOT_FOUND", "no model files found")
-	ErrProxyConfigFailed  = New(TypeConfiguration, "PROXY_CONFIG_FAILED", "failed to configure proxy")
+	ErrConfigLoadFailed   = newGIE(TypeConfiguration, "CONFIG_LOAD_FAILED", "failed to load configuration")
+	ErrConfigValidation   = newGIE(TypeConfiguration, "CONFIG_VALIDATION", "configuration validation failed")
+	ErrAPIKeyMissing      = newGIE(TypeConfiguration, "API_KEY_MISSING", "API key is missing")
+	ErrInvalidAPIKey      = newGIE(TypeConfiguration, "INVALID_API_KEY", "invalid API key format")
+	ErrModelFilesNotFound = newGIE(TypeConfiguration, "MODEL_FILES_NOT_FOUND", "no model files found")
+	ErrProxyConfigFailed  = newGIE(TypeConfiguration, "PROXY_CONFIG_FAILED", "failed to configure proxy")
 
 	// Inference errors.
-	ErrInferenceRunning    = New(TypeInference, "INFERENCE_RUNNING", "infer already running")
-	ErrInferenceNotRunning = New(TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
-	ErrInferenceFailed     = New(TypeInference, "INFERENCE_FAILED", "infer failed")
-	ErrInferenceCanceled   = New(TypeInference, "INFERENCE_CANCELED", "infer canceled")
-	ErrInferenceStopped    = New(TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
-	ErrChannelClosed       = New(TypeInference, "CHANNEL_CLOSED", "channel closed unexpectedly")
-	ErrClientCanceled      = New(TypeInference, "CLIENT_CANCELED", "request canceled by client")
+	ErrInferenceRunning    = newGIE(TypeInference, "INFERENCE_RUNNING", "infer already running")
+	ErrInferenceNotRunning = newGIE(TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
+	ErrInferenceFailed     = newGIE(TypeInference, "INFERENCE_FAILED", "infer failed")
+	ErrInferenceCanceled   = newGIE(TypeInference, "INFERENCE_CANCELED", "infer canceled")
+	ErrInferenceStopped    = newGIE(TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
+	ErrChannelClosed       = newGIE(TypeInference, "CHANNEL_CLOSED", "channel closed unexpectedly")
+	ErrClientCanceled      = newGIE(TypeInference, "CLIENT_CANCELED", "request canceled by client")
 
 	// Server errors.
-	ErrServerStart    = New(TypeServer, "SERVER_START_FAILED", "failed to start server")
-	ErrServerShutdown = New(TypeServer, "SERVER_SHUTDOWN_FAILED", "failed to shutdown server")
-	ErrProxyShutdown  = New(TypeServer, "PROXY_SHUTDOWN_FAILED", "failed to shutdown proxy")
+	ErrServerStart    = newGIE(TypeServer, "SERVER_START_FAILED", "failed to start server")
+	ErrServerShutdown = newGIE(TypeServer, "SERVER_SHUTDOWN_FAILED", "failed to shutdown server")
+	ErrProxyShutdown  = newGIE(TypeServer, "PROXY_SHUTDOWN_FAILED", "failed to shutdown proxy")
 
 	// Timeout errors.
-	ErrRequestTimeout = New(TypeTimeout, "REQUEST_TIMEOUT", "request timeout")
-	ErrStreamTimeout  = New(TypeTimeout, "STREAM_TIMEOUT", "stream timeout")
+	ErrRequestTimeout = newGIE(TypeTimeout, "REQUEST_TIMEOUT", "request timeout")
+	ErrStreamTimeout  = newGIE(TypeTimeout, "STREAM_TIMEOUT", "stream timeout")
 
 	// NotFound errors.
-	ErrModelNotFound    = New(TypeNotFound, "MODEL_NOT_FOUND", "model not found")
-	ErrResourceNotFound = New(TypeNotFound, "RESOURCE_NOT_FOUND", "resource not found")
+	ErrModelNotFound    = newGIE(TypeNotFound, "MODEL_NOT_FOUND", "model not found")
+	ErrResourceNotFound = newGIE(TypeNotFound, "RESOURCE_NOT_FOUND", "resource not found")
 
 	// Unauthorized errors.
-	ErrUnauthorized       = New(TypeUnauthorized, "UNAUTHORIZED", "unauthorized")
-	ErrInvalidCredentials = New(TypeUnauthorized, "INVALID_CREDENTIALS", "invalid credentials")
+	ErrUnauthorized       = newGIE(TypeUnauthorized, "UNAUTHORIZED", "unauthorized")
+	ErrInvalidCredentials = newGIE(TypeUnauthorized, "INVALID_CREDENTIALS", "invalid credentials")
 )
 
-// New creates a new GogiError.
-func New(errType ErrorType, code string, message string) *GogiError {
-	return &GogiError{
+// newGIE creates a new GoInferError.
+func newGIE(errType ErrorType, code, message string) *GoInferError {
+	return &GoInferError{
 		Type:    errType,
 		Code:    code,
 		Message: message,
 	}
 }
 
-// Wrap wraps an existing error with an GogiError.
-func Wrap(err error, errType ErrorType, code, message string) *GogiError {
-	return &GogiError{
+// Wrap wraps an existing error with an GoInferError.
+func Wrap(err error, errType ErrorType, code, message string) *GoInferError {
+	return &GoInferError{
 		Type:    errType,
 		Code:    code,
 		Message: message,
@@ -102,7 +102,7 @@ func Wrap(err error, errType ErrorType, code, message string) *GogiError {
 }
 
 // Error implements the error interface.
-func (e *GogiError) Error() string {
+func (e *GoInferError) Error() string {
 	if e.Cause != nil {
 		return fmt.Sprintf("%s: %s (cause: %v)", e.Code, e.Message, e.Cause)
 	}
@@ -110,6 +110,6 @@ func (e *GogiError) Error() string {
 }
 
 // Unwrap returns the underlying error for error unwrapping.
-func (e *GogiError) Unwrap() error {
+func (e *GoInferError) Unwrap() error {
 	return e.Cause
 }

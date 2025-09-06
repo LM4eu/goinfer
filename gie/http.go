@@ -57,7 +57,7 @@ func HandleServerError(c echo.Context, err error) error {
 
 // handleError centralizes error handling for HTTP responses.
 func handleError(c echo.Context, err error, expectedType ErrorType, wrapCode, wrapMsg string) error {
-	var giErr *GogiError
+	var giErr *GoInferError
 	if errors.As(err, &giErr) && giErr.Type == expectedType {
 		return c.JSON(statusCode(giErr.Type), giErr)
 	}
@@ -66,11 +66,11 @@ func handleError(c echo.Context, err error, expectedType ErrorType, wrapCode, wr
 	return errorToEchoResponse(c, wrapped)
 }
 
-// errorToEchoResponse converts an GogiError to an Echo error response.
+// errorToEchoResponse converts an GoInferError to an Echo error response.
 func errorToEchoResponse(c echo.Context, err error) error {
-	var giErr *GogiError
+	var giErr *GoInferError
 	if !errors.As(err, &giErr) {
-		// If not an GogiError, wrap it and return internal server error
+		// If not an GoInferError, wrap it and return internal server error
 		giErr = Wrap(err, TypeServer, "INTERNAL_ERROR", "internal server error")
 	}
 	return c.JSON(statusCode(giErr.Type), giErr)
