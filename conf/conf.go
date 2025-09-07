@@ -64,7 +64,7 @@ var defaultGoInferCfg = GoInferCfg{
 }
 
 // Create a configuration file.
-func (cfg *GoInferCfg) Create(goinferCfgFile string) error {
+func (cfg *GoInferCfg) Create(goinferCfgFile string, noAPIKey bool) error {
 	cfg.Llama = defaultGoInferCfg.Llama
 	cfg.ModelsDir = defaultGoInferCfg.ModelsDir
 	cfg.Server = defaultGoInferCfg.Server
@@ -72,17 +72,21 @@ func (cfg *GoInferCfg) Create(goinferCfgFile string) error {
 	cfg.applyEnvVars()
 
 	// Set API keys
-	if len(cfg.Server.APIKeys) == 0 {
+	switch {
+	case noAPIKey:
+		fmt.Printf("INF: Flag -no-api-key => Do not generate API keys in  %s.\n", goinferCfgFile)
+
+	case len(cfg.Server.APIKeys) > 0:
+		fmt.Printf("INF: Configuration file %s use API keys from environment.\n", goinferCfgFile)
+
+	default:
 		cfg.Server.APIKeys["admin"] = genAPIKey(cfg.Debug)
 		cfg.Server.APIKeys["user"] = genAPIKey(cfg.Debug)
-
 		if cfg.Debug {
 			fmt.Printf("WRN: Configuration file %s with DEBUG api key. This is not suitable for production use.\n", goinferCfgFile)
 		} else {
 			fmt.Printf("INF: Configuration file %s with secure API keys.\n", goinferCfgFile)
 		}
-	} else {
-		fmt.Printf("INF: Configuration file %s use API keys from environment.\n", goinferCfgFile)
 	}
 
 	// Having command line flags (-q -debug) in the config files may make sense depending on the situations.
@@ -106,11 +110,11 @@ func (cfg *GoInferCfg) Create(goinferCfgFile string) error {
 		return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_WRITE_FAILED", "failed to write config file")
 	}
 
-	return cfg.validate()
+	return cfg.validate(noAPIKey)
 }
 
 // Load the configuration file.
-func (cfg *GoInferCfg) Load(goinferCfgFile string) error {
+func (cfg *GoInferCfg) Load(goinferCfgFile string, noAPIKey bool) error {
 	// Load from file if specified
 	if goinferCfgFile != "" {
 		yml, err := os.ReadFile(filepath.Clean(goinferCfgFile)) // TODO: Use OpenFileIn() from Go-1.25
@@ -139,7 +143,7 @@ func (cfg *GoInferCfg) Load(goinferCfgFile string) error {
 	cfg.Server.Listen = listen
 
 	// Validate configuration
-	return cfg.validate()
+	return cfg.validate(noAPIKey)
 }
 
 // GenerateProxyCfg generates the llama-swap-proxy configuration.
@@ -299,7 +303,7 @@ func genAPIKey(debugMode bool) string {
 	return string(key)
 }
 
-func (cfg *GoInferCfg) validate() error {
+func (cfg *GoInferCfg) validate(noAPIKey bool) error {
 	modelFiles, err := cfg.Search()
 	if err != nil {
 		return err
@@ -313,6 +317,11 @@ func (cfg *GoInferCfg) validate() error {
 	// Ensure admin API key exists
 	if _, exists := cfg.Server.APIKeys["admin"]; !exists {
 		return gie.Wrap(gie.ErrAPIKeyMissing, gie.TypeConfiguration, "ADMIN_API_MISSING", "admin API key is missing")
+	}
+
+	if noAPIKey {
+		fmt.Println("INF: Flag -no-api-key => Do not verify API keys.")
+		return nil
 	}
 
 	// Validate API keys

@@ -40,7 +40,7 @@ func getFlagsCfg() *conf.GoInferCfg {
 	debug := flag.Bool("debug", false, "debug mode")
 	genGiCfg := flag.Bool("gen-gi-cfg", false, "generate "+goInferCfgFile)
 	genPxCfg := flag.Bool("gen-px-cfg", false, "generate "+proxyCfgFile+" (proxy config file)")
-	noAPIKeys := flag.Bool("no-api-key", false, "disable API key check")
+	noAPIKey := flag.Bool("no-api-key", false, "disable API key check")
 	garcon.SetVersionFlag()
 	flag.Parse()
 
@@ -55,7 +55,7 @@ func getFlagsCfg() *conf.GoInferCfg {
 
 	// Generate config
 	if *genGiCfg {
-		err := cfg.Create(goInferCfgFile)
+		err := cfg.Create(goInferCfgFile, *noAPIKey)
 		if err != nil {
 			fmt.Printf("ERROR creating config: %v\n", err)
 			os.Exit(1)
@@ -63,7 +63,7 @@ func getFlagsCfg() *conf.GoInferCfg {
 	}
 
 	// Verify we can upload the config
-	err := cfg.Load(goInferCfgFile)
+	err := cfg.Load(goInferCfgFile, *noAPIKey)
 	if err != nil {
 		fmt.Printf("ERROR loading config: %v\n", err)
 		os.Exit(1)
@@ -94,7 +94,7 @@ func getFlagsCfg() *conf.GoInferCfg {
 		os.Exit(1)
 	}
 
-	if *noAPIKeys {
+	if *noAPIKey {
 		cfg.Server.APIKeys = nil
 	}
 
