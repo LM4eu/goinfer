@@ -139,7 +139,7 @@ func runHTTPServers(cfg *conf.GoInferCfg) {
 
 // startEchoServers starts all HTTP Echo servers configured in the config.
 func startEchoServers(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.Group) {
-	proxyInfer := &server.ProxyInfer{}
+	proxyInfer := &server.ProxyInfer{ModelsDir: cfg.ModelsDir}
 	for addr, services := range cfg.Server.Listen {
 		if strings.Contains(services, "swap") {
 			continue // reserved for llama-swap proxy

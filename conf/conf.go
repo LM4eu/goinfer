@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/LM4eu/goinfer/gie"
-	"github.com/LM4eu/goinfer/models"
 	"github.com/LM4eu/goinfer/state"
 	"github.com/mostlygeek/llama-swap/proxy"
 	"go.yaml.in/yaml/v4"
@@ -190,7 +189,7 @@ func applyEnvVars(cfg *GoInferCfg) {
 }
 
 func validate(cfg *GoInferCfg) error {
-	modelFiles, err := models.Dir(cfg.ModelsDir).Search()
+	modelFiles, err := Search(cfg.ModelsDir)
 	if err != nil {
 		return err
 	}
@@ -264,7 +263,7 @@ func (cfg *GoInferCfg) Print() {
 
 // GenerateProxyCfg generates the llama-swap-proxy configuration.
 func GenProxyCfg(cfg *GoInferCfg, proxyCfgFile string) error {
-	modelFiles, err := models.Dir(cfg.ModelsDir).Search()
+	modelFiles, err := Search(cfg.ModelsDir)
 	if err != nil {
 		return err
 	}
@@ -278,7 +277,7 @@ func GenProxyCfg(cfg *GoInferCfg, proxyCfgFile string) error {
 		ext := filepath.Ext(base)
 		stem := strings.TrimSuffix(base, ext)
 
-		flags := models.ExtractFlags(model)
+		flags := extractFlags(model)
 
 		// OpenAI API
 		if state.Verbose {

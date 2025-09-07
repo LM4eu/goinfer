@@ -2,42 +2,23 @@
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
 
-package models
+package conf
 
 import (
 	"fmt"
 	"io/fs"
-	"net/http"
 	"path/filepath"
 	"strings"
 
 	"github.com/LM4eu/goinfer/state"
-	"github.com/labstack/echo/v4"
 )
 
-type Dir string
-
-// Handler returns the state of models.
-func (dir Dir) Handler(c echo.Context) error {
-	models, err := dir.Search()
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error": fmt.Sprintf("failed to search models: %v", err),
-		})
-	}
-
-	return c.JSON(http.StatusOK, map[string]any{
-		"models": models,
-		"count":  len(models),
-	})
-}
-
-// ExtractFlags extracts flags from a model filename.
+// extractFlags extracts flags from a model filename.
 // It looks for a pattern starting with "&" and splits the remaining string
 // by "&" to get individual flag components. Each component is then split
 // by "=" to separate key and value, with the key prefixed by "-" to form
 // command-line style flags. Returns a slice of strings representing the extracted flags.
-func ExtractFlags(modelStem string) string {
+func extractFlags(modelStem string) string {
 	var flags []string
 
 	p := strings.Index(modelStem, "&")
@@ -56,10 +37,10 @@ func ExtractFlags(modelStem string) string {
 	return strings.Join(flags, " ")
 }
 
-func (dir Dir) Search() ([]string, error) {
+func Search(dir string) ([]string, error) {
 	var modelFiles []string
 
-	for root := range strings.SplitSeq(string(dir), ":") {
+	for root := range strings.SplitSeq(dir, ":") {
 		err := search(&modelFiles, strings.TrimSpace(root))
 		if err != nil {
 			if state.Verbose {

@@ -12,14 +12,16 @@ import (
 
 	"github.com/LM4eu/goinfer/conf"
 	"github.com/LM4eu/goinfer/gie"
-	"github.com/LM4eu/goinfer/models"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 )
 
 // ProxyInfer manages proxying requests to the backend LLM engine.
-type ProxyInfer struct{ IsInferring bool }
+type ProxyInfer struct {
+	ModelsDir   string
+	IsInferring bool
+}
 
 //go:embed all:dist
 var embeddedFiles embed.FS
@@ -76,7 +78,7 @@ func (pi *ProxyInfer) NewEcho(cfg *conf.GoInferCfg, addr string,
 	if enableModelsEndpoint {
 		grp := e.Group("/models")
 		setupAPIKeyAuth(grp, cfg, "model")
-		grp.GET("", models.Dir(cfg.ModelsDir).Handler)
+		grp.GET("", pi.modelsHandler)
 		fmt.Printf("INF: Listen GET %s/models (model files)\n", addr)
 	}
 
@@ -129,4 +131,19 @@ func setupAPIKeyAuth(grp *echo.Group, cfg *conf.GoInferCfg, service string) {
 		fmt.Printf("WRN: Received API key is NOT the configured one for %q\n", service)
 		return false, nil
 	}))
+}
+
+// modelsHandler returns the state of models.
+func (pi *ProxyInfer) modelsHandler(c echo.Context) error {
+	models, err := conf.Search(pi.ModelsDir)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]any{
+			"error": fmt.Sprintf("failed to search models: %v", err),
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]any{
+		"models": models,
+		"count":  len(models),
+	})
 }
