@@ -16,13 +16,10 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// ProxyManager manages proxying requests to the backend LLM engine.
-type ProxyManager struct{ IsInferring bool }
-
-// ForwardInference forwards an inference request to the backend.
-func (pm *ProxyManager) ForwardInference(ctx context.Context, query *types.InferQuery, c echo.Context, resChan, errChan chan<- types.StreamedMsg) error {
+// forwardInference forwards an inference request to the backend.
+func (pi *ProxyInfer) forwardInference(ctx context.Context, query *types.InferQuery, c echo.Context, resChan, errChan chan<- types.StreamedMsg) error {
 	// Check if infer is already running
-	if pm.IsInferring {
+	if pi.IsInferring {
 		errChan <- types.StreamedMsg{
 			Num:     0,
 			Content: gie.Wrap(gie.ErrInferRunning, gie.TypeInference, "INFERENCE_RUNNING", "infer already running").Error(),
@@ -87,9 +84,9 @@ func (pm *ProxyManager) ForwardInference(ctx context.Context, query *types.Infer
 	return nil
 }
 
-// AbortInference aborts an ongoing inference.
-func (pm *ProxyManager) AbortInference() error {
-	if !pm.IsInferring {
+// abortInference aborts an ongoing inference.
+func (pi *ProxyInfer) abortInference() error {
+	if !pi.IsInferring {
 		return gie.Wrap(gie.ErrInferNotRunning, gie.TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
 	}
 

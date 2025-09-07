@@ -117,6 +117,16 @@ func Load(goinferCfgFile string) (*GoInferCfg, error) {
 
 	applyEnvVars(cfg)
 
+	// Concatenate host and ports => addr = "host:port"
+	listen := make(map[string]string, len(cfg.Server.Listen))
+	for addr, services := range cfg.Server.Listen {
+		if addr == "" || addr[0] == ':' {
+			addr = cfg.Server.Host + addr
+		}
+		listen[addr] = services
+	}
+	cfg.Server.Listen = listen
+
 	// Validate configuration
 	err := validate(cfg)
 	if err != nil {

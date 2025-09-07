@@ -113,14 +113,20 @@ func runHTTPServers(cfg *conf.GoInferCfg) {
 	defer cancel()
 
 	// Setup signal handling and start shutdown handler
-	sigChan := setupSignalHandling()
-	go handleShutdown(sigChan, ctx, cancel)
+	go handleShutdown(ctx, cancel)
 
-	// Start all servers using errgroup for coordination
+	// Use errgroup to coordinate the servers shutdown
 	var grp errgroup.Group
 
-	// Start HTTP servers and proxy server if configured
-	startHTTPServers(ctx, cfg, &grp)
+	// Start Echo and proxy servers if configured
+	startEchoServers(ctx, cfg, &grp)
+	startProxyServer(ctx, cfg, &grp)
+
+	// prints a startup message when all servers are running.
+	if cfg.Verbose {
+		fmt.Println("-----------------------------")
+		fmt.Println("INF: All servers started. Press CTRL+C to stop.")
+	}
 
 	// Wait for all servers to complete
 	err := grp.Wait()
@@ -131,61 +137,71 @@ func runHTTPServers(cfg *conf.GoInferCfg) {
 	}
 }
 
-// setupSignalHandling sets up signal handling for graceful shutdown.
-func setupSignalHandling() chan os.Signal {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	return sigChan
-}
-
-// startHTTPServers starts all HTTP servers configured in the config.
-func startHTTPServers(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.Group) {
+// startEchoServers starts all HTTP Echo servers configured in the config.
+func startEchoServers(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.Group) {
+	proxyInfer := &server.ProxyInfer{}
 	for addr, services := range cfg.Server.Listen {
 		if strings.Contains(services, "swap") {
 			continue // reserved for llama-swap proxy
 		}
-		if addr == "" || addr[0] == ':' {
-			addr = cfg.Server.Host + addr
+
+		enableAdminWebUI := strings.Contains(services, "admin")
+		enableModelsEndpoint := strings.Contains(services, "model")
+		enableGoinferEndpoint := strings.Contains(services, "goinfer")
+		enableOpenAPIEndpoint := strings.Contains(services, "openai")
+
+		if !enableAdminWebUI && !enableModelsEndpoint && !enableGoinferEndpoint && !enableOpenAPIEndpoint {
+			fmt.Printf("ERROR Unexpected service %q - does not contain any of: model, goinfer, openai, admin\n", services)
+			os.Exit(1)
 		}
-		e := server.NewEcho(cfg, addr, services)
+
+		e := proxyInfer.NewEcho(cfg, addr, enableAdminWebUI, enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint)
 		if e != nil {
 			if cfg.Verbose {
 				fmt.Println("-----------------------------")
 				fmt.Println("Starting Echo server:")
-				fmt.Println("- services: ", services)
-				fmt.Println("- listen:   ", addr)
-				fmt.Println("- origins:  ", cfg.Server.Origins)
+				fmt.Println("- Admin web UI    : ", enableAdminWebUI)
+				fmt.Println("- models  endpoint: ", enableModelsEndpoint)
+				fmt.Println("- goinfer endpoint: ", enableGoinferEndpoint)
+				fmt.Println("- OpenAI endpoints: ", enableOpenAPIEndpoint)
+				fmt.Println("- listen:  ", addr)
+				fmt.Println("- origins: ", cfg.Server.Origins)
 			}
+
 			grp.Go(func() error {
-				return runServerWithGracefulShutdown(ctx, cfg, e, addr)
+				return startEcho(ctx, cfg, e, addr)
 			})
 		}
 	}
+}
 
-	// Initialize proxy server
-	proxyServer, proxyHandler := NewProxy(cfg)
+// startProxyServer starts the llama-swap proxy if configured in the config.
+func startProxyServer(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.Group) {
+	for addr, services := range cfg.Server.Listen {
+		if !strings.Contains(services, "swap") {
+			continue
+		}
 
-	if proxyServer != nil {
+		proxyHandler := proxy.New(cfg.Proxy)
+		proxyServer := &http.Server{
+			Addr:    addr,
+			Handler: proxyHandler,
+		}
+
 		if cfg.Verbose {
 			fmt.Println("-----------------------------")
-			fmt.Println("Starting Gin server:")
-			fmt.Println("- services: llama-swap proxy")
-			fmt.Println("- listen:   ", proxyServer.Addr)
+			fmt.Println("Starting Gin server (llama-swap proxy)")
+			fmt.Println("- listen:  ", proxyServer.Addr)
 		}
-		grp.Go(func() error {
-			return runProxyServerWithGracefulShutdown(ctx, cfg, proxyServer, proxyHandler)
-		})
-	}
 
-	// prints a startup message when all servers are running.
-	if cfg.Verbose {
-		fmt.Println("-----------------------------")
-		fmt.Println("INF: All servers started. Press CTRL+C to stop.")
+		grp.Go(func() error {
+			return startProxy(ctx, cfg, proxyServer, proxyHandler)
+		})
 	}
 }
 
-// runServerWithGracefulShutdown runs a server with graceful shutdown handling.
-func runServerWithGracefulShutdown(ctx context.Context, cfg *conf.GoInferCfg, e *echo.Echo, addr string) error {
+// startEcho starts a HTTP server with graceful shutdown handling.
+func startEcho(ctx context.Context, cfg *conf.GoInferCfg, e *echo.Echo, addr string) error {
 	err := make(chan error, 1)
 	go func() {
 		err <- e.Start(addr)
@@ -195,12 +211,12 @@ func runServerWithGracefulShutdown(ctx context.Context, cfg *conf.GoInferCfg, e 
 	case er := <-err:
 		return er
 	case <-ctx.Done():
-		return gracefulShutdownEchoServer(ctx, cfg, e, addr)
+		return stopEcho(ctx, cfg, e, addr)
 	}
 }
 
-// runProxyServerWithGracefulShutdown runs a proxy server with graceful shutdown handling.
-func runProxyServerWithGracefulShutdown(ctx context.Context, cfg *conf.GoInferCfg, proxyServer *http.Server, proxyHandler http.Handler) error {
+// startProxy starts a llama-swap proxy server with graceful shutdown handling.
+func startProxy(ctx context.Context, cfg *conf.GoInferCfg, proxyServer *http.Server, proxyHandler http.Handler) error {
 	err := make(chan error, 1)
 	go func() {
 		err <- proxyServer.ListenAndServe()
@@ -210,12 +226,12 @@ func runProxyServerWithGracefulShutdown(ctx context.Context, cfg *conf.GoInferCf
 	case er := <-err:
 		return er
 	case <-ctx.Done():
-		return gracefulShutdownProxyServer(ctx, cfg, proxyServer, proxyHandler)
+		return stopProxy(ctx, cfg, proxyServer, proxyHandler)
 	}
 }
 
-// gracefulShutdownEchoServer performs graceful shutdown of an Echo server.
-func gracefulShutdownEchoServer(ctx context.Context, cfg *conf.GoInferCfg, e *echo.Echo, addr string) error {
+// stopEcho performs graceful shutdown of an Echo server.
+func stopEcho(ctx context.Context, cfg *conf.GoInferCfg, e *echo.Echo, addr string) error {
 	if cfg.Verbose {
 		fmt.Printf("INF: Shutting down Echo server on %s\n", addr)
 	}
@@ -232,8 +248,8 @@ func gracefulShutdownEchoServer(ctx context.Context, cfg *conf.GoInferCfg, e *ec
 	return nil
 }
 
-// gracefulShutdownProxyServer performs graceful shutdown of a proxy server.
-func gracefulShutdownProxyServer(ctx context.Context, cfg *conf.GoInferCfg, proxyServer *http.Server, proxyHandler http.Handler) error {
+// stopProxy performs graceful shutdown of a llama-swap proxy server.
+func stopProxy(ctx context.Context, cfg *conf.GoInferCfg, proxyServer *http.Server, proxyHandler http.Handler) error {
 	if cfg.Verbose {
 		fmt.Printf("INF: Shutting down proxy server on %s\n", proxyServer.Addr)
 	}
@@ -256,7 +272,11 @@ func gracefulShutdownProxyServer(ctx context.Context, cfg *conf.GoInferCfg, prox
 }
 
 // handleShutdown handles graceful shutdown upon receiving a signal.
-func handleShutdown(sigChan <-chan os.Signal, ctx context.Context, cancel context.CancelFunc) {
+func handleShutdown(ctx context.Context, cancel context.CancelFunc) {
+	// sets up signal handling for graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
 	sig := <-sigChan
 	fmt.Printf("INF: Received signal %v, initiating graceful shutdown...\n", sig)
 
@@ -271,18 +291,4 @@ func handleShutdown(sigChan <-chan os.Signal, ctx context.Context, cancel contex
 	case <-ctx.Done():
 		fmt.Println("INF: Graceful shutdown completed")
 	}
-}
-
-func NewProxy(cfg *conf.GoInferCfg) (*http.Server, *proxy.ProxyManager) {
-	for addr, services := range cfg.Server.Listen {
-		if strings.Contains(services, "swap") {
-			pm := proxy.New(cfg.Proxy)
-			srv := &http.Server{
-				Addr:    addr,
-				Handler: pm,
-			}
-			return srv, pm
-		}
-	}
-	return nil, nil // llama-swap not present => not enabled
 }

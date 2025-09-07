@@ -18,25 +18,15 @@ import (
 	"github.com/labstack/gommon/log"
 )
 
-var (
-	// The proxyManager is the shared ProxyManager instance for all server handlers.
-	proxyManager = &ProxyManager{}
+// ProxyInfer manages proxying requests to the backend LLM engine.
+type ProxyInfer struct{ IsInferring bool }
 
-	//go:embed all:dist
-	embeddedFiles embed.FS
-)
+//go:embed all:dist
+var embeddedFiles embed.FS
 
-func NewEcho(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
-	enableAdminWebUI := strings.Contains(services, "admin")
-	enableModelsEndpoint := strings.Contains(services, "model")
-	enableGoinferEndpoint := strings.Contains(services, "goinfer")
-	enableOpenAPIEndpoint := strings.Contains(services, "openai")
-
-	if !enableAdminWebUI && !enableModelsEndpoint && !enableGoinferEndpoint && !enableOpenAPIEndpoint {
-		fmt.Printf("WRN: Unexpected service %q because does not contain any of: model, goinfer, openai, admin\n", services)
-		return nil
-	}
-
+func (pi *ProxyInfer) NewEcho(cfg *conf.GoInferCfg, addr string,
+	enableAdminWebUI, enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint bool,
+) *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true
 
@@ -94,8 +84,8 @@ func NewEcho(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
 	if enableGoinferEndpoint {
 		grp := e.Group("/goinfer")
 		setupAPIKeyAuth(grp, cfg, "goinfer")
-		grp.POST("", inferHandler)
-		grp.GET("/abort", abortHandler)
+		grp.POST("", pi.inferHandler)
+		grp.GET("/abort", pi.abortHandler)
 		fmt.Printf("INF: Listen POST %s/goinfer (inference)\n", addr)
 		fmt.Printf("INF: Listen GET  %s/goinfer/abort\n", addr)
 	}
@@ -103,7 +93,7 @@ func NewEcho(cfg *conf.GoInferCfg, addr, services string) *echo.Echo {
 	// ----- Inference OpenAI API -----
 	if enableOpenAPIEndpoint {
 		grp := e.Group("/v1")
-		grp.POST("/chat/completions", handleChatCompletions)
+		grp.POST("/chat/completions", pi.handleChatCompletions)
 		setupAPIKeyAuth(grp, cfg, "openai")
 		fmt.Printf("INF: Listen POST %s/v1/chat/completions (inference)\n", addr)
 	}

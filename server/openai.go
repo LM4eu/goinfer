@@ -13,20 +13,20 @@ import (
 )
 
 // handleChatCompletions handles OpenAI compatible chat completion requests.
-func handleChatCompletions(c echo.Context) error {
+func (pi *ProxyInfer) handleChatCompletions(c echo.Context) error {
 	// Parse the OpenAI request into an InferQuery.
 	query, err := parseOpenAIRequest(c)
 	if err != nil {
 		return gie.HandleValidationError(c, gie.Wrap(err, gie.TypeValidation, "OPENAI_PARSE_ERROR", "failed to parse OpenAI request"))
 	}
 
-	// Reuse the existing inference flow through ProxyManager.
+	// Reuse the existing inference flow through ProxyInfer.
 	// Create channels for streaming results.
 	resChan := make(chan types.StreamedMsg)
 	errChan := make(chan types.StreamedMsg)
 
-	// Execute inference with request context using ProxyManager.
-	err = proxyManager.ForwardInference(c.Request().Context(), query, c, resChan, errChan)
+	// Execute inference with request context using ProxyInfer.
+	err = pi.forwardInference(c.Request().Context(), query, c, resChan, errChan)
 	if err != nil {
 		return gie.HandleInferenceError(c, gie.Wrap(err, gie.TypeInference, "PROXY_FORWARD_FAILED", "proxy manager forward inference failed"))
 	}

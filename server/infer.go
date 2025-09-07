@@ -16,13 +16,13 @@ import (
 )
 
 // inferHandler handles infer requests.
-func inferHandler(c echo.Context) error {
+func (pi *ProxyInfer) inferHandler(c echo.Context) error {
 	// Initialize context with timeout
 	ctx, cancel := context.WithTimeout(c.Request().Context(), 30*time.Second)
 	defer cancel()
 
-	// Check if infer is already running using ProxyManager
-	if proxyManager.IsInferring {
+	// Check if infer is already running using ProxyInfer
+	if pi.IsInferring {
 		fmt.Println("Infer already running")
 		return c.NoContent(http.StatusAccepted)
 	}
@@ -47,7 +47,7 @@ func inferHandler(c echo.Context) error {
 	}
 
 	// Execute infer directly (no retry)
-	result, err := execute(c, ctx, query)
+	result, err := pi.execute(c, ctx, query)
 	if err != nil {
 		return err
 	}
@@ -171,33 +171,33 @@ func parseInferQuery(m echo.Map) (*types.InferQuery, error) {
 	return req, nil
 }
 
-// execute executes inference using ProxyManager.
-func execute(c echo.Context, ctx context.Context, query *types.InferQuery) (*types.StreamedMsg, error) {
-	// Execute infer through ProxyManager
+// execute executes inference using ProxyInfer.
+func (pi *ProxyInfer) execute(c echo.Context, ctx context.Context, query *types.InferQuery) (*types.StreamedMsg, error) {
+	// Execute infer through ProxyInfer
 	resChan := make(chan types.StreamedMsg)
-	errorChan := make(chan types.StreamedMsg)
+	errChan := make(chan types.StreamedMsg)
 	defer close(resChan)
-	defer close(errorChan)
+	defer close(errChan)
 
-	err := proxyManager.ForwardInference(ctx, query, c, resChan, errorChan)
+	err := pi.forwardInference(ctx, query, c, resChan, errChan)
 	if err != nil {
 		return nil, gie.Wrap(err, gie.TypeInference, "PROXY_FORWARD_FAILED", "proxy manager forward inference failed")
 	}
 
-	// Process response from ProxyManager
+	// Process response from ProxyInfer
 	select {
-	case response, ok := <-resChan:
+	case res, ok := <-resChan:
 		if ok {
-			return &response, nil
+			return &res, nil
 		}
 		return nil, gie.ErrChanClosed
 
-	case message, ok := <-errorChan:
+	case err, ok := <-errChan:
 		if ok {
-			if message.MsgType == types.ErrorMsgType {
-				return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", "infer error: "+message.Content)
+			if err.MsgType == types.ErrorMsgType {
+				return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", "infer error: "+err.Content)
 			}
-			return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", fmt.Sprintf("infer error: %v", message))
+			return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", fmt.Sprintf("infer error: %v", err))
 		}
 		return nil, gie.ErrChanClosed
 
@@ -208,9 +208,9 @@ func execute(c echo.Context, ctx context.Context, query *types.InferQuery) (*typ
 	}
 }
 
-// abortHandler aborts ongoing inference using ProxyManager.
-func abortHandler(c echo.Context) error {
-	err := proxyManager.AbortInference()
+// abortHandler aborts ongoing inference using ProxyInfer.
+func (pi *ProxyInfer) abortHandler(c echo.Context) error {
+	err := pi.abortInference()
 	if err != nil {
 		fmt.Printf("INF: %v\n", err)
 		return c.NoContent(http.StatusAccepted)
