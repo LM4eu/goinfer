@@ -30,7 +30,7 @@ func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resChan
 	if ctx.Err() != nil {
 		giErr := gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CTX_CANCELED", "infer canceled")
 		gic.LogCtxAwareError(ctx, "infer_start", giErr)
-		errorChan <- types.StreamedMsg{
+		errChan <- types.StreamedMsg{
 			Num:     0,
 			Content: giErr.Error(),
 			MsgType: types.ErrorMsgType,
@@ -40,7 +40,7 @@ func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resChan
 
 	if query.Model.Name == "" {
 		err := gie.Wrap(gie.ErrModelNotLoaded, gie.TypeValidation, "MODEL_NOT_LOADED", "model not loaded: "+query.Model.Name)
-		errorChan <- types.StreamedMsg{
+		errChan <- types.StreamedMsg{
 			Num:     0,
 			Content: err.Error(),
 			MsgType: types.ErrorMsgType,
@@ -58,7 +58,7 @@ func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resChan
 	// Handle infer completion or failure
 	if err != nil {
 		state.ContinueInferringController = false
-		errorChan <- types.StreamedMsg{
+		errChan <- types.StreamedMsg{
 			Num:     ntok + 1,
 			Content: gie.Wrap(err, gie.TypeInference, "INFERENCE_FAILED", "infer failed").Error(),
 			MsgType: types.ErrorMsgType,
