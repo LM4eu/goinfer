@@ -16,8 +16,7 @@ import (
 	"github.com/LM4eu/goinfer/models"
 	"github.com/LM4eu/goinfer/state"
 	"github.com/mostlygeek/llama-swap/proxy"
-
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 type (

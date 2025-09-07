@@ -11,8 +11,8 @@ require (
 	github.com/labstack/gommon v0.4.2
 	github.com/mostlygeek/llama-swap v0.1.6-0.20250902042658-a533aec736ad
 	github.com/teal-finance/garcon v0.35.2
+	go.yaml.in/yaml/v4 v4.0.0-rc.2
 	golang.org/x/sync v0.16.0
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -83,4 +83,5 @@ require (
 	golang.org/x/time v0.12.0 // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
