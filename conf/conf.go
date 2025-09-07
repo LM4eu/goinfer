@@ -22,42 +22,42 @@ import (
 
 type (
 	GoInferCfg struct {
-		Server    ServerCfg    `json:"server"               yaml:"server"`
-		Llama     LlamaCfg     `json:"llama"                yaml:"llama"`
-		ModelsDir string       `json:"models_dir,omitempty" yaml:"models_dir,omitempty"`
-		Proxy     proxy.Config `json:"proxy"                yaml:"proxy"`
-		Verbose   bool         `json:"verbose,omitempty"    yaml:"verbose,omitempty"`
+		Server    ServerCfg    `json:"server"           yaml:"server"`
+		Llama     LlamaCfg     `json:"llama"            yaml:"llama"`
+		ModelsDir string       `json:"models_dir"       yaml:"models_dir"`
+		Proxy     proxy.Config `json:"proxy,omitzero"   yaml:"proxy,omitempty"`
+		Verbose   bool         `json:"verbose,omitzero" yaml:"verbose,omitempty"`
 	}
 
 	ServerCfg struct {
-		Listen  map[string]string `json:"listen,omitempty"  yaml:"listen,omitempty"`
-		APIKeys map[string]string `json:"api_key,omitempty" yaml:"api_key,omitempty"`
-		Host    string            `json:"host,omitempty"    yaml:"host,omitempty"`
-		Origins string            `json:"origins,omitempty" yaml:"origins,omitempty"`
+		Listen  map[string]string `json:"listen"           yaml:"listen"`
+		APIKeys map[string]string `json:"api_key"          yaml:"api_key"`
+		Host    string            `json:"host,omitzero"    yaml:"host,omitempty"`
+		Origins string            `json:"origins,omitzero" yaml:"origins,omitempty"`
 	}
 
 	LlamaCfg struct {
-		Args map[string]string `json:"args,omitempty" yaml:"args,omitempty"`
-		Exe  string            `json:"exe,omitempty"  yaml:"exe,omitempty"`
+		Args map[string]string `json:"args" yaml:"args"`
+		Exe  string            `json:"exe"  yaml:"exe"`
 	}
 )
 
 const debugAPIKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
 
 var defaultGoInferConf = GoInferCfg{
-	ModelsDir: "./models",
+	ModelsDir: "/home/me/my/models",
 	Server: ServerCfg{
 		Listen: map[string]string{
-			":8888": "admin",
-			":2222": "openai,goinfer,mcp",
-			":5143": "llama-swap proxy",
+			":5143": "admin,models",
+			":2222": "openai,goinfer",
+			":5555": "llama-swap proxy",
 		},
 		APIKeys: map[string]string{},
 		Host:    "",
 		Origins: "localhost",
 	},
 	Llama: LlamaCfg{
-		Exe: "./llama-server",
+		Exe: "/home/me/llama.cpp/build/bin/llama-server",
 		Args: map[string]string{
 			"common":  "--no-webui --no-warmup",
 			"goinfer": "--jinja --chat-template-file template.jinja",

@@ -1,7 +1,7 @@
 # Configuration of https://github.com/LM4eu/goinfer
 
 # Recursively search *.gguf files in one or multiple folders separated by ':'
-models_dir: ./models
+models_dir: /home/me/my/models
 
 server:
   api_key:
@@ -10,12 +10,12 @@ server:
     user:  PLEASE SET SECURE API KEY
   origins: localhost
   listen:
-    :8080: admin,models
-    :2222: openai,goinfer,mcp
-    :5143: llama-swap proxy
+    :5143: admin,models
+    :2222: openai,goinfer
+    :5555: llama-swap proxy
 
 llama:
-  exe: ./llama-server
+  exe: /home/me/llama.cpp/build/bin/llama-server
   args:
     # --props: enable /props endpoint to change global properties at runtime
     # --no-webui: do not start the Web UI HTTP server
