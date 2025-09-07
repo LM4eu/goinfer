@@ -2,7 +2,7 @@
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
 
-package server
+package infer
 
 import (
 	"embed"
@@ -17,16 +17,17 @@ import (
 	"github.com/labstack/gommon/log"
 )
 
-// ProxyInfer manages proxying requests to the backend LLM engine.
-type ProxyInfer struct {
-	ModelsDir   string
-	IsInferring bool
+// Infer manages proxying requests to the backend LLM engine.
+type Infer struct {
+	Cfg                         *conf.GoInferCfg
+	IsInferring                 bool
+	ContinueInferringController bool
 }
 
 //go:embed all:dist
 var embeddedFiles embed.FS
 
-func (pi *ProxyInfer) NewEcho(cfg *conf.GoInferCfg, addr string,
+func (inf *Infer) NewEcho(cfg *conf.GoInferCfg, addr string,
 	enableAdminWebUI, enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint bool,
 ) *echo.Echo {
 	e := echo.New()
@@ -78,7 +79,7 @@ func (pi *ProxyInfer) NewEcho(cfg *conf.GoInferCfg, addr string,
 	if enableModelsEndpoint {
 		grp := e.Group("/models")
 		setupAPIKeyAuth(grp, cfg, "model")
-		grp.GET("", pi.modelsHandler)
+		grp.GET("", inf.modelsHandler)
 		fmt.Printf("INF: Listen GET %s/models (model files)\n", addr)
 	}
 
@@ -86,8 +87,8 @@ func (pi *ProxyInfer) NewEcho(cfg *conf.GoInferCfg, addr string,
 	if enableGoinferEndpoint {
 		grp := e.Group("/goinfer")
 		setupAPIKeyAuth(grp, cfg, "goinfer")
-		grp.POST("", pi.inferHandler)
-		grp.GET("/abort", pi.abortHandler)
+		grp.POST("", inf.inferHandler)
+		grp.GET("/abort", inf.abortHandler)
 		fmt.Printf("INF: Listen POST %s/goinfer (inference)\n", addr)
 		fmt.Printf("INF: Listen GET  %s/goinfer/abort\n", addr)
 	}
@@ -95,7 +96,7 @@ func (pi *ProxyInfer) NewEcho(cfg *conf.GoInferCfg, addr string,
 	// ----- Inference OpenAI API -----
 	if enableOpenAPIEndpoint {
 		grp := e.Group("/v1")
-		grp.POST("/chat/completions", pi.handleChatCompletions)
+		grp.POST("/chat/completions", inf.handleChatCompletions)
 		setupAPIKeyAuth(grp, cfg, "openai")
 		fmt.Printf("INF: Listen POST %s/v1/chat/completions (inference)\n", addr)
 	}
@@ -134,8 +135,8 @@ func setupAPIKeyAuth(grp *echo.Group, cfg *conf.GoInferCfg, service string) {
 }
 
 // modelsHandler returns the state of models.
-func (pi *ProxyInfer) modelsHandler(c echo.Context) error {
-	models, err := conf.Search(pi.ModelsDir)
+func (inf *Infer) modelsHandler(c echo.Context) error {
+	models, err := inf.Cfg.Search()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("failed to search models: %v", err),

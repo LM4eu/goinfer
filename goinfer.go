@@ -22,8 +22,7 @@ import (
 	"github.com/teal-finance/garcon"
 
 	"github.com/LM4eu/goinfer/conf"
-	"github.com/LM4eu/goinfer/server"
-	"github.com/LM4eu/goinfer/state"
+	"github.com/LM4eu/goinfer/infer"
 )
 
 const (
@@ -32,59 +31,58 @@ const (
 )
 
 func main() {
+	cfg := getFlagsCfg()
+	runHTTPServers(cfg)
+}
+
+func getFlagsCfg() *conf.GoInferCfg {
 	quiet := flag.Bool("q", false, "quiet mode (disable verbose output)")
 	debug := flag.Bool("debug", false, "debug mode")
-	genGiConf := flag.Bool("gen-gi-cfg", false, "generate "+goInferCfgFile)
-	genPxConf := flag.Bool("gen-px-cfg", false, "generate "+proxyCfgFile+" (proxy config file)")
+	genGiCfg := flag.Bool("gen-gi-cfg", false, "generate "+goInferCfgFile)
+	genPxCfg := flag.Bool("gen-px-cfg", false, "generate "+proxyCfgFile+" (proxy config file)")
 	noAPIKeys := flag.Bool("no-api-key", false, "disable API key check")
 	garcon.SetVersionFlag()
 	flag.Parse()
 
+	var cfg conf.GoInferCfg
+
 	if *debug {
 		fmt.Println("DBG: Debug mode is on")
-		state.Debug = true
+		cfg.Debug = true
 	}
 
-	state.Verbose = !*quiet
+	cfg.Verbose = !*quiet
 
-	cfg := manageCfg(*debug, *genGiConf, *genPxConf, *noAPIKeys)
-
-	runHTTPServers(cfg)
-}
-
-func manageCfg(debug, genGiConf, genPxConf, noAPIKeys bool) *conf.GoInferCfg {
 	// Generate config
-	if genGiConf {
-		err := conf.Create(goInferCfgFile, debug)
+	if *genGiCfg {
+		err := cfg.Create(goInferCfgFile)
 		if err != nil {
 			fmt.Printf("ERROR creating config: %v\n", err)
 			os.Exit(1)
 		}
-		if state.Verbose {
-			cfg, er := conf.Load(goInferCfgFile)
-			if er != nil {
-				fmt.Printf("ERROR loading config: %v\n", er)
-				os.Exit(1)
-			}
-			cfg.Print()
-		}
-		fmt.Printf("INF: Configuration file %s created successfully.\n", goInferCfgFile)
-		os.Exit(0)
 	}
 
-	// Load configurations
-	cfg, err := conf.Load(goInferCfgFile)
+	// Verify we can upload the config
+	err := cfg.Load(goInferCfgFile)
 	if err != nil {
 		fmt.Printf("ERROR loading config: %v\n", err)
 		os.Exit(1)
 	}
-	cfg.Verbose = state.Verbose
+
+	if cfg.Verbose {
+		cfg.Print()
+	}
+
+	if *genGiCfg {
+		fmt.Printf("INF: Configuration file %s created successfully.\n", goInferCfgFile)
+		os.Exit(0)
+	}
 
 	// Load the llama-swap config
 	cfg.Proxy, err = proxy.LoadConfig(proxyCfgFile)
 	// even if err!=nil => generate the config file,
-	if genPxConf {
-		err = conf.GenProxyCfg(cfg, proxyCfgFile)
+	if *genPxCfg {
+		err = cfg.GenProxyCfg(proxyCfgFile)
 		if err != nil {
 			fmt.Printf("ERROR generating proxy config: %v\n", err)
 			os.Exit(1)
@@ -96,15 +94,15 @@ func manageCfg(debug, genGiConf, genPxConf, noAPIKeys bool) *conf.GoInferCfg {
 		os.Exit(1)
 	}
 
-	if noAPIKeys {
+	if *noAPIKeys {
 		cfg.Server.APIKeys = nil
 	}
 
-	if state.Debug {
+	if cfg.Debug {
 		cfg.Print()
 	}
 
-	return cfg
+	return &cfg
 }
 
 func runHTTPServers(cfg *conf.GoInferCfg) {
@@ -139,7 +137,7 @@ func runHTTPServers(cfg *conf.GoInferCfg) {
 
 // startEchoServers starts all HTTP Echo servers configured in the config.
 func startEchoServers(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.Group) {
-	proxyInfer := &server.ProxyInfer{ModelsDir: cfg.ModelsDir}
+	inf := &infer.Infer{Cfg: cfg}
 	for addr, services := range cfg.Server.Listen {
 		if strings.Contains(services, "swap") {
 			continue // reserved for llama-swap proxy
@@ -155,7 +153,7 @@ func startEchoServers(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.G
 			os.Exit(1)
 		}
 
-		e := proxyInfer.NewEcho(cfg, addr, enableAdminWebUI, enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint)
+		e := inf.NewEcho(cfg, addr, enableAdminWebUI, enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint)
 		if e != nil {
 			if cfg.Verbose {
 				fmt.Println("-----------------------------")

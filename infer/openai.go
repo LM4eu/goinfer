@@ -2,31 +2,30 @@
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
 
-package server
+package infer
 
 import (
 	"net/http"
 
 	"github.com/LM4eu/goinfer/gie"
-	"github.com/LM4eu/goinfer/types"
 	"github.com/labstack/echo/v4"
 )
 
 // handleChatCompletions handles OpenAI compatible chat completion requests.
-func (pi *ProxyInfer) handleChatCompletions(c echo.Context) error {
+func (inf *Infer) handleChatCompletions(c echo.Context) error {
 	// Parse the OpenAI request into an InferQuery.
 	query, err := parseOpenAIRequest(c)
 	if err != nil {
 		return gie.HandleValidationError(c, gie.Wrap(err, gie.TypeValidation, "OPENAI_PARSE_ERROR", "failed to parse OpenAI request"))
 	}
 
-	// Reuse the existing inference flow through ProxyInfer.
+	// Reuse the existing inference flow through Infer.
 	// Create channels for streaming results.
-	resChan := make(chan types.StreamedMsg)
-	errChan := make(chan types.StreamedMsg)
+	resChan := make(chan StreamedMsg)
+	errChan := make(chan StreamedMsg)
 
-	// Execute inference with request context using ProxyInfer.
-	err = pi.forwardInference(c.Request().Context(), query, c, resChan, errChan)
+	// Execute inference with request context.
+	err = inf.forwardInference(c.Request().Context(), query, c, resChan, errChan)
 	if err != nil {
 		return gie.HandleInferenceError(c, gie.Wrap(err, gie.TypeInference, "PROXY_FORWARD_FAILED", "proxy manager forward inference failed"))
 	}
@@ -41,7 +40,7 @@ func (pi *ProxyInfer) handleChatCompletions(c echo.Context) error {
 }
 
 // parseOpenAIRequest converts an OpenAI chat completion request into an InferQuery.
-func parseOpenAIRequest(c echo.Context) (*types.InferQuery, error) {
+func parseOpenAIRequest(c echo.Context) (*InferQuery, error) {
 	// The OpenAI API expects a JSON body with fields such as model, messages, temperature, etc.
 	// For simplicity we map a subset of these fields to the internal InferQuery.
 	var req struct {
@@ -56,10 +55,10 @@ func parseOpenAIRequest(c echo.Context) (*types.InferQuery, error) {
 		return nil, gie.Wrap(err, gie.TypeValidation, "OPENAI_BIND_ERROR", "failed to bind OpenAI request")
 	}
 
-	query := &types.InferQuery{
+	query := &InferQuery{
 		Prompt: req.Prompt,
-		Model:  types.Model{Name: req.Model},
-		Params: types.DefaultInferParams,
+		Model:  Model{Name: req.Model},
+		Params: DefaultInferParams,
 	}
 	if req.Temperature != 0 {
 		query.Params.Sampling.Temperature = float32(req.Temperature)

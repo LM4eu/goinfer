@@ -2,7 +2,7 @@
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
 
-package server
+package infer
 
 import (
 	"context"
@@ -10,20 +10,17 @@ import (
 	"time"
 
 	"github.com/LM4eu/goinfer/gie"
-	"github.com/LM4eu/goinfer/lm"
-	"github.com/LM4eu/goinfer/state"
-	"github.com/LM4eu/goinfer/types"
 	"github.com/labstack/echo/v4"
 )
 
 // forwardInference forwards an inference request to the backend.
-func (pi *ProxyInfer) forwardInference(ctx context.Context, query *types.InferQuery, c echo.Context, resChan, errChan chan<- types.StreamedMsg) error {
+func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c echo.Context, resChan, errChan chan<- StreamedMsg) error {
 	// Check if infer is already running
-	if pi.IsInferring {
-		errChan <- types.StreamedMsg{
+	if inf.IsInferring {
+		errChan <- StreamedMsg{
 			Num:     0,
 			Content: gie.Wrap(gie.ErrInferRunning, gie.TypeInference, "INFERENCE_RUNNING", "infer already running").Error(),
-			MsgType: types.ErrorMsgType,
+			MsgType: ErrorMsgType,
 		}
 		return nil
 	}
@@ -32,13 +29,12 @@ func (pi *ProxyInfer) forwardInference(ctx context.Context, query *types.InferQu
 	inferCtx, cancel := context.WithTimeout(ctx, time.Minute*5)
 	defer cancel()
 
-	resChanInternal := make(chan types.StreamedMsg)
-	errChanInternal := make(chan types.StreamedMsg)
+	resChanInternal := make(chan StreamedMsg)
+	errChanInternal := make(chan StreamedMsg)
 	defer close(resChanInternal)
 	defer close(errChanInternal)
 
-	// Call the existing lm.Infer function through the proxy
-	go lm.Infer(inferCtx, query, c, resChanInternal, errChanInternal)
+	go inf.Infer(inferCtx, query, c, resChanInternal, errChanInternal)
 
 	// Process response and forward to caller channels
 	select {
@@ -46,38 +42,38 @@ func (pi *ProxyInfer) forwardInference(ctx context.Context, query *types.InferQu
 		if ok {
 			resChan <- response
 		} else {
-			errChan <- types.StreamedMsg{
+			errChan <- StreamedMsg{
 				Num:     0,
 				Content: gie.Wrap(gie.ErrChanClosed, gie.TypeInference, "CHANNEL_CLOSED", "infer channel closed unexpectedly").Error(),
-				MsgType: types.ErrorMsgType,
+				MsgType: ErrorMsgType,
 			}
 		}
 	case message, ok := <-errChanInternal:
 		if ok {
 			errChan <- message
 		} else {
-			errChan <- types.StreamedMsg{
+			errChan <- StreamedMsg{
 				Num:     0,
 				Content: gie.Wrap(gie.ErrChanClosed, gie.TypeInference, "CHANNEL_CLOSED", "error channel closed unexpectedly").Error(),
-				MsgType: types.ErrorMsgType,
+				MsgType: ErrorMsgType,
 			}
 		}
 	case <-inferCtx.Done():
-		if state.Debug {
+		if inf.Cfg.Debug {
 			fmt.Printf("DBG: Infer timeout\n")
 		}
-		errChan <- types.StreamedMsg{
+		errChan <- StreamedMsg{
 			Num:     0,
 			Content: gie.Wrap(gie.ErrReqTimeout, gie.TypeTimeout, "INFERENCE_TIMEOUT", "infer timeout").Error(),
-			MsgType: types.ErrorMsgType,
+			MsgType: ErrorMsgType,
 		}
 	case <-ctx.Done():
 		// Client canceled request
-		state.ContinueInferringController = false
-		errChan <- types.StreamedMsg{
+		inf.ContinueInferringController = false
+		errChan <- StreamedMsg{
 			Num:     0,
 			Content: gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CLIENT_CANCELED", "req canceled by client").Error(),
-			MsgType: types.ErrorMsgType,
+			MsgType: ErrorMsgType,
 		}
 	}
 
@@ -85,15 +81,15 @@ func (pi *ProxyInfer) forwardInference(ctx context.Context, query *types.InferQu
 }
 
 // abortInference aborts an ongoing inference.
-func (pi *ProxyInfer) abortInference() error {
-	if !pi.IsInferring {
+func (inf *Infer) abortInference() error {
+	if !inf.IsInferring {
 		return gie.Wrap(gie.ErrInferNotRunning, gie.TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
 	}
 
-	if state.Verbose {
+	if inf.Cfg.Verbose {
 		fmt.Println("INF: Aborting inference")
 	}
 
-	state.ContinueInferringController = false
+	inf.ContinueInferringController = false
 	return nil
 }

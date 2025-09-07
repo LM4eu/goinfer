@@ -2,7 +2,7 @@
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
 
-package lm
+package infer
 
 import (
 	"context"
@@ -13,15 +13,11 @@ import (
 
 	"github.com/LM4eu/goinfer/gic"
 	"github.com/LM4eu/goinfer/gie"
-	"github.com/LM4eu/goinfer/state"
-	"github.com/LM4eu/goinfer/types"
 	"github.com/labstack/echo/v4"
 )
 
-var IsInferringTODO bool
-
 // Infer performs language model inference.
-func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resChan, errChan chan<- types.StreamedMsg) {
+func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, resChan, errChan chan<- StreamedMsg) {
 	// Create context with request ID
 	reqID := gic.GenReqID()
 	ctx = context.WithValue(ctx, "requestID", reqID)
@@ -30,59 +26,59 @@ func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resChan
 	if ctx.Err() != nil {
 		giErr := gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CTX_CANCELED", "infer canceled")
 		gic.LogCtxAwareError(ctx, "infer_start", giErr)
-		errChan <- types.StreamedMsg{
+		errChan <- StreamedMsg{
 			Num:     0,
 			Content: giErr.Error(),
-			MsgType: types.ErrorMsgType,
+			MsgType: ErrorMsgType,
 		}
 		return
 	}
 
 	if query.Model.Name == "" {
 		err := gie.Wrap(gie.ErrModelNotLoaded, gie.TypeValidation, "MODEL_NOT_LOADED", "model not loaded: "+query.Model.Name)
-		errChan <- types.StreamedMsg{
+		errChan <- StreamedMsg{
 			Num:     0,
 			Content: err.Error(),
-			MsgType: types.ErrorMsgType,
+			MsgType: ErrorMsgType,
 		}
 		return
 	}
 
-	if state.Debug {
+	if inf.Cfg.Debug {
 		fmt.Println("DBG: Infer params:")
 		fmt.Printf("DBG: %+v\n\n", query.Params)
 	}
 
 	// Execute inference
-	ntok, err := runInfer(ctx, c, query)
+	nTok, err := inf.runInfer(ctx, c, query)
 	// Handle infer completion or failure
 	if err != nil {
-		state.ContinueInferringController = false
-		errChan <- types.StreamedMsg{
-			Num:     ntok + 1,
+		inf.ContinueInferringController = false
+		errChan <- StreamedMsg{
+			Num:     nTok + 1,
 			Content: gie.Wrap(err, gie.TypeInference, "INFERENCE_FAILED", "infer failed").Error(),
-			MsgType: types.ErrorMsgType,
+			MsgType: ErrorMsgType,
 		}
 		return
 	}
 
 	// Handle streaming completion if needed
 	if query.Params.Stream {
-		err = completeStream(ctx, c, ntok)
+		err = inf.completeStream(ctx, c, nTok)
 		if err != nil {
 			return
 		}
 	}
 
 	// Send success message
-	if !state.ContinueInferringController {
+	if !inf.ContinueInferringController {
 		return
 	}
 
-	successMsg := types.StreamedMsg{
-		Num:     ntok + 1,
+	successMsg := StreamedMsg{
+		Num:     nTok + 1,
 		Content: "infer_completed",
-		MsgType: types.SystemMsgType,
+		MsgType: SystemMsgType,
 		Data: map[string]any{
 			"request_id": reqID,
 			"model":      query.Model.Name,
@@ -94,12 +90,12 @@ func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resChan
 }
 
 // runInfer performs the actual inference with token streaming.
-func runInfer(ctx context.Context, c echo.Context, query *types.InferQuery) (int, error) {
+func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *InferQuery) (int, error) {
 	// Start the infer process
-	IsInferringTODO = true
-	state.ContinueInferringController = true
+	inf.IsInferring = true
+	inf.ContinueInferringController = true
 
-	ntok := 0
+	nTok := 0
 	startThinking := time.Now()
 	var startEmitting time.Time
 	var thinkingElapsed time.Duration
@@ -114,7 +110,7 @@ func runInfer(ctx context.Context, c echo.Context, query *types.InferQuery) (int
 			break
 		}
 
-		if !state.ContinueInferringController {
+		if !inf.ContinueInferringController {
 			giErr = gie.Wrap(gie.ErrInferStopped, gie.TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
 			break
 		}
@@ -133,26 +129,26 @@ func runInfer(ctx context.Context, c echo.Context, query *types.InferQuery) (int
 
 		// Simulate token streaming
 		for i := range 10 {
-			if !state.ContinueInferringController {
+			if !inf.ContinueInferringController {
 				break
 			}
 
 			token := fmt.Sprintf("token_%d", i)
-			err := streamToken(ctx, ntok+i, token, jsonEncoder, c, &query.Params, startThinking, &startEmitting, &thinkingElapsed)
+			err := inf.streamToken(ctx, nTok+i, token, jsonEncoder, c, &query.Params, startThinking, &startEmitting, &thinkingElapsed)
 			if err != nil {
-				return ntok, err
+				return nTok, err
 			}
 			time.Sleep(10 * time.Millisecond)
-			ntok++
+			nTok++
 		}
 	}
 
-	IsInferringTODO = false
-	return ntok, giErr
+	inf.IsInferring = false
+	return nTok, giErr
 }
 
 // completeStream handles streaming termination.
-func completeStream(ctx context.Context, c echo.Context, _ int) error {
+func (inf *Infer) completeStream(ctx context.Context, c echo.Context, _ int) error {
 	if ctx.Err() != nil {
 		er := gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "STREAM_CANCELED", "stream termination canceled")
 		gic.LogCtxAwareError(ctx, "stream_termination", er)
@@ -161,10 +157,10 @@ func completeStream(ctx context.Context, c echo.Context, _ int) error {
 
 	err := sendTerm(ctx, c)
 	if err != nil {
-		state.ContinueInferringController = false
+		inf.ContinueInferringController = false
 		er := gie.Wrap(err, gie.TypeInference, "STREAM_TERMINATION_FAILED", "stream termination failed")
 		gic.LogCtxAwareError(ctx, "stream_termination", er)
-		logError(ctx, "Llama", "cannot send stream termination", er)
+		inf.logError(ctx, "Llama", "cannot send stream termination", er)
 		return er
 	}
 
@@ -172,9 +168,9 @@ func completeStream(ctx context.Context, c echo.Context, _ int) error {
 }
 
 // streamToken handles token processing during prediction.
-func streamToken(
-	ctx context.Context, ntok int, token string, jsonEncoder *json.Encoder,
-	c echo.Context, params *types.InferParams, startThinking time.Time,
+func (inf *Infer) streamToken(
+	ctx context.Context, nTok int, token string, jsonEncoder *json.Encoder,
+	c echo.Context, params *InferParams, startThinking time.Time,
 	startEmitting *time.Time, thinkingElapsed *time.Duration,
 ) error {
 	// Check context	err :=
@@ -183,22 +179,22 @@ func streamToken(
 	}
 
 	// Handle first token
-	if ntok == 0 {
+	if nTok == 0 {
 		*startEmitting = time.Now()
 		*thinkingElapsed = time.Since(startThinking)
 
-		if params.Stream && state.ContinueInferringController {
-			smsg := &types.StreamedMsg{
+		if params.Stream && inf.ContinueInferringController {
+			sMsg := &StreamedMsg{
 				Content: "start_emitting",
-				Num:     ntok,
-				MsgType: types.SystemMsgType,
+				Num:     nTok,
+				MsgType: SystemMsgType,
 				Data: map[string]any{
 					"thinking_time":        *thinkingElapsed,
 					"thinking_time_format": thinkingElapsed.String(),
 				},
 			}
 
-			err := write(ctx, c, jsonEncoder, smsg)
+			err := write(ctx, c, jsonEncoder, sMsg)
 			if err != nil {
 				return gie.Wrap(err, gie.TypeInference, "STREAM_START_FAILED", "cannot stream start_emitting")
 			}
@@ -206,12 +202,12 @@ func streamToken(
 	}
 
 	// Check if stopped
-	if !state.ContinueInferringController {
+	if !inf.ContinueInferringController {
 		return nil
 	}
 
 	// Log token
-	logToken(ctx, token)
+	inf.logToken(ctx, token)
 
 	// Check if streaming
 	if !params.Stream {
@@ -219,11 +215,42 @@ func streamToken(
 	}
 
 	// Create token message
-	tmsg := &types.StreamedMsg{
+	tMsg := &StreamedMsg{
 		Content: token,
-		Num:     ntok,
-		MsgType: types.TokenMsgType,
+		Num:     nTok,
+		MsgType: TokenMsgType,
 	}
 
-	return write(ctx, c, jsonEncoder, tmsg)
+	return write(ctx, c, jsonEncoder, tMsg)
+}
+
+// logError logs error information.
+func (inf *Infer) logError(ctx context.Context, prefix, message string, err error) {
+	if err != nil {
+		inf.logMsg(ctx, "%s | ERROR: %s - %v", prefix, message, err)
+	} else {
+		inf.logMsg(ctx, "%s | ERROR: %s", prefix, message)
+	}
+}
+
+// logToken logs token information.
+func (inf *Infer) logToken(ctx context.Context, token string) {
+	inf.logMsg(ctx, "token: %s", token)
+}
+
+// logMsg formats and logs a message with common context.
+func (inf *Infer) logMsg(ctx context.Context, format string, args ...any) {
+	if !inf.Cfg.Verbose {
+		return
+	}
+
+	reqID := "req"
+	if id := ctx.Value("requestID"); id != nil {
+		if str, ok := id.(string); ok {
+			reqID = str
+		}
+	}
+
+	fmt.Printf("INF: [%s] | c: %s | r: %s | %s\n",
+		time.Now().Format(time.RFC3339), fmt.Sprintf("c-%d", time.Now().UnixNano()), reqID, fmt.Sprintf(format, args...))
 }

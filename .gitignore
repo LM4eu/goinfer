@@ -5,6 +5,6 @@
 /go-llama.cpp
 /goinfer
 /goinfer.yml
+/infer/dist
 /llama-server
 /llama-swap.yml
-/server/dist

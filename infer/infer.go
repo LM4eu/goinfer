@@ -1,7 +1,7 @@
 // Copyright 2025 The contributors of Goinfer.
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
-package server
+package infer
 
 import (
 	"context"
@@ -10,19 +10,17 @@ import (
 	"time"
 
 	"github.com/LM4eu/goinfer/gie"
-	"github.com/LM4eu/goinfer/state"
-	"github.com/LM4eu/goinfer/types"
 	"github.com/labstack/echo/v4"
 )
 
 // inferHandler handles infer requests.
-func (pi *ProxyInfer) inferHandler(c echo.Context) error {
+func (inf *Infer) inferHandler(c echo.Context) error {
 	// Initialize context with timeout
 	ctx, cancel := context.WithTimeout(c.Request().Context(), 30*time.Second)
 	defer cancel()
 
-	// Check if infer is already running using ProxyInfer
-	if pi.IsInferring {
+	// Check if infer is already running using Infer
+	if inf.IsInferring {
 		fmt.Println("Infer already running")
 		return c.NoContent(http.StatusAccepted)
 	}
@@ -47,13 +45,13 @@ func (pi *ProxyInfer) inferHandler(c echo.Context) error {
 	}
 
 	// Execute infer directly (no retry)
-	result, err := pi.execute(c, ctx, query)
+	result, err := inf.execute(c, ctx, query)
 	if err != nil {
 		return err
 	}
 
 	// Handle the infer result
-	if state.Verbose {
+	if inf.Cfg.Verbose {
 		fmt.Println("INF: -------- result ----------")
 		for key, value := range result.Data {
 			fmt.Printf("INF: %s: %v\n", key, value)
@@ -68,11 +66,11 @@ func (pi *ProxyInfer) inferHandler(c echo.Context) error {
 }
 
 // parseInferQuery parses infer parameters from echo.Map directly.
-func parseInferQuery(m echo.Map) (*types.InferQuery, error) {
-	req := &types.InferQuery{
+func parseInferQuery(m echo.Map) (*InferQuery, error) {
+	req := &InferQuery{
 		Prompt: "",
-		Model:  types.DefaultModel,
-		Params: types.DefaultInferParams,
+		Model:  DefaultModel,
+		Params: DefaultInferParams,
 	}
 
 	// Check required prompt parameter
@@ -171,20 +169,20 @@ func parseInferQuery(m echo.Map) (*types.InferQuery, error) {
 	return req, nil
 }
 
-// execute executes inference using ProxyInfer.
-func (pi *ProxyInfer) execute(c echo.Context, ctx context.Context, query *types.InferQuery) (*types.StreamedMsg, error) {
-	// Execute infer through ProxyInfer
-	resChan := make(chan types.StreamedMsg)
-	errChan := make(chan types.StreamedMsg)
+// execute inference.
+func (inf *Infer) execute(c echo.Context, ctx context.Context, query *InferQuery) (*StreamedMsg, error) {
+	// Execute infer through Infer
+	resChan := make(chan StreamedMsg)
+	errChan := make(chan StreamedMsg)
 	defer close(resChan)
 	defer close(errChan)
 
-	err := pi.forwardInference(ctx, query, c, resChan, errChan)
+	err := inf.forwardInference(ctx, query, c, resChan, errChan)
 	if err != nil {
 		return nil, gie.Wrap(err, gie.TypeInference, "PROXY_FORWARD_FAILED", "proxy manager forward inference failed")
 	}
 
-	// Process response from ProxyInfer
+	// Process response
 	select {
 	case res, ok := <-resChan:
 		if ok {
@@ -194,7 +192,7 @@ func (pi *ProxyInfer) execute(c echo.Context, ctx context.Context, query *types.
 
 	case err, ok := <-errChan:
 		if ok {
-			if err.MsgType == types.ErrorMsgType {
+			if err.MsgType == ErrorMsgType {
 				return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", "infer error: "+err.Content)
 			}
 			return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", fmt.Sprintf("infer error: %v", err))
@@ -203,20 +201,20 @@ func (pi *ProxyInfer) execute(c echo.Context, ctx context.Context, query *types.
 
 	case <-ctx.Done():
 		// Client canceled request
-		state.ContinueInferringController = false
+		inf.ContinueInferringController = false
 		return nil, gie.ErrClientCanceled
 	}
 }
 
-// abortHandler aborts ongoing inference using ProxyInfer.
-func (pi *ProxyInfer) abortHandler(c echo.Context) error {
-	err := pi.abortInference()
+// abortHandler aborts ongoing inference.
+func (inf *Infer) abortHandler(c echo.Context) error {
+	err := inf.abortInference()
 	if err != nil {
 		fmt.Printf("INF: %v\n", err)
 		return c.NoContent(http.StatusAccepted)
 	}
 
-	if state.Verbose {
+	if inf.Cfg.Verbose {
 		fmt.Println("INF: Aborting inference")
 	}
 
@@ -224,7 +222,7 @@ func (pi *ProxyInfer) abortHandler(c echo.Context) error {
 }
 
 // populateStopPrompts extracts and validates the "stop" parameter from the request map.
-func populateStopPrompts(m echo.Map, gen *types.Generation) error {
+func populateStopPrompts(m echo.Map, gen *Generation) error {
 	v, ok := m["stop"]
 	if !ok {
 		return nil

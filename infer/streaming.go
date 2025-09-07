@@ -2,18 +2,17 @@
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
 
-package lm
+package infer
 
 import (
 	"context"
 	"encoding/json"
 
-	"github.com/LM4eu/goinfer/types"
 	"github.com/labstack/echo/v4"
 )
 
 // write writes a stream message to the client.
-func write(ctx context.Context, c echo.Context, jsonEncoder *json.Encoder, msg *types.StreamedMsg) error {
+func write(ctx context.Context, c echo.Context, jsonEncoder *json.Encoder, msg *StreamedMsg) error {
 	err := ctx.Err()
 	if err != nil {
 		return err
