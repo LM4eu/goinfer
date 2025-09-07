@@ -21,7 +21,7 @@ import (
 var IsInferringTODO bool
 
 // Infer performs language model inference.
-func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resChan, errorChan chan<- types.StreamedMsg) {
+func Infer(ctx context.Context, query *types.InferQuery, c echo.Context, resChan, errChan chan<- types.StreamedMsg) {
 	// Create context with request ID
 	reqID := gic.GenReqID()
 	ctx = context.WithValue(ctx, "requestID", reqID)
