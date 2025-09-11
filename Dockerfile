@@ -56,7 +56,7 @@ RUN set -ex                         ;\
 
 # --------------------------------------------------------------------
 # https://hub.docker.com/_/golang
-FROM docker.io/golang:1.24 AS goinfer-builder
+FROM docker.io/golang:1.25 AS goinfer-builder
 
 ARG uid
 
@@ -90,7 +90,7 @@ COPY --from=infergui-builder  dist  server/dist
 ENV GOPATH=/root/go
 
 # Go build flags: "-s -w" removes all debug symbols: https://pkg.go.dev/cmd/link
-# GOAMD64=v3 --> https://github.com/golang/go/wiki/MinimumRequirements#amd64
+# GOAMD64=v3 --> https://go.dev/wiki/MinimumRequirements#amd64
 RUN --mount=type=cache,target=${GOPATH}       \
     ls -lShA . server/dist                   ;\
     CGO_ENABLED=0                             \
@@ -301,7 +301,7 @@ RUN set -ex                                           ;\
 RUN cp -v build/bin/* /app
 
 # llama-server may be run with "--jinja --chat-template-file template.jinja"
-COPY template.jinja /app/
+COPY scripts/template.jinja /app/
 
 
 # --------------------------------------------------------------------

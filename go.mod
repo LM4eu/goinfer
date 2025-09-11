@@ -1,10 +1,10 @@
-// bump llama-swap:
+// to set the latest version of llama-swap:
 //
 //    go get github.com/mostlygeek/llama-swap@main
 
 module github.com/LM4eu/goinfer
 
-go 1.25.0
+go 1.25
 
 require (
 	github.com/labstack/echo/v4 v4.13.4
