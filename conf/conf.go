@@ -83,7 +83,7 @@ func (cfg *GoInferCfg) Create(goinferCfgFile string, noAPIKey bool) error {
 		cfg.Server.APIKeys["admin"] = genAPIKey(cfg.Debug)
 		cfg.Server.APIKeys["user"] = genAPIKey(cfg.Debug)
 		if cfg.Debug {
-			fmt.Printf("WRN: Configuration file %s with DEBUG api key. This is not suitable for production use.\n", goinferCfgFile)
+			fmt.Printf("WRN: Configuration file %s with DEBUG API key. This is not suitable for production use.\n", goinferCfgFile)
 		} else {
 			fmt.Printf("INF: Configuration file %s with secure API keys.\n", goinferCfgFile)
 		}

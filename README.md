@@ -1,37 +1,18 @@
 # Goinfer
 
-Inference api server for local gguf language models. Based on [llama.cpp](https://github.com/ggml-org/llama.cpp) and [llama-swap](https://github.com/mostlygeek/llama-swap).
+Inference proxy server for local large language models (LLM) using `*.gguf` files.
+Goinfer is based on [llama.cpp](https://github.com/ggml-org/llama.cpp) and [llama-swap](https://github.com/mostlygeek/llama-swap).
 
 - **Multi models**: switch between models at runtime
-- **Inference queries**: http api and streaming response support
+- **Inference queries**: HTTP API and streaming response support
+- **Admin web UI**: [Infergui](https://github.com/synw/infergui)
 
-Works with the [Infergui](https://github.com/synw/infergui) frontend
-
-<details>
-<summary>:books: Read the <a href="https://synw.github.io/goinfer/">documentation</a></summary>
-
- - [Get started](https://synw.github.io/goinfer/get_started)
-    - [Install](https://synw.github.io/goinfer/get_started/install)
-    - [Configure](https://synw.github.io/goinfer/get_started/configure)
-    - [Run](https://synw.github.io/goinfer/get_started/run)
- - [Llama api](https://synw.github.io/goinfer/llama_api)
-    - [Models state](https://synw.github.io/goinfer/llama_api/models_state)
-    - [Load model](https://synw.github.io/goinfer/llama_api/load_model)
-    - [Inference](https://synw.github.io/goinfer/llama_api/inference)
-    - [Tasks](https://synw.github.io/goinfer/llama_api/tasks)
-    - [Templates](https://synw.github.io/goinfer/llama_api/templates)
- - [Openai api](https://synw.github.io/goinfer/openai_api)
-    - [Configure](https://synw.github.io/goinfer/openai_api/configure)
-    - [Endpoints](https://synw.github.io/goinfer/openai_api/endpoints)
-
-</details>
-
-# System Requirements and Dependencies
+## System Requirements and Dependencies
 
 Goinfer requires [`llama-server`](https://github.com/ggml-org/llama.cpp/tree/master/tools/server).
 `llama-server` infers faster on GPU. Below is the recipe to get a reproducible production environment based on Nvidia CUDA that officially supports Ubuntu-24.04. The following instructions have been inspired from https://github.com/rourken/ubuntu-gpu-ml-setup/blob/main/INSTALL.md
 
-```
+```sh
 sudo apt-get update
 sudo apt-get dist-upgrade --yes
 
