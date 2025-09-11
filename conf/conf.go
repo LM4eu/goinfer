@@ -117,7 +117,7 @@ func (cfg *GoInferCfg) Create(goinferCfgFile string, noAPIKey bool) error {
 func (cfg *GoInferCfg) Load(goinferCfgFile string, noAPIKey bool) error {
 	// Load from file if specified
 	if goinferCfgFile != "" {
-		yml, err := os.ReadFile(filepath.Clean(goinferCfgFile)) // TODO: Use OpenFileIn() from Go-1.25
+		yml, err := os.ReadFile(filepath.Clean(goinferCfgFile))
 		if err != nil {
 			return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_FILE_READ_FAILED", "failed to read "+goinferCfgFile)
 		}
