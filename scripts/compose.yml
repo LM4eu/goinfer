@@ -1,0 +1,22 @@
+services:
+
+  llama:
+    image: llama
+    container_name: llama
+    build:
+      context: ../llama.cpp
+      dockerfile: ../scripts/llama.Dockerfile
+      args:
+        - CUDA_VERSION=12.4.0 # https://developer.nvidia.com/cuda-gpus
+        - CUDA_MAJOR_MINOR=12.4
+        - CUDA_DOCKER_ARCH=86
+        - UBUNTU_VERSION=22.04
+    volumes:
+      - ./ccache:/usr/share/ccache
+    environment:
+      - TZ=UTC0 # time.Unix() uses UTC instead of local time zone
+      - CCACHE_DIR=/usr/share/ccache
+      - CCACHE_MAXSIZE=5G
+    # restart: unless-stopped
+    expose:
+      - 8080
