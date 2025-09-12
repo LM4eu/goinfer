@@ -6,6 +6,10 @@
         "-y",
         "@modelcontextprotocol/server-filesystem",
         "/home/c/j3/goinfer"
+      ],
+      "alwaysAllow": [
+        "search_files",
+        "list_directory"
       ]
     }
   }
