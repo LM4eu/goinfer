@@ -6,7 +6,7 @@ command -V cargo  || { echo REQUIRED: install rustup and run: rustup default sta
 command -V ccache || { echo REQUIRED: install ccache && exit ; }
 
 cd ${0%/*}  # go to the directory of this script
-cd ../llama.cpp
+cd ../../llama.cpp
 
 # Generate the Ninja files (rather than the Makefile)
 cmake -B build -G Ninja \

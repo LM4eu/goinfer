@@ -6,7 +6,7 @@ set -xe
 cd ${0%/*}
 
 (
-	cd ../llama.cpp
+	cd ../../llama.cpp
 
 	rm build -rf
 
