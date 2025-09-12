@@ -10,8 +10,15 @@ command -V ccache || { echo REQUIRED: install ccache && exit ; }
 cd ${0%/*}  # go to the directory of this script
 cd ../../llama.cpp
 
+# build directory
+build=build
+
+# Guarantee a clean build by resetting the build directory.
+# Fortunately ccache retrieves most of the deleted object files.
+rm $build -rf
+
 # Generate the Ninja files (rather than the Makefile)
-cmake -B build -G Ninja \
+cmake -B $build -G Ninja \
   -D CMAKE_CUDA_ARCHITECTURES=86 \
   -D CMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-14 \
   -D CMAKE_EXE_LINKER_FLAGS="-Wl,--allow-shlib-undefined,-flto" \
@@ -34,4 +41,4 @@ cmake -B build -G Ninja \
   .
 
 # The build use ninja instead of make
-cmake --build build --config Release --clean-first --target llama-server
+cmake --build $build --config Release --clean-first --target llama-server
