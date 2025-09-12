@@ -78,7 +78,6 @@ linters:
     - godot
     - godox
     - goheader
-    - gomodguard
     - goprintffuncname # Checks that printf-like functions are named with f at the end.
     - gosec # Inspects source code for security problems
     - gosmopolitan

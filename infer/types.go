@@ -32,8 +32,8 @@ type (
 
 	// Media contains media-related configuration.
 	Media struct {
-		Images []byte `json:"images,omitempty" yaml:"images,omitempty"`
-		Audios []byte `json:"audios,omitempty" yaml:"audios,omitempty"`
+		Images []string `json:"images,omitempty" yaml:"images,omitempty"`
+		Audios []string `json:"audios,omitempty" yaml:"audios,omitempty"`
 	}
 
 	// InferParams holds parameters for inference.

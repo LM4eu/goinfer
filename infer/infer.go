@@ -67,106 +67,82 @@ func (inf *Infer) inferHandler(c echo.Context) error {
 
 // parseInferQuery parses infer parameters from echo.Map directly.
 func parseInferQuery(m echo.Map) (*InferQuery, error) {
-	req := &InferQuery{
+	query := &InferQuery{
 		Prompt: "",
 		Model:  DefaultModel,
 		Params: DefaultInferParams,
 	}
 
-	// Check required prompt parameter
-	if _, ok := m["prompt"]; !ok {
-		return req, gie.ErrPromptRequired
-	}
-
-	// Parse simple parameters directly
+	// Parse required prompt parameter
 	if val, ok := m["prompt"].(string); ok {
-		req.Prompt = val
+		query.Prompt = val
 	} else {
-		return req, gie.ErrInvalidPrompt
+		return query, gie.ErrInvalidPrompt
 	}
 
 	if val, ok := m["model"].(string); ok {
-		req.Model.Name = val
+		query.Model.Name = val
 	}
 
-	if val, ok := m["ctx"].(int); ok {
-		req.Model.Ctx = val
-	}
+	query.Model.Ctx = getInt(m, "ctx")
 
 	if val, ok := m["stream"].(bool); ok {
-		req.Params.Stream = val
+		query.Params.Stream = val
 	}
 
-	if val, ok := m["temperature"].(float64); ok {
-		req.Params.Sampling.Temperature = float32(val)
-	}
-
-	if val, ok := m["min_p"].(float64); ok {
-		req.Params.Sampling.MinP = float32(val)
-	}
-
-	if val, ok := m["top_p"].(float64); ok {
-		req.Params.Sampling.TopP = float32(val)
-	}
-
-	if val, ok := m["presence_penalty"].(float64); ok {
-		req.Params.Sampling.PresencePenalty = float32(val)
-	}
-
-	if val, ok := m["frequency_penalty"].(float64); ok {
-		req.Params.Sampling.FrequencyPenalty = float32(val)
-	}
-
-	if val, ok := m["repeat_penalty"].(float64); ok {
-		req.Params.Sampling.RepeatPenalty = float32(val)
-	}
-
-	if val, ok := m["tfs"].(float64); ok {
-		req.Params.Sampling.TailFreeSamplingZ = float32(val)
-	}
-
-	if val, ok := m["top_k"].(int); ok {
-		req.Params.Sampling.TopK = val
-	}
-
-	if val, ok := m["max_tokens"].(int); ok {
-		req.Params.Generation.MaxTokens = val
-	}
+	query.Params.Sampling.Temperature = getFloat(m, "temperature")
+	query.Params.Sampling.MinP = getFloat(m, "min_p")
+	query.Params.Sampling.TopP = getFloat(m, "top_p")
+	query.Params.Sampling.PresencePenalty = getFloat(m, "presence_penalty")
+	query.Params.Sampling.FrequencyPenalty = getFloat(m, "frequency_penalty")
+	query.Params.Sampling.RepeatPenalty = getFloat(m, "repeat_penalty")
+	query.Params.Sampling.TailFreeSamplingZ = getFloat(m, "tfs")
+	query.Params.Sampling.TopK = getInt(m, "top_k")
+	query.Params.Generation.MaxTokens = getInt(m, "max_tokens")
 
 	// Parse stop prompts array
-	err := populateStopPrompts(m, &req.Params.Generation)
+	err := populateStopPrompts(m, &query.Params.Generation)
 	if err != nil {
-		return req, err
+		return query, err
 	}
 
-	// Parse media byte arrays
-	if v, ok := m["images"]; ok {
-		if sliceImg, okImg := v.([]any); okImg && len(sliceImg) > 0 {
-			req.Params.Media.Images = make([]byte, len(sliceImg))
-			for i, val := range sliceImg {
-				imgByte, okImg := val.(byte)
-				if !okImg {
-					return req, fmt.Errorf("images[%d] must be a byte", i)
-				}
-				req.Params.Media.Images[i] = imgByte
-			}
+	// Parse media arrays
+	if images, ok := m["images"].([]string); ok {
+		query.Params.Media.Images = images
+	}
+	if audios, ok := m["audios"].([]string); ok {
+		query.Params.Media.Audios = audios
+	}
+
+	return query, nil
+}
+
+func getInt(m echo.Map, param string) int {
+	if v, ok := m[param]; ok {
+		switch val := v.(type) {
+		case int:
+			return val
+		case float64:
+			return int(val)
+		default:
+			fmt.Printf("Expected int (or float64) but received %s=%v", param, m[param])
 		}
 	}
+	return 0
+}
 
-	if v, ok := m["audios"]; ok {
-		if sliceAud, okAud := v.([]any); okAud && len(sliceAud) > 0 {
-			req.Params.Media.Audios = make([]byte, len(sliceAud))
-			for i, val := range sliceAud {
-				audioByte, okAud := val.(byte)
-				if !okAud {
-					return req, fmt.Errorf("audios[%d] must be a byte", i)
-				}
-				req.Params.Media.Audios[i] = audioByte
-			}
+func getFloat(m echo.Map, param string) float32 {
+	if v, ok := m[param]; ok {
+		switch val := v.(type) {
+		case int:
+			return float32(val)
+		case float64:
+			return float32(val)
+		default:
+			fmt.Printf("Expected float64 (or int) but received %s=%v", param, m[param])
 		}
 	}
-
-	return req, nil
+	return 0
 }
 
 // execute inference.
