@@ -1,5 +1,7 @@
 *.gguf
+/.continue/
 /.old-code
+/.roo/
 /.vscode
 /docsite/dist
 /go-llama.cpp
