@@ -66,6 +66,12 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 	if query.Params.Stream {
 		err = inf.completeStream(ctx, c, nTok)
 		if err != nil {
+			// Forward the error to the caller via errChan
+			errChan <- StreamedMsg{
+				Num:     0,
+				Content: err.Error(),
+				MsgType: ErrorMsgType,
+			}
 			return
 		}
 	}
