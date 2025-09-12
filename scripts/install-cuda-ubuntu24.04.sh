@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+
+set -xe
 
 # This script has been heavily inspired from
 # https://github.com/rourken/ubuntu-gpu-ml-setup/blob/main/INSTALL.md

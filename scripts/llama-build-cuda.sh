@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -xe
 
 command -V cmake  || { echo REQUIRED: install cmake  && exit ; }
 command -V ninja  || { echo REQUIRED: install ninja  && exit ; }

@@ -1,3 +1,7 @@
+#!/bin/bash
+
+set -xe
+
 npm i -g \
     @agent-smith/body@latest \
     @agent-smith/brain@latest \

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -xe
+
 # https://github.com/emk/llama-server-local-model-config/blob/main/gpt-oss-20b/run.sh
 # https://github.com/ggml-org/llama.cpp/discussions/15396
 # https://docs.unsloth.ai/basics/gpt-oss-how-to-run-and-fine-tune#recommended-settings
