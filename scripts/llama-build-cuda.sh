@@ -33,7 +33,7 @@ cmake -B $build -G Ninja \
   -D GGML_NATIVE=ON \
   -D GGML_STATIC=ON \
   -D BUILD_SHARED_LIBS=OFF \
-  -D LLAMA_BUILD_EXAMPLES=OFF \
+  -D LLAMA_BUILD_EXAMPLES=ON \
   -D LLAMA_BUILD_TESTS=OFF \
   -D LLAMA_BUILD_TOOLS=ON \
   -D LLAMA_CURL=ON \
@@ -41,4 +41,4 @@ cmake -B $build -G Ninja \
   .
 
 # The build use ninja instead of make
-cmake --build $build --config Release --clean-first --target llama-server
+cmake --build $build --config Release --clean-first --target llama-server llama-gguf
