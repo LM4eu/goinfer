@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 command -V cmake  || { echo REQUIRED: install cmake  && exit ; }
 command -V ninja  || { echo REQUIRED: install ninja  && exit ; }
 command -V cargo  || { echo REQUIRED: install rustup and run: rustup default stable && exit ; }
@@ -32,4 +33,4 @@ cmake -B build -G Ninja \
   .
 
 # The build use ninja instead of make
-cmake --build build --config Release --target llama-server
+cmake --build build --config Release --clean-first --target llama-server

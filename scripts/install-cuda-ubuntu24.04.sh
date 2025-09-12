@@ -19,6 +19,9 @@ $sudo apt-get dist-upgrade --yes
 
 $sudo apt-get install ubuntu-server --yes
 
+apt-get update
+apt-get install  -y
+
 $sudo apt-get install --yes \
    autoconf \
    automake \
@@ -35,6 +38,7 @@ $sudo apt-get install --yes \
    libatlas-base-dev \
    libavcodec-dev \
    libavformat-dev \
+   libcurl4-openssl-dev \
    libdav1d-dev \
    libfaac-dev \
    libfdk-aac-dev \
@@ -73,11 +77,11 @@ $sudo apt-get install --yes \
    nasm \
    neofetch \
    net-tools \
+   pciutils \
    pkg-config \
    portaudio19-dev \
    protobuf-compiler \
    pyqt5-dev-tools \
-   python3 \
    python3-dev \
    python3-packaging \
    python3-pip \
