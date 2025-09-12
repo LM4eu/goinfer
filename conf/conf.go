@@ -233,6 +233,8 @@ func (cfg *GoInferCfg) Print() {
 	fmt.Println("-----------------------------")
 }
 
+// applyEnvVars read optional env vars to change the configuration.
+// The environment variables precede the config file.
 func (cfg *GoInferCfg) applyEnvVars() {
 	// Load environment variables
 	if dir := os.Getenv("GI_MODELS_DIR"); dir != "" {
