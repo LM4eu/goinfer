@@ -16,11 +16,16 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// typed context key to prevent key collisions.
+type ctxKey string
+
+const requestIDKey ctxKey = "requestID"
+
 // Infer performs language model inference.
 func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, resChan, errChan chan<- StreamedMsg) {
 	// Create context with request ID
 	reqID := gic.GenReqID()
-	ctx = context.WithValue(ctx, "requestID", reqID)
+	ctx = context.WithValue(ctx, requestIDKey, reqID)
 
 	// Early validation checks
 	if ctx.Err() != nil {
@@ -251,7 +256,7 @@ func (inf *Infer) logMsg(ctx context.Context, format string, args ...any) {
 	}
 
 	reqID := "req"
-	if id := ctx.Value("requestID"); id != nil {
+	if id := ctx.Value(requestIDKey); id != nil {
 		if str, ok := id.(string); ok {
 			reqID = str
 		}
