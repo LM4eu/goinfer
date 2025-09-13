@@ -25,22 +25,24 @@ linters:
   default: all
 
   disable:
-    - nlreturn
-    - wsl
-    - wsl_v5
+    - arangolint # arangoDB
     - depguard # list of acceptable packages, exclude other packages
+    - dogsled # Checks assignments with too many blank identifiers (e.g. x, _, _, _, := f()).
     - err113 # do not define dynamic errors, use wrapped static errors instead
-    - wrapcheck
-    - gochecknoglobals
     - forbidigo
     - ginkgolinter
-    - arangolint # arangoDB
-    - dogsled # Checks assignments with too many blank identifiers (e.g. x, _, _, _, := f()).
+    - gochecknoglobals
     - gomoddirectives # directives 'replace', 'retract' and 'excludes' in go.mod
     - gomodguard # another Go module dependencies blocker, more featured than depguard
+    - ireturn
     - mnd # Magic number
+    - nlreturn
     - revive
     - staticcheck
+    - testpackage
+    - wrapcheck
+    - wsl
+    - wsl_v5
 
   enable:
     - asasalint # Check for pass []any as any in variadic func(…any).
@@ -89,7 +91,6 @@ linters:
     - ineffassign
     - interfacebloat
     - intrange
-    - ireturn
     - lll
     - loggercheck
     - maintidx
@@ -123,7 +124,6 @@ linters:
     - tagliatelle
     - testableexamples
     - testifylint
-    - testpackage
     - thelper
     - tparallel
     - unconvert
