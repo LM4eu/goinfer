@@ -52,7 +52,8 @@ func (inf *Infer) inferHandler(c echo.Context) error {
 	// Execute infer directly (no retry)
 	result, err := inf.execute(c, ctx, query)
 	if err != nil {
-		return err
+		// Use the generic inference error handler to avoid exposing internal error messages.
+		return gie.HandleInferenceError(c, err)
 	}
 
 	// Handle the infer result
