@@ -27,6 +27,7 @@ type Infer struct {
 //go:embed all:dist
 var embeddedFiles embed.FS
 
+// NewEcho creates a new Echo server configured with Goinfer routes and middleware.
 func (inf *Infer) NewEcho(cfg *conf.GoInferCfg, addr string,
 	enableAdminWebUI, enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint bool,
 ) *echo.Echo {

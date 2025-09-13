@@ -6,13 +6,13 @@ package infer
 
 type (
 
-	// Model holds configuration for a model.
+	// Model represents the model configuration used for inference.
 	Model struct {
 		Name string `json:"name,omitempty" yaml:"name,omitempty"`
 		Ctx  int    `json:"ctx,omitempty"  yaml:"ctx,omitempty"`
 	}
 
-	// Sampling contains sampling-related configuration.
+	// Sampling represents the sampling configuration for inference.
 	Sampling struct {
 		TopK              int     `json:"top_k,omitempty"             yaml:"top_k,omitempty"`
 		TopP              float32 `json:"top_p,omitempty"             yaml:"top_p,omitempty"`
@@ -24,19 +24,19 @@ type (
 		TailFreeSamplingZ float32 `json:"tfs,omitempty"               yaml:"tfs,omitempty"`
 	}
 
-	// Generation contains generation-related configuration.
+	// Generation represents the generation configuration for inference.
 	Generation struct {
 		StopPrompts []string `json:"stop,omitempty"       yaml:"stop,omitempty"`
 		MaxTokens   int      `json:"max_tokens,omitempty" yaml:"max_tokens,omitempty"`
 	}
 
-	// Media contains media-related configuration.
+	// Media represents the media configuration used in inference.
 	Media struct {
 		Images []string `json:"images,omitempty" yaml:"images,omitempty"`
 		Audios []string `json:"audios,omitempty" yaml:"audios,omitempty"`
 	}
 
-	// InferParams holds parameters for inference.
+	// InferParams represents the parameters for an inference request.
 	InferParams struct {
 		Media      Media      `json:"media"      yaml:"media"`
 		Generation Generation `json:"generation" yaml:"generation"`
@@ -44,7 +44,7 @@ type (
 		Stream     bool       `json:"stream"     yaml:"stream"`
 	}
 
-	// InferQuery represents a task to be executed.
+	// InferQuery represents an inference task request.
 	InferQuery struct {
 		Prompt string      `json:"prompt,omitempty" yaml:"prompt,omitempty"`
 		Model  Model       `json:"model"            yaml:"model"`
@@ -59,14 +59,17 @@ type (
 		Num     int            `json:"num,omitempty"`
 	}
 
-	// MsgType represents the type of a message.
+	// MsgType represents the type of a message in the inference protocol.
 	MsgType string
 )
 
 const (
-	TokenMsgType  MsgType = "token"
+	// TokenMsgType represents a token message type.
+	TokenMsgType MsgType = "token"
+	// SystemMsgType represents a system message type.
 	SystemMsgType MsgType = "system"
-	ErrorMsgType  MsgType = "error"
+	// ErrorMsgType represents an error message type.
+	ErrorMsgType MsgType = "error"
 )
 
 var (
