@@ -124,28 +124,30 @@ func parseInferQuery(m echo.Map) (*InferQuery, error) {
 }
 
 func getInt(m echo.Map, param string) int {
-	if v, ok := m[param]; ok {
+	v, ok := m[param]
+	if ok {
 		switch val := v.(type) {
 		case int:
 			return val
 		case float64:
 			return int(val)
 		default:
-			fmt.Printf("Expected int (or float64) but received %s=%v", param, m[param])
+			fmt.Printf("WRN: expected int (or float64) but received %s=%v", param, m[param])
 		}
 	}
 	return 0
 }
 
 func getFloat(m echo.Map, param string) float32 {
-	if v, ok := m[param]; ok {
+	v, ok := m[param]
+	if ok {
 		switch val := v.(type) {
 		case int:
 			return float32(val)
 		case float64:
 			return float32(val)
 		default:
-			fmt.Printf("Expected float64 (or int) but received %s=%v", param, m[param])
+			fmt.Printf("WRN: expected float64 (or int) but received %s=%v", param, m[param])
 		}
 	}
 	return 0
