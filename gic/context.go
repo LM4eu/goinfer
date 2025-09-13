@@ -12,6 +12,11 @@ import (
 	"time"
 )
 
+// typed context key to prevent key collisions.
+type CtxKey string
+
+const RequestIDKey CtxKey = "requestID"
+
 // GenReqID generates a unique request ID for correlation.
 func GenReqID() string {
 	return strconv.FormatInt(time.Now().UnixNano(), 10)
@@ -28,7 +33,7 @@ func LogCtxAwareError(ctx context.Context, operation string, err error) {
 
 // getReqID extracts the request ID from context or generates a new one.
 func getReqID(ctx context.Context) string {
-	reqID := ctx.Value("requestID")
+	reqID := ctx.Value(RequestIDKey)
 	if reqID == nil {
 		return GenReqID()
 	}
