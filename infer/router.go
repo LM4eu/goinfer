@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/LM4eu/goinfer/conf"
 	"github.com/LM4eu/goinfer/gie"
@@ -22,6 +23,7 @@ type Infer struct {
 	Cfg                         *conf.GoInferCfg
 	IsInferring                 bool
 	ContinueInferringController bool
+	mu                          sync.Mutex
 }
 
 //go:embed all:dist

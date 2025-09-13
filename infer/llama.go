@@ -103,8 +103,10 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 // runInfer performs the actual inference with token streaming.
 func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *InferQuery) (int, error) {
 	// Start the infer process
+	inf.mu.Lock()
 	inf.IsInferring = true
 	inf.ContinueInferringController = true
+	inf.mu.Unlock()
 
 	nTok := 0
 	startThinking := time.Now()
@@ -140,7 +142,10 @@ func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *InferQuer
 
 		// Simulate token streaming
 		for i := range 10 {
-			if !inf.ContinueInferringController {
+			inf.mu.Lock()
+			stopped := !inf.ContinueInferringController
+			inf.mu.Unlock()
+			if stopped {
 				break
 			}
 
@@ -154,7 +159,9 @@ func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *InferQuer
 		}
 	}
 
+	inf.mu.Lock()
 	inf.IsInferring = false
+	inf.mu.Unlock()
 	return nTok, giErr
 }
 
@@ -168,7 +175,9 @@ func (inf *Infer) completeStream(ctx context.Context, c echo.Context, _ int) err
 
 	err := sendTerm(ctx, c)
 	if err != nil {
+		inf.mu.Lock()
 		inf.ContinueInferringController = false
+		inf.mu.Unlock()
 		er := gie.Wrap(err, gie.TypeInference, "STREAM_TERMINATION_FAILED", "stream termination failed")
 		gic.LogCtxAwareError(ctx, "stream_termination", er)
 		inf.logError(ctx, "Llama", "cannot send stream termination", er)
@@ -194,7 +203,10 @@ func (inf *Infer) streamToken(
 		*startEmitting = time.Now()
 		*thinkingElapsed = time.Since(startThinking)
 
-		if params.Stream && inf.ContinueInferringController {
+		inf.mu.Lock()
+		continueInf := inf.ContinueInferringController
+		inf.mu.Unlock()
+		if params.Stream && continueInf {
 			sMsg := &StreamedMsg{
 				Content: "start_emitting",
 				Num:     nTok,
@@ -213,7 +225,10 @@ func (inf *Infer) streamToken(
 	}
 
 	// Check if stopped
-	if !inf.ContinueInferringController {
+	inf.mu.Lock()
+	stopped := !inf.ContinueInferringController
+	inf.mu.Unlock()
+	if stopped {
 		return nil
 	}
 

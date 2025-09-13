@@ -22,10 +22,13 @@ func (inf *Infer) inferHandler(c echo.Context) error {
 	defer cancel()
 
 	// Check if infer is already running using Infer
+	inf.mu.Lock()
 	if inf.IsInferring {
 		fmt.Println("Infer already running")
+		inf.mu.Unlock()
 		return c.NoContent(http.StatusAccepted)
 	}
+	inf.mu.Unlock()
 
 	// Bind request parameters
 	reqMap := echo.Map{}
@@ -179,7 +182,9 @@ func (inf *Infer) execute(c echo.Context, ctx context.Context, query *InferQuery
 
 	case <-ctx.Done():
 		// Client canceled request
+		inf.mu.Lock()
 		inf.ContinueInferringController = false
+		inf.mu.Unlock()
 		return nil, gie.ErrClientCanceled
 	}
 }

@@ -16,7 +16,9 @@ import (
 // forwardInference forwards an inference request to the backend.
 func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c echo.Context, resChan, errChan chan<- StreamedMsg) error {
 	// Check if infer is already running
+	inf.mu.Lock()
 	if inf.IsInferring {
+		inf.mu.Unlock()
 		errChan <- StreamedMsg{
 			Num:     0,
 			Content: gie.Wrap(gie.ErrInferRunning, gie.TypeInference, "INFERENCE_RUNNING", "infer already running").Error(),
@@ -24,6 +26,7 @@ func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c ech
 		}
 		return nil
 	}
+	inf.mu.Unlock()
 
 	// Execute infer in goroutine with timeout
 	inferCtx, cancel := context.WithTimeout(ctx, time.Minute*5)
@@ -31,8 +34,6 @@ func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c ech
 
 	resChanInternal := make(chan StreamedMsg)
 	errChanInternal := make(chan StreamedMsg)
-	defer close(resChanInternal)
-	defer close(errChanInternal)
 
 	go inf.Infer(inferCtx, query, c, resChanInternal, errChanInternal)
 
@@ -69,7 +70,9 @@ func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c ech
 		}
 	case <-ctx.Done():
 		// Client canceled request
+		inf.mu.Lock()
 		inf.ContinueInferringController = false
+		inf.mu.Unlock()
 		errChan <- StreamedMsg{
 			Num:     0,
 			Content: gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CLIENT_CANCELED", "req canceled by client").Error(),
@@ -82,6 +85,8 @@ func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c ech
 
 // abortInference aborts an ongoing inference.
 func (inf *Infer) abortInference() error {
+	inf.mu.Lock()
+	defer inf.mu.Unlock()
 	if !inf.IsInferring {
 		return gie.Wrap(gie.ErrInferNotRunning, gie.TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
 	}
