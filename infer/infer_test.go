@@ -31,6 +31,7 @@ func newEcho(req *http.Request) (echo.Context, *httptest.ResponseRecorder) {
 //--- 1. parseInferQuery – valid payload ---------------------------------------
 
 func TestParseInferQuery_ValidPayload(t *testing.T) {
+	t.Parallel()
 	payload := map[string]any{
 		"prompt":      "hello",
 		"model":       "dummy-model",
@@ -76,6 +77,7 @@ func TestParseInferQuery_ValidPayload(t *testing.T) {
 //--- 2. parseInferQuery – missing required `prompt` -------------------------
 
 func TestParseInferQuery_MissingPrompt(t *testing.T) {
+	t.Parallel()
 	payload := map[string]any{
 		"model": "dummy",
 	}
@@ -91,6 +93,7 @@ func TestParseInferQuery_MissingPrompt(t *testing.T) {
 //--- 3. getInt – type mismatch ------------------------------------------------
 
 func TestGetInt_TypeMismatch(t *testing.T) {
+	t.Parallel()
 	m := echo.Map{
 		"someInt": "not-an-int",
 	}
@@ -103,6 +106,7 @@ func TestGetInt_TypeMismatch(t *testing.T) {
 //--- 4. getFloat – type mismatch ----------------------------------------------
 
 func TestGetFloat_TypeMismatch(t *testing.T) {
+	t.Parallel()
 	m := echo.Map{
 		"someFloat": "not-a-float",
 	}
@@ -115,6 +119,7 @@ func TestGetFloat_TypeMismatch(t *testing.T) {
 //--- 5. Concurrency guard – only one inference at a time ---------------------
 
 func TestConcurrencyGuard(t *testing.T) {
+	t.Parallel()
 	// Build a dummy Infer instance – we can keep Cfg nil because the handler
 	// never dereferences it before the mutex check.
 	inf := &Infer{
