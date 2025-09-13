@@ -51,19 +51,7 @@ type (
 		Params InferParams `json:"params"           yaml:"params"`
 	}
 
-	// InferStat holds unified statistics about infer.
-	InferStat struct {
-		ThinkingTimeFormat string  `json:"thinking_time_format,omitempty"`
-		EmitTimeFormat     string  `json:"emit_time_format,omitempty"`
-		TotalTimeFormat    string  `json:"total_time_format,omitempty"`
-		ThinkingTime       float64 `json:"thinking_time,omitempty"`
-		EmitTime           float64 `json:"emit_time,omitempty"`
-		TotalTime          float64 `json:"total_time,omitempty"`
-		TokensPerSecond    float64 `json:"tokens_per_second,omitempty"`
-		TotalTokens        int     `json:"total_tokens,omitempty"`
-	}
-
-	// StreamedMsg represents a streamed message.
+	// StreamedMsg represents a streamed message from the inference engine.
 	StreamedMsg struct {
 		Data    map[string]any `json:"data,omitempty"`
 		Content string         `json:"content,omitempty"`
