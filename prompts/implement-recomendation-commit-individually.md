@@ -1,40 +1,57 @@
-# Comprehensive Multi‑Pass Audit of Go project “goinfer”
+# Go Codebase Audit, Refactor, and Commit
 
 ## Role  
-You act as a senior Go software engineer and technical writer with deep expertise in source‑code analysis, Go best practices, and SOLID principles.
+
+You are a senior Go engineer with deep expertise in static analysis, Go idioms, SOLID, KISS, and Conventional Commits.
 
 ## Objective  
-Your task is to perform a thorough, multi‑pass audit of every Go source file in the repository located at `/home/c/j3/goinfer`. The audit must address all aspects of software engineering and the software life‑cycle. The repository contains the root file `goinfer.go` and the packages `infer`, `conf`, `gie`, and `gic`. The analysis must be performed by reading the source code directly and by executing the following commands:
 
-```bash
-go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix
-go test ./...
-```
+Audit the entire Go repository, generate improvement recommendations, apply them iteratively, and produce a series of clean commits that leave the codebase lint‑free, test‑passing, and properly formatted.
 
-## Constraints  
-Apply the KISS principle — keep code simple, direct, and easy to read. Conduct an initial scan that flags complex constructs or layered abstractions without changing existing short identifiers. For each flagged complexity, preserve original short identifiers; rename only when ambiguity forces it, using an equally short, clear abbreviation. Consolidate naming by keeping identifiers concise; introduce new short names only when a symbol is ambiguous, and ensure the new name is no longer than the original. Streamline documentation by adding brief comments that explain intent without duplicating existing explanations. Perform a final verification pass to confirm that no unnecessary abstraction layers remain and that all naming constraints are satisfied across the codebase. Preserve all existing public APIs unless a modification is mandatory for correctness or security. Ensure all suggested changes are straightforward and contribute to improved overall understandability.
+## Scope of Analysis  
 
-## Deduplication & Recommendations  
-Eliminate duplicate findings and condense the remaining items into actionable improvement recommendations. Report all final recommendations; for each recommendation provide full details, including the rationale and the precise location(s) in the source code if appropriate.
+- Read carefully every `.go` file multiple time to ensure a full comprehension.  
+- Preserve all public APIs unless a change is required for correctness or security.  
+- Keep existing short identifiers; rename only when ambiguity forces a change, using an abbreviation that is no longer than the original.  
+- Add brief comments that clarify intent without restating existing documentation.  
+- Ensure the code is formatted with `go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix` and passes `go test ./...`.
+- Ensure each change improves the overall source code understandability.
 
-## Implementation Cycle  
+## Output Specification  
 
-1. Apply the recommended change.  
-2. Run the lint‑and‑test pipeline:  
+### 1. Findings  
 
-   ```bash
-   go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix && go test ./...
-   ```  
+List each issue with a clear description, the file path, and the line number where it occurs.
 
-3. If lint errors or test failures appear, fix them and repeat step 2 until the pipeline succeeds without issues.  
-4. Once the codebase passes linting and testing, review the modifications to identify their intent, purpose, and rationale.  
-5. Write a conventional commit message consisting of a concise title that captures these intent and purpose, followed by a body that describes the rationale of the current recommendation and details  of the changes made.  
-6. Commit the changes using a command of the form:  
+### 2. Recommendations  
 
-   ```bash
-   git commit -m "title" -m "" -m "body line #1" -m "body line #2" -m "body line #3..."
-   ```  
+For every finding, propose a single actionable change, include the rationale, and specify the exact location(s) in the source code. Ensure each recommendation improves the overall source code understandability.
 
-7. Proceed to the next recommendation.  
+### 3. Implementation  
 
-Repeat this cycle until all recommendations have been processed and the entire codebase passes linting and testing without errors.
+For each recommendation provide:  
+
+1. A unified diff that shows the exact modification (use the `--- a/…` / `+++ b/…` format).  
+2. Execute `go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix` and `go test ./...` and fix any issue raised by these commands without using `//nolint`. Redo until no remaining issue.  
+3. An Emoji‑Commit‑style message with a concise title capturing the intent and a body explaining in details the rationale of the change.  
+4. The exact `git commit` command that records the title and each body line using separate `-m` flags.  
+
+## Procedure  
+
+1. Perform the audit and output the Findings and Recommendations as defined above.  
+2. Process the recommendations sequentially:  
+   a. Apply the provided diff to the codebase.  
+   b. Run the lint‑and‑test pipeline:  
+
+      ```bash
+      go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix
+      go test ./...
+      ```  
+
+   c. If the pipeline reports errors, adjust the change until the pipeline succeeds.  
+   d. Once the pipeline passes, generate the commit title and body, then output the full `git commit` command using a separate `-m` flag for each message line.  
+3. Repeat step 2 for every remaining recommendation.  
+
+## Final Deliverable  
+
+List every recommendation and change providing intent, purpose, rational, commit message, a concise impact summary and the file(s) and line(s) changed. The repository must end in a state where it complies with KISS and Go best practices.
