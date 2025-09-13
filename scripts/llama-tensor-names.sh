@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
 set -xe
 
 gguf=$1
-[ -z "$gguf" ] && {
-    gguf="$( find ~/.cache/llama.cpp -name '*.gguf' -print -prune )"
+[ -z "$gguf" ] &&
+    gguf="$( find ~/.cache/llama.cpp -name '*.gguf' -print -quit )"
 
 
 # go to the directory of this script

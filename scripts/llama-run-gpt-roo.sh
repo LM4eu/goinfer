@@ -26,11 +26,12 @@ cd ${0%/*}
 	--host 0.0.0.0 --port 8080           \
 	--no-context-shift                   \
 	--no-warmup                          \
+	--no-mmap                            \
 	-hf ggml-org/gpt-oss-120b-GGUF       \
 	--alias gpt-oss-120b                 \
 	--temp 1.0  --top-k 0.0              \
 	--min-p 0.0 --top-p 1.0              \
-	-c 0                                 \
+	-c 0 \
 	--batch-size 2048 --ubatch-size 2048 \
 	-ngl 999                             \
  	--n-cpu-moe 1                        \
@@ -39,6 +40,3 @@ cd ${0%/*}
 	--grammar-file llama-run-gpt-roo.grammar              \
 	--chat-template-kwargs '{"reasoning_effort": "high"}' \
 
-#	-ot "\.(6|7|8|9)\.ffn_up_exps.=CPU"  \
-#	-c 16384                             \
-#	--no-mmap                            \
