@@ -17,28 +17,28 @@ set -xe
 #
 # Customize: Offload gate, up and down MoE layers but only from the 6th layer onwards.
 # -ot "\.(6|7|8|9|[0-9][0-9]|[0-9][0-9][0-9])\.ffn_(gate|up|down)_exps.=CPU"
-#
-# 	--n-cpu-moe 1
 
 # current directory
 cd ${0%/*}
 
 ../../llama.cpp/build/bin/llama-server   \
-	--threads -1                         \
+	--threads 12                         \
 	--host 0.0.0.0 --port 8080           \
 	--no-context-shift                   \
 	--no-warmup                          \
-	--no-mmap                            \
 	-hf ggml-org/gpt-oss-120b-GGUF       \
-	--alias openai/gpt-oss-120b          \
+	--alias gpt-oss-120b                 \
 	--temp 1.0  --top-k 0.0              \
 	--min-p 0.0 --top-p 1.0              \
-	-c 16384                             \
+	-c 0                                 \
 	--batch-size 2048 --ubatch-size 2048 \
 	-ngl 999                             \
-	-ot "\.(6|7|8|9)\.ffn_up_exps.=CPU"  \
+ 	--n-cpu-moe 1                        \
 	--jinja                              \
 	--reasoning-format auto              \
+	--grammar-file llama-run-gpt-roo.grammar              \
 	--chat-template-kwargs '{"reasoning_effort": "high"}' \
-	--grammar-file run-llama-gpt-roo.grammar              \
 
+#	-ot "\.(6|7|8|9)\.ffn_up_exps.=CPU"  \
+#	-c 16384                             \
+#	--no-mmap                            \
