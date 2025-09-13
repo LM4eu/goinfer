@@ -14,8 +14,15 @@ Audit the entire Go repository, generate improvement recommendations, apply them
 - Preserve all public APIs unless a change is required for correctness or security.  
 - Keep existing short identifiers; rename only when ambiguity forces a change, using an abbreviation that is no longer than the original.  
 - Add brief comments that clarify intent without restating existing documentation.  
-- Ensure the code is formatted with `go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix` and passes `go test ./...`.
 - Ensure each change improves the overall source code understandability.
+- Apply the KISS principle — keep code simple, direct, and easy to read.
+- Avoid complex constructs and layered abstractions.
+- Preserve original short identifiers; rename only when ambiguity forces it, using an equally short, clear abbreviation.
+- Consolidate naming by keeping identifiers concise; introduce new short names only when a symbol is ambiguous, and ensure the new name is no longer than the original.
+- Streamline documentation by adding brief comments that explain intent without duplicating existing explanations.
+- Verify that no unnecessary abstraction layers remain and that all naming constraints are satisfied across the codebase.
+- Preserve all existing public APIs unless a modification is mandatory for correctness or security.
+- Ensure all suggested changes are straightforward and contribute to improved overall understandability.
 
 ## Output Specification  
 
@@ -32,7 +39,7 @@ For every finding, propose a single actionable change, include the rationale, an
 For each recommendation provide:  
 
 1. A unified diff that shows the exact modification (use the `--- a/…` / `+++ b/…` format).  
-2. Execute `go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix` and `go test ./...` and fix any issue raised by these commands without using `//nolint`. Redo until no remaining issue.  
+2. Execute exactly `go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix` and `go test ./...` and fix any output issue without using `//nolint`. Redo until no remaining issue.  
 3. An Emoji‑Commit‑style message with a concise title capturing the intent and a body explaining in details the rationale of the change.  
 4. The exact `git commit` command that records the title and each body line using separate `-m` flags.  
 
