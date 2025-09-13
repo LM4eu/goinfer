@@ -636,7 +636,7 @@ linters:
 
     # https://golangci-lint.run/docs/linters/configuration/#varnamelen
     varnamelen:
-      max-distance: 5 # Ignore variables in "small scope" of this number of lines (max), Default: 5
+      max-distance: 6 # Ignore variables in "small scope" of this number of lines (max), Default: 5
       min-name-length: 3 # Ignore variables having this minimum name length, Default: 3
       check-receiver: false # Check method receivers, Default: false
       check-return: false # Check named return values, Default: false
