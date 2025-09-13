@@ -1,64 +1,48 @@
-# Go Codebase Audit, Refactor, and Commit
+# Go Codebase Audit, Refactor, and Commit (Enhanced)
 
 ## Role  
 
-You are a senior Go engineer with deep expertise in static analysis, Go idioms, SOLID, KISS, and Conventional Commits.
+Act as a senior Go engineer with deep expertise in static analysis, Go idioms, SOLID principles, KISS, and Emoji Commits. Your responsibility is to transform the repository into a clean, maintainable, and production‑ready state.
 
 ## Objective  
 
-Audit the entire Go repository, generate improvement recommendations, apply them iteratively, and produce a series of clean commits that leave the codebase lint‑free, test‑passing, and properly formatted.
+Conduct a comprehensive audit of every Go source file, produce actionable improvement recommendations, apply those recommendations iteratively, and generate a series of well‑structured commits that leave the repository lint‑free, test‑passing, formatted according to `golangci-lint-v2`, and ready for release.
 
 ## Scope of Analysis  
 
-- Read carefully every `.go` file multiple time to ensure a full comprehension.  
-- Preserve all public APIs unless a change is required for correctness or security.  
-- Keep existing short identifiers; rename only when ambiguity forces a change, using an abbreviation that is no longer than the original.  
-- Add brief comments that clarify intent without restating existing documentation.  
-- Ensure each change improves the overall source code understandability.
-- Apply the KISS principle — keep code simple, direct, and easy to read.
-- Avoid complex constructs and layered abstractions.
-- Preserve original short identifiers; rename only when ambiguity forces it, using an equally short, clear abbreviation.
-- Consolidate naming by keeping identifiers concise; introduce new short names only when a symbol is ambiguous, and ensure the new name is no longer than the original.
-- Streamline documentation by adding brief comments that explain intent without duplicating existing explanations.
-- Verify that no unnecessary abstraction layers remain and that all naming constraints are satisfied across the codebase.
-- Preserve all existing public APIs unless a modification is mandatory for correctness or security.
-- Ensure all suggested changes are straightforward and contribute to improved overall understandability.
+1. Load each `.go` file, parse its AST, and read the source multiple times to achieve full comprehension of logic and intent.  
+2. Preserve all exported symbols and public APIs unless a modification is required for correctness, security, or performance.  
+3. Keep existing short identifiers; rename only when ambiguity forces a change, and ensure the new name does not exceed the original length.  
+4. Add succinct comments that explain why code exists, avoiding duplication of existing documentation.  
+5. Apply the KISS principle: favour simple, direct implementations and eliminate unnecessary abstractions/functions.  
+6. Enforce consistent naming conventions, including camelCase for variables, PascalCase for exported identifiers, and appropriate package‑level naming.  
+7. Detect and remove dead code, redundant interfaces, and superfluous wrapper functions.  
+8. Verify that error handling follows idiomatic Go patterns, and that panics are used only for unrecoverable states.  
+9. Ensure that concurrency constructs (goroutines, channels, sync primitives) are used safely and documented.  
 
 ## Output Specification  
 
-### 1. Findings  
+### Findings  
 
-List each issue with a clear description, the file path, and the line number where it occurs.
+Present the findings (rationale and location).
 
-### 2. Recommendations  
+### Recommendations  
 
-For every finding, propose a single actionable change, include the rationale, and specify the exact location(s) in the source code. Ensure each recommendation improves the overall source code understandability.
-
-### 3. Implementation  
-
-For each recommendation provide:  
-
-1. A unified diff that shows the exact modification (use the `--- a/…` / `+++ b/…` format).  
-2. Execute exactly `go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix` and `go test ./...` and fix any output issue without using `//nolint`. Redo until no remaining issue.  
-3. An Emoji‑Commit‑style message with a concise title capturing the intent and a body explaining in details the rationale of the change.  
-4. The exact `git commit` command that records the title and each body line using separate `-m` flags.  
+For each finding, deduce the corresponding recommendation. Deduplicate similar recommendations. Present the recommendations (rationale, location, change to apply). Consolidate recommendations that address a similar pattern across multiple files into a single entry.
 
 ## Procedure  
 
-1. Perform the audit and output the Findings and Recommendations as defined above.  
-2. Process the recommendations sequentially:  
-   a. Apply the provided diff to the codebase.  
-   b. Run the lint‑and‑test pipeline:  
+1. Execute the audit and output the Findings and Recommendations exactly as described.  
+2. For each recommendation, perform the following cycle:  
+   a. Modify the source to satisfy the recommendation.  
+   b. Run exactly the following pipeline in the repository root:  
 
-      ```bash
-      go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix
-      go test ./...
-      ```  
+   ```bash
+   go mod tidy
+   go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix
+   go test ./...
+   ```  
 
-   c. If the pipeline reports errors, adjust the change until the pipeline succeeds.  
-   d. Once the pipeline passes, generate the commit title and body, then output the full `git commit` command using a separate `-m` flag for each message line.  
-3. Repeat step 2 for every remaining recommendation.  
-
-## Final Deliverable  
-
-List every recommendation and change providing intent, purpose, rational, commit message, a concise impact summary and the file(s) and line(s) changed. The repository must end in a state where it complies with KISS and Go best practices.
+   c. If any step fails, revise the change until the pipeline completes without errors.  
+   d. When the pipeline succeeds, generate a commit message that follows the Emoji‑Conventional style with a title that summarizes the purpose and a body that describes the rationale, the affected component, and any impact on the public API. Then stage the changes with `git add -u` and commit using separate `-m` flags for the title and body lines.  
+   e. Continue with the next recommendation.  
