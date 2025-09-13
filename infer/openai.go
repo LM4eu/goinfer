@@ -5,11 +5,19 @@
 package infer
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/LM4eu/goinfer/gie"
 	"github.com/labstack/echo/v4"
 )
+
+// Message represents a chat message in OpenAI format.
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
 
 // handleChatCompletions handles OpenAI compatible chat completion requests.
 func (inf *Infer) handleChatCompletions(c echo.Context) error {
@@ -44,19 +52,39 @@ func parseOpenAIRequest(c echo.Context) (*InferQuery, error) {
 	// The OpenAI API expects a JSON body with fields such as model, messages, temperature, etc.
 	// For simplicity we map a subset of these fields to the internal InferQuery.
 	var req struct {
-		Model       string  `json:"model"`
-		Prompt      string  `json:"prompt"` // fallback if messages not used
-		Temperature float64 `json:"temperature"`
-		MaxTokens   int     `json:"max_tokens"`
-		Stream      bool    `json:"stream"`
+		Model       string    `json:"model"`
+		Prompt      string    `json:"prompt"`
+		Messages    []Message `json:"messages"`
+		Temperature float64   `json:"temperature"`
+		MaxTokens   int       `json:"max_tokens"`
+		Stream      bool      `json:"stream"`
 	}
 	err := c.Bind(&req)
 	if err != nil {
 		return nil, gie.Wrap(err, gie.TypeValidation, "OPENAI_BIND_ERROR", "failed to bind OpenAI request")
 	}
 
+	// Determine prompt: if messages provided, concatenate contents, else use fallback prompt.
+	prompt := req.Prompt
+	if len(req.Messages) > 0 {
+		var builder strings.Builder
+		for i, msg := range req.Messages {
+			if msg.Role == "" {
+				return nil, gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "INVALID_MESSAGE_ROLE", fmt.Sprintf("message %d missing role", i))
+			}
+			if msg.Content == "" {
+				return nil, gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "INVALID_MESSAGE_CONTENT", fmt.Sprintf("message %d missing content", i))
+			}
+			if i > 0 {
+				builder.WriteString("\n")
+			}
+			builder.WriteString(msg.Content)
+		}
+		prompt = builder.String()
+	}
+
 	query := &InferQuery{
-		Prompt: req.Prompt,
+		Prompt: prompt,
 		Model:  Model{Name: req.Model},
 		Params: DefaultInferParams,
 	}
