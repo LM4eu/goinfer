@@ -49,19 +49,21 @@ func (cfg *GoInferCfg) search(files *[]string, root string) error {
 }
 
 // extractFlags extracts flags from a model filename.
-// It looks for a pattern starting with "&" and splits the remaining string
-// by "&" to get individual flag components. Each component is then split
-// by "=" to separate key and value, with the key prefixed by "-" to form
-// command-line style flags. Returns a slice of strings representing the extracted flags.
-func extractFlags(modelStem string) string {
-	var flags []string
-
-	p := strings.Index(modelStem, "&")
-	if p < 0 {
+// It looks for a pattern starting with "&" and splits the remaining string by "&"
+// to get individual flag components.
+// Each component is then split by "=" to separate key and value,
+// with the key prefixed by "-" to form command-line style flags.
+// Returns a single string with flags separated by spaces.
+func extractFlags(stem string) string {
+	pos := strings.Index(stem, "&")
+	if pos < 0 {
 		return ""
 	}
 
-	for f := range strings.SplitSeq(modelStem[p:], "&") {
+	var flags []string
+
+	// Slice after the first '&' to avoid an empty first element.
+	for f := range strings.SplitSeq(stem[pos+1:], "&") {
 		kv := strings.SplitN(f, "=", 2)
 		if len(kv) > 0 {
 			kv[0] = "-" + kv[0]
