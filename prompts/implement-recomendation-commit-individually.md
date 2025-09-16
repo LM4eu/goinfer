@@ -29,3 +29,29 @@ go test ./...
 Note: always use `go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest` (v2) rather than `golangci‑lint` (v1).
 
 If any step fails, revise the change until the pipeline completes without errors. When the pipeline succeeds, generate an Emoji commit with a concise title summarizing the purpose and a body describing the rationale, the affected component, and any impact on the public API. Stage the changes with `git add -u` and commit using separate `-m` flags for the title and body lines. Continue with the next recommendation.
+
+--------------------------------
+
+# Implement and commit each recommendation
+
+## Role
+
+Act as a senior Go engineer with deep expertise in Git and Emoji commit style. Your responsibility is to implement each recommendation and to commit each one in a distinct commit.
+
+## Objective
+
+Apply those recommendations iteratively, and produce a series of well‑structured commits. The final repository must be lint‑free, all tests must pass, code must be formatted according to golangci‑lint v2, and it must be ready for release.
+
+## Procedure
+
+For each recommendation, follow this cycle: modify the source to satisfy the implementation specifications and run the exact pipeline from the repository root:
+
+```
+go mod tidy
+go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix
+go test ./...
+```
+
+Note: always use `go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest` (v2) rather than `golangci‑lint` (v1).
+
+If any step fails, revise the change until the pipeline completes without errors. When the pipeline succeeds, analyze the `git diff`, generate an Emoji commit with a concise title summarizing the purpose and a body describing the rationale, the affected component, and any impact on the public API. Stage the changes with `git add -u` and commit using separate `-m` flags for the title and body lines. Continue with the next recommendation.
