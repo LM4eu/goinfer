@@ -5,10 +5,6 @@
 // gie is the Go Infer Error package.
 package gie
 
-import (
-	"fmt"
-)
-
 type (
 	// ErrorType represents the type of error.
 	ErrorType string
@@ -103,10 +99,11 @@ func Wrap(err error, errType ErrorType, code, message string) *GoInferError {
 
 // Error implements the error interface.
 func (e *GoInferError) Error() string {
+	str := e.Code + ": " + e.Message
 	if e.Cause != nil {
-		return fmt.Sprintf("%s: %s (cause: %v)", e.Code, e.Message, e.Cause)
+		str += " cause=" + e.Cause.Error()
 	}
-	return fmt.Sprintf("%s: %s", e.Code, e.Message)
+	return str
 }
 
 // Unwrap returns the underlying error for error unwrapping.
