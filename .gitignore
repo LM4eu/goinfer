@@ -1,4 +1,5 @@
 *.gguf
+*.ignore.*
 /.continue/
 /.old-code
 /.roo/
