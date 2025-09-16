@@ -7,8 +7,9 @@ package infer
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/LM4eu/goinfer/gic"
@@ -25,7 +26,7 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 	// Early validation checks
 	if ctx.Err() != nil {
 		giErr := gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CTX_CANCELED", "infer canceled")
-		gic.LogCtxAwareError(ctx, "infer_start", giErr)
+		slog.ErrorContext(ctx, "Context canceled at infer start", "error", giErr)
 		errChan <- StreamedMsg{
 			Num:     0,
 			Content: giErr.Error(),
@@ -36,6 +37,7 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 
 	if query.Model.Name == "" {
 		err := gie.Wrap(gie.ErrModelNotLoaded, gie.TypeValidation, "MODEL_NOT_LOADED", "model not loaded: "+query.Model.Name)
+		slog.ErrorContext(ctx, "Model not loaded", "model", query.Model.Name, "error", err)
 		errChan <- StreamedMsg{
 			Num:     0,
 			Content: err.Error(),
@@ -45,8 +47,8 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 	}
 
 	if inf.Cfg.Debug {
-		fmt.Println("DBG: Infer params:")
-		fmt.Printf("DBG: %+v\n\n", query.Params)
+		slog.DebugContext(ctx, "Infer params")
+		slog.DebugContext(ctx, "params", "value", query.Params)
 	}
 
 	// Execute inference
@@ -144,7 +146,7 @@ func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *InferQuer
 				break
 			}
 
-			token := fmt.Sprintf("token_%d", i)
+			token := "token_" + strconv.Itoa(i)
 			err := inf.streamToken(ctx, nTok+i, token, jsonEncoder, c, &query.Params, startThinking, &startEmitting, &thinkingElapsed)
 			if err != nil {
 				return nTok, err
@@ -248,30 +250,16 @@ func (inf *Infer) streamToken(
 // logError logs error information.
 func (inf *Infer) logError(ctx context.Context, prefix, message string, err error) {
 	if err != nil {
-		inf.logMsg(ctx, "%s | ERROR: %s - %v", prefix, message, err)
+		slog.ErrorContext(ctx, "error", "prefix", prefix, "message", message, "error", err)
 	} else {
-		inf.logMsg(ctx, "%s | ERROR: %s", prefix, message)
+		slog.ErrorContext(ctx, "error", "prefix", prefix, "message", message)
 	}
 }
 
 // logToken logs token information.
 func (inf *Infer) logToken(ctx context.Context, token string) {
-	inf.logMsg(ctx, "token: %s", token)
+	slog.InfoContext(ctx, "token", "value", token)
 }
 
 // logMsg formats and logs a message with common context.
-func (inf *Infer) logMsg(ctx context.Context, format string, args ...any) {
-	if !inf.Cfg.Verbose {
-		return
-	}
-
-	reqID := "req"
-	if id := ctx.Value(gic.RequestIDKey); id != nil {
-		if str, ok := id.(string); ok {
-			reqID = str
-		}
-	}
-
-	fmt.Printf("INF: [%s] | c: %s | r: %s | %s\n",
-		time.Now().Format(time.RFC3339), fmt.Sprintf("c-%d", time.Now().UnixNano()), reqID, fmt.Sprintf(format, args...))
-}
+/* Removed logMsg helper – logging now performed directly via slog in logError and logToken. */

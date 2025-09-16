@@ -5,8 +5,10 @@
 package infer
 
 import (
+	"context"
 	"embed"
-	"fmt"
+	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -30,7 +32,7 @@ type Infer struct {
 var embeddedFiles embed.FS
 
 // NewEcho creates a new Echo server configured with Goinfer routes and middleware.
-func (inf *Infer) NewEcho(cfg *conf.GoInferCfg, addr string,
+func (inf *Infer) NewEcho(ctx context.Context, cfg *conf.GoInferCfg, addr string,
 	enableAdminWebUI, enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint bool,
 ) *echo.Echo {
 	e := echo.New()
@@ -75,40 +77,40 @@ func (inf *Infer) NewEcho(cfg *conf.GoInferCfg, addr string,
 			HTML5:      true,
 			Filesystem: http.FS(embeddedFiles),
 		}))
-		fmt.Printf("INF: Listen GET %s/ (web UI)\n", addr)
+		slog.InfoContext(ctx, "Listen GET (web UI)", "addr", addr)
 	}
 
 	// ------------ Models ------------
 	if enableModelsEndpoint {
 		grp := e.Group("/models")
-		setupAPIKeyAuth(grp, cfg, "model")
+		setupAPIKeyAuth(ctx, grp, cfg, "model")
 		grp.GET("", inf.modelsHandler)
-		fmt.Printf("INF: Listen GET %s/models (model files)\n", addr)
+		slog.InfoContext(ctx, "Listen GET models endpoint", "addr", addr)
 	}
 
 	// ----- Inference (llama.cpp) -----
 	if enableGoinferEndpoint {
 		grp := e.Group("/goinfer")
-		setupAPIKeyAuth(grp, cfg, "goinfer")
+		setupAPIKeyAuth(ctx, grp, cfg, "goinfer")
 		grp.POST("", inf.inferHandler)
 		grp.GET("/abort", inf.abortHandler)
-		fmt.Printf("INF: Listen POST %s/goinfer (inference)\n", addr)
-		fmt.Printf("INF: Listen GET  %s/goinfer/abort\n", addr)
+		slog.InfoContext(ctx, "Listen POST goinfer endpoint", "addr", addr)
+		slog.InfoContext(ctx, "Listen GET goinfer abort", "addr", addr)
 	}
 
 	// ----- Inference OpenAI API -----
 	if enableOpenAPIEndpoint {
 		grp := e.Group("/v1")
 		grp.POST("/chat/completions", inf.handleChatCompletions)
-		setupAPIKeyAuth(grp, cfg, "openai")
-		fmt.Printf("INF: Listen POST %s/v1/chat/completions (inference)\n", addr)
+		setupAPIKeyAuth(ctx, grp, cfg, "openai")
+		slog.InfoContext(ctx, "Listen POST chat completions", "addr", addr)
 	}
 
 	return e
 }
 
 // setupAPIKeyAuth sets up API key authentication for a grp.
-func setupAPIKeyAuth(grp *echo.Group, cfg *conf.GoInferCfg, service string) {
+func setupAPIKeyAuth(ctx context.Context, grp *echo.Group, cfg *conf.GoInferCfg, service string) {
 	// Select the API key with preference order
 	key, exists := cfg.Server.APIKeys[service]
 	if !exists {
@@ -116,14 +118,14 @@ func setupAPIKeyAuth(grp *echo.Group, cfg *conf.GoInferCfg, service string) {
 		if !exists {
 			key, exists = cfg.Server.APIKeys["admin"]
 			if !exists {
-				fmt.Printf("WRN: No API key for %q, neither for user, nor admin => disable API key security\n", service)
+				slog.WarnContext(ctx, "No API key for service, disabling API key security", "service", service)
 				return
 			}
 		}
 	}
 
 	if key == "" {
-		fmt.Printf("WRN: Empty API key => disable API key for %q\n", service)
+		slog.WarnContext(ctx, "Empty API key => disable API key for service", "service", service)
 		return
 	}
 
@@ -132,7 +134,7 @@ func setupAPIKeyAuth(grp *echo.Group, cfg *conf.GoInferCfg, service string) {
 			return true, nil
 		}
 
-		fmt.Printf("WRN: Received API key is NOT the configured one for %q\n", service)
+		slog.WarnContext(ctx, "Received API key is NOT the configured one for service", "service", service)
 		return false, nil
 	}))
 }
@@ -142,7 +144,7 @@ func (inf *Infer) modelsHandler(c echo.Context) error {
 	models, err := inf.Cfg.Search()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error": fmt.Sprintf("failed to search models: %v", err),
+			"error": errors.New("failed to search models: " + err.Error()),
 		})
 	}
 

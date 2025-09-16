@@ -5,9 +5,10 @@
 package conf
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,18 +75,18 @@ func (cfg *GoInferCfg) Create(goinferCfgFile string, noAPIKey bool) error {
 	// Set API keys
 	switch {
 	case noAPIKey:
-		fmt.Printf("INF: Flag -no-api-key => Do not generate API keys in  %s.\n", goinferCfgFile)
+		slog.InfoContext(context.Background(), "Flag -no-api-key => Do not generate API keys", "file", goinferCfgFile)
 
 	case len(cfg.Server.APIKeys) > 0:
-		fmt.Printf("INF: Configuration file %s use API keys from environment.\n", goinferCfgFile)
+		slog.InfoContext(context.Background(), "Configuration file uses API keys from environment", "file", goinferCfgFile)
 
 	default:
 		cfg.Server.APIKeys["admin"] = genAPIKey(cfg.Debug)
 		cfg.Server.APIKeys["user"] = genAPIKey(cfg.Debug)
 		if cfg.Debug {
-			fmt.Printf("WRN: Configuration file %s with DEBUG API key. This is not suitable for production use.\n", goinferCfgFile)
+			slog.WarnContext(context.Background(), "Configuration file with DEBUG API key (not suitable for production)", "file", goinferCfgFile)
 		} else {
-			fmt.Printf("INF: Configuration file %s with secure API keys.\n", goinferCfgFile)
+			slog.InfoContext(context.Background(), "Configuration file with secure API keys", "file", goinferCfgFile)
 		}
 	}
 
@@ -168,7 +169,7 @@ func (cfg *GoInferCfg) GenProxyCfg(proxyCfgFile string) error {
 		if cfg.Verbose {
 			_, ok := cfg.Proxy.Models[stem]
 			if ok {
-				fmt.Printf("INF: Overwrite model=%s in %s\n", stem, proxyCfgFile)
+				slog.InfoContext(context.Background(), "Overwrite model", "model", stem, "file", proxyCfgFile)
 			}
 		}
 		cfg.Proxy.Models[stem] = proxy.ModelConfig{
@@ -182,7 +183,7 @@ func (cfg *GoInferCfg) GenProxyCfg(proxyCfgFile string) error {
 		if cfg.Verbose {
 			_, ok := cfg.Proxy.Models[stem]
 			if ok {
-				fmt.Printf("INF: Overwrite model=%s in %s\n", stem, proxyCfgFile)
+				slog.InfoContext(context.Background(), "Overwrite model", "model", stem, "file", proxyCfgFile)
 			}
 		}
 		cfg.Proxy.Models[prefixedModelName] = proxy.ModelConfig{
@@ -203,7 +204,7 @@ func (cfg *GoInferCfg) GenProxyCfg(proxyCfgFile string) error {
 	}
 
 	if cfg.Verbose {
-		fmt.Printf("INF: Generated %s with %d models\n", proxyCfgFile, len(modelFiles))
+		slog.InfoContext(context.Background(), "Generated proxy config", "file", proxyCfgFile, "models", len(modelFiles))
 	}
 
 	return nil
@@ -211,26 +212,26 @@ func (cfg *GoInferCfg) GenProxyCfg(proxyCfgFile string) error {
 
 // Print configuration.
 func (cfg *GoInferCfg) Print() {
-	fmt.Println("-----------------------------")
-	fmt.Println("Environment Variables:")
-	fmt.Printf("  GI_MODELS_DIR    = %s\n", os.Getenv("GI_MODELS_DIR"))
-	fmt.Printf("  GI_HOST          = %s\n", os.Getenv("GI_HOST"))
-	fmt.Printf("  GI_ORIGINS       = %s\n", os.Getenv("GI_ORIGINS"))
-	fmt.Printf("  GI_API_KEY_ADMIN = %d characters\n", len(os.Getenv("GI_API_KEY_ADMIN")))
-	fmt.Printf("  GI_API_KEY_USER  = %d characters\n", len(os.Getenv("GI_API_KEY_USER")))
-	fmt.Printf("  GI_LLAMA_EXE     = %s\n", os.Getenv("GI_LLAMA_EXE"))
+	slog.InfoContext(context.Background(), "-----------------------------")
+	slog.InfoContext(context.Background(), "Environment Variables:")
+	slog.InfoContext(context.Background(), "GI_MODELS_DIR", "value", os.Getenv("GI_MODELS_DIR"))
+	slog.InfoContext(context.Background(), "GI_HOST", "value", os.Getenv("GI_HOST"))
+	slog.InfoContext(context.Background(), "GI_ORIGINS", "value", os.Getenv("GI_ORIGINS"))
+	slog.InfoContext(context.Background(), "GI_API_KEY_ADMIN length", "len", len(os.Getenv("GI_API_KEY_ADMIN")))
+	slog.InfoContext(context.Background(), "GI_API_KEY_USER length", "len", len(os.Getenv("GI_API_KEY_USER")))
+	slog.InfoContext(context.Background(), "GI_LLAMA_EXE", "value", os.Getenv("GI_LLAMA_EXE"))
 
-	fmt.Println("-----------------------------")
+	slog.InfoContext(context.Background(), "-----------------------------")
 
 	yml, err := yaml.Marshal(&cfg)
 	if err != nil {
-		fmt.Printf("ERROR yaml.Marshal: %s\n", err.Error())
+		slog.ErrorContext(context.Background(), "yaml.Marshal error", "error", err.Error())
 		return
 	}
 
 	os.Stdout.Write(yml)
 
-	fmt.Println("-----------------------------")
+	slog.InfoContext(context.Background(), "-----------------------------")
 }
 
 // applyEnvVars read optional env vars to change the configuration.
@@ -240,21 +241,21 @@ func (cfg *GoInferCfg) applyEnvVars() {
 	if dir := os.Getenv("GI_MODELS_DIR"); dir != "" {
 		cfg.ModelsDir = dir
 		if cfg.Verbose {
-			fmt.Printf("INF: GI_MODELS_DIR set to %s\n", dir)
+			slog.InfoContext(context.Background(), "GI_MODELS_DIR set", "value", dir)
 		}
 	}
 
 	if host := os.Getenv("GI_HOST"); host != "" {
 		cfg.Server.Host = host
 		if cfg.Verbose {
-			fmt.Printf("INF: GI_HOST set to %s\n", host)
+			slog.InfoContext(context.Background(), "GI_HOST set", "value", host)
 		}
 	}
 
 	if origins := os.Getenv("GI_ORIGINS"); origins != "" {
 		cfg.Server.Origins = origins
 		if cfg.Verbose {
-			fmt.Printf("INF: GI_ORIGINS set to %s\n", origins)
+			slog.InfoContext(context.Background(), "GI_ORIGINS set", "value", origins)
 		}
 	}
 
@@ -265,7 +266,7 @@ func (cfg *GoInferCfg) applyEnvVars() {
 		}
 		cfg.Server.APIKeys["user"] = key
 		if cfg.Verbose {
-			fmt.Println("INF: api_key[user] = GI_API_KEY_USER")
+			slog.InfoContext(context.Background(), "api_key[user] = GI_API_KEY_USER")
 		}
 	}
 
@@ -276,14 +277,14 @@ func (cfg *GoInferCfg) applyEnvVars() {
 		}
 		cfg.Server.APIKeys["admin"] = key
 		if cfg.Verbose {
-			fmt.Println("INF: api_key[admin] = GI_API_KEY_ADMIN")
+			slog.InfoContext(context.Background(), "api_key[admin] = GI_API_KEY_ADMIN")
 		}
 	}
 
 	if exe := os.Getenv("GI_LLAMA_EXE"); exe != "" {
 		cfg.Llama.Exe = exe
 		if cfg.Verbose {
-			fmt.Printf("INF: GI_LLAMA_EXE =%s\n", exe)
+			slog.InfoContext(context.Background(), "GI_LLAMA_EXE", "value", exe)
 		}
 	}
 }
@@ -296,7 +297,7 @@ func genAPIKey(debugMode bool) string {
 	buf := make([]byte, 32)
 	_, err := rand.Read(buf)
 	if err != nil {
-		fmt.Printf("WRN: rand.Read %v\n", err)
+		slog.WarnContext(context.Background(), "rand.Read error", "error", err)
 		return ""
 	}
 
@@ -311,9 +312,9 @@ func (cfg *GoInferCfg) validate(noAPIKey bool) error {
 		return err
 	}
 	if len(modelFiles) == 0 {
-		fmt.Printf("WRN: No *.gguf files found in %s\n", cfg.ModelsDir)
+		slog.WarnContext(context.Background(), "No *.gguf files found", "dir", cfg.ModelsDir)
 	} else if cfg.Verbose {
-		fmt.Printf("INF: Found %d model files in %s\n", len(modelFiles), cfg.ModelsDir)
+		slog.InfoContext(context.Background(), "Found model files", "count", len(modelFiles), "dir", cfg.ModelsDir)
 	}
 
 	// Ensure admin API key exists
@@ -322,20 +323,20 @@ func (cfg *GoInferCfg) validate(noAPIKey bool) error {
 	}
 
 	if noAPIKey {
-		fmt.Println("INF: Flag -no-api-key => Do not verify API keys.")
+		slog.InfoContext(context.Background(), "Flag -no-api-key => Do not verify API keys.")
 		return nil
 	}
 
 	// Validate API keys
 	for k, v := range cfg.Server.APIKeys {
 		if strings.Contains(v, "PLEASE") {
-			return gie.Wrap(gie.ErrInvalidAPIKey, gie.TypeConfiguration, "API_KEY_NOT_SET", fmt.Sprintf("please set your private '%s' API key", k))
+			return gie.Wrap(gie.ErrInvalidAPIKey, gie.TypeConfiguration, "API_KEY_NOT_SET", "please set your private '"+k+"' API key")
 		}
 		if len(v) < 64 {
-			return gie.Wrap(gie.ErrInvalidAPIKey, gie.TypeConfiguration, "API_KEY_INVALID", fmt.Sprintf("invalid API key '%s': must be 64 hex digits", k))
+			return gie.Wrap(gie.ErrInvalidAPIKey, gie.TypeConfiguration, "API_KEY_INVALID", "invalid API key '"+k+"': must be 64 hex digits")
 		}
 		if v == debugAPIKey {
-			fmt.Printf("WRN: api_key[%s]=DEBUG => security threat\n", k)
+			slog.WarnContext(context.Background(), "api_key DEBUG security threat", "key", k)
 		}
 	}
 

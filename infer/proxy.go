@@ -6,7 +6,7 @@ package infer
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/LM4eu/goinfer/gie"
@@ -61,7 +61,7 @@ func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c ech
 		}
 	case <-inferCtx.Done():
 		if inf.Cfg.Debug {
-			fmt.Printf("DBG: Infer timeout\n")
+			slog.DebugContext(ctx, "Infer timeout")
 		}
 		errChan <- StreamedMsg{
 			Num:     0,
@@ -92,7 +92,7 @@ func (inf *Infer) abortInference() error {
 	}
 
 	if inf.Cfg.Verbose {
-		fmt.Println("INF: Aborting inference")
+		slog.InfoContext(context.Background(), "Aborting inference")
 	}
 
 	inf.ContinueInferringController = false

@@ -5,8 +5,10 @@
 package infer
 
 import (
-	"fmt"
+	"context"
+	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/LM4eu/goinfer/gie"
@@ -61,6 +63,7 @@ func parseOpenAIRequest(c echo.Context) (*InferQuery, error) {
 	}
 	err := c.Bind(&req)
 	if err != nil {
+		slog.ErrorContext(context.Background(), "Failed to bind OpenAI request", "error", err)
 		return nil, gie.Wrap(err, gie.TypeValidation, "OPENAI_BIND_ERROR", "failed to bind OpenAI request")
 	}
 
@@ -70,10 +73,10 @@ func parseOpenAIRequest(c echo.Context) (*InferQuery, error) {
 		var builder strings.Builder
 		for i, msg := range req.Messages {
 			if msg.Role == "" {
-				return nil, gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "INVALID_MESSAGE_ROLE", fmt.Sprintf("message %d missing role", i))
+				return nil, gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "INVALID_MESSAGE_ROLE", "message "+strconv.Itoa(i)+" missing role")
 			}
 			if msg.Content == "" {
-				return nil, gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "INVALID_MESSAGE_CONTENT", fmt.Sprintf("message %d missing content", i))
+				return nil, gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "INVALID_MESSAGE_CONTENT", "message "+strconv.Itoa(i)+" missing content")
 			}
 			if i > 0 {
 				builder.WriteString("\n")

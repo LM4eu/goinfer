@@ -5,8 +5,10 @@
 package conf
 
 import (
-	"fmt"
+	"context"
+	"errors"
 	"io/fs"
+	"log/slog"
 	"path/filepath"
 	"strings"
 )
@@ -18,9 +20,9 @@ func (cfg *GoInferCfg) Search() ([]string, error) {
 		err := cfg.search(&modelFiles, strings.TrimSpace(root))
 		if err != nil {
 			if cfg.Verbose {
-				fmt.Println("INF: Searching model files in:", root)
+				slog.InfoContext(context.Background(), "Searching model files in", "root", root)
 			}
-			return nil, fmt.Errorf("failed to search in '%s': %w", root, err)
+			return nil, errors.New("failed search root=" + root + " err=" + err.Error())
 		}
 	}
 
@@ -39,7 +41,7 @@ func (cfg *GoInferCfg) search(files *[]string, root string) error {
 
 		if strings.HasSuffix(path, ".gguf") {
 			if cfg.Verbose {
-				fmt.Println("INF: Found model:", path)
+				slog.InfoContext(context.Background(), "Found model", "path", path)
 			}
 			*files = append(*files, path)
 		}

@@ -7,8 +7,9 @@ package infer
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/LM4eu/goinfer/gie"
@@ -24,7 +25,7 @@ func (inf *Infer) inferHandler(c echo.Context) error {
 	// Check if infer is already running using Infer
 	inf.mu.Lock()
 	if inf.IsInferring {
-		fmt.Println("Infer already running")
+		slog.InfoContext(context.Background(), "Infer already running")
 		inf.mu.Unlock()
 		return c.NoContent(http.StatusAccepted)
 	}
@@ -58,11 +59,12 @@ func (inf *Infer) inferHandler(c echo.Context) error {
 
 	// Handle the infer result
 	if inf.Cfg.Verbose {
-		fmt.Println("INF: -------- result ----------")
+		slog.InfoContext(context.Background(), "-----------------------------")
+		slog.InfoContext(context.Background(), "-------- result ----------")
 		for key, value := range result.Data {
-			fmt.Printf("INF: %s: %v\n", key, value)
+			slog.InfoContext(context.Background(), "result", "key", key, "value", value)
 		}
-		fmt.Println("INF: --------------------------")
+		slog.InfoContext(context.Background(), "--------------------------")
 	}
 
 	if !query.Params.Stream {
@@ -132,7 +134,7 @@ func getInt(m echo.Map, param string) int {
 		case float64:
 			return int(val)
 		default:
-			fmt.Printf("WRN: expected int (or float64) but received %s=%v", param, m[param])
+			slog.WarnContext(context.Background(), "expected int (or float64) but received", "param", param, "value", m[param])
 		}
 	}
 	return 0
@@ -147,7 +149,7 @@ func getFloat(m echo.Map, param string) float32 {
 		case float64:
 			return float32(val)
 		default:
-			fmt.Printf("WRN: expected float64 (or int) but received %s=%v", param, m[param])
+			slog.WarnContext(context.Background(), "expected float64 (or int) but received", "param", param, "value", m[param])
 		}
 	}
 	return 0
@@ -179,7 +181,7 @@ func (inf *Infer) execute(c echo.Context, ctx context.Context, query *InferQuery
 			if err.MsgType == ErrorMsgType {
 				return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", "infer error: "+err.Content)
 			}
-			return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", fmt.Sprintf("infer error: %v", err))
+			return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", err.Content)
 		}
 		return nil, gie.ErrChanClosed
 
@@ -196,12 +198,12 @@ func (inf *Infer) execute(c echo.Context, ctx context.Context, query *InferQuery
 func (inf *Infer) abortHandler(c echo.Context) error {
 	err := inf.abortInference()
 	if err != nil {
-		fmt.Printf("INF: %v\n", err)
+		slog.ErrorContext(context.Background(), "error", "error", err)
 		return c.NoContent(http.StatusAccepted)
 	}
 
 	if inf.Cfg.Verbose {
-		fmt.Println("INF: Aborting inference")
+		slog.InfoContext(context.Background(), "Aborting inference")
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -227,7 +229,7 @@ func populateStopPrompts(m echo.Map, gen *Generation) error {
 	for i, val := range slice {
 		str, ok := val.(string)
 		if !ok {
-			return gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "STOP_INVALID_ELEMENT", fmt.Sprintf("stop[%d] must be a string", i))
+			return gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "STOP_INVALID_ELEMENT", "stop["+strconv.Itoa(i)+"] must be a string")
 		}
 		gen.StopPrompts[i] = str
 	}

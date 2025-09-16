@@ -7,7 +7,7 @@ package gic
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"strconv"
 	"time"
 )
@@ -28,7 +28,7 @@ func LogCtxAwareError(ctx context.Context, operation string, err error) {
 		return
 	}
 
-	fmt.Printf("INF: [%s] %s: %v\n", getReqID(ctx), operation, err)
+	slog.InfoContext(ctx, "Context‑aware error", "request_id", getReqID(ctx), "operation", operation, "error", err)
 }
 
 // getReqID extracts the request ID from context or generates a new one.
