@@ -9,7 +9,8 @@
       ],
       "alwaysAllow": [
         "search_files",
-        "list_directory"
+        "list_directory",
+        "read_text_file"
       ]
     },
     "sequentialthinking": {
