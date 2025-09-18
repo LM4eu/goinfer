@@ -15,7 +15,7 @@ import (
 
 // Search returns a slice of absolute file paths for all *.gguf model files
 // found under the directories listed in cfg.ModelsDir (colon-separated).
-// It walks each directory recursively and aggregates matching files.
+// It walks each directory recursively, aggregates matching files, and returns any error encountered.
 func (cfg *GoInferCfg) Search() ([]string, error) {
 	var modelFiles []string
 
