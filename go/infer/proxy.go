@@ -29,6 +29,7 @@ func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c ech
 	inf.mu.Unlock()
 
 	// Execute infer in goroutine with timeout
+	// inferCtx enforces a hard timeout for the backend inference request.
 	inferCtx, cancel := context.WithTimeout(ctx, time.Minute*5)
 
 	resChanInternal := make(chan StreamedMsg)
