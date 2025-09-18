@@ -91,12 +91,16 @@ ENV GOPATH=/root/go
 
 # Go build flags: "-s -w" removes all debug symbols: https://pkg.go.dev/cmd/link
 # GOAMD64=v3 --> https://go.dev/wiki/MinimumRequirements#amd64
-RUN --mount=type=cache,target=${GOPATH}       \
-    ls -lShA . server/dist                   ;\
-    CGO_ENABLED=0                             \
-    GOFLAGS="-trimpath -modcacherw"           \
-    GOLDFLAGS="-d -s -w -extldflags=-static"  \
-    GOAMD64=v3                                \
+RUN --mount=type=cache,target=${GOPATH}        \
+    ls -lShA . server/dist                    ;\
+    case "$(grep flags -m1 /proc/cpuinfo)" in ;\
+        *" avx512f "*)  export GOAMD64=v4;;   ;\
+        *" avx2 "*)     export GOAMD64=v3;;   ;\
+        *" sse2 "*)     export GOAMD64=v2;;   ;\
+    esac                                      ;\
+    CGO_ENABLED=0                              \
+    GOFLAGS="-trimpath -modcacherw"            \
+    GOLDFLAGS="-d -s -w -extldflags=-static"   \
     go build -a -v  .
 
 # smoke test

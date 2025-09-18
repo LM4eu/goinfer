@@ -30,7 +30,6 @@ func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c ech
 
 	// Execute infer in goroutine with timeout
 	inferCtx, cancel := context.WithTimeout(ctx, time.Minute*5)
-	defer cancel()
 
 	resChanInternal := make(chan StreamedMsg)
 	errChanInternal := make(chan StreamedMsg)
@@ -80,6 +79,7 @@ func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c ech
 		}
 	}
 
+	defer cancel()
 	return nil
 }
 
