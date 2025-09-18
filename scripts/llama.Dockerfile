@@ -1,9 +1,12 @@
+# versions to select the Nvidia container image
+# see: https://hub.docker.com/r/nvidia/cuda
+ARG CUDA_VERSION=13.0
+ARG CUDA_PATCH=1
 ARG UBUNTU_VERSION=24.04
-ARG CUDA_VERSION=12.9.1
-ARG CUDA_MAJOR_MINOR=12.9
 
-ARG BASE_CUDA_DEV_CONTAINER=docker.io/nvidia/cuda:${CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION}
-ARG BASE_CUDA_RUN_CONTAINER=docker.io/nvidia/cuda:${CUDA_VERSION}-runtime-ubuntu${UBUNTU_VERSION}
+ARG cuda_full_version=${CUDA_VERSION}.${CUDA_PATCH}
+ARG BASE_CUDA_DEV_CONTAINER=docker.io/nvidia/cuda:${cuda_full_version}-devel-ubuntu${UBUNTU_VERSION}
+ARG BASE_CUDA_RUN_CONTAINER=docker.io/nvidia/cuda:${cuda_full_version}-runtime-ubuntu${UBUNTU_VERSION}
 
 #------------------------------------------
 FROM ${BASE_CUDA_DEV_CONTAINER} AS build
@@ -21,7 +24,12 @@ COPY . .
 RUN if [ "${CUDA_DOCKER_ARCH}" != "default" ]; then \
     export CMAKE_ARGS="-DCMAKE_CUDA_ARCHITECTURES=${CUDA_DOCKER_ARCH}"; \
     fi && \
-    cmake -B build -G Ninja -DGGML_CCACHE=ON -DLLAMA_LLGUIDANCE=OFF -DLLAMA_CURL=OFF -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=ON -DGGML_STATIC=ON -DGGML_LTO=ON -DLLAMA_BUILD_TOOLS=ON -DLLAMA_BUILD_EXAMPLES=OFF -DGGML_NATIVE=ON -DGGML_CUDA=ON -DGGML_BACKEND_DL=OFF -DGGML_CPU_ALL_VARIANTS=OFF -DLLAMA_BUILD_TESTS=OFF ${CMAKE_ARGS} -DCMAKE_EXE_LINKER_FLAGS=-Wl,--allow-shlib-undefined . && \
+    cmake -B build -G Ninja -DGGML_CCACHE=ON -DLLAMA_LLGUIDANCE=OFF \
+    -DLLAMA_CURL=OFF -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=ON -DGGML_STATIC=ON \
+    -DGGML_LTO=ON -DLLAMA_BUILD_TOOLS=ON -DLLAMA_BUILD_EXAMPLES=OFF \
+    -DGGML_NATIVE=ON -DGGML_CUDA=ON -DGGML_BACKEND_DL=OFF \
+    -DGGML_CPU_ALL_VARIANTS=OFF -DLLAMA_BUILD_TESTS=OFF ${CMAKE_ARGS} \
+    -DCMAKE_EXE_LINKER_FLAGS=-Wl,--allow-shlib-undefined . && \
     cmake --build build --config Release --target llama-server
 
 RUN mkdir -p /app/lib && \
@@ -83,8 +91,8 @@ ENTRYPOINT [ "/app/llama-cli" ]
 ### Server, Server only
 FROM base AS server
 
-ARG CUDA_MAJOR_MINOR=${CUDA_MAJOR_MINOR}
-ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda-${CUDA_MAJOR_MINOR}/compat
+ARG CUDA_VERSION=${CUDA_VERSION}
+ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda-${CUDA_VERSION}/compat
 
 ENV LLAMA_ARG_HOST=0.0.0.0
 

@@ -16,7 +16,7 @@ services:
         - llama_git_tag=b6131
         # Nvidia container images: https://hub.docker.com/r/nvidia/cuda
         - CUDA_VERSION=13.0
-        - CUDA_PATCH=0
+        - CUDA_PATCH=1
         - UBUNTU_VERSION=24.04
     command: -local
     ports: [5143:5143]
