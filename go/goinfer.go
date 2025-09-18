@@ -32,7 +32,7 @@ const (
 
 func main() {
 	cfg := getFlagsCfg()
-	runHTTPServers(cfg)
+	startServers(cfg)
 }
 
 func getFlagsCfg() *conf.GoInferCfg {
@@ -105,7 +105,8 @@ func getFlagsCfg() *conf.GoInferCfg {
 	return &cfg
 }
 
-func runHTTPServers(cfg *conf.GoInferCfg) {
+// startServers creates and runs the HTTP servers.
+func startServers(cfg *conf.GoInferCfg) {
 	// Create context with cancel for graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
