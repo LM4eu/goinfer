@@ -97,8 +97,8 @@ func (cfg *GoInferCfg) Read(goinferCfgFile string, noAPIKey bool) error {
 	return cfg.validate(noAPIKey)
 }
 
-// Write populates the configuration with defaults, applies environment variables,
-// writes the resulting configuration to the specified file, and mutates the receiver.
+// WriteConfigFile populates the configuration with defaults, applies environment variables,
+// writes the resulting configuration to the given file, and mutates the receiver.
 func (cfg *GoInferCfg) Write(goinferCfgFile string, noAPIKey bool) error {
 	cfg.Llama = defaultGoInferCfg.Llama
 	cfg.ModelsDir = defaultGoInferCfg.ModelsDir
