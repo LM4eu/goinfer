@@ -17,12 +17,14 @@ set -xe
 #
 # Customize: Offload gate, up and down MoE layers but only from the 6th layer onwards.
 # -ot "\.(6|7|8|9|[0-9][0-9]|[0-9][0-9][0-9])\.ffn_(gate|up|down)_exps.=CPU"
+#
+# 	--n-cpu-moe 1
 
 # current directory
 cd ${0%/*}
 
 ../../llama.cpp/build/bin/llama-server   \
-	--threads 12                         \
+	--threads -1                         \
 	--host 0.0.0.0 --port 8080           \
 	--no-context-shift                   \
 	--no-warmup                          \
@@ -31,7 +33,7 @@ cd ${0%/*}
 	--alias gpt-oss-120b                 \
 	--temp 1.0  --top-k 0.0              \
 	--min-p 0.0 --top-p 1.0              \
-	-c 0 \
+	-c 0                                 \
 	--batch-size 2048 --ubatch-size 2048 \
 	-ngl 999                             \
  	--n-cpu-moe 1                        \

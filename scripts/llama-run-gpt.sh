@@ -6,7 +6,7 @@ set -xe
 # https://github.com/ggml-org/llama.cpp/discussions/15396
 # https://docs.unsloth.ai/basics/gpt-oss-how-to-run-and-fine-tune#recommended-settings
 
-override_tensor=${1:-[.]6[.]ffn_up_exps0}
+[[ -n $1 ]] && opt="-ot '$1=CPU'" || opt="--n-cpu-moe 1"
 
 # Only one GPU: Offloads all MoE layers to the CPU
 # -ot ".ffn_.*_exps.=CPU"
@@ -32,11 +32,11 @@ cd ${0%/*}
 	--no-warmup                          \
 	--no-mmap                            \
 	-hf ggml-org/gpt-oss-120b-GGUF       \
-	--alias openai/gpt-oss-120b          \
+	--alias gpt-oss-120b                 \
 	--temp 1.0  --top-k 0.0              \
 	--min-p 0.0 --top-p 1.0              \
-	-c 16384                             \
+	-c 0                                 \
 	--batch-size 2048 --ubatch-size 2048 \
 	-ngl 999                             \
-	-ot "$override_tensor=CPU"
+	$opt
 
