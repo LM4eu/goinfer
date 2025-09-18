@@ -55,7 +55,7 @@ func getFlagsCfg() *conf.GoInferCfg {
 
 	// Generate config
 	if *genGiCfg {
-		err := cfg.WriteConfigFile(goInferCfgFile, *noAPIKey)
+		err := cfg.Write(goInferCfgFile, *noAPIKey)
 		if err != nil {
 			slog.ErrorContext(context.Background(), "creating config", "error", err)
 			os.Exit(1)
@@ -63,7 +63,7 @@ func getFlagsCfg() *conf.GoInferCfg {
 	}
 
 	// Verify we can upload the config
-	err := cfg.Load(goInferCfgFile, *noAPIKey)
+	err := cfg.Read(goInferCfgFile, *noAPIKey)
 	if err != nil {
 		slog.ErrorContext(context.Background(), "loading config", "error", err)
 		os.Exit(1)

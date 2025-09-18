@@ -64,9 +64,42 @@ var defaultGoInferCfg = GoInferCfg{
 	},
 }
 
-// WriteConfigFile populates the configuration with defaults, applies environment variables,
+// Read the configuration file.
+func (cfg *GoInferCfg) Read(goinferCfgFile string, noAPIKey bool) error {
+	// Load from file if specified
+	if goinferCfgFile != "" {
+		yml, err := os.ReadFile(filepath.Clean(goinferCfgFile))
+		if err != nil {
+			return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_FILE_READ_FAILED", "failed to read "+goinferCfgFile)
+		}
+
+		if len(yml) > 0 {
+			err := yaml.Unmarshal(yml, &cfg)
+			if err != nil {
+				return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_UNMARSHAL_FAILED", "failed to unmarshal YAML data: "+string(yml[:100]))
+			}
+		}
+	}
+
+	cfg.applyEnvVars()
+
+	// Concatenate host and ports => addr = "host:port"
+	listen := make(map[string]string, len(cfg.Server.Listen))
+	for addr, services := range cfg.Server.Listen {
+		if addr == "" || addr[0] == ':' {
+			addr = cfg.Server.Host + addr
+		}
+		listen[addr] = services
+	}
+	cfg.Server.Listen = listen
+
+	// Validate configuration
+	return cfg.validate(noAPIKey)
+}
+
+// Write populates the configuration with defaults, applies environment variables,
 // writes the resulting configuration to the specified file, and mutates the receiver.
-func (cfg *GoInferCfg) WriteConfigFile(goinferCfgFile string, noAPIKey bool) error {
+func (cfg *GoInferCfg) Write(goinferCfgFile string, noAPIKey bool) error {
 	cfg.Llama = defaultGoInferCfg.Llama
 	cfg.ModelsDir = defaultGoInferCfg.ModelsDir
 	cfg.Server = defaultGoInferCfg.Server
@@ -112,39 +145,6 @@ func (cfg *GoInferCfg) WriteConfigFile(goinferCfgFile string, noAPIKey bool) err
 		return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_WRITE_FAILED", "failed to write config file")
 	}
 
-	return cfg.validate(noAPIKey)
-}
-
-// Load the configuration file.
-func (cfg *GoInferCfg) Load(goinferCfgFile string, noAPIKey bool) error {
-	// Load from file if specified
-	if goinferCfgFile != "" {
-		yml, err := os.ReadFile(filepath.Clean(goinferCfgFile))
-		if err != nil {
-			return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_FILE_READ_FAILED", "failed to read "+goinferCfgFile)
-		}
-
-		if len(yml) > 0 {
-			err := yaml.Unmarshal(yml, &cfg)
-			if err != nil {
-				return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_UNMARSHAL_FAILED", "failed to unmarshal YAML data: "+string(yml[:100]))
-			}
-		}
-	}
-
-	cfg.applyEnvVars()
-
-	// Concatenate host and ports => addr = "host:port"
-	listen := make(map[string]string, len(cfg.Server.Listen))
-	for addr, services := range cfg.Server.Listen {
-		if addr == "" || addr[0] == ':' {
-			addr = cfg.Server.Host + addr
-		}
-		listen[addr] = services
-	}
-	cfg.Server.Listen = listen
-
-	// Validate configuration
 	return cfg.validate(noAPIKey)
 }
 
