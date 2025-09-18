@@ -125,6 +125,7 @@ func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *InferQuer
 			break
 		}
 
+		// NOTE: This is a placeholder; real inference logic should replace the stub.
 		// For demo purposes, assume successful inference
 		giErr = nil
 		break
