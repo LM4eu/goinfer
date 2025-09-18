@@ -11,8 +11,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// ErrorHandler is a centralized error handler for Echo middleware.
-func ErrorHandler(err error, c echo.Context) error {
+// HandleError is a centralized error handler for Echo middleware.
+func HandleError(err error, c echo.Context) error {
 	// Log the error for debugging
 	c.Logger().Error(err)
 

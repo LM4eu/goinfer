@@ -62,7 +62,7 @@ func (inf *Infer) NewEcho(ctx context.Context, cfg *conf.GoInferCfg, addr string
 		return func(c echo.Context) error {
 			err := next(c)
 			if err != nil {
-				return gie.ErrorHandler(err, c)
+				return gie.HandleError(err, c)
 			}
 			return nil
 		}
