@@ -6,7 +6,7 @@ package conf
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"path/filepath"
@@ -22,7 +22,7 @@ func (cfg *GoInferCfg) Search() ([]string, error) {
 			if cfg.Verbose {
 				slog.InfoContext(context.Background(), "Searching model files in", "root", root)
 			}
-			return nil, errors.New("failed search root=" + root + " err=" + err.Error())
+			return nil, fmt.Errorf("failed search root=%s: %w", root, err)
 		}
 	}
 
