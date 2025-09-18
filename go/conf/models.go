@@ -19,7 +19,7 @@ import (
 func (cfg *GoInferCfg) Search() ([]string, error) {
 	var modelFiles []string
 
-	for _, root := range strings.Split(cfg.ModelsDir, ":") {
+	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
 		err := cfg.search(&modelFiles, strings.TrimSpace(root))
 		if err != nil {
 			if cfg.Verbose {
@@ -68,7 +68,7 @@ func extractFlags(stem string) string {
 	var flags []string
 
 	// Slice after the first '&' to avoid an empty first element.
-	for _, f := range strings.Split(stem[pos+1:], "&") {
+	for f := range strings.SplitSeq(stem[pos+1:], "&") {
 		kv := strings.SplitN(f, "=", 2)
 		if len(kv) > 0 {
 			kv[0] = "-" + kv[0]
