@@ -83,7 +83,7 @@ func (inf *Infer) NewEcho(ctx context.Context, cfg *conf.GoInferCfg, addr string
 	// ------------ Models ------------
 	if enableModelsEndpoint {
 		grp := e.Group("/models")
-		setupAPIKeyAuth(ctx, grp, cfg, "model")
+		configureAPIKeyAuth(ctx, grp, cfg, "model")
 		grp.GET("", inf.modelsHandler)
 		slog.InfoContext(ctx, "Listen GET models endpoint", "addr", addr)
 	}
@@ -91,7 +91,7 @@ func (inf *Infer) NewEcho(ctx context.Context, cfg *conf.GoInferCfg, addr string
 	// ----- Inference (llama.cpp) -----
 	if enableGoinferEndpoint {
 		grp := e.Group("/goinfer")
-		setupAPIKeyAuth(ctx, grp, cfg, "goinfer")
+		configureAPIKeyAuth(ctx, grp, cfg, "goinfer")
 		grp.POST("", inf.inferHandler)
 		grp.GET("/abort", inf.abortHandler)
 		slog.InfoContext(ctx, "Listen POST goinfer endpoint", "addr", addr)
@@ -102,15 +102,15 @@ func (inf *Infer) NewEcho(ctx context.Context, cfg *conf.GoInferCfg, addr string
 	if enableOpenAPIEndpoint {
 		grp := e.Group("/v1")
 		grp.POST("/chat/completions", inf.handleChatCompletions)
-		setupAPIKeyAuth(ctx, grp, cfg, "openai")
+		configureAPIKeyAuth(ctx, grp, cfg, "openai")
 		slog.InfoContext(ctx, "Listen POST chat completions", "addr", addr)
 	}
 
 	return e
 }
 
-// setupAPIKeyAuth sets up API key authentication for a grp.
-func setupAPIKeyAuth(ctx context.Context, grp *echo.Group, cfg *conf.GoInferCfg, service string) {
+// configureAPIKeyAuth sets up API‑key authentication for a grp.
+func configureAPIKeyAuth(ctx context.Context, grp *echo.Group, cfg *conf.GoInferCfg, service string) {
 	// Select the API key with preference order
 	key, exists := cfg.Server.APIKeys[service]
 	if !exists {
