@@ -64,8 +64,9 @@ var defaultGoInferCfg = GoInferCfg{
 	},
 }
 
-// Create a configuration file.
-func (cfg *GoInferCfg) Create(goinferCfgFile string, noAPIKey bool) error {
+// WriteConfigFile populates the configuration with defaults, applies environment variables,
+// writes the resulting configuration to the specified file, and mutates the receiver.
+func (cfg *GoInferCfg) WriteConfigFile(goinferCfgFile string, noAPIKey bool) error {
 	cfg.Llama = defaultGoInferCfg.Llama
 	cfg.ModelsDir = defaultGoInferCfg.ModelsDir
 	cfg.Server = defaultGoInferCfg.Server

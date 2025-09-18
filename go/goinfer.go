@@ -55,7 +55,7 @@ func getFlagsCfg() *conf.GoInferCfg {
 
 	// Generate config
 	if *genGiCfg {
-		err := cfg.Create(goInferCfgFile, *noAPIKey)
+		err := cfg.WriteConfigFile(goInferCfgFile, *noAPIKey)
 		if err != nil {
 			slog.ErrorContext(context.Background(), "creating config", "error", err)
 			os.Exit(1)
