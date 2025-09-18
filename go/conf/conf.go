@@ -124,9 +124,10 @@ func (cfg *GoInferCfg) Write(goinferCfgFile string, noAPIKey bool) error {
 		}
 	}
 
-	// Having command line flags (-q -debug) in the config files may make sense depending on the situations.
-	// But, we do not want to encourage command line flags to be in the config file.
-	// Better to let Users adding these settings, than forcing to remove them. Let's keep the config file clean. :)
+	// The following temporary `Verbose`/`Debug` flag toggling block is necessary
+	// to avoid polluting the configuration with: verbose=false debug=true.
+	// Better to use command line flags: -q -debug.
+	// Users are free to add manually verbose=false debug=true in the configuration.
 	vrb := cfg.Verbose
 	dbg := cfg.Debug
 	cfg.Verbose = false
