@@ -25,7 +25,7 @@ func (inf *Infer) inferHandler(c echo.Context) error {
 	// Check if infer is already running using Infer
 	inf.mu.Lock()
 	if inf.IsInferring {
-		slog.InfoContext(ctx, "Infer already running")
+		slog.Info("Infer already running")
 		inf.mu.Unlock()
 		return c.NoContent(http.StatusAccepted)
 	}
@@ -59,12 +59,11 @@ func (inf *Infer) inferHandler(c echo.Context) error {
 
 	// Handle the infer result
 	if inf.Cfg.Verbose {
-		slog.InfoContext(ctx, "-----------------------------")
-		slog.InfoContext(ctx, "-------- result ----------")
+		slog.Info("-----------------------------")
 		for key, value := range result.Data {
-			slog.InfoContext(ctx, "result", "key", key, "value", value)
+			slog.Info("result", "key", key, "value", value)
 		}
-		slog.InfoContext(ctx, "--------------------------")
+		slog.Info("--------------------------")
 	}
 
 	if !query.Params.Stream {
@@ -170,18 +169,18 @@ func (inf *Infer) execute(c echo.Context, query *InferQuery) (*StreamedMsg, erro
 
 	// Process response
 	select {
-	case res, ok := <-resChan:
+	case resCh, ok := <-resChan:
 		if ok {
-			return &res, nil
+			return &resCh, nil
 		}
 		return nil, gie.ErrChanClosed
 
-	case err, ok := <-errChan:
+	case errCh, ok := <-errChan:
 		if ok {
-			if err.MsgType == ErrorMsgType {
-				return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", "infer error: "+err.Content)
+			if errCh.MsgType == ErrorMsgType {
+				return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", "infer error: "+errCh.Content)
 			}
-			return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", err.Content)
+			return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", errCh.Content)
 		}
 		return nil, gie.ErrChanClosed
 
@@ -196,9 +195,9 @@ func (inf *Infer) execute(c echo.Context, query *InferQuery) (*StreamedMsg, erro
 
 // abortHandler aborts ongoing inference.
 func (inf *Infer) abortHandler(c echo.Context) error {
-	err := inf.abortInference(c.Request().Context())
+	err := inf.abortInference()
 	if err != nil {
-		slog.ErrorContext(c.Request().Context(), "error", "error", err)
+		slog.ErrorContext(c.Request().Context(), "abortInference", "error", err)
 		return c.NoContent(http.StatusAccepted)
 	}
 

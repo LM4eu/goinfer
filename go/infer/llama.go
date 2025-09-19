@@ -12,24 +12,28 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/LM4eu/goinfer/gic"
 	"github.com/LM4eu/goinfer/gie"
 	"github.com/labstack/echo/v4"
 )
 
+// CtxKeyRequestID is a typed context key to prevent key collisions.
+type CtxKeyRequestID string
+
+// RequestID is the key to access the RequestID stored within the context.
+const RequestID CtxKeyRequestID = "RequestID"
+
 // Infer performs language model inference.
 func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, resChan, errChan chan<- StreamedMsg) {
 	// Create context with request ID
-	reqID := gic.GenReqID()
-	ctx = context.WithValue(ctx, gic.RequestIDKey, reqID)
+	ctx = context.WithValue(ctx, RequestID, reqID())
 
 	// Early validation checks
 	if ctx.Err() != nil {
-		giErr := gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CTX_CANCELED", "infer canceled")
-		slog.ErrorContext(ctx, "Context canceled at infer start", "error", giErr)
+		err := gie.Wrap(ctx.Err(), gie.TypeInference, "CTX_CANCELED", "infer canceled")
+		slog.ErrorContext(ctx, "Context canceled at infer start", "error", err)
 		errChan <- StreamedMsg{
 			Num:     0,
-			Content: giErr.Error(),
+			Content: err.Error(),
 			MsgType: ErrorMsgType,
 		}
 		return
@@ -97,6 +101,11 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 	resChan <- successMsg
 }
 
+// reqID generates a unique request ID for correlation.
+func reqID() string {
+	return strconv.FormatInt(time.Now().UnixNano(), 10)
+}
+
 // runInfer performs the actual inference with token streaming.
 func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *InferQuery) (int, error) {
 	// Start the infer process
@@ -111,28 +120,28 @@ func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *InferQuer
 	var thinkingElapsed time.Duration
 
 	// Execute inference with basic retry logic
-	var giErr error
+	var err error
 	maxRetries := 3
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		// Check context
 		if ctx.Err() != nil {
-			giErr = gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CTX_CANCELED", "infer canceled")
+			err = gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CTX_CANCELED", "infer canceled")
 			break
 		}
 
 		if !inf.ContinueInferringController {
-			giErr = gie.Wrap(gie.ErrInferStopped, gie.TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
+			err = gie.Wrap(gie.ErrInferStopped, gie.TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
 			break
 		}
 
 		// NOTE: This is a placeholder; real inference logic should replace the stub.
 		// For demo purposes, assume successful inference
-		giErr = nil
+		err = nil
 		break
 	}
 
 	// If successful, process tokens
-	if giErr == nil && query.Params.Stream {
+	if err == nil && query.Params.Stream {
 		// Create JSON encoder for streaming
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		c.Response().WriteHeader(http.StatusOK)
@@ -148,7 +157,7 @@ func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *InferQuer
 			}
 
 			token := "token_" + strconv.Itoa(i)
-			err := inf.streamToken(ctx, nTok+i, token, jsonEncoder, c, &query.Params, startThinking, &startEmitting, &thinkingElapsed)
+			err = inf.streamToken(ctx, nTok+i, token, jsonEncoder, c, &query.Params, startThinking, &startEmitting, &thinkingElapsed)
 			if err != nil {
 				return nTok, err
 			}
@@ -160,15 +169,15 @@ func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *InferQuer
 	inf.mu.Lock()
 	inf.IsInferring = false
 	inf.mu.Unlock()
-	return nTok, giErr
+	return nTok, err
 }
 
 // completeStream handles streaming termination.
 func (inf *Infer) completeStream(ctx context.Context, c echo.Context, _ int) error {
 	if ctx.Err() != nil {
-		er := gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "STREAM_CANCELED", "stream termination canceled")
-		gic.LogCtxAwareError(ctx, "stream_termination", er)
-		return er
+		err := gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "STREAM_CANCELED", "stream termination canceled")
+		slog.InfoContext(ctx, "Context‑aware error", "request_id", ctx.Value(RequestID), "operation", "stream_termination", "error", err)
+		return err
 	}
 
 	err := sendTerm(ctx, c)
@@ -176,10 +185,8 @@ func (inf *Infer) completeStream(ctx context.Context, c echo.Context, _ int) err
 		inf.mu.Lock()
 		inf.ContinueInferringController = false
 		inf.mu.Unlock()
-		er := gie.Wrap(err, gie.TypeInference, "STREAM_TERMINATION_FAILED", "stream termination failed")
-		gic.LogCtxAwareError(ctx, "stream_termination", er)
-		inf.logError(ctx, "Llama", "cannot send stream termination", er)
-		return er
+		slog.ErrorContext(ctx, "Context‑aware error", "request_id", ctx.Value(RequestID), "operation", "stream_termination", "error", err)
+		return gie.Wrap(err, gie.TypeInference, "STREAM_TERMINATION_FAILED", "stream termination failed")
 	}
 
 	return nil
@@ -191,7 +198,7 @@ func (inf *Infer) streamToken(
 	c echo.Context, params *InferParams, startThinking time.Time,
 	startEmitting *time.Time, thinkingElapsed *time.Duration,
 ) error {
-	// Check context	err :=
+	// Check context
 	if ctx.Err() != nil {
 		return gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CTX_CANCELED", "context canceled")
 	}
@@ -246,15 +253,6 @@ func (inf *Infer) streamToken(
 	}
 
 	return write(ctx, c, jsonEncoder, tMsg)
-}
-
-// logError logs error information.
-func (inf *Infer) logError(ctx context.Context, prefix, message string, err error) {
-	if err != nil {
-		slog.ErrorContext(ctx, "error", "prefix", prefix, "message", message, "error", err)
-	} else {
-		slog.ErrorContext(ctx, "error", "prefix", prefix, "message", message)
-	}
 }
 
 // logToken logs token information.

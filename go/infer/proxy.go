@@ -85,7 +85,7 @@ func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c ech
 }
 
 // abortInference aborts an ongoing inference.
-func (inf *Infer) abortInference(ctx context.Context) error {
+func (inf *Infer) abortInference() error {
 	inf.mu.Lock()
 	defer inf.mu.Unlock()
 	if !inf.IsInferring {
@@ -93,7 +93,7 @@ func (inf *Infer) abortInference(ctx context.Context) error {
 	}
 
 	if inf.Cfg.Verbose {
-		slog.InfoContext(ctx, "Aborting inference")
+		slog.Info("Aborting inference")
 	}
 
 	inf.ContinueInferringController = false

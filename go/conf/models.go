@@ -5,37 +5,37 @@
 package conf
 
 import (
-	"context"
-	"fmt"
 	"io/fs"
 	"log/slog"
 	"path/filepath"
 	"strings"
+
+	"github.com/LM4eu/goinfer/gie"
 )
 
 // Search returns a slice of absolute file paths for all *.gguf model files
 // found under the directories listed in cfg.ModelsDir (colon-separated).
 // It walks each directory recursively, aggregates matching files, and returns any error encountered.
-func (cfg *GoInferCfg) Search(ctx context.Context) ([]string, error) {
-	var modelFiles []string
+func (cfg *GoInferCfg) Search() ([]string, error) {
+	modelFiles := make([]string, len(cfg.ModelsDir)/2)
 
 	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
-		err := cfg.search(ctx, &modelFiles, strings.TrimSpace(root))
+		err := cfg.search(&modelFiles, strings.TrimSpace(root))
 		if err != nil {
 			if cfg.Verbose {
-				slog.InfoContext(ctx, "Searching model files in", "root", root)
+				slog.Info("Searching model files", "root", root)
 			}
-			return nil, fmt.Errorf("failed search root=%s: %w", root, err)
+			return nil, err
 		}
 	}
 
 	return modelFiles, nil
 }
 
-func (cfg *GoInferCfg) search(ctx context.Context, files *[]string, root string) error {
+func (cfg *GoInferCfg) search(files *[]string, root string) error {
 	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return err
+			return gie.Wrap(err, gie.TypeNotFound, "filepath.WalkDir", "path="+d.Name())
 		}
 
 		if d.IsDir() {
@@ -44,7 +44,7 @@ func (cfg *GoInferCfg) search(ctx context.Context, files *[]string, root string)
 
 		if strings.HasSuffix(path, ".gguf") {
 			if cfg.Verbose {
-				slog.InfoContext(ctx, "Found model", "path", path)
+				slog.Info("Found", "model", path)
 			}
 			*files = append(*files, path)
 		}

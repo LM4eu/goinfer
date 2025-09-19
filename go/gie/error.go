@@ -22,7 +22,7 @@ const (
 	// TypeValidation indicates validation errors.
 	TypeValidation ErrorType = "validation"
 	// TypeConfiguration indicates configuration errors.
-	TypeConfiguration ErrorType = "configuration"
+	TypeConfiguration ErrorType = "config"
 	// TypeInference indicates inference-related errors.
 	TypeInference ErrorType = "inference"
 	// TypeServer indicates server-related errors.
