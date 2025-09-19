@@ -80,8 +80,11 @@ func getFlagsCfg() *conf.GoInferCfg {
 
 	// Load the llama-swap config
 	cfg.Proxy, err = proxy.LoadConfig(proxyCfgFile)
-	// even if err!=nil => generate the config file,
+	// even if err!=nil => generate the config file
 	if *genPxCfg {
+		if err != nil {
+			slog.WarnContext(context.Background(), "loading proxy config", "error", err)
+		}
 		err = cfg.GenProxyCfg(proxyCfgFile)
 		if err != nil {
 			slog.ErrorContext(context.Background(), "generating proxy config", "error", err)
