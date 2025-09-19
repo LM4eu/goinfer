@@ -6,3 +6,139 @@ Goinfer is based on [llama.cpp](https://github.com/ggml-org/llama.cpp) and [llam
 - **Multi models**: switch between models at runtime
 - **Inference queries**: HTTP API and streaming response support
 - **Admin web UI**: [Infergui](https://github.com/synw/infergui)
+
+## Configuration example
+
+### Main configuration file
+
+```yaml
+# Recursively search *.gguf files in one or multiple folders separated by ':'
+models_dir: /home/me/my/models
+
+server:
+  api_key:
+    # ⚠️ Set your private 64-hex-digit API keys (32 bytes) 🚨
+    admin: PLEASE SET SECURE API KEY
+    user:  PLEASE SET SECURE API KEY
+  origins: localhost
+  listen:
+    :5143: admin,models
+    :2222: openai,goinfer
+    :5555: llama-swap proxy
+
+llama:
+  exe: /home/me/llama.cpp/build/bin/llama-server
+  args:
+    # --props: enable /props endpoint to change global properties at runtime
+    # --no-webui: do not start the Web UI HTTP server
+    common: --props --no-webui --no-warmup
+    goinfer: --jinja --chat-template-file template.jinja
+```
+
+### llama-swap configuration file
+
+See documentation: [github.com/mostlygeek/llama-swap/wiki/Configuration](https://github.com/mostlygeek/llama-swap/wiki/Configuration)
+
+```yaml
+# seconds to wait for a model to be ready to serve requests (min=15, default=120)
+healthCheckTimeout: 500
+
+
+# Valid: debug, info, warn, error
+logLevel: info
+
+
+# maximum number of metrics to keep in memory, default: 1000
+metricsMaxInMemory: 1000
+
+
+# automatically incremented for each model -> automatic ${PORT} macro, defaul 5800
+startPort: 6000
+
+
+# macros to reduce common conf settings
+macros:
+  "llama-server-openai":  ./llama-server --port ${PORT} --props --no-webui --no-warmup
+  "llama-server-goinfer": ./llama-server --port ${PORT} --props --no-webui --no-warmup --jinja --chat-template-file template.jinja
+
+
+# models: a dictionary of model configurations
+models:
+
+  # model names used in API requests
+  "Qwen2.5-1.5B-Instruct-Q4_K_M":
+
+    # alternative model names (unique globally) for impersonating a specific model
+    aliases:
+      - "Qwen2.5-1.5B-Instruct"
+      - "Qwen2.5-1.5B"
+      - "Qwen2.5"
+
+    # Hide model name in /v1/models and /upstream API response
+    unlisted: false
+    # v1/models API response => display name for humans
+    name: "llama 3.1 8B"
+    # v1/models API response => display description for humans
+    description: "A small but capable model used for quick testing"
+
+    # overrides the model name that is sent to upstream server
+    useModelName: "qwen:qwq"
+
+    # environment variables
+    env:
+      # - "CUDA_VISIBLE_DEVICES=0,1,2"
+
+    # command to start the inference server
+    cmd: ${llama-server-openai} --model path/to/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf
+
+    # URL to proxy the API requests, default: http://localhost:${PORT}
+    proxy: http://localhost:${PORT} # http://127.0.0.1:8999
+
+    # URL to check readyness, default: /health
+    checkEndpoint: /health # /custom-endpoint
+
+    # unload the model after ttl seconds, default 0 (no automatic unloading)
+    ttl: 3600
+
+    filters:
+      # inference params to remove from the request, default: ""
+      # useful for preventing overriding of default server params by requests
+      strip_params: # "temperature, top_p, top_k"
+
+
+# preload some models on startup 
+hooks:
+  on_startup:
+    preload:
+      # - "llama"
+
+
+# Keep some models loaded indefinitely, while others are swapped out
+# see https://github.com/mostlygeek/llama-swap/pull/109
+groups:
+  # example1: only one model is allowed to run a time (default mode)
+  "group1":
+    swap: true
+    exclusive: true
+    members:
+      # - "llama"
+      # - "qwen-unlisted"
+  # example2: all the models in this group2 can run at the same time
+  # loading another model => unloads all this group2
+  "group2":
+    swap: false
+    exclusive: false
+    members:
+      # - "docker-llama"
+      # - "modelA"
+      # - "modelB"
+  # example3: persistent models are never unloaded
+  "forever":
+    persistent: true
+    swap: false
+    exclusive: false
+    members:
+      # - "forever-modelA"
+      # - "forever-modelB"
+      # - "forever-modelc"
+```
