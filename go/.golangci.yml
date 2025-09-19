@@ -412,23 +412,13 @@ linters:
       confidence: medium
       excludes:
         - G104
-      nosec: ""
       severity: medium
-
-    gosmopolitan:
-      allow-time: false
-      allow-time-utc: false
-      check-timezone: true
 
     govet:
       enable-all: true
       settings:
         shadow:
           strict: false
-
-    iface:
-      allow-empty-interface: false
-      allow-single-method: false
 
     importas:
       alias:
@@ -437,17 +427,10 @@ linters:
         - alias: ctx
           pkg: context
 
-    inamedparam:
-      ignore-empty: false
-
-    interfacebloat:
-      max-methods: 10
-
     lll:
       line-length: 160
 
     loggercheck:
-      kitsune: true
       klog: true
       logr: true
       slog: true
@@ -459,102 +442,31 @@ linters:
     misspell:
       locale: US
 
-    musttag:
-      rules: []
-
     nakedret:
       max-func-lines: 15
 
-    nestif:
-      max-nesting: 5
-
-    nilerr:
-      check-all: true
-
-    nilnesserr:
-      check-all: true
-
-    nlreturn:
-      max-lines: 2
-
-    noctx:
-      check-all: true
-
-    noinlineerr:
-      check-all: true
-
     nolintlint:
-      allow-leading-space: false # don't require machine-readable nolint directives (i.e. with no leading space)
       allow-unused: false # report any unused nolint directives
       require-explanation: false # don't require an explanation for nolint directives
       require-specific: true # require nolint directives to be specific about which linter is being skipped
 
-    nonamedreturns:
-      check-all: true
-
-    nosprintfhostport:
-      check-all: true
-
     paralleltest:
       ignore-missing: false
-
-    perfsprint:
-      ignore: []
 
     prealloc:
       for-loops: true
       range-loops: true
       simple: true
 
-    predeclared:
-      ignore: ""
-
     promlinter:
       strict: false
 
-    protogetter:
-      check-all: true
-
-    reassign:
-      check-global: true
-      check-local: true
-
-    recvcheck:
-      check-all: true
-
     revive:
-      config:
-        - rule-name: blank-imports
-          severity: warning
-        - rule-name: context-as-argument
-          severity: warning
-        - rule-name: context-keys-type
-          severity: warning
-        - rule-name: dot-imports
-          severity: warning
-        - rule-name: error-return
-          severity: warning
-        - rule-name: error-naming
-          severity: warning
-        - rule-name: if-return
-          severity: warning
-        - rule-name: var-naming
-          severity: warning
       enable-all-rules: true
 
-    rowserrcheck:
-      check-all: true
-      packages:
-        - database/sql
-        - github.com/jackc/pgx/v4
-
+    # https://golangci-lint.run/docs/linters/configuration/#sloglint
     sloglint:
-      args-on-separate-lines: true
-      context: all
-      key-value-braces: true
-
-    spancheck:
-      check-all: true
+      context: scope
 
     # https://golangci-lint.run/docs/linters/configuration/#staticcheck
     staticcheck:
@@ -604,36 +516,8 @@ linters:
         - suite-extra-assert-call
         - suite-thelper
 
-    testpackage:
-      suffix: _test
-
-    thelper:
-      allow: []
-
-    tparallel:
-      check-all: true
-      ignore-missing: false
-
-    unconvert:
-      check-all: true
-
     unparam:
       check-exported: false
-
-    unused:
-      check-exported: false
-
-    usestdlibvars:
-      allow-all: false
-      ignore:
-        - os.O_WRONLY
-        - os.O_RDWR
-
-    usetesting:
-      allow:
-        - testing.T
-        - testing.B
-        - testing.F
 
     # https://golangci-lint.run/docs/linters/configuration/#varnamelen
     varnamelen:
@@ -657,20 +541,9 @@ linters:
         - k string
         - m echo.Map
         - v string
-      other:
-        - const C
-        - m map[string]int
-        - T any
-        - t testing.T
 
     whitespace:
-      blank-lines: true
-      multi-assign: true
       multi-if: true
-      space-around-braces: true
-      space-around-comment: true
-      space-around-operator: true
-      space-around-parentheses: true
 
     wrapcheck:
       ignore-interface-regexps:
@@ -683,36 +556,8 @@ linters:
         - errors.New(
         - fmt.Errorf(
 
-    wsl_v5:
-      allow-trailing-comma: true
-      strict: true
-
-issues:
-  exclude-rules:
-    # Excluding configuration per-path
-    - path: _test\.go
-      linters:
-        - gosec # weak random number generator (math/rand instead of crypto/rand)
-        - scopelint
-        # gocyclo
-        # errcheck
-        # dupl
-        # unparam
-        # staticcheck
-
-    # Excluding configuration per-linter
-    - linters:
-        - gocritic
-      text: "unnecessaryDefer:"
-
-    # Excluding configuration per-text and per-source
-    - text: "exitAfterDefer:"
-      linters:
-        - gocritic
-
 run:
   # timeout for analysis, e.g. 30s, 5m, default is 1m
-  deadline: 9m
   # exit code when at least one issue was found, default is 1
   issues-exit-code: 1
   # which dirs to skip: they won't be analyzed;
@@ -720,22 +565,6 @@ run:
   # default value is empty list, but next dirs are always skipped independently
   # from this option's value:
   #     vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
-  skip-dirs: [poc]
   go: "1.25"
   timeout: 5m
 
-output:
-  # colored-line-number|line-number|json|tab|checkstyle, default is "colored-line-number"
-  format: colored-line-number
-
-  # print lines of code with issue, default is true
-  print-issued-lines: true
-
-  # print linter name in the end of issue text, default is true
-  print-linter-name: true
-
-  # make issues output unique by line, default is true
-  uniq-by-line: true
-
-  # sorts results by: filepath, line and column
-  sort-results: true
