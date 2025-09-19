@@ -11,7 +11,9 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/LM4eu/goinfer/gie"
 	"github.com/mostlygeek/llama-swap/proxy"
@@ -64,24 +66,14 @@ var defaultGoInferCfg = GoInferCfg{
 	},
 }
 
-// Read the configuration file.
-func (cfg *GoInferCfg) Read(goinferCfgFile string, noAPIKey bool) error {
-	// Load from file if specified
-	if goinferCfgFile != "" {
-		yml, err := os.ReadFile(filepath.Clean(goinferCfgFile))
-		if err != nil {
-			return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_FILE_READ_FAILED", "failed to read "+goinferCfgFile)
-		}
-
-		if len(yml) > 0 {
-			err := yaml.Unmarshal(yml, &cfg)
-			if err != nil {
-				return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_UNMARSHAL_FAILED", "failed to unmarshal YAML data: "+string(yml[:100]))
-			}
-		}
+// Read the configuration file, then apply the env vars and finally verify the settings.
+func (cfg *GoInferCfg) Read(ctx context.Context, goinferCfgFile string, noAPIKey bool) error {
+	err := cfg.load(ctx, goinferCfgFile)
+	if err != nil {
+		return err
 	}
 
-	cfg.applyEnvVars()
+	cfg.applyEnvVars(ctx)
 
 	// Concatenate host and ports => addr = "host:port"
 	listen := make(map[string]string, len(cfg.Server.Listen))
@@ -94,33 +86,33 @@ func (cfg *GoInferCfg) Read(goinferCfgFile string, noAPIKey bool) error {
 	cfg.Server.Listen = listen
 
 	// Validate configuration
-	return cfg.validate(noAPIKey)
+	return cfg.validate(ctx, noAPIKey)
 }
 
 // Write populates the configuration with defaults, applies environment variables,
 // writes the resulting configuration to the given file, and mutates the receiver.
-func (cfg *GoInferCfg) Write(goinferCfgFile string, noAPIKey bool) error {
+func (cfg *GoInferCfg) Write(ctx context.Context, goinferCfgFile string, noAPIKey bool) error {
 	cfg.Llama = defaultGoInferCfg.Llama
 	cfg.ModelsDir = defaultGoInferCfg.ModelsDir
 	cfg.Server = defaultGoInferCfg.Server
 
-	cfg.applyEnvVars()
+	cfg.applyEnvVars(ctx)
 
 	// Set API keys
 	switch {
 	case noAPIKey:
-		slog.InfoContext(context.Background(), "Flag -no-api-key => Do not generate API keys", "file", goinferCfgFile)
+		slog.InfoContext(ctx, "Flag -no-api-key => Do not generate API keys", "file", goinferCfgFile)
 
 	case len(cfg.Server.APIKeys) > 0:
-		slog.InfoContext(context.Background(), "Configuration file uses API keys from environment", "file", goinferCfgFile)
+		slog.InfoContext(ctx, "Configuration file uses API keys from environment", "file", goinferCfgFile)
 
 	default:
-		cfg.Server.APIKeys["admin"] = genAPIKey(cfg.Debug)
-		cfg.Server.APIKeys["user"] = genAPIKey(cfg.Debug)
+		cfg.Server.APIKeys["admin"] = genAPIKey(ctx, cfg.Debug)
+		cfg.Server.APIKeys["user"] = genAPIKey(ctx, cfg.Debug)
 		if cfg.Debug {
-			slog.WarnContext(context.Background(), "Configuration file with DEBUG API key (not suitable for production)", "file", goinferCfgFile)
+			slog.WarnContext(ctx, "Configuration file with DEBUG API key (not suitable for production)", "file", goinferCfgFile)
 		} else {
-			slog.InfoContext(context.Background(), "Configuration file with secure API keys", "file", goinferCfgFile)
+			slog.InfoContext(ctx, "Configuration file with secure API keys", "file", goinferCfgFile)
 		}
 	}
 
@@ -146,12 +138,12 @@ func (cfg *GoInferCfg) Write(goinferCfgFile string, noAPIKey bool) error {
 		return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_WRITE_FAILED", "failed to write config file")
 	}
 
-	return cfg.validate(noAPIKey)
+	return cfg.validate(ctx, noAPIKey)
 }
 
 // GenerateProxyCfg generates the llama-swap-proxy configuration.
-func (cfg *GoInferCfg) GenProxyCfg(proxyCfgFile string) error {
-	modelFiles, err := cfg.Search()
+func (cfg *GoInferCfg) GenProxyCfg(ctx context.Context, proxyCfgFile string) error {
+	modelFiles, err := cfg.Search(ctx)
 	if err != nil {
 		return err
 	}
@@ -175,7 +167,7 @@ func (cfg *GoInferCfg) GenProxyCfg(proxyCfgFile string) error {
 		if cfg.Verbose {
 			_, ok := cfg.Proxy.Models[stem]
 			if ok {
-				slog.InfoContext(context.Background(), "Overwrite model", "model", stem, "file", proxyCfgFile)
+				slog.InfoContext(ctx, "Overwrite model", "model", stem, "file", proxyCfgFile)
 			}
 		}
 
@@ -190,7 +182,7 @@ func (cfg *GoInferCfg) GenProxyCfg(proxyCfgFile string) error {
 		if cfg.Verbose {
 			_, ok := cfg.Proxy.Models[stem]
 			if ok {
-				slog.InfoContext(context.Background(), "Overwrite model", "model", stem, "file", proxyCfgFile)
+				slog.InfoContext(ctx, "Overwrite model", "model", stem, "file", proxyCfgFile)
 			}
 		}
 		cfg.Proxy.Models[prefixedModelName] = proxy.ModelConfig{
@@ -211,58 +203,105 @@ func (cfg *GoInferCfg) GenProxyCfg(proxyCfgFile string) error {
 	}
 
 	if cfg.Verbose {
-		slog.InfoContext(context.Background(), "Generated proxy config", "file", proxyCfgFile, "models", len(modelFiles))
+		slog.InfoContext(ctx, "Generated proxy config", "file", proxyCfgFile, "models", len(modelFiles))
 	}
 
 	return nil
 }
 
-// Print configuration.
-func (cfg *GoInferCfg) Print() {
-	slog.InfoContext(context.Background(), "-----------------------------")
-	slog.InfoContext(context.Background(), "Environment Variables:")
-	slog.InfoContext(context.Background(), "GI_MODELS_DIR", "value", os.Getenv("GI_MODELS_DIR"))
-	slog.InfoContext(context.Background(), "GI_HOST", "value", os.Getenv("GI_HOST"))
-	slog.InfoContext(context.Background(), "GI_ORIGINS", "value", os.Getenv("GI_ORIGINS"))
-	slog.InfoContext(context.Background(), "GI_API_KEY_ADMIN length", "len", len(os.Getenv("GI_API_KEY_ADMIN")))
-	slog.InfoContext(context.Background(), "GI_API_KEY_USER length", "len", len(os.Getenv("GI_API_KEY_USER")))
-	slog.InfoContext(context.Background(), "GI_LLAMA_EXE", "value", os.Getenv("GI_LLAMA_EXE"))
+func printEnvVar(ctx context.Context, key string, confidential bool) {
+	v, set := syscall.Getenv(key)
+	switch {
+	case !set:
+		slog.InfoContext(ctx, "envvar", key, "(unset)")
+	case v == "":
+		slog.InfoContext(ctx, "envvar", key, "(empty)")
+	case confidential:
+		slog.InfoContext(ctx, "envvar", key+"-length", len(v))
+	default:
+		slog.InfoContext(ctx, "envvar", key, v)
+	}
+}
 
-	slog.InfoContext(context.Background(), "-----------------------------")
+// Print configuration.
+func (cfg *GoInferCfg) Print(ctx context.Context) {
+	slog.InfoContext(ctx, "-----------------------------")
+
+	printEnvVar(ctx, "GI_MODELS_DIR", false)
+	printEnvVar(ctx, "GI_HOST", false)
+	printEnvVar(ctx, "GI_ORIGINS", false)
+	printEnvVar(ctx, "GI_API_KEY_ADMIN", true)
+	printEnvVar(ctx, "GI_API_KEY_USER", true)
+	printEnvVar(ctx, "GI_LLAMA_EXE", false)
+
+	slog.InfoContext(ctx, "-----------------------------")
 
 	yml, err := yaml.Marshal(&cfg)
 	if err != nil {
-		slog.ErrorContext(context.Background(), "yaml.Marshal error", "error", err.Error())
+		slog.ErrorContext(ctx, "yaml.Marshal error", "error", err.Error())
 		return
 	}
 
 	os.Stdout.Write(yml)
 
-	slog.InfoContext(context.Background(), "-----------------------------")
+	slog.InfoContext(ctx, "-----------------------------")
+}
+
+// load the configuration file (if filename not empty).
+func (cfg *GoInferCfg) load(ctx context.Context, goinferCfgFile string) error {
+	if goinferCfgFile == "" {
+		return nil
+	}
+	yml, err := os.ReadFile(filepath.Clean(goinferCfgFile))
+	if err != nil {
+		slog.ErrorContext(ctx, "Failed to read", "file", goinferCfgFile)
+		return gie.Wrap(err, gie.TypeConfiguration, "", "")
+	}
+
+	// command line parameters have precedence on config settings
+	dbg := cfg.Debug
+	vrb := cfg.Verbose
+
+	if len(yml) > 0 {
+		err := yaml.Unmarshal(yml, &cfg)
+		if err != nil {
+			slog.ErrorContext(ctx, "Failed to unmarshal YAML data", "100FirsBytes", string(yml[:100]))
+			return gie.Wrap(err, gie.TypeConfiguration, "", "")
+		}
+	}
+
+	if dbg {
+		cfg.Debug = dbg
+	}
+	if !vrb {
+		cfg.Verbose = vrb
+	}
+
+	return nil
 }
 
 // applyEnvVars read optional env vars to change the configuration.
 // The environment variables precede the config file.
-func (cfg *GoInferCfg) applyEnvVars() {
+func (cfg *GoInferCfg) applyEnvVars(ctx context.Context) {
 	// Load environment variables
 	if dir := os.Getenv("GI_MODELS_DIR"); dir != "" {
 		cfg.ModelsDir = dir
 		if cfg.Verbose {
-			slog.InfoContext(context.Background(), "GI_MODELS_DIR set", "value", dir)
+			slog.InfoContext(ctx, "GI_MODELS_DIR set", "value", dir)
 		}
 	}
 
 	if host := os.Getenv("GI_HOST"); host != "" {
 		cfg.Server.Host = host
 		if cfg.Verbose {
-			slog.InfoContext(context.Background(), "GI_HOST set", "value", host)
+			slog.InfoContext(ctx, "GI_HOST set", "value", host)
 		}
 	}
 
 	if origins := os.Getenv("GI_ORIGINS"); origins != "" {
 		cfg.Server.Origins = origins
 		if cfg.Verbose {
-			slog.InfoContext(context.Background(), "GI_ORIGINS set", "value", origins)
+			slog.InfoContext(ctx, "GI_ORIGINS set", "value", origins)
 		}
 	}
 
@@ -273,7 +312,7 @@ func (cfg *GoInferCfg) applyEnvVars() {
 		}
 		cfg.Server.APIKeys["user"] = key
 		if cfg.Verbose {
-			slog.InfoContext(context.Background(), "api_key[user] = GI_API_KEY_USER")
+			slog.InfoContext(ctx, "api_key[user] = GI_API_KEY_USER")
 		}
 	}
 
@@ -284,19 +323,19 @@ func (cfg *GoInferCfg) applyEnvVars() {
 		}
 		cfg.Server.APIKeys["admin"] = key
 		if cfg.Verbose {
-			slog.InfoContext(context.Background(), "api_key[admin] = GI_API_KEY_ADMIN")
+			slog.InfoContext(ctx, "api_key[admin] = GI_API_KEY_ADMIN")
 		}
 	}
 
 	if exe := os.Getenv("GI_LLAMA_EXE"); exe != "" {
 		cfg.Llama.Exe = exe
 		if cfg.Verbose {
-			slog.InfoContext(context.Background(), "GI_LLAMA_EXE", "value", exe)
+			slog.InfoContext(ctx, "GI_LLAMA_EXE", "value", exe)
 		}
 	}
 }
 
-func genAPIKey(debugMode bool) string {
+func genAPIKey(ctx context.Context, debugMode bool) string {
 	if debugMode {
 		return debugAPIKey
 	}
@@ -304,7 +343,7 @@ func genAPIKey(debugMode bool) string {
 	buf := make([]byte, 32)
 	_, err := rand.Read(buf)
 	if err != nil {
-		slog.WarnContext(context.Background(), "rand.Read error", "error", err)
+		slog.WarnContext(ctx, "rand.Read error", "error", err)
 		return ""
 	}
 
@@ -313,19 +352,19 @@ func genAPIKey(debugMode bool) string {
 	return string(key)
 }
 
-func (cfg *GoInferCfg) validate(noAPIKey bool) error {
-	modelFiles, err := cfg.Search()
+func (cfg *GoInferCfg) validate(ctx context.Context, noAPIKey bool) error {
+	modelFiles, err := cfg.Search(ctx)
 	if err != nil {
 		return err
 	}
 	if len(modelFiles) == 0 {
-		slog.WarnContext(context.Background(), "No *.gguf files found", "dir", cfg.ModelsDir)
+		slog.WarnContext(ctx, "No *.gguf files found", "dir", cfg.ModelsDir)
 	} else if cfg.Verbose {
-		slog.InfoContext(context.Background(), "Found model files", "count", len(modelFiles), "dir", cfg.ModelsDir)
+		slog.InfoContext(ctx, "Found model files", "count", len(modelFiles), "dir", cfg.ModelsDir)
 	}
 
 	if noAPIKey {
-		slog.InfoContext(context.Background(), "Flag -no-api-key => Do not verify API keys.")
+		slog.InfoContext(ctx, "Flag -no-api-key => Do not verify API keys.")
 		return nil
 	}
 
@@ -336,14 +375,11 @@ func (cfg *GoInferCfg) validate(noAPIKey bool) error {
 
 	// Validate API keys
 	for k, v := range cfg.Server.APIKeys {
-		if strings.Contains(v, "PLEASE") {
-			return gie.Wrap(gie.ErrInvalidAPIKey, gie.TypeConfiguration, "API_KEY_NOT_SET", "please set your private '"+k+"' API key")
-		}
 		if len(v) < 64 {
-			return gie.Wrap(gie.ErrInvalidAPIKey, gie.TypeConfiguration, "API_KEY_INVALID", "invalid API key '"+k+"': must be 64 hex digits")
+			return gie.Wrap(gie.ErrInvalidAPIKey, gie.TypeConfiguration, "API_KEY_INVALID", "API key must be 64 hex digits key="+k+"len="+strconv.Itoa(len(v)))
 		}
 		if v == debugAPIKey {
-			slog.WarnContext(context.Background(), "api_key DEBUG security threat", "key", k)
+			slog.WarnContext(ctx, "API key is DEBUG => security threat", "key", k)
 		}
 	}
 

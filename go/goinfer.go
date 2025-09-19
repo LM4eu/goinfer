@@ -38,12 +38,13 @@ func main() {
 func getFlagsCfg() *conf.GoInferCfg {
 	quiet := flag.Bool("q", false, "quiet mode (disable verbose output)")
 	debug := flag.Bool("debug", false, "debug mode")
-	genGiCfg := flag.Bool("gen-gi-cfg", false, "generate "+goInferCfgFile)
+	genGiCfg := flag.Bool("gen-gi-cfg", false, "generate "+goInferCfgFile+" (main config file)")
 	genPxCfg := flag.Bool("gen-px-cfg", false, "generate "+proxyCfgFile+" (proxy config file)")
 	noAPIKey := flag.Bool("no-api-key", false, "disable API key check")
 	garcon.SetVersionFlag()
 	flag.Parse()
 
+	ctx := context.Background()
 	var cfg conf.GoInferCfg
 
 	if *debug {
@@ -55,7 +56,7 @@ func getFlagsCfg() *conf.GoInferCfg {
 
 	// Generate config
 	if *genGiCfg {
-		err := cfg.Write(goInferCfgFile, *noAPIKey)
+		err := cfg.Write(ctx, goInferCfgFile, *noAPIKey)
 		if err != nil {
 			slog.ErrorContext(context.Background(), "creating config", "error", err)
 			os.Exit(1)
@@ -63,14 +64,14 @@ func getFlagsCfg() *conf.GoInferCfg {
 	}
 
 	// Verify we can upload the config
-	err := cfg.Read(goInferCfgFile, *noAPIKey)
+	err := cfg.Read(ctx, goInferCfgFile, *noAPIKey)
 	if err != nil {
 		slog.ErrorContext(context.Background(), "loading config", "error", err)
 		os.Exit(1)
 	}
 
 	if cfg.Verbose {
-		cfg.Print()
+		cfg.Print(ctx)
 	}
 
 	if *genGiCfg {
@@ -85,7 +86,7 @@ func getFlagsCfg() *conf.GoInferCfg {
 		if err != nil {
 			slog.WarnContext(context.Background(), "loading proxy config", "error", err)
 		}
-		err = cfg.GenProxyCfg(proxyCfgFile)
+		err = cfg.GenProxyCfg(ctx, proxyCfgFile)
 		if err != nil {
 			slog.ErrorContext(context.Background(), "generating proxy config", "error", err)
 			os.Exit(1)
@@ -102,7 +103,7 @@ func getFlagsCfg() *conf.GoInferCfg {
 	}
 
 	if cfg.Debug {
-		cfg.Print()
+		cfg.Print(ctx)
 	}
 
 	return &cfg

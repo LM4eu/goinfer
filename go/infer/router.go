@@ -141,7 +141,7 @@ func configureAPIKeyAuth(ctx context.Context, grp *echo.Group, cfg *conf.GoInfer
 
 // modelsHandler returns the state of models.
 func (inf *Infer) modelsHandler(c echo.Context) error {
-	models, err := inf.Cfg.Search()
+	models, err := inf.Cfg.Search(c.Request().Context())
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error": errors.New("failed to search models: " + err.Error()),
