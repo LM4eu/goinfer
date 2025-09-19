@@ -21,7 +21,7 @@ import (
 
 // Infer manages proxying requests to the backend LLM engine.
 type Infer struct {
-	Cfg                         *conf.GoInferCfg
+	Cfg                         *conf.Cfg
 	IsInferring                 bool
 	ContinueInferringController bool
 	mu                          sync.Mutex
@@ -31,7 +31,7 @@ type Infer struct {
 var embeddedFiles embed.FS
 
 // NewEcho creates a new Echo server configured with Goinfer routes and middleware.
-func (inf *Infer) NewEcho(cfg *conf.GoInferCfg, addr string,
+func (inf *Infer) NewEcho(cfg *conf.Cfg, addr string,
 	enableWebUI, enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint bool,
 ) *echo.Echo {
 	e := echo.New()
@@ -117,7 +117,7 @@ func url(addr, endpoint string) string {
 }
 
 // configureAPIKeyAuth sets up API‑key authentication for a grp.
-func configureAPIKeyAuth(grp *echo.Group, cfg *conf.GoInferCfg, service string) {
+func configureAPIKeyAuth(grp *echo.Group, cfg *conf.Cfg, service string) {
 	// Select the API key with preference order
 	key, exists := cfg.Server.APIKeys[service]
 	if !exists {

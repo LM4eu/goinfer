@@ -37,7 +37,7 @@ func main() {
 
 // Config is created from lower to higher priority: (1) config files, (2) env. Vars. And (3) flags.
 // Depending on the flags, this function also creates config files and exits.
-func getCfg() *conf.GoInferCfg {
+func getCfg() *conf.Cfg {
 	quiet := flag.Bool("q", false, "quiet mode (disable verbose output)")
 	debug := flag.Bool("debug", false, "debug mode")
 	genGiCfg := flag.Bool("gen-gi-cfg", false, "generate "+giCfg+" (main config file)")
@@ -46,7 +46,7 @@ func getCfg() *conf.GoInferCfg {
 	garcon.SetVersionFlag()
 	flag.Parse()
 
-	var cfg conf.GoInferCfg
+	var cfg conf.Cfg
 
 	if *debug {
 		slog.Debug("Debug mode is on")
@@ -57,7 +57,7 @@ func getCfg() *conf.GoInferCfg {
 
 	// Generate config
 	if *genGiCfg {
-		err := cfg.Write(giCfg, *noAPIKey)
+		err := cfg.WriteMainCfg(giCfg, *noAPIKey)
 		if err != nil {
 			slog.Error("Cannot create main config", "file", giCfg, "error", err)
 			os.Exit(1)
@@ -65,7 +65,7 @@ func getCfg() *conf.GoInferCfg {
 	}
 
 	// Verify we can upload the config
-	err := cfg.Read(giCfg, *noAPIKey)
+	err := cfg.ReadMainCfg(giCfg, *noAPIKey)
 	if err != nil {
 		slog.Error("Cannot load main config", "file", giCfg, "error", err)
 		os.Exit(1)
@@ -86,7 +86,7 @@ func getCfg() *conf.GoInferCfg {
 		if err != nil {
 			slog.Warn("Cannot load proxy config", "file", pxCfg, "error", err)
 		}
-		err = cfg.CreateProxyCfg(pxCfg)
+		err = cfg.WriteProxyCfg(pxCfg)
 		if err != nil {
 			slog.Error("Cannot create proxy config", "file", pxCfg, "error", err)
 			os.Exit(1)
@@ -114,7 +114,7 @@ func getCfg() *conf.GoInferCfg {
 }
 
 // startServers creates and runs the HTTP servers.
-func startServers(cfg *conf.GoInferCfg) {
+func startServers(cfg *conf.Cfg) {
 	// Create context with cancel for graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -145,7 +145,7 @@ func startServers(cfg *conf.GoInferCfg) {
 }
 
 // startEchoServers starts all HTTP Echo servers configured in the config.
-func startEchoServers(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.Group) {
+func startEchoServers(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group) {
 	inf := &infer.Infer{Cfg: cfg}
 	for addr, services := range cfg.Server.Listen {
 		if strings.Contains(services, "swap") {
@@ -184,7 +184,7 @@ func url(addr string) string {
 }
 
 // startProxyServer starts the llama-swap proxy if configured in the config.
-func startProxyServer(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.Group) {
+func startProxyServer(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group) {
 	for addr, services := range cfg.Server.Listen {
 		if !strings.Contains(services, "swap") {
 			continue
@@ -206,7 +206,7 @@ func startProxyServer(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.G
 }
 
 // startEcho starts a HTTP server with graceful shutdown handling.
-func startEcho(ctx context.Context, cfg *conf.GoInferCfg, e *echo.Echo, addr string) error {
+func startEcho(ctx context.Context, cfg *conf.Cfg, e *echo.Echo, addr string) error {
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- e.Start(addr)
@@ -221,7 +221,7 @@ func startEcho(ctx context.Context, cfg *conf.GoInferCfg, e *echo.Echo, addr str
 }
 
 // startProxy starts a llama-swap proxy server with graceful shutdown handling.
-func startProxy(ctx context.Context, cfg *conf.GoInferCfg, proxyServer *http.Server, proxyHandler http.Handler) error {
+func startProxy(ctx context.Context, cfg *conf.Cfg, proxyServer *http.Server, proxyHandler http.Handler) error {
 	err := make(chan error, 1)
 	go func() {
 		err <- proxyServer.ListenAndServe()
@@ -236,7 +236,7 @@ func startProxy(ctx context.Context, cfg *conf.GoInferCfg, proxyServer *http.Ser
 }
 
 // stopEcho performs graceful shutdown of an Echo server.
-func stopEcho(ctx context.Context, cfg *conf.GoInferCfg, e *echo.Echo, addr string) error {
+func stopEcho(ctx context.Context, cfg *conf.Cfg, e *echo.Echo, addr string) error {
 	if cfg.Verbose {
 		slog.InfoContext(ctx, "Shutting down Echo", "url", url(addr))
 	}
@@ -254,7 +254,7 @@ func stopEcho(ctx context.Context, cfg *conf.GoInferCfg, e *echo.Echo, addr stri
 }
 
 // stopProxy performs graceful shutdown of a llama-swap proxy server.
-func stopProxy(ctx context.Context, cfg *conf.GoInferCfg, proxyServer *http.Server, proxyHandler http.Handler) error {
+func stopProxy(ctx context.Context, cfg *conf.Cfg, proxyServer *http.Server, proxyHandler http.Handler) error {
 	if cfg.Verbose {
 		slog.InfoContext(ctx, "Shutting down Proxy (Gin)", "url", url(proxyServer.Addr))
 	}

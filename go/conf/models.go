@@ -7,6 +7,7 @@ package conf
 import (
 	"io/fs"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -16,7 +17,7 @@ import (
 // Search returns a slice of absolute file paths for all *.gguf model files
 // found under the directories listed in cfg.ModelsDir (colon-separated).
 // It walks each directory recursively, aggregates matching files, and returns any error encountered.
-func (cfg *GoInferCfg) Search() ([]string, error) {
+func (cfg *Cfg) Search() ([]string, error) {
 	modelFiles := make([]string, len(cfg.ModelsDir)/2)
 
 	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
@@ -32,7 +33,7 @@ func (cfg *GoInferCfg) Search() ([]string, error) {
 	return modelFiles, nil
 }
 
-func (cfg *GoInferCfg) search(files *[]string, root string) error {
+func (cfg *Cfg) search(files *[]string, root string) error {
 	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return gie.Wrap(err, gie.TypeNotFound, "filepath.WalkDir", "path="+d.Name())
@@ -46,6 +47,13 @@ func (cfg *GoInferCfg) search(files *[]string, root string) error {
 			if cfg.Debug {
 				slog.Info("Found", "model", path)
 			}
+
+			err := validateFile(path)
+			if err != nil {
+				slog.Info("Skip", "model", path)
+				return nil
+			}
+
 			*files = append(*files, path)
 		}
 
@@ -77,4 +85,64 @@ func extractFlags(stem string) string {
 	}
 
 	return strings.Join(flags, " ")
+}
+
+func (cfg *Cfg) countModels() int {
+	modelFiles, err := cfg.Search()
+	if err != nil {
+		return 0
+	}
+	return len(modelFiles)
+}
+
+func (cfg *Cfg) checkModelFiles() error {
+	if len(cfg.Proxy.Models) == 0 {
+		n := cfg.countModels()
+		if n == 0 {
+			slog.Error("No *.gguf files found", "dir", cfg.ModelsDir)
+			return gie.ErrConfigValidation
+		}
+
+		slog.Warn("No model configured => Use flag -gen-px-cfg to fill the config with", "files", n)
+		return nil
+	}
+
+	for i := range cfg.Proxy.Models {
+		var previous string
+		for arg := range strings.SplitSeq(cfg.Proxy.Models[i].Cmd, " ") {
+			if previous == "-m" {
+				err := validateFile(arg)
+				if err != nil {
+					return err
+				}
+			}
+			previous = arg
+		}
+	}
+	return nil
+}
+
+func validateFile(path string) error {
+	// Check if the file exists
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		slog.Error("Model file does not exist", "file", path)
+		return err
+	}
+
+	// Check if the file is readable
+	file, err := os.Open(path)
+	if err != nil {
+		slog.Error("Model file is not readable", "file", path)
+		return err
+	}
+	defer file.Close()
+
+	// Check if the file is not empty
+	if info.Size() < 1000 {
+		slog.Error("Model file is empty (or too small)", "file", path)
+		return gie.ErrConfigValidation
+	}
+
+	return nil
 }
