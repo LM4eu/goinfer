@@ -160,6 +160,10 @@ func (cfg *GoInferCfg) GenProxyCfg(proxyCfgFile string) error {
 		return err
 	}
 
+	if cfg.Proxy.Models == nil {
+		cfg.Proxy.Models = make(map[string]proxy.ModelConfig, 2*len(modelFiles))
+	}
+
 	for _, model := range modelFiles {
 		base := filepath.Base(model)
 		ext := filepath.Ext(base)
@@ -174,6 +178,7 @@ func (cfg *GoInferCfg) GenProxyCfg(proxyCfgFile string) error {
 				slog.InfoContext(context.Background(), "Overwrite model", "model", stem, "file", proxyCfgFile)
 			}
 		}
+
 		cfg.Proxy.Models[stem] = proxy.ModelConfig{
 			Cmd:          "${llama-server-openai} -m " + model + " " + flags,
 			Unlisted:     false,
