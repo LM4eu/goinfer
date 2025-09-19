@@ -187,13 +187,14 @@ linters:
       disable-default-exclusions: false
       # https://github.com/kisielk/errcheck#excluding-functions
       exclude-functions:
-        - io/ioutil.ReadFile
-        - io.Copy(*bytes.Buffer)
-        - io.Copy(os.Stdout)
-        - fmt.Printf
+        - (*os.File).Close
+        - (*os.File).Write
         - encoding/json.Marshal
         - encoding/json.MarshalIndent
-        - (*os.File).Write
+        - fmt.Printf
+        - io.Copy(*bytes.Buffer)
+        - io.Copy(os.Stdout)
+        - io/ioutil.ReadFile
       # Display function signature instead of selector.
       verbose: true
 
