@@ -5,7 +5,6 @@
 package infer
 
 import (
-	"context"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -63,7 +62,7 @@ func parseOpenAIRequest(c echo.Context) (*InferQuery, error) {
 	}
 	err := c.Bind(&req)
 	if err != nil {
-		slog.ErrorContext(context.Background(), "Failed to bind OpenAI request", "error", err)
+		slog.ErrorContext(c.Request().Context(), "Failed to bind OpenAI request", "error", err)
 		return nil, gie.Wrap(err, gie.TypeValidation, "OPENAI_BIND_ERROR", "failed to bind OpenAI request")
 	}
 

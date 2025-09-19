@@ -16,14 +16,14 @@ import (
 // Search returns a slice of absolute file paths for all *.gguf model files
 // found under the directories listed in cfg.ModelsDir (colon-separated).
 // It walks each directory recursively, aggregates matching files, and returns any error encountered.
-func (cfg *GoInferCfg) Search() ([]string, error) {
+func (cfg *GoInferCfg) Search(ctx context.Context) ([]string, error) {
 	var modelFiles []string
 
 	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
-		err := cfg.search(&modelFiles, strings.TrimSpace(root))
+		err := cfg.search(ctx, &modelFiles, strings.TrimSpace(root))
 		if err != nil {
 			if cfg.Verbose {
-				slog.InfoContext(context.Background(), "Searching model files in", "root", root)
+				slog.InfoContext(ctx, "Searching model files in", "root", root)
 			}
 			return nil, fmt.Errorf("failed search root=%s: %w", root, err)
 		}
@@ -32,7 +32,7 @@ func (cfg *GoInferCfg) Search() ([]string, error) {
 	return modelFiles, nil
 }
 
-func (cfg *GoInferCfg) search(files *[]string, root string) error {
+func (cfg *GoInferCfg) search(ctx context.Context, files *[]string, root string) error {
 	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -44,7 +44,7 @@ func (cfg *GoInferCfg) search(files *[]string, root string) error {
 
 		if strings.HasSuffix(path, ".gguf") {
 			if cfg.Verbose {
-				slog.InfoContext(context.Background(), "Found model", "path", path)
+				slog.InfoContext(ctx, "Found model", "path", path)
 			}
 			*files = append(*files, path)
 		}

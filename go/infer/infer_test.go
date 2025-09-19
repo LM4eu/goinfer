@@ -44,7 +44,7 @@ func TestParseInferQuery_ValidPayload(t *testing.T) {
 			"STOP2",
 		},
 	}
-	query, err := parseInferQuery(payload)
+	query, err := parseInferQuery(t.Context(), payload)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -81,7 +81,7 @@ func TestParseInferQuery_MissingPrompt(t *testing.T) {
 	payload := map[string]any{
 		"model": "dummy",
 	}
-	_, err := parseInferQuery(payload)
+	_, err := parseInferQuery(t.Context(), payload)
 	if err == nil {
 		t.Fatalf("expected error for missing prompt, got nil")
 	}
@@ -97,7 +97,7 @@ func TestGetInt_TypeMismatch(t *testing.T) {
 	m := echo.Map{
 		"someInt": "not-an-int",
 	}
-	v := getInt(m, "someInt")
+	v := getInt(t.Context(), m, "someInt")
 	if v != 0 {
 		t.Fatalf("expected type‑mismatch error, got nil")
 	}
@@ -110,7 +110,7 @@ func TestGetFloat_TypeMismatch(t *testing.T) {
 	m := echo.Map{
 		"someFloat": "not-a-float",
 	}
-	v := getFloat(m, "someFloat")
+	v := getFloat(t.Context(), m, "someFloat")
 	if v != 0.0 {
 		t.Fatalf("expected type‑mismatch error, got nil")
 	}

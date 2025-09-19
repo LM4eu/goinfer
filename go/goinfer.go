@@ -48,7 +48,7 @@ func getFlagsCfg() *conf.GoInferCfg {
 	var cfg conf.GoInferCfg
 
 	if *debug {
-		slog.DebugContext(context.Background(), "Debug mode is on")
+		slog.DebugContext(ctx, "Debug mode is on")
 		cfg.Debug = true
 	}
 
@@ -58,7 +58,7 @@ func getFlagsCfg() *conf.GoInferCfg {
 	if *genGiCfg {
 		err := cfg.Write(ctx, goInferCfgFile, *noAPIKey)
 		if err != nil {
-			slog.ErrorContext(context.Background(), "creating config", "error", err)
+			slog.ErrorContext(ctx, "creating config", "error", err)
 			os.Exit(1)
 		}
 	}
@@ -66,7 +66,7 @@ func getFlagsCfg() *conf.GoInferCfg {
 	// Verify we can upload the config
 	err := cfg.Read(ctx, goInferCfgFile, *noAPIKey)
 	if err != nil {
-		slog.ErrorContext(context.Background(), "loading config", "error", err)
+		slog.ErrorContext(ctx, "loading config", "error", err)
 		os.Exit(1)
 	}
 
@@ -75,7 +75,7 @@ func getFlagsCfg() *conf.GoInferCfg {
 	}
 
 	if *genGiCfg {
-		slog.InfoContext(context.Background(), "Configuration file created", "file", goInferCfgFile)
+		slog.InfoContext(ctx, "Configuration file created", "file", goInferCfgFile)
 		os.Exit(0)
 	}
 
@@ -84,17 +84,17 @@ func getFlagsCfg() *conf.GoInferCfg {
 	// even if err!=nil => generate the config file
 	if *genPxCfg {
 		if err != nil {
-			slog.WarnContext(context.Background(), "loading proxy config", "error", err)
+			slog.WarnContext(ctx, "loading proxy config", "error", err)
 		}
 		err = cfg.GenProxyCfg(ctx, proxyCfgFile)
 		if err != nil {
-			slog.ErrorContext(context.Background(), "generating proxy config", "error", err)
+			slog.ErrorContext(ctx, "generating proxy config", "error", err)
 			os.Exit(1)
 		}
 		os.Exit(0)
 	}
 	if err != nil {
-		slog.ErrorContext(context.Background(), "loading proxy config", "error", err)
+		slog.ErrorContext(ctx, "loading proxy config", "error", err)
 		os.Exit(1)
 	}
 
@@ -127,16 +127,16 @@ func startServers(cfg *conf.GoInferCfg) {
 
 	// prints a startup message when all servers are running.
 	if cfg.Verbose {
-		slog.InfoContext(context.Background(), "-----------------------------")
-		slog.InfoContext(context.Background(), "All servers started. Press CTRL+C to stop.")
+		slog.InfoContext(ctx, "-----------------------------")
+		slog.InfoContext(ctx, "All servers started. Press CTRL+C to stop.")
 	}
 
 	// Wait for all servers to complete
 	err := grp.Wait()
 	if err != nil {
-		slog.ErrorContext(context.Background(), "Server error", "error", err)
+		slog.ErrorContext(ctx, "Server error", "error", err)
 	} else {
-		slog.InfoContext(context.Background(), "All HTTP servers stopped gracefully")
+		slog.InfoContext(ctx, "All HTTP servers stopped gracefully")
 	}
 }
 

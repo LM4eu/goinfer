@@ -25,7 +25,7 @@ func (inf *Infer) inferHandler(c echo.Context) error {
 	// Check if infer is already running using Infer
 	inf.mu.Lock()
 	if inf.IsInferring {
-		slog.InfoContext(context.Background(), "Infer already running")
+		slog.InfoContext(ctx, "Infer already running")
 		inf.mu.Unlock()
 		return c.NoContent(http.StatusAccepted)
 	}
@@ -39,7 +39,7 @@ func (inf *Infer) inferHandler(c echo.Context) error {
 	}
 
 	// Parse infer parameters directly
-	query, err := parseInferQuery(reqMap)
+	query, err := parseInferQuery(ctx, reqMap)
 	if err != nil {
 		return gie.HandleValidationError(c, gie.ErrInvalidParams)
 	}
@@ -51,7 +51,7 @@ func (inf *Infer) inferHandler(c echo.Context) error {
 	}
 
 	// Execute infer directly (no retry)
-	result, err := inf.execute(c, ctx, query)
+	result, err := inf.execute(c, query)
 	if err != nil {
 		// Use the generic inference error handler to avoid exposing internal error messages.
 		return gie.HandleInferenceError(c, err)
@@ -59,12 +59,12 @@ func (inf *Infer) inferHandler(c echo.Context) error {
 
 	// Handle the infer result
 	if inf.Cfg.Verbose {
-		slog.InfoContext(context.Background(), "-----------------------------")
-		slog.InfoContext(context.Background(), "-------- result ----------")
+		slog.InfoContext(ctx, "-----------------------------")
+		slog.InfoContext(ctx, "-------- result ----------")
 		for key, value := range result.Data {
-			slog.InfoContext(context.Background(), "result", "key", key, "value", value)
+			slog.InfoContext(ctx, "result", "key", key, "value", value)
 		}
-		slog.InfoContext(context.Background(), "--------------------------")
+		slog.InfoContext(ctx, "--------------------------")
 	}
 
 	if !query.Params.Stream {
@@ -74,7 +74,7 @@ func (inf *Infer) inferHandler(c echo.Context) error {
 }
 
 // parseInferQuery parses infer parameters from echo.Map directly.
-func parseInferQuery(m echo.Map) (*InferQuery, error) {
+func parseInferQuery(ctx context.Context, m echo.Map) (*InferQuery, error) {
 	query := &InferQuery{
 		Prompt: "",
 		Model:  DefaultModel,
@@ -92,21 +92,21 @@ func parseInferQuery(m echo.Map) (*InferQuery, error) {
 		query.Model.Name = val
 	}
 
-	query.Model.Ctx = getInt(m, "ctx")
+	query.Model.Ctx = getInt(ctx, m, "ctx")
 
 	if val, ok := m["stream"].(bool); ok {
 		query.Params.Stream = val
 	}
 
-	query.Params.Sampling.Temperature = getFloat(m, "temperature")
-	query.Params.Sampling.MinP = getFloat(m, "min_p")
-	query.Params.Sampling.TopP = getFloat(m, "top_p")
-	query.Params.Sampling.PresencePenalty = getFloat(m, "presence_penalty")
-	query.Params.Sampling.FrequencyPenalty = getFloat(m, "frequency_penalty")
-	query.Params.Sampling.RepeatPenalty = getFloat(m, "repeat_penalty")
-	query.Params.Sampling.TailFreeSamplingZ = getFloat(m, "tfs")
-	query.Params.Sampling.TopK = getInt(m, "top_k")
-	query.Params.Generation.MaxTokens = getInt(m, "max_tokens")
+	query.Params.Sampling.Temperature = getFloat(ctx, m, "temperature")
+	query.Params.Sampling.MinP = getFloat(ctx, m, "min_p")
+	query.Params.Sampling.TopP = getFloat(ctx, m, "top_p")
+	query.Params.Sampling.PresencePenalty = getFloat(ctx, m, "presence_penalty")
+	query.Params.Sampling.FrequencyPenalty = getFloat(ctx, m, "frequency_penalty")
+	query.Params.Sampling.RepeatPenalty = getFloat(ctx, m, "repeat_penalty")
+	query.Params.Sampling.TailFreeSamplingZ = getFloat(ctx, m, "tfs")
+	query.Params.Sampling.TopK = getInt(ctx, m, "top_k")
+	query.Params.Generation.MaxTokens = getInt(ctx, m, "max_tokens")
 
 	// Parse stop prompts array
 	err := populateStopPrompts(m, &query.Params.Generation)
@@ -125,7 +125,7 @@ func parseInferQuery(m echo.Map) (*InferQuery, error) {
 	return query, nil
 }
 
-func getInt(m echo.Map, param string) int {
+func getInt(ctx context.Context, m echo.Map, param string) int {
 	v, ok := m[param]
 	if ok {
 		switch val := v.(type) {
@@ -134,13 +134,13 @@ func getInt(m echo.Map, param string) int {
 		case float64:
 			return int(val)
 		default:
-			slog.WarnContext(context.Background(), "expected int (or float64) but received", "param", param, "value", m[param])
+			slog.WarnContext(ctx, "expected int (or float64) but received", "param", param, "value", m[param])
 		}
 	}
 	return 0
 }
 
-func getFloat(m echo.Map, param string) float32 {
+func getFloat(ctx context.Context, m echo.Map, param string) float32 {
 	v, ok := m[param]
 	if ok {
 		switch val := v.(type) {
@@ -149,21 +149,21 @@ func getFloat(m echo.Map, param string) float32 {
 		case float64:
 			return float32(val)
 		default:
-			slog.WarnContext(context.Background(), "expected float64 (or int) but received", "param", param, "value", m[param])
+			slog.WarnContext(ctx, "expected float64 (or int) but received", "param", param, "value", m[param])
 		}
 	}
 	return 0
 }
 
 // execute inference.
-func (inf *Infer) execute(c echo.Context, ctx context.Context, query *InferQuery) (*StreamedMsg, error) {
+func (inf *Infer) execute(c echo.Context, query *InferQuery) (*StreamedMsg, error) {
 	// Execute infer through Infer
 	resChan := make(chan StreamedMsg)
 	errChan := make(chan StreamedMsg)
 	defer close(resChan)
 	defer close(errChan)
 
-	err := inf.forwardInference(ctx, query, c, resChan, errChan)
+	err := inf.forwardInference(c.Request().Context(), query, c, resChan, errChan)
 	if err != nil {
 		return nil, gie.Wrap(err, gie.TypeInference, "PROXY_FORWARD_FAILED", "proxy manager forward inference failed")
 	}
@@ -185,7 +185,7 @@ func (inf *Infer) execute(c echo.Context, ctx context.Context, query *InferQuery
 		}
 		return nil, gie.ErrChanClosed
 
-	case <-ctx.Done():
+	case <-c.Request().Context().Done():
 		// Client canceled request
 		inf.mu.Lock()
 		inf.ContinueInferringController = false
@@ -196,14 +196,14 @@ func (inf *Infer) execute(c echo.Context, ctx context.Context, query *InferQuery
 
 // abortHandler aborts ongoing inference.
 func (inf *Infer) abortHandler(c echo.Context) error {
-	err := inf.abortInference()
+	err := inf.abortInference(c.Request().Context())
 	if err != nil {
-		slog.ErrorContext(context.Background(), "error", "error", err)
+		slog.ErrorContext(c.Request().Context(), "error", "error", err)
 		return c.NoContent(http.StatusAccepted)
 	}
 
 	if inf.Cfg.Verbose {
-		slog.InfoContext(context.Background(), "Aborting inference")
+		slog.InfoContext(c.Request().Context(), "Aborting inference")
 	}
 
 	return c.NoContent(http.StatusNoContent)
