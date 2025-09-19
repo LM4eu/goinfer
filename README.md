@@ -22,7 +22,7 @@ server:
     user:  PLEASE SET SECURE API KEY
   origins: localhost
   listen:
-    :5143: admin,models
+    :5143: webui,models
     :2222: openai,goinfer
     :5555: llama-swap proxy
 

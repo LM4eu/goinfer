@@ -47,7 +47,7 @@ var defaultGoInferCfg = GoInferCfg{
 	ModelsDir: "/home/me/my/models",
 	Server: ServerCfg{
 		Listen: map[string]string{
-			":5143": "admin,models",
+			":5143": "webui,models",
 			":2222": "openai,goinfer",
 			":5555": "llama-swap proxy",
 		},
@@ -231,13 +231,13 @@ func printEnvVar(key string, confidential bool) {
 	v, set := syscall.Getenv(key)
 	switch {
 	case !set:
-		slog.Info("envvar", key, "(unset)")
+		slog.Info("env", key, "(unset)")
 	case v == "":
-		slog.Info("envvar", key, "(empty)")
+		slog.Info("env", key, "(empty)")
 	case confidential:
-		slog.Info("envvar", key+"-length", len(v))
+		slog.Info("env", key+"-length", len(v))
 	default:
-		slog.Info("envvar", key, v)
+		slog.Info("env", key, v)
 	}
 }
 
@@ -378,7 +378,7 @@ func (cfg *GoInferCfg) validate(noAPIKey bool) error {
 	if len(modelFiles) == 0 {
 		slog.Warn("No *.gguf files found", "dir", cfg.ModelsDir)
 	} else if cfg.Verbose {
-		slog.Info("Found model files", "count", len(modelFiles), "dir", cfg.ModelsDir)
+		slog.Info("Found models", "files", len(modelFiles), "dir", cfg.ModelsDir)
 	}
 
 	if noAPIKey {

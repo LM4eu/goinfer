@@ -71,12 +71,11 @@ func getCfg() *conf.GoInferCfg {
 		os.Exit(1)
 	}
 
-	if cfg.Verbose {
-		cfg.Print()
-	}
-
 	if *genGiCfg {
 		slog.Info("Generated main", "config", giCfg)
+		if cfg.Verbose {
+			cfg.Print()
+		}
 		os.Exit(0)
 	}
 
@@ -93,6 +92,9 @@ func getCfg() *conf.GoInferCfg {
 			os.Exit(1)
 		}
 		slog.Info("Generated proxy config", "file", pxCfg, "models", len(cfg.Proxy.Models))
+		if cfg.Verbose {
+			cfg.Print()
+		}
 		os.Exit(0)
 	}
 	if err != nil {
@@ -123,9 +125,9 @@ func startServers(cfg *conf.GoInferCfg) {
 	// Use errgroup to coordinate the servers shutdown
 	var grp errgroup.Group
 
-	// Start Echo and proxy servers if configured
-	startEchoServers(ctx, cfg, &grp)
+	// Start proxy (Gin) and Echo servers (if configured)
 	startProxyServer(ctx, cfg, &grp)
+	startEchoServers(ctx, cfg, &grp)
 
 	// prints a startup message when all servers are running.
 	if cfg.Verbose {
@@ -150,32 +152,35 @@ func startEchoServers(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.G
 			continue // reserved for llama-swap proxy
 		}
 
-		enableAdminWebUI := strings.Contains(services, "admin")
+		enableWebUI := strings.Contains(services, "webui")
 		enableModelsEndpoint := strings.Contains(services, "model")
 		enableGoinferEndpoint := strings.Contains(services, "goinfer")
 		enableOpenAPIEndpoint := strings.Contains(services, "openai")
 
-		if !enableAdminWebUI && !enableModelsEndpoint && !enableGoinferEndpoint && !enableOpenAPIEndpoint {
+		if !enableWebUI && !enableModelsEndpoint && !enableGoinferEndpoint && !enableOpenAPIEndpoint {
 			slog.ErrorContext(ctx, "Unexpected", "service", services)
 			os.Exit(1)
 		}
 
-		e := inf.NewEcho(cfg, addr, enableAdminWebUI, enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint)
+		e := inf.NewEcho(cfg, addr, enableWebUI, enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint)
 		if e != nil {
-			if cfg.Verbose {
-				slog.InfoContext(ctx, "-----------------------------")
-				slog.InfoContext(ctx, "Echo listen", "addr", addr, "origins", cfg.Server.Origins)
-				slog.InfoContext(ctx, "Echo endpoint", "WebUI", enableAdminWebUI)
-				slog.InfoContext(ctx, "Echo endpoint", "/models", enableModelsEndpoint)
-				slog.InfoContext(ctx, "Echo endpoint", "/goinfer", enableGoinferEndpoint)
-				slog.InfoContext(ctx, "Echo endpoint", "OpenAI", enableOpenAPIEndpoint)
-			}
-
 			grp.Go(func() error {
+				if cfg.Verbose {
+					slog.InfoContext(ctx, "start Echo", "url", url(addr), "origins", cfg.Server.Origins,
+						"webui", enableWebUI, "models", enableModelsEndpoint,
+						"goinfer", enableGoinferEndpoint, "openai", enableOpenAPIEndpoint)
+				}
 				return startEcho(ctx, cfg, e, addr)
 			})
 		}
 	}
+}
+
+func url(addr string) string {
+	if addr != "" && addr[0] == ':' {
+		return "http://localhost" + addr
+	}
+	return "http://" + addr
 }
 
 // startProxyServer starts the llama-swap proxy if configured in the config.
@@ -191,12 +196,10 @@ func startProxyServer(ctx context.Context, cfg *conf.GoInferCfg, grp *errgroup.G
 			Handler: proxyHandler,
 		}
 
-		if cfg.Verbose {
-			slog.InfoContext(ctx, "-----------------------------")
-			slog.InfoContext(ctx, "Gin server (llama-swap proxy) listen", "addr", proxyServer.Addr)
-		}
-
 		grp.Go(func() error {
+			if cfg.Verbose {
+				slog.InfoContext(ctx, "start Gin (llama-swap proxy)", "url", url(proxyServer.Addr))
+			}
 			return startProxy(ctx, cfg, proxyServer, proxyHandler)
 		})
 	}
@@ -235,17 +238,17 @@ func startProxy(ctx context.Context, cfg *conf.GoInferCfg, proxyServer *http.Ser
 // stopEcho performs graceful shutdown of an Echo server.
 func stopEcho(ctx context.Context, cfg *conf.GoInferCfg, e *echo.Echo, addr string) error {
 	if cfg.Verbose {
-		slog.InfoContext(ctx, "Shutting down Echo", "addr", addr)
+		slog.InfoContext(ctx, "Shutting down Echo", "url", url(addr))
 	}
 
 	err := e.Shutdown(ctx)
 	if err != nil {
-		slog.ErrorContext(ctx, "Echo shutdown", "addr", addr, "error", err)
+		slog.ErrorContext(ctx, "Echo shutdown", "url", url(addr), "error", err)
 		return err
 	}
 
 	if cfg.Verbose {
-		slog.InfoContext(ctx, "Echo stopped gracefully", "addr", addr)
+		slog.InfoContext(ctx, "Echo stopped gracefully", "url", url(addr))
 	}
 	return nil
 }
@@ -253,7 +256,7 @@ func stopEcho(ctx context.Context, cfg *conf.GoInferCfg, e *echo.Echo, addr stri
 // stopProxy performs graceful shutdown of a llama-swap proxy server.
 func stopProxy(ctx context.Context, cfg *conf.GoInferCfg, proxyServer *http.Server, proxyHandler http.Handler) error {
 	if cfg.Verbose {
-		slog.InfoContext(ctx, "Shutting down Proxy (Gin)", "addr", proxyServer.Addr)
+		slog.InfoContext(ctx, "Shutting down Proxy (Gin)", "url", url(proxyServer.Addr))
 	}
 
 	// Check if proxyHandler has a Shutdown method
@@ -268,7 +271,7 @@ func stopProxy(ctx context.Context, cfg *conf.GoInferCfg, proxyServer *http.Serv
 	}
 
 	if cfg.Verbose {
-		slog.InfoContext(ctx, "Proxy stopped gracefully", "addr", proxyServer.Addr)
+		slog.InfoContext(ctx, "Proxy stopped gracefully", "url", url(proxyServer.Addr))
 	}
 	return nil
 }

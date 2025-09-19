@@ -43,7 +43,7 @@ func (cfg *GoInferCfg) search(files *[]string, root string) error {
 		}
 
 		if strings.HasSuffix(path, ".gguf") {
-			if cfg.Verbose {
+			if cfg.Debug {
 				slog.Info("Found", "model", path)
 			}
 			*files = append(*files, path)
