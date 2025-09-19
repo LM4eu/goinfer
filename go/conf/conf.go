@@ -133,9 +133,25 @@ func (cfg *GoInferCfg) Write(ctx context.Context, goinferCfgFile string, noAPIKe
 	cfg.Verbose = vrb
 	cfg.Debug = dbg
 
-	err = os.WriteFile(goinferCfgFile, yml, 0o600)
+	goinferCfgFile = filepath.Clean(goinferCfgFile)
+	file, err := os.Create(goinferCfgFile)
+	if err != nil {
+		return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_WRITE_FAILED", "failed to open config file")
+	}
+	defer file.Close()
+
+	_, err = file.WriteString("# Configuration of https://github.com/LM4eu/goinfer\n\n")
 	if err != nil {
 		return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_WRITE_FAILED", "failed to write config file")
+	}
+
+	_, err = file.Write(yml)
+	if err != nil {
+		return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_WRITE_FAILED", "failed to write config file")
+	}
+
+	if cfg.Verbose {
+		slog.InfoContext(ctx, "Generated main config", "file", goinferCfgFile)
 	}
 
 	return cfg.validate(ctx, noAPIKey)
@@ -197,7 +213,19 @@ func (cfg *GoInferCfg) GenProxyCfg(ctx context.Context, proxyCfgFile string) err
 		return gie.Wrap(er, gie.TypeConfiguration, "CONFIG_MARSHAL_FAILED", "failed to marshal the llama-swap-proxy config")
 	}
 
-	err = os.WriteFile(proxyCfgFile, yml, 0o600)
+	proxyCfgFile = filepath.Clean(proxyCfgFile)
+	file, err := os.Create(proxyCfgFile)
+	if err != nil {
+		return gie.Wrap(err, gie.TypeConfiguration, "PROXY_WRITE_FAILED", "failed to open "+proxyCfgFile)
+	}
+	defer file.Close()
+
+	_, err = file.WriteString("# Doc: https://github.com/mostlygeek/llama-swap/wiki/Configuration\n\n")
+	if err != nil {
+		return gie.Wrap(err, gie.TypeConfiguration, "PROXY_WRITE_FAILED", "failed to write "+proxyCfgFile)
+	}
+
+	_, err = file.Write(yml)
 	if err != nil {
 		return gie.Wrap(err, gie.TypeConfiguration, "PROXY_WRITE_FAILED", "failed to write "+proxyCfgFile)
 	}
