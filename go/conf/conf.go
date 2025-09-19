@@ -324,14 +324,14 @@ func (cfg *GoInferCfg) validate(noAPIKey bool) error {
 		slog.InfoContext(context.Background(), "Found model files", "count", len(modelFiles), "dir", cfg.ModelsDir)
 	}
 
-	// Ensure admin API key exists
-	if _, exists := cfg.Server.APIKeys["admin"]; !exists {
-		return gie.Wrap(gie.ErrAPIKeyMissing, gie.TypeConfiguration, "ADMIN_API_MISSING", "admin API key is missing")
-	}
-
 	if noAPIKey {
 		slog.InfoContext(context.Background(), "Flag -no-api-key => Do not verify API keys.")
 		return nil
+	}
+
+	// Ensure admin API key exists
+	if _, exists := cfg.Server.APIKeys["admin"]; !exists {
+		return gie.Wrap(gie.ErrAPIKeyMissing, gie.TypeConfiguration, "ADMIN_API_MISSING", "admin API key is missing")
 	}
 
 	// Validate API keys
