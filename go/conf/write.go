@@ -142,9 +142,9 @@ func (cfg *Cfg) setAPIKeys(noAPIKey bool) {
 	default:
 		cfg.Server.APIKeys["admin"] = gen64HexDigits()
 		cfg.Server.APIKeys["user"] = gen64HexDigits()
-			slog.Info("Generated random secured API keys")
-		}
+		slog.Info("Generated random secured API keys")
 	}
+}
 
 func gen64HexDigits() string {
 	buf := make([]byte, 32)

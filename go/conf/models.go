@@ -51,10 +51,9 @@ func (cfg *Cfg) search(files *[]string, root string) error {
 			err := validateFile(path)
 			if err != nil {
 				slog.Info("Skip", "model", path)
-				return nil
+			} else {
+				*files = append(*files, path)
 			}
-
-			*files = append(*files, path)
 		}
 
 		return nil
@@ -95,7 +94,7 @@ func (cfg *Cfg) countModels() int {
 	return len(modelFiles)
 }
 
-func (cfg *Cfg) checkModelFiles() error {
+func (cfg *Cfg) validateModelFiles() error {
 	if len(cfg.Proxy.Models) == 0 {
 		n := cfg.countModels()
 		if n == 0 {
@@ -123,6 +122,12 @@ func (cfg *Cfg) checkModelFiles() error {
 }
 
 func validateFile(path string) error {
+	cleaned := filepath.Clean(path)
+	if cleaned != path {
+		slog.Warn("Malformed", "current", path, "better", cleaned)
+		path = cleaned
+	}
+
 	// Check if the file exists
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
@@ -136,9 +141,14 @@ func validateFile(path string) error {
 		slog.Error("Model file is not readable", "file", path)
 		return err
 	}
-	defer file.Close()
 
-	// Check if the file is not empty
+	err = file.Close()
+	if err != nil {
+		slog.Error("Model file fails closing", "file", path)
+		return err
+	}
+
+	// is empty?
 	if info.Size() < 1000 {
 		slog.Error("Model file is empty (or too small)", "file", path)
 		return gie.ErrConfigValidation

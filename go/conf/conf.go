@@ -103,42 +103,9 @@ func printEnvVar(key string, confidential bool) {
 }
 
 func (cfg *Cfg) validate(noAPIKey bool) error {
-	if len(cfg.Proxy.Models) == 0 {
-		n := cfg.countModels()
-		if n == 0 {
-			slog.Warn("No *.gguf files found", "dir", cfg.ModelsDir)
-		} else {
-			slog.Warn("No model configured => Use flag -gen-px-cfg to fill the config with", "files", n)
-		}
-	}
-
-	for i := range cfg.Proxy.Models {
-		var previous string
-		for arg := range strings.SplitSeq(cfg.Proxy.Models[i].Cmd, " ") {
-			if previous == "-m" {
-				// Step 1: Check if the file exists
-				info, err := os.Stat(arg)
-				if os.IsNotExist(err) {
-					slog.Error("Model file does not exist", "file", arg)
-					return err
-				}
-
-				// Step 2: Check if the file is readable
-				file, err := os.Open(arg)
-				if err != nil {
-					slog.Error("Model file is not readable", "file", arg)
-					return err
-				}
-				defer file.Close()
-
-				// Step 3: Check if the file is not empty
-				if info.Size() < 1000 {
-					slog.Error("Model file is empty (or too small)", "file", arg)
-					return gie.ErrConfigValidation
-				}
-			}
-			previous = arg
-		}
+	err := cfg.validateModelFiles()
+	if err != nil {
+		return err
 	}
 
 	if noAPIKey {
