@@ -44,7 +44,7 @@ const (
 )
 
 var defaultGoInferCfg = Cfg{
-	ModelsDir: "/home/me/my/models",
+	ModelsDir: "/home/me/models",
 	Server: ServerCfg{
 		Listen: map[string]string{
 			":5143": "webui,models",
