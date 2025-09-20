@@ -39,7 +39,9 @@ type (
 )
 
 const (
-	debugAPIKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
+	// Sentence: coffee is cool so coffee is good bad code is dead lol cafe gift go cafe test code.
+	// Hex code: c0ffee 15 c001 50 c0ffee 15 600d bad c0de 15 d3ad 101 cafe 61f7 60 cafe 7357 c0d3.
+	debugAPIKey = "c0ffee15c00150c0ffee15600dbadc0de15d3ad101cafe61f760cafe7357c0d3"
 	unsetAPIKey = "PLEASE ⚠️ Set your private 64-hex-digit API keys (32 bytes) 🚨"
 )
 

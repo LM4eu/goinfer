@@ -5,7 +5,7 @@ import feedparser
 # in this example we use the model:
 # https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q4_K_M.gguf
 MODEL = "mistral-7b-instruct-v0.1.Q4_K_M.gguf"
-KEY = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
+KEY = "c0ffee15c00150c0ffee15600dbadc0de15d3ad101cafe61f760cafe7357c0d3"
 URL = "https://news.ycombinator.com/rss"
 base_prompt = (
     "these are Hacker News headlines: \n\n{text}\nReturn the titles and urls of "
