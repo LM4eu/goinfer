@@ -121,29 +121,32 @@ func (cfg *Cfg) setModelSettings(model string) {
 }
 
 func (cfg *Cfg) setAPIKeys(noAPIKey bool) {
+	if len(cfg.Server.APIKeys) > 0 {
+		slog.Info("Configuration file uses API keys from environment")
+		return
+	}
+
+	cfg.Server.APIKeys = make(map[string]string, 2)
+
 	switch {
 	case noAPIKey:
+		cfg.Server.APIKeys["admin"] = unsetAPIKey
+		cfg.Server.APIKeys["user"] = unsetAPIKey
 		slog.Info("Flag -no-api-key => Do not generate API keys")
 
-	case len(cfg.Server.APIKeys) > 0:
-		slog.Info("Configuration file uses API keys from environment")
+	case cfg.Debug:
+		cfg.Server.APIKeys["admin"] = debugAPIKey
+		cfg.Server.APIKeys["user"] = debugAPIKey
+		slog.Warn("API keys are DEBUG => security threat")
 
 	default:
-		cfg.Server.APIKeys["admin"] = genAPIKey(cfg.Debug)
-		cfg.Server.APIKeys["user"] = genAPIKey(cfg.Debug)
-		if cfg.Debug {
-			slog.Warn("API keys are DEBUG => security threat")
-		} else {
+		cfg.Server.APIKeys["admin"] = gen64HexDigits()
+		cfg.Server.APIKeys["user"] = gen64HexDigits()
 			slog.Info("Generated random secured API keys")
 		}
 	}
-}
 
-func genAPIKey(debugMode bool) string {
-	if debugMode {
-		return debugAPIKey
-	}
-
+func gen64HexDigits() string {
 	buf := make([]byte, 32)
 	_, err := rand.Read(buf)
 	if err != nil {

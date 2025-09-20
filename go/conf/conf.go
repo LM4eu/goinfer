@@ -38,7 +38,10 @@ type (
 	}
 )
 
-const debugAPIKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
+const (
+	debugAPIKey = "7aea109636aefb984b13f9b6927cd174425a1e05ab5f2e3935ddfeb183099465"
+	unsetAPIKey = "PLEASE ⚠️ Set your private 64-hex-digit API keys (32 bytes) 🚨"
+)
 
 var defaultGoInferCfg = Cfg{
 	ModelsDir: "/home/me/my/models",
@@ -151,6 +154,11 @@ func (cfg *Cfg) validate(noAPIKey bool) error {
 
 	// Check API keys
 	for k, v := range cfg.Server.APIKeys {
+		if strings.Contains(v, "PLEASE") {
+			slog.Error("Please set your private", "key", k)
+			return gie.Wrap(gie.ErrInvalidAPIKey, gie.TypeConfiguration, "API_KEY_NOT_SET", "please set your private '"+k+"' API key")
+		}
+
 		if v == debugAPIKey {
 			slog.Warn("API key is DEBUG => security threat", "key", k)
 		} else if len(v) < 64 {
