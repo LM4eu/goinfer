@@ -21,8 +21,8 @@ services:
     command: -local
     ports: [5143:5143]
     volumes:
-      # MODELS_DIR is also used by goinfer
-      - ${MODELS_DIR:-./models}:/models
+      # GI_MODELS_DIR is also used by goinfer
+      - ${GI_MODELS_DIR:-./models}:/models
       - ${CCACHE_DIR:-./.ccache}:/root/.ccache
       - ${GO_CACHE_DIR:-./.go}:/root/go
       - ./goinfer.yml:/app/goinfer.yml
