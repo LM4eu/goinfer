@@ -5,6 +5,7 @@
 package conf
 
 import (
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -14,10 +15,62 @@ import (
 	"github.com/LM4eu/goinfer/gie"
 )
 
+type ModelInfo struct {
+	Flags      string `json:"flags,omitempty"      yaml:"flags,omitempty"`
+	Path       string `json:"path,omitempty"       yaml:"path,omitempty"`
+	Exist      bool   `json:"exist,omitempty"      yaml:"exist,omitempty"`
+	Configured bool   `json:"configured,omitempty" yaml:"configured,omitempty"`
+}
+
 // Search returns a slice of absolute file paths for all *.gguf model files
 // found under the directories listed in cfg.ModelsDir (colon-separated).
 // It walks each directory recursively, aggregates matching files, and returns any error encountered.
-func (cfg *Cfg) Search() ([]string, error) {
+func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
+	modelFiles, err := cfg.searchAll()
+	if err != nil {
+		if cfg.Debug {
+			slog.Info("Search models", "err", err)
+		}
+	}
+
+	all := make(map[string]ModelInfo, len(modelFiles))
+	for _, path := range modelFiles {
+		name, flags := extractFlags(path)
+		_, ok := all[name]
+		if ok {
+			err = fmt.Errorf("Duplicate model name=%s", name)
+		}
+		all[name] = ModelInfo{flags, path, true, false}
+	}
+
+	for name := range cfg.Proxy.Models {
+		if len(name) > 3 && name[:3] == "GI_" && cfg.Proxy.Models[name].Unlisted {
+			continue // do not report models for /goinfer endpoint
+		}
+
+		info, ok := all[name]
+		if ok {
+			info.Configured = true
+		} else {
+			cmd := strings.SplitN(cfg.Proxy.Models[name].Cmd, "--model", 2)
+			if len(cmd) > 0 {
+				info.Flags = cmd[0]
+			}
+			if len(cmd) > 1 {
+				info.Path = cmd[1]
+			}
+			info.Configured = true
+		}
+		all[name] = info
+	}
+
+	return all, err
+}
+
+// searchAll returns a slice of absolute file paths for all *.gguf model files
+// found under the directories listed in cfg.ModelsDir (colon-separated).
+// It walks each directory recursively, aggregates matching files, and returns any error encountered.
+func (cfg *Cfg) searchAll() ([]string, error) {
 	modelFiles := make([]string, 0, len(cfg.ModelsDir)/2)
 
 	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
@@ -60,13 +113,17 @@ func (cfg *Cfg) search(files *[]string, root string) error {
 	})
 }
 
-// extractFlags extracts the model name and its flags from a filename stem.
+// extractFlags extracts the model name and its flags from a file path.
 // It looks for a pattern starting with "&" and splits the remaining string by "&"
 // to get individual flag components.
 // Each component is then split by "=" to separate key and value,
 // with the key prefixed by "-" to form command-line style flags.
 // Returns the model name and a single string with flags separated by spaces.
-func extractFlags(stem string) (string, string) {
+func extractFlags(path string) (string, string) {
+	base := filepath.Base(path)
+	ext := filepath.Ext(base)
+	stem := strings.TrimSuffix(base, ext)
+
 	pos := strings.Index(stem, "&")
 	if pos < 0 {
 		return stem, ""
@@ -87,7 +144,7 @@ func extractFlags(stem string) (string, string) {
 }
 
 func (cfg *Cfg) countModels() int {
-	modelFiles, err := cfg.Search()
+	modelFiles, err := cfg.searchAll()
 	if err != nil {
 		return 0
 	}

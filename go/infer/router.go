@@ -6,7 +6,6 @@ package infer
 
 import (
 	"embed"
-	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -148,15 +147,17 @@ func configureAPIKeyAuth(grp *echo.Group, cfg *conf.Cfg, service string) {
 
 // modelsHandler returns the state of models.
 func (inf *Infer) modelsHandler(c echo.Context) error {
-	models, err := inf.Cfg.Search()
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error": errors.New("failed to search models: " + err.Error()),
-		})
+	models, err := inf.Cfg.ListModels()
+
+	response := map[string]any{
+		"count": len(models),
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"models": models,
-		"count":  len(models),
-	})
+	if err != nil {
+		response["error"] = err.Error()
+	}
+
+	response["models"] = models
+
+	return c.JSON(http.StatusOK, response)
 }

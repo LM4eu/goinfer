@@ -10,7 +10,6 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/LM4eu/goinfer/gie"
 	"github.com/mostlygeek/llama-swap/proxy"
@@ -83,7 +82,7 @@ func (cfg *Cfg) WriteProxyCfg(pxCfg string) error {
 		"cmd-goinfer": cmd + " " + goinfer,
 	}
 
-	modelFiles, err := cfg.Search()
+	modelFiles, err := cfg.searchAll()
 	if err != nil {
 		return err
 	}
@@ -92,8 +91,10 @@ func (cfg *Cfg) WriteProxyCfg(pxCfg string) error {
 		cfg.Proxy.Models = make(map[string]proxy.ModelConfig, 2*len(modelFiles))
 	}
 
-	for _, model := range modelFiles {
-		cfg.setTwoModels(model)
+	for _, path := range modelFiles {
+		name, flags := extractFlags(path)
+		cfg.setModelSettings(path, name, flags, false) // OpenAI
+		cfg.setModelSettings(path, name, flags, true)  // Goinfer
 	}
 
 	yml, er := yaml.Marshal(&cfg.Proxy)
@@ -110,21 +111,8 @@ func (cfg *Cfg) WriteProxyCfg(pxCfg string) error {
 }
 
 // Set the settings of a model within the llama-swap-proxy configuration.
-func (cfg *Cfg) setTwoModels(path string) {
-	base := filepath.Base(path)
-	ext := filepath.Ext(base)
-	stem := strings.TrimSuffix(base, ext)
-
-	name, flags := extractFlags(stem)
-
-	// OpenAI API
-	cfg.setOneModel(path, name, flags, false)
-	cfg.setOneModel(path, name, flags, true)
-}
-
-// Set the settings of a model within the llama-swap-proxy configuration.
 // For /goinfer API, hide the model + prefix the with GI_.
-func (cfg *Cfg) setOneModel(path, name, flags string, goinfer bool) {
+func (cfg *Cfg) setModelSettings(path, name, flags string, goinfer bool) {
 	macro := "${cmd-openai}"
 	if goinfer {
 		macro = "${cmd-goinfer}"
