@@ -23,7 +23,9 @@ set -xe
 # current directory
 cd ${0%/*}
 
-../../llama.cpp/build/bin/llama-server   \
+[[ "$1" == "ik" ]] && prj="ik_llama.cpp" || prj="llama.cpp"
+
+../../$prj/build/bin/llama-server        \
 	--threads -1                         \
 	--host 0.0.0.0 --port 8080           \
 	--no-context-shift                   \

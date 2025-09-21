@@ -15,7 +15,7 @@ build=build
 
 # Guarantee a clean build by resetting the build directory.
 # Fortunately ccache retrieves most of the deleted object files.
-rm ${build:-build}/ -r || true
+rm ${build:-build}/ -rf
 
 flags="$(grep "^flags" -wm1 /proc/cpuinfo) "
 
@@ -23,7 +23,6 @@ flags="$(grep "^flags" -wm1 /proc/cpuinfo) "
 cmake -B $build -G Ninja \
   -D BUILD_SHARED_LIBS=OFF \
   -D CMAKE_CUDA_ARCHITECTURES=86 \
-  -D CMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-14 \
   -D CMAKE_EXE_LINKER_FLAGS="-Wl,--allow-shlib-undefined,-flto" \
   -D GGML_AVX=$(        [[ "$flags" == *" avx "*         ]] && echo ON || echo OFF) \
   -D GGML_AVX2=$(       [[ "$flags" == *" avx2 "*        ]] && echo ON || echo OFF) \

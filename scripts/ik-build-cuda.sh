@@ -15,7 +15,7 @@ build=build
 
 # Guarantee a clean build by resetting the build directory.
 # Fortunately ccache retrieves most of the deleted object files.
-rm ${build:-build}/ -r || true
+rm ${build:-build}/ -rf
 
 flags="$(grep "^flags" -wm1 /proc/cpuinfo) "
 
@@ -46,4 +46,4 @@ cmake -B $build -G Ninja \
   .
 
 # The build use ninja instead of make
-cmake --build $build --config Release --clean-first --target llama-quantize # llama-server llama-gguf
+cmake --build $build --config Release --clean-first --target llama-quantize lama-server # llama-gguf
