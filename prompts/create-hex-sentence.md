@@ -1,16 +1,13 @@
 # Hexadecimal sentence
 
-**Task Overview**  
-Create a 64‑character hexadecimal string that reads directly as a well‑formed sentence when interpreted in leetspeak, requiring no further decoding.
+**Task**  
+Generate a 64‑character hexadecimal string that reads as a well‑formed, meaningful sentence in leet‑speak.
 
-**Requirements**  
+**Constraints**  
 
-- Use only hexadecimal characters (0‑9, a‑f).  
-- The string must be exactly 64 characters long.  
-- Build the string by concatenating hexadecimal “words” including slang, abbreviations, and acronyms.  
-- Do not insert spaces or separators; the sentence emerges from the continuous leetspeak interpretation of the hex string.  
-- The resulting sentence must be a well‑formed sentence.  
-- The resulting sentence should convey a meaningful and playful message.
-
-**Output**  
-Provide one 64‑character hex string that satisfy all of the above criteria.
+- **Characters**: Only hex digits 0‑9 and letters a‑f may appear.  
+- **Leet mapping**: Use only the digits 0, 1, 2, 5, 7, 9 to represent letters (o→0, i→1, l→1, z→2, s→5, t→7, g→9). Digits 3, 4, 6, 8 must not appear.  
+- **Length**: Exactly 64 characters, with no spaces or separators; concatenate whole words (including slang, abbreviations, acronyms).  
+- **Encoding**: Letters a‑f are written directly; all other letters must be replaced by their leet digit mapping.  
+- **Valid**: The resulting sentence must be a well‑formed sentence.  
+- **Funny**: The resulting sentence should convey a humorous and playful message.
