@@ -46,4 +46,4 @@ cmake -B $build -G Ninja \
   .
 
 # The build use ninja instead of make
-cmake --build $build --config Release --clean-first --target llama-quantize lama-server # llama-gguf
+cmake --build $build --config Release --clean-first --target llama-quantize llama-server
