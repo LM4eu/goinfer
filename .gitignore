@@ -9,3 +9,4 @@
 /go/goinfer.yml
 /go/infer/dist/
 /go/llama-swap.yml
+/go/template.jinja

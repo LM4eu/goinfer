@@ -174,49 +174,68 @@ llama:
 Official documentation see: [github.com/mostlygeek/llama-swap/wiki/Configuration](https://github.com/mostlygeek/llama-swap/wiki/Configuration)
 
 ```yaml
+logLevel: info            # debug, info, warn, error
 healthCheckTimeout: 500   # seconds to wait for a model to become ready
+metricsMaxInMemory: 1000  # maximum number of metrics to keep in memory
+startPort: 6000           # first ${PORT} incremented for each model
 
-logLevel: info
-
-metricsMaxInMemory: 1000
-
-startPort: 6000          # first port for auto‑assigned model servers
-
-macros:
-  "llama-server-openai": "./llama-server --port ${PORT} --props --no-webui --no-warmup"
-  "llama-server-goinfer": "./llama-server --port ${PORT} --props --no-webui --no-warmup --jinja --chat-template-file template.jinja"
+macros:  # macros to reduce common conf settings
+  "cmd-openai": "./llama-server --port ${PORT} --props --no-webui --no-warmup"
+  "cmd-goinfer": "./llama-server --port ${PORT} --props --no-webui --no-warmup --jinja --chat-template-file template.jinja"
 
 models:
-  "Qwen2.5-1.5B-Instruct-Q4_K_M":
-    aliases:
-      - "Qwen2.5-1.5B-Instruct"
+  "Qwen2.5-1.5B-Instruct-Q4_K_M":  # model names used in API requests
+    aliases:                       # alternative model names (unique globally)
+      - "Qwen2.5-1.5B-Instruct"    #     for impersonating a specific model
       - "Qwen2.5-1.5B"
-    unlisted: false
-    name: "Qwen2.5 1.5B"
+    unlisted: false                # hide model name in /v1/models and /upstream API response
+    name: "Qwen2.5 1.5B"           # name for human in /v1/models API response
+    useModelName: "qwen:qwq"       # overrides the model name that is sent to /upstream server
     description: "Small but capable model for quick testing"
-    useModelName: "qwen:qwq"
-    cmd: ${llama-server-openai} --model /path/to/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf
-    proxy: http://localhost:${PORT}
-    checkEndpoint: /health
-    ttl: 3600                # unload after 1 h of inactivity
+    env: []
+    cmd: ${cmd-openai} --model /path/to/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf
+    proxy: http://localhost:${PORT}  # default: http://localhost:${PORT}
+    checkEndpoint: /health           # default: /health
+    ttl: 3600                        # stop the cmd after 1 hour of inactivity
     filters:
+      # inference params to remove from the request, default: ""
+      # useful for preventing overriding of default server params by requests
       strip_params: "temperature,top_p,top_k"
 
+# preload some models on startup 
 hooks:
   on_startup:
     preload:
       - "Qwen2.5-1.5B-Instruct-Q4_K_M"
 
+# Keep some models loaded indefinitely, while others are swapped out
+# see https://github.com/mostlygeek/llama-swap/pull/109
 groups:
+  # example1: only one model is allowed to run a time (default mode)
   "group1":
     swap: true
     exclusive: true
     members:
-      - "Qwen2.5-1.5B-Instruct-Q4_K_M"
+      - "llama"
+      - "qwen-unlisted"
+  # example2: all the models in this group2 can run at the same time
+  # loading another model => unloads all this group2
+  "group2":
+    swap: false
+    exclusive: false
+    members:
+      - "docker-llama"
+      - "modelA"
+      - "modelB"
+  # example3: persistent models are never unloaded
   "forever":
     persistent: true
+    swap: false
+    exclusive: false
     members:
-      - "Qwen2.5-1.5B-Instruct-Q4_K_M"
+      - "forever-modelA"
+      - "forever-modelB"
+      - "forever-modelC"
 ```
 
 ## Server / Client mode

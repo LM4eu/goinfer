@@ -60,16 +60,16 @@ func (cfg *Cfg) search(files *[]string, root string) error {
 	})
 }
 
-// extractFlags extracts flags from a model filename.
+// extractFlags extracts the model name and its flags from a filename stem.
 // It looks for a pattern starting with "&" and splits the remaining string by "&"
 // to get individual flag components.
 // Each component is then split by "=" to separate key and value,
 // with the key prefixed by "-" to form command-line style flags.
-// Returns a single string with flags separated by spaces.
-func extractFlags(stem string) string {
+// Returns the model name and a single string with flags separated by spaces.
+func extractFlags(stem string) (string, string) {
 	pos := strings.Index(stem, "&")
 	if pos < 0 {
-		return ""
+		return stem, ""
 	}
 
 	var flags []string
@@ -83,7 +83,7 @@ func extractFlags(stem string) string {
 		}
 	}
 
-	return strings.Join(flags, " ")
+	return stem[:pos], strings.Join(flags, " ")
 }
 
 func (cfg *Cfg) countModels() int {

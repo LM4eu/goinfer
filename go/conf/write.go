@@ -53,12 +53,38 @@ func (cfg *Cfg) WriteMainCfg(giCfg string, noAPIKey bool) error {
 
 // WriteProxyCfg generates the llama-swap-proxy configuration.
 func (cfg *Cfg) WriteProxyCfg(pxCfg string) error {
-	modelFiles, err := cfg.Search()
-	if err != nil {
-		return err
+	switch {
+	case cfg.Debug:
+		cfg.Proxy.LogLevel = "debug"
+	case cfg.Verbose:
+		cfg.Proxy.LogLevel = "info"
+	default:
+		cfg.Proxy.LogLevel = "warn"
 	}
 
-	if len(modelFiles) == 0 {
+	cfg.Proxy.StartPort = 5800         // first ${PORT} incremented for each model
+	cfg.Proxy.HealthCheckTimeout = 120 // seconds to wait for a model to become ready
+	cfg.Proxy.MetricsMaxInMemory = 500 // maximum number of metrics to keep in memory
+
+	common, ok := cfg.Llama.Args["common"]
+	if !ok {
+		common = "--props --no-webui --no-warmup"
+	}
+
+	goinfer, ok := cfg.Llama.Args["goinfer"]
+	if !ok {
+		goinfer = "--jinja --chat-template-file template.jinja"
+	}
+
+	cmd := cfg.Llama.Exe + " --port ${PORT} " + common
+
+	cfg.Proxy.Macros = map[string]string{
+		"cmd-openai":  cmd,
+		"cmd-goinfer": cmd + " " + goinfer,
+	}
+
+	modelFiles, err := cfg.Search()
+	if err != nil {
 		return err
 	}
 
@@ -67,7 +93,7 @@ func (cfg *Cfg) WriteProxyCfg(pxCfg string) error {
 	}
 
 	for _, model := range modelFiles {
-		cfg.setModelSettings(model)
+		cfg.setTwoModels(model)
 	}
 
 	yml, er := yaml.Marshal(&cfg.Proxy)
@@ -84,40 +110,52 @@ func (cfg *Cfg) WriteProxyCfg(pxCfg string) error {
 }
 
 // Set the settings of a model within the llama-swap-proxy configuration.
-func (cfg *Cfg) setModelSettings(model string) {
-	base := filepath.Base(model)
+func (cfg *Cfg) setTwoModels(path string) {
+	base := filepath.Base(path)
 	ext := filepath.Ext(base)
 	stem := strings.TrimSuffix(base, ext)
 
-	flags := extractFlags(model)
+	name, flags := extractFlags(stem)
 
 	// OpenAI API
+	cfg.setOneModel(path, name, flags, false)
+	cfg.setOneModel(path, name, flags, true)
+}
+
+// Set the settings of a model within the llama-swap-proxy configuration.
+// For /goinfer API, hide the model + prefix the with GI_.
+func (cfg *Cfg) setOneModel(path, name, flags string, goinfer bool) {
+	macro := "${cmd-openai}"
+	if goinfer {
+		macro = "${cmd-goinfer}"
+	}
+
+	modelCfg := proxy.ModelConfig{
+		Cmd:           macro + " -m " + path + " " + flags,
+		Proxy:         "http://localhost:${PORT}",
+		CheckEndpoint: "/health",
+	}
+
+	if goinfer {
+		// hide model name in /v1/models and /upstream API response
+		modelCfg.Unlisted = true
+		// overrides the model name that is sent to upstream server
+		modelCfg.UseModelName = name
+	}
+
+	modelName := name
+	if goinfer {
+		modelName = "GI_" + name
+	}
+
 	if cfg.Verbose {
-		_, ok := cfg.Proxy.Models[stem]
+		_, ok := cfg.Proxy.Models[modelName]
 		if ok {
-			slog.Info("Overwrite config", "model", stem)
+			slog.Info("Overwrite config", "model", modelName)
 		}
 	}
 
-	cfg.Proxy.Models[stem] = proxy.ModelConfig{
-		Cmd:          "${llama-server-openai} -m " + model + " " + flags,
-		Unlisted:     false,
-		UseModelName: stem,
-	}
-
-	// GoInfer API: hide the model + prefix GI_
-	prefixedModelName := "GI_" + stem
-	if cfg.Verbose {
-		_, ok := cfg.Proxy.Models[stem]
-		if ok {
-			slog.Info("Overwrite config", "model", stem)
-		}
-	}
-	cfg.Proxy.Models[prefixedModelName] = proxy.ModelConfig{
-		Cmd:          "${llama-server-goinfer} -m " + model + " " + flags,
-		Unlisted:     true,
-		UseModelName: prefixedModelName,
-	}
+	cfg.Proxy.Models[modelName] = modelCfg
 }
 
 func (cfg *Cfg) setAPIKeys(noAPIKey bool) {

@@ -79,27 +79,44 @@ func getCfg() *conf.Cfg {
 		os.Exit(0)
 	}
 
-	// Load the llama-swap config
-	cfg.Proxy, err = proxy.LoadConfig(pxCfg)
-	// even if err!=nil => generate the config file
 	if *genPxCfg {
+		err = os.WriteFile("template.jinja", []byte("{{- messages[0].content -}}"), 0o600)
 		if err != nil {
-			slog.Warn("Cannot load proxy config", "file", pxCfg, "error", err)
+			slog.Error("Cannot write", "file", "template.jinja", "error", err)
+			os.Exit(1)
 		}
 		err = cfg.WriteProxyCfg(pxCfg)
 		if err != nil {
 			slog.Error("Cannot create proxy config", "file", pxCfg, "error", err)
 			os.Exit(1)
 		}
+	}
+
+	// Load the llama-swap.yml config
+	cfg.Proxy, err = proxy.LoadConfig(pxCfg)
+	if err != nil {
+		slog.Error("Cannot load proxy config", "file", pxCfg, "error", err)
+		os.Exit(1)
+	}
+
+	if *genPxCfg {
 		slog.Info("Generated proxy config", "file", pxCfg, "models", len(cfg.Proxy.Models))
 		if cfg.Verbose {
 			cfg.Print()
 		}
 		os.Exit(0)
 	}
-	if err != nil {
-		slog.Error("Cannot load proxy config", "file", pxCfg, "error", err)
-		os.Exit(1)
+
+	// command line precedes config file
+	switch {
+	case cfg.Debug:
+		cfg.Proxy.LogLevel = "debug"
+	case cfg.Verbose:
+		cfg.Proxy.LogLevel = "info"
+	case cfg.Proxy.LogLevel == "error":
+		cfg.Proxy.LogLevel = "error" // unchanged
+	default:
+		cfg.Proxy.LogLevel = "warn"
 	}
 
 	if *noAPIKey {
