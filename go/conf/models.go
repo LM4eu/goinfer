@@ -5,7 +5,6 @@
 package conf
 
 import (
-	"fmt"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -16,10 +15,9 @@ import (
 )
 
 type ModelInfo struct {
-	Flags      string `json:"flags,omitempty"      yaml:"flags,omitempty"`
-	Path       string `json:"path,omitempty"       yaml:"path,omitempty"`
-	Exist      bool   `json:"exist,omitempty"      yaml:"exist,omitempty"`
-	Configured bool   `json:"configured,omitempty" yaml:"configured,omitempty"`
+	Flags string `json:"flags,omitempty" yaml:"flags,omitempty"`
+	Path  string `json:"path,omitempty"  yaml:"path,omitempty"`
+	Error string `json:"error,omitempty" yaml:"error,omitempty"`
 }
 
 // Search returns a slice of absolute file paths for all *.gguf model files
@@ -36,11 +34,11 @@ func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
 	all := make(map[string]ModelInfo, len(modelFiles))
 	for _, path := range modelFiles {
 		name, flags := extractFlags(path)
-		_, ok := all[name]
-		if ok {
-			err = fmt.Errorf("Duplicate model name=%s", name)
+		e := "file present but not configured in llama-swap.yml"
+		if _, ok := all[name]; ok {
+			e = "two files have same model name (must be unique)"
 		}
-		all[name] = ModelInfo{flags, path, true, false}
+		all[name] = ModelInfo{flags, path, e}
 	}
 
 	for name := range cfg.Proxy.Models {
@@ -50,7 +48,7 @@ func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
 
 		info, ok := all[name]
 		if ok {
-			info.Configured = true
+			info.Error = "" // OK: model is both present in FS and configured in llama-swap.yml
 		} else {
 			cmd := strings.SplitN(cfg.Proxy.Models[name].Cmd, "--model", 2)
 			if len(cmd) > 0 {
@@ -59,7 +57,7 @@ func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
 			if len(cmd) > 1 {
 				info.Path = cmd[1]
 			}
-			info.Configured = true
+			info.Error = "file absent but configured in llama-swap.yml"
 		}
 		all[name] = info
 	}
