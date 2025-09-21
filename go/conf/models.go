@@ -18,7 +18,7 @@ import (
 // found under the directories listed in cfg.ModelsDir (colon-separated).
 // It walks each directory recursively, aggregates matching files, and returns any error encountered.
 func (cfg *Cfg) Search() ([]string, error) {
-	modelFiles := make([]string, len(cfg.ModelsDir)/2)
+	modelFiles := make([]string, 0, len(cfg.ModelsDir)/2)
 
 	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
 		err := cfg.search(&modelFiles, strings.TrimSpace(root))
