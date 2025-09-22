@@ -30,7 +30,7 @@ cd ${0%/*}
 	--host 0.0.0.0 --port 8080           \
 	--no-warmup                          \
 	--no-mmap                            \
-	-hf ggml-org/gpt-oss-120b-GGUF       \
+	-m ~/.cache/llama.cpp/ggml-org_gpt-oss-120b-GGUF_gpt-oss-120b-mxfp4-00001-of-00003.gguf       \
 	--alias gpt-oss-120b                 \
 	--temp 1.0  --top-k 0.0              \
 	--min-p 0.0 --top-p 1.0              \
