@@ -41,6 +41,10 @@ const (
 	// Hex code: C0ffee 15 C001, 50 C0ffee 15 900d. Bad C0de 15 Dead, 101. Cafe 91f7, 90 Cafe, 7e57C0de.
 	debugAPIKey = "C0ffee15C00150C0ffee15900dBadC0de15Dead101Cafe91f790Cafe7e57C0de"
 	unsetAPIKey = "PLEASE ⚠️ Set your private 64-hex-digit API keys (32 bytes) 🚨"
+
+	// Arguments for llama-server command line.
+	argsCommon  = "--props --no-warmup"
+	argsGoinfer = "--jinja --chat-template-file template.jinja"
 )
 
 var defaultGoInferCfg = Cfg{
@@ -58,8 +62,8 @@ var defaultGoInferCfg = Cfg{
 	Llama: LlamaCfg{
 		Exe: "/home/me/llama.cpp/build/bin/llama-server",
 		Args: map[string]string{
-			"common":  "--no-webui --no-warmup",
-			"goinfer": "--jinja --chat-template-file template.jinja",
+			"common":  argsCommon,
+			"goinfer": argsGoinfer,
 		},
 	},
 }

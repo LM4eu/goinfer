@@ -57,12 +57,12 @@ func (cfg *Cfg) WriteProxyCfg(pxCfg string, verbose, debug bool) error {
 
 	common, ok := cfg.Llama.Args["common"]
 	if !ok {
-		common = "--props --no-webui --no-warmup"
+		common = argsCommon
 	}
 
 	goinfer, ok := cfg.Llama.Args["goinfer"]
 	if !ok {
-		goinfer = "--jinja --chat-template-file template.jinja"
+		goinfer = argsGoinfer
 	}
 
 	cmd := cfg.Llama.Exe + " --port ${PORT} " + common
