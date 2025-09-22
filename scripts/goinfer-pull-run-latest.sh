@@ -7,7 +7,10 @@ set -xe
 
 cd ${0%/*}  # go to the directory of this script
 
+git -C ../../llama-swap switch main
 git -C ../../llama-swap pull
+
+git switch swap
 git pull
 
 # Optional

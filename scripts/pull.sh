@@ -12,7 +12,7 @@ git fetch
 
 [ -n "$tag" ] && 
 	git checkout "$tag" || {
-	git switch master
+	git switch master || git switch main
 	git pull
 	}
 
