@@ -18,26 +18,16 @@ import (
 
 // WriteMainCfg populates the configuration with defaults, applies environment variables,
 // writes the resulting configuration to the given file, and mutates the receiver.
-func (cfg *Cfg) WriteMainCfg(giCfg string, noAPIKey bool) error {
+func (cfg *Cfg) WriteMainCfg(giCfg string, debug, noAPIKey bool) error {
 	cfg.Llama = defaultGoInferCfg.Llama
 	cfg.ModelsDir = defaultGoInferCfg.ModelsDir
 	cfg.Server = defaultGoInferCfg.Server
 
 	cfg.applyEnvVars()
 
-	cfg.setAPIKeys(noAPIKey)
-
-	// The following `Verbose`/`Debug` toggling is necessary to avoid
-	// polluting the configuration with: verbose=false debug=true.
-	// Better to use command line flags: -q -debug.
-	// Users are free to add manually verbose=false debug=true in the configuration.
-	vrb, dbg := cfg.Verbose, cfg.Debug
-	cfg.Verbose, cfg.Debug = false, false
+	cfg.setAPIKeys(debug, noAPIKey)
 
 	yml, err := yaml.Marshal(&cfg)
-
-	cfg.Verbose, cfg.Debug = vrb, dbg
-
 	if err != nil {
 		return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_MARSHAL", "failed to write config file")
 	}
@@ -51,11 +41,11 @@ func (cfg *Cfg) WriteMainCfg(giCfg string, noAPIKey bool) error {
 }
 
 // WriteProxyCfg generates the llama-swap-proxy configuration.
-func (cfg *Cfg) WriteProxyCfg(pxCfg string) error {
+func (cfg *Cfg) WriteProxyCfg(pxCfg string, verbose, debug bool) error {
 	switch {
-	case cfg.Debug:
+	case debug:
 		cfg.Proxy.LogLevel = "debug"
-	case cfg.Verbose:
+	case verbose:
 		cfg.Proxy.LogLevel = "info"
 	default:
 		cfg.Proxy.LogLevel = "warn"
@@ -136,17 +126,15 @@ func (cfg *Cfg) setModelSettings(path, name, flags string, goinfer bool) {
 		modelName = "GI_" + name
 	}
 
-	if cfg.Verbose {
-		_, ok := cfg.Proxy.Models[modelName]
-		if ok {
-			slog.Info("Overwrite config", "model", modelName)
-		}
+	_, ok := cfg.Proxy.Models[modelName]
+	if ok {
+		slog.Debug("Overwrite config", "model", modelName)
 	}
 
 	cfg.Proxy.Models[modelName] = modelCfg
 }
 
-func (cfg *Cfg) setAPIKeys(noAPIKey bool) {
+func (cfg *Cfg) setAPIKeys(debug, noAPIKey bool) {
 	if len(cfg.Server.APIKeys) > 0 {
 		slog.Info("Configuration file uses API keys from environment")
 		return
@@ -160,7 +148,7 @@ func (cfg *Cfg) setAPIKeys(noAPIKey bool) {
 		cfg.Server.APIKeys["user"] = unsetAPIKey
 		slog.Info("Flag -no-api-key => Do not generate API keys")
 
-	case cfg.Debug:
+	case debug:
 		cfg.Server.APIKeys["admin"] = debugAPIKey
 		cfg.Server.APIKeys["user"] = debugAPIKey
 		slog.Warn("API keys are DEBUG => security threat")

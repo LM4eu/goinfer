@@ -26,9 +26,7 @@ type ModelInfo struct {
 func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
 	modelFiles, err := cfg.search()
 	if err != nil {
-		if cfg.Debug {
-			slog.Info("Search models", "err", err)
-		}
+		slog.Debug("Search models", "err", err)
 	}
 
 	all := make(map[string]ModelInfo, len(modelFiles))
@@ -72,11 +70,9 @@ func (cfg *Cfg) search() ([]string, error) {
 	modelFiles := make([]string, 0, len(cfg.ModelsDir)/2)
 
 	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
-		err := cfg.append(&modelFiles, strings.TrimSpace(root))
+		err := add(&modelFiles, strings.TrimSpace(root))
 		if err != nil {
-			if cfg.Verbose {
-				slog.Info("Searching model files", "root", root)
-			}
+			slog.Debug("Searching model files", "root", root)
 			return nil, err
 		}
 	}
@@ -84,7 +80,7 @@ func (cfg *Cfg) search() ([]string, error) {
 	return modelFiles, nil
 }
 
-func (cfg *Cfg) append(files *[]string, root string) error {
+func add(files *[]string, root string) error {
 	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return gie.Wrap(err, gie.TypeNotFound, "filepath.WalkDir", "path="+d.Name())
@@ -95,9 +91,7 @@ func (cfg *Cfg) append(files *[]string, root string) error {
 		}
 
 		if strings.HasSuffix(path, ".gguf") {
-			if cfg.Debug {
-				slog.Info("Found", "model", path)
-			}
+			slog.Debug("Found", "model", path)
 
 			err := validateFile(path)
 			if err != nil {

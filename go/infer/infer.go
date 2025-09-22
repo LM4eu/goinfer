@@ -58,13 +58,11 @@ func (inf *Infer) inferHandler(c echo.Context) error {
 	}
 
 	// Handle the infer result
-	if inf.Cfg.Verbose {
-		slog.Info("-----------------------------")
-		for key, value := range result.Data {
-			slog.Info("result", "key", key, "value", value)
-		}
-		slog.Info("--------------------------")
+	slog.Debug("-----------------------------")
+	for key, value := range result.Data {
+		slog.Debug("result", "key", key, "value", value)
 	}
+	slog.Debug("-----------------------------")
 
 	if !query.Params.Stream {
 		return c.JSON(http.StatusOK, result.Data)
@@ -201,9 +199,7 @@ func (inf *Infer) abortHandler(c echo.Context) error {
 		return c.NoContent(http.StatusAccepted)
 	}
 
-	if inf.Cfg.Verbose {
-		slog.InfoContext(c.Request().Context(), "Aborting inference")
-	}
+	slog.DebugContext(c.Request().Context(), "Aborting inference")
 
 	return c.NoContent(http.StatusNoContent)
 }

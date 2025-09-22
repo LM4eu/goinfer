@@ -47,23 +47,12 @@ func (cfg *Cfg) load(giCfg string) error {
 		return gie.Wrap(err, gie.TypeConfiguration, "", "")
 	}
 
-	// The following `Verbose`/`Debug` toggling is necessary because
-	// command line parameters have precedence on config settings.
-	dbg, vrb := cfg.Debug, cfg.Verbose
-
 	if len(yml) > 0 {
 		err := yaml.Unmarshal(yml, &cfg)
 		if err != nil {
 			slog.Error("Failed to yaml.Unmarshal", "100FirsBytes", string(yml[:100]))
 			return gie.Wrap(err, gie.TypeConfiguration, "", "")
 		}
-	}
-
-	if dbg {
-		cfg.Debug = dbg
-	}
-	if !vrb {
-		cfg.Verbose = vrb
 	}
 
 	return nil
@@ -75,23 +64,17 @@ func (cfg *Cfg) applyEnvVars() {
 	// Load environment variables
 	if dir := os.Getenv("GI_MODELS_DIR"); dir != "" {
 		cfg.ModelsDir = dir
-		if cfg.Verbose {
-			slog.Info("use", "GI_MODELS_DIR", dir)
-		}
+		slog.Debug("use", "GI_MODELS_DIR", dir)
 	}
 
 	if host := os.Getenv("GI_HOST"); host != "" {
 		cfg.Server.Host = host
-		if cfg.Verbose {
-			slog.Info("use", "GI_HOST", host)
-		}
+		slog.Debug("use", "GI_HOST", host)
 	}
 
 	if origins := os.Getenv("GI_ORIGINS"); origins != "" {
 		cfg.Server.Origins = origins
-		if cfg.Verbose {
-			slog.Info("use", "GI_ORIGINS", origins)
-		}
+		slog.Debug("use", "GI_ORIGINS", origins)
 	}
 
 	// Load user API key from environment
@@ -100,9 +83,7 @@ func (cfg *Cfg) applyEnvVars() {
 			cfg.Server.APIKeys = make(map[string]string, 2)
 		}
 		cfg.Server.APIKeys["user"] = key
-		if cfg.Verbose {
-			slog.Info("set api_key[user] = GI_API_KEY_USER")
-		}
+		slog.Debug("set api_key[user] = GI_API_KEY_USER")
 	}
 
 	// Load admin API key from environment
@@ -111,15 +92,11 @@ func (cfg *Cfg) applyEnvVars() {
 			cfg.Server.APIKeys = make(map[string]string, 1)
 		}
 		cfg.Server.APIKeys["admin"] = key
-		if cfg.Verbose {
-			slog.Info("set api_key[admin] = GI_API_KEY_ADMIN")
-		}
+		slog.Debug("set api_key[admin] = GI_API_KEY_ADMIN")
 	}
 
 	if exe := os.Getenv("GI_LLAMA_EXE"); exe != "" {
 		cfg.Llama.Exe = exe
-		if cfg.Verbose {
-			slog.Info("use", "GI_LLAMA_EXE", exe)
-		}
+		slog.Debug("use", "GI_LLAMA_EXE", exe)
 	}
 }

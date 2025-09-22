@@ -17,12 +17,10 @@ import (
 
 type (
 	Cfg struct {
-		Server    ServerCfg    `json:"server"           yaml:"server"`
-		Llama     LlamaCfg     `json:"llama"            yaml:"llama"`
-		ModelsDir string       `json:"models_dir"       yaml:"models_dir"`
-		Proxy     proxy.Config `json:"proxy,omitzero"   yaml:"proxy,omitempty"`
-		Verbose   bool         `json:"verbose,omitzero" yaml:"verbose,omitempty"`
-		Debug     bool         `json:"debug,omitzero"   yaml:"debug,omitempty"`
+		Server    ServerCfg    `json:"server"         yaml:"server"`
+		Llama     LlamaCfg     `json:"llama"          yaml:"llama"`
+		ModelsDir string       `json:"models_dir"     yaml:"models_dir"`
+		Proxy     proxy.Config `json:"proxy,omitzero" yaml:"proxy,omitempty"`
 	}
 
 	ServerCfg struct {
@@ -66,12 +64,12 @@ var defaultGoInferCfg = Cfg{
 	},
 }
 
-func (cfg *Cfg) RefreshLogLevel() {
+func (cfg *Cfg) RefreshLogLevel(verbose, debug bool) {
 	switch {
-	case cfg.Debug:
+	case debug:
 		cfg.Proxy.LogLevel = "debug"
 		slog.SetLogLoggerLevel(slog.LevelDebug)
-	case cfg.Verbose:
+	case verbose:
 		cfg.Proxy.LogLevel = "info"
 		slog.SetLogLoggerLevel(slog.LevelInfo)
 	case cfg.Proxy.LogLevel == "error":

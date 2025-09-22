@@ -60,9 +60,7 @@ func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c ech
 			}
 		}
 	case <-inferCtx.Done():
-		if inf.Cfg.Debug {
-			slog.DebugContext(ctx, "Infer timeout")
-		}
+		slog.DebugContext(ctx, "Infer timeout")
 		errChan <- StreamedMsg{
 			Num:     0,
 			Content: gie.Wrap(gie.ErrReqTimeout, gie.TypeTimeout, "INFERENCE_TIMEOUT", "infer timeout").Error(),
@@ -92,9 +90,7 @@ func (inf *Infer) abortInference() error {
 		return gie.Wrap(gie.ErrInferNotRunning, gie.TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
 	}
 
-	if inf.Cfg.Verbose {
-		slog.Info("Aborting inference")
-	}
+	slog.Debug("Aborting inference")
 
 	inf.ContinueInferringController = false
 	return nil

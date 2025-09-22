@@ -50,10 +50,8 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 		return
 	}
 
-	if inf.Cfg.Debug {
-		slog.DebugContext(ctx, "Infer params")
-		slog.DebugContext(ctx, "params", "value", query.Params)
-	}
+	slog.DebugContext(ctx, "Infer params")
+	slog.DebugContext(ctx, "params", "value", query.Params)
 
 	// Execute inference
 	nTok, err := inf.runInfer(ctx, c, query)

@@ -46,16 +46,13 @@ func getCfg() *conf.Cfg {
 	garcon.SetVersionFlag()
 	flag.Parse()
 
-	cfg := conf.Cfg{
-		Verbose: !*quiet,
-		Debug:   *debug,
-	}
+	var cfg conf.Cfg
 
-	cfg.RefreshLogLevel()
+	cfg.RefreshLogLevel(!*quiet, *debug)
 
 	// generate "goinfer.yml"
 	if *genGiCfg {
-		err := cfg.WriteMainCfg(giCfg, *noAPIKey)
+		err := cfg.WriteMainCfg(giCfg, *debug, *noAPIKey)
 		if err != nil {
 			slog.Error("Cannot create main config", "file", giCfg, "error", err)
 			os.Exit(1)
@@ -72,7 +69,7 @@ func getCfg() *conf.Cfg {
 	// successfully generated "goinfer.yml"
 	if *genGiCfg {
 		slog.Info("Generated main", "config", giCfg)
-		if cfg.Verbose {
+		if !*quiet {
 			cfg.Print()
 		}
 		os.Exit(0)
@@ -85,7 +82,7 @@ func getCfg() *conf.Cfg {
 			slog.Error("Cannot write", "file", "template.jinja", "error", err)
 			os.Exit(1)
 		}
-		err = cfg.WriteProxyCfg(pxCfg)
+		err = cfg.WriteProxyCfg(pxCfg, !*quiet, *debug)
 		if err != nil {
 			slog.Error("Cannot create proxy config", "file", pxCfg, "error", err)
 			os.Exit(1)
@@ -102,20 +99,20 @@ func getCfg() *conf.Cfg {
 	// successfully generated "llama-swap.yml"
 	if *genPxCfg {
 		slog.Info("Generated proxy config", "file", pxCfg, "models", len(cfg.Proxy.Models))
-		if cfg.Verbose {
+		if !*quiet {
 			cfg.Print()
 		}
 		os.Exit(0)
 	}
 
 	// command line precedes config file
-	cfg.RefreshLogLevel()
+	cfg.RefreshLogLevel(!*quiet, *debug)
 
 	if *noAPIKey {
 		cfg.Server.APIKeys = nil
 	}
 
-	if cfg.Debug {
+	if *debug {
 		cfg.Print()
 	}
 
@@ -139,10 +136,8 @@ func startServers(cfg *conf.Cfg) {
 	startEchoServers(ctx, cfg, &grp)
 
 	// prints a startup message when all servers are running.
-	if cfg.Verbose {
-		slog.Info("-----------------------------")
-		slog.Info("All HTTP servers started. Press CTRL+C to stop.")
-	}
+	slog.Info("-----------------------------")
+	slog.Info("All HTTP servers started. Press CTRL+C to stop.")
 
 	// Wait for all servers to complete
 	err := grp.Wait()
@@ -174,12 +169,10 @@ func startEchoServers(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group) {
 		e := inf.NewEcho(cfg, addr, enableWebUI, enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint)
 		if e != nil {
 			grp.Go(func() error {
-				if cfg.Verbose {
-					slog.InfoContext(ctx, "start Echo", "url", url(addr), "origins", cfg.Server.Origins,
-						"webui", enableWebUI, "models", enableModelsEndpoint,
-						"goinfer", enableGoinferEndpoint, "openai", enableOpenAPIEndpoint)
-				}
-				return startEcho(ctx, cfg, e, addr)
+				slog.InfoContext(ctx, "start Echo", "url", url(addr), "origins", cfg.Server.Origins,
+					"webui", enableWebUI, "models", enableModelsEndpoint,
+					"goinfer", enableGoinferEndpoint, "openai", enableOpenAPIEndpoint)
+				return startEcho(ctx, e, addr)
 			})
 		}
 	}
@@ -206,16 +199,14 @@ func startProxyServer(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group) {
 		}
 
 		grp.Go(func() error {
-			if cfg.Verbose {
-				slog.InfoContext(ctx, "start Gin (llama-swap proxy)", "url", url(proxyServer.Addr))
-			}
-			return startProxy(ctx, cfg, proxyServer, proxyHandler)
+			slog.DebugContext(ctx, "start Gin (llama-swap proxy)", "url", url(proxyServer.Addr))
+			return startProxy(ctx, proxyServer, proxyHandler)
 		})
 	}
 }
 
 // startEcho starts a HTTP server with graceful shutdown handling.
-func startEcho(ctx context.Context, cfg *conf.Cfg, e *echo.Echo, addr string) error {
+func startEcho(ctx context.Context, e *echo.Echo, addr string) error {
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- e.Start(addr)
@@ -225,12 +216,12 @@ func startEcho(ctx context.Context, cfg *conf.Cfg, e *echo.Echo, addr string) er
 	case err := <-errCh:
 		return err
 	case <-ctx.Done():
-		return stopEcho(ctx, cfg, e, addr)
+		return stopEcho(ctx, e, addr)
 	}
 }
 
 // startProxy starts a llama-swap proxy server with graceful shutdown handling.
-func startProxy(ctx context.Context, cfg *conf.Cfg, proxyServer *http.Server, proxyHandler http.Handler) error {
+func startProxy(ctx context.Context, proxyServer *http.Server, proxyHandler http.Handler) error {
 	err := make(chan error, 1)
 	go func() {
 		err <- proxyServer.ListenAndServe()
@@ -240,15 +231,13 @@ func startProxy(ctx context.Context, cfg *conf.Cfg, proxyServer *http.Server, pr
 	case er := <-err:
 		return er
 	case <-ctx.Done():
-		return stopProxy(ctx, cfg, proxyServer, proxyHandler)
+		return stopProxy(ctx, proxyServer, proxyHandler)
 	}
 }
 
 // stopEcho performs graceful shutdown of an Echo server.
-func stopEcho(ctx context.Context, cfg *conf.Cfg, e *echo.Echo, addr string) error {
-	if cfg.Verbose {
-		slog.InfoContext(ctx, "Shutting down Echo", "url", url(addr))
-	}
+func stopEcho(ctx context.Context, e *echo.Echo, addr string) error {
+	slog.InfoContext(ctx, "Shutting down Echo", "url", url(addr))
 
 	err := e.Shutdown(ctx)
 	if err != nil {
@@ -256,17 +245,13 @@ func stopEcho(ctx context.Context, cfg *conf.Cfg, e *echo.Echo, addr string) err
 		return err
 	}
 
-	if cfg.Verbose {
-		slog.InfoContext(ctx, "Echo stopped gracefully", "url", url(addr))
-	}
+	slog.InfoContext(ctx, "Echo stopped gracefully", "url", url(addr))
 	return nil
 }
 
 // stopProxy performs graceful shutdown of a llama-swap proxy server.
-func stopProxy(ctx context.Context, cfg *conf.Cfg, proxyServer *http.Server, proxyHandler http.Handler) error {
-	if cfg.Verbose {
-		slog.InfoContext(ctx, "Shutting down Proxy (Gin)", "url", url(proxyServer.Addr))
-	}
+func stopProxy(ctx context.Context, proxyServer *http.Server, proxyHandler http.Handler) error {
+	slog.InfoContext(ctx, "Shutting down Proxy (Gin)", "url", url(proxyServer.Addr))
 
 	// Check if proxyHandler has a Shutdown method
 	if shutdownHandler, ok := proxyHandler.(interface{ Shutdown() }); ok {
@@ -279,9 +264,7 @@ func stopProxy(ctx context.Context, cfg *conf.Cfg, proxyServer *http.Server, pro
 		return err
 	}
 
-	if cfg.Verbose {
-		slog.InfoContext(ctx, "Proxy stopped gracefully", "url", url(proxyServer.Addr))
-	}
+	slog.InfoContext(ctx, "Proxy stopped gracefully", "url", url(proxyServer.Addr))
 	return nil
 }
 
