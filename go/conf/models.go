@@ -186,28 +186,43 @@ func validateFile(path string) error {
 	// Check if the file exists
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		slog.Error("Model file does not exist", "file", path)
+		slog.Warn("Model file does not exist", "path", path)
 		return err
 	}
 
 	// Check if the file is readable
 	file, err := os.Open(path)
 	if err != nil {
-		slog.Error("Model file is not readable", "file", path)
+		slog.Warn("Model file is not readable", "path", path)
 		return err
 	}
 
 	err = file.Close()
 	if err != nil {
-		slog.Error("Model file fails closing", "file", path)
+		slog.Warn("Model file fails closing", "path", path)
 		return err
 	}
 
 	// is empty?
 	if info.Size() < 1000 {
-		slog.Error("Model file is empty (or too small)", "file", path)
+		slog.Warn("Model file is empty (or too small)", "path", path)
 		return gie.ErrConfigValidation
 	}
 
-	return nil
+	// Huge GGUF are spilt into smaller files ending with -00001-of-00003.gguf
+	// Keep only the first one, and ignore the others: -00002-of-00003.gguf
+	pos := strings.LastIndex(path, "-of-")
+	const first = "00001"
+	if pos < len(first) {
+		return nil // OK
+	}
+
+	if path[pos-len(first):pos] != first {
+		slog.Debug("KO Model file is part of a series, but only the first one is referenced", "path", path)
+		return gie.Wrap(nil, gie.TypeConfiguration, "MODEL_IS_SERIES_BUT_NOT_THE_FIRST",
+			"Model file is part of a series, but only the first one is referenced, file="+path)
+	}
+
+	slog.Debug("OK Model file is the first of a series", "path", path)
+	return nil // OK
 }
