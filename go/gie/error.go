@@ -49,7 +49,7 @@ var (
 	ErrAPIKeyMissing      = newGIE(TypeConfiguration, "API_KEY_MISSING", "API key is missing")
 	ErrInvalidAPIKey      = newGIE(TypeConfiguration, "INVALID_API_KEY", "invalid API key format")
 	ErrModelFilesNotFound = newGIE(TypeConfiguration, "MODEL_FILES_NOT_FOUND", "no model files found")
-	ErrProxyConfigFailed  = newGIE(TypeConfiguration, "PROXY_CONFIG_FAILED", "failed to configure proxy")
+	ErrSwapConfigFailed   = newGIE(TypeConfiguration, "SWAP_CONFIG_FAILED", "failed to configure proxy")
 
 	// Inference errors.
 	ErrInferRunning    = newGIE(TypeInference, "INFERENCE_RUNNING", "infer already running")
@@ -63,7 +63,7 @@ var (
 	// Server errors.
 	ErrServerStart    = newGIE(TypeServer, "SERVER_START_FAILED", "failed to start server")
 	ErrServerShutdown = newGIE(TypeServer, "SERVER_SHUTDOWN_FAILED", "failed to shutdown server")
-	ErrProxyShutdown  = newGIE(TypeServer, "PROXY_SHUTDOWN_FAILED", "failed to shutdown proxy")
+	ErrSwapShutdown   = newGIE(TypeServer, "SWAP_SHUTDOWN_FAILED", "failed to shutdown proxy")
 
 	// Timeout errors.
 	ErrReqTimeout    = newGIE(TypeTimeout, "REQUEST_TIMEOUT", "request timeout")

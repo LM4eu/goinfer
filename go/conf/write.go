@@ -18,7 +18,7 @@ import (
 
 // WriteMainCfg populates the configuration with defaults, applies environment variables,
 // writes the resulting configuration to the given file, and mutates the receiver.
-func (cfg *Cfg) WriteMainCfg(giCfg string, debug, noAPIKey bool) error {
+func (cfg *Cfg) WriteMainCfg(mainCfg string, debug, noAPIKey bool) error {
 	cfg.Llama = defaultGoInferCfg.Llama
 	cfg.ModelsDir = defaultGoInferCfg.ModelsDir
 	cfg.Server = defaultGoInferCfg.Server
@@ -32,7 +32,7 @@ func (cfg *Cfg) WriteMainCfg(giCfg string, debug, noAPIKey bool) error {
 		return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_MARSHAL", "failed to write config file")
 	}
 
-	err = writeWithHeader(giCfg, "# Configuration of https://github.com/LM4eu/goinfer", yml)
+	err = writeWithHeader(mainCfg, "# Configuration of https://github.com/LM4eu/goinfer", yml)
 	if err != nil {
 		return err
 	}
@@ -40,20 +40,20 @@ func (cfg *Cfg) WriteMainCfg(giCfg string, debug, noAPIKey bool) error {
 	return cfg.validate(noAPIKey)
 }
 
-// WriteProxyCfg generates the llama-swap-proxy configuration.
-func (cfg *Cfg) WriteProxyCfg(pxCfg string, verbose, debug bool) error {
+// WriteSwapCfg generates the llama-swap configuration.
+func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	switch {
 	case debug:
-		cfg.Proxy.LogLevel = "debug"
+		cfg.Swap.LogLevel = "debug"
 	case verbose:
-		cfg.Proxy.LogLevel = "info"
+		cfg.Swap.LogLevel = "info"
 	default:
-		cfg.Proxy.LogLevel = "warn"
+		cfg.Swap.LogLevel = "warn"
 	}
 
-	cfg.Proxy.StartPort = 5800         // first ${PORT} incremented for each model
-	cfg.Proxy.HealthCheckTimeout = 120 // seconds to wait for a model to become ready
-	cfg.Proxy.MetricsMaxInMemory = 500 // maximum number of metrics to keep in memory
+	cfg.Swap.StartPort = 5800         // first ${PORT} incremented for each model
+	cfg.Swap.HealthCheckTimeout = 120 // seconds to wait for a model to become ready
+	cfg.Swap.MetricsMaxInMemory = 500 // maximum number of metrics to keep in memory
 
 	common, ok := cfg.Llama.Args["common"]
 	if !ok {
@@ -67,7 +67,7 @@ func (cfg *Cfg) WriteProxyCfg(pxCfg string, verbose, debug bool) error {
 
 	cmd := cfg.Llama.Exe + " --port ${PORT} " + common
 
-	cfg.Proxy.Macros = map[string]string{
+	cfg.Swap.Macros = map[string]string{
 		"cmd-openai":  cmd,
 		"cmd-goinfer": cmd + " " + goinfer,
 	}
@@ -77,8 +77,8 @@ func (cfg *Cfg) WriteProxyCfg(pxCfg string, verbose, debug bool) error {
 		return err
 	}
 
-	if cfg.Proxy.Models == nil {
-		cfg.Proxy.Models = make(map[string]proxy.ModelConfig, 2*len(modelFiles))
+	if cfg.Swap.Models == nil {
+		cfg.Swap.Models = make(map[string]proxy.ModelConfig, 2*len(modelFiles))
 	}
 
 	for _, path := range modelFiles {
@@ -87,12 +87,12 @@ func (cfg *Cfg) WriteProxyCfg(pxCfg string, verbose, debug bool) error {
 		cfg.setModelSettings(path, name, flags, true)  // Goinfer
 	}
 
-	yml, er := yaml.Marshal(&cfg.Proxy)
+	yml, er := yaml.Marshal(&cfg.Swap)
 	if er != nil {
-		return gie.Wrap(er, gie.TypeConfiguration, "CONFIG_MARSHAL_FAILED", "failed to marshal the llama-swap-proxy config")
+		return gie.Wrap(er, gie.TypeConfiguration, "CONFIG_MARSHAL_FAILED", "failed to marshal the llama-swap config")
 	}
 
-	err = writeWithHeader(pxCfg, "# Doc: https://github.com/mostlygeek/llama-swap/wiki/Configuration", yml)
+	err = writeWithHeader(swapCfg, "# Doc: https://github.com/mostlygeek/llama-swap/wiki/Configuration", yml)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (cfg *Cfg) WriteProxyCfg(pxCfg string, verbose, debug bool) error {
 	return nil
 }
 
-// Set the settings of a model within the llama-swap-proxy configuration.
+// Set the settings of a model within the llama-swap configuration.
 // For /goinfer API, hide the model + prefix the with GI_.
 func (cfg *Cfg) setModelSettings(path, name, flags string, goinfer bool) {
 	macro := "${cmd-openai}"
@@ -126,12 +126,12 @@ func (cfg *Cfg) setModelSettings(path, name, flags string, goinfer bool) {
 		modelName = "GI_" + name
 	}
 
-	_, ok := cfg.Proxy.Models[modelName]
+	_, ok := cfg.Swap.Models[modelName]
 	if ok {
 		slog.Debug("Overwrite config", "model", modelName)
 	}
 
-	cfg.Proxy.Models[modelName] = modelCfg
+	cfg.Swap.Models[modelName] = modelCfg
 }
 
 func (cfg *Cfg) setAPIKeys(debug, noAPIKey bool) {

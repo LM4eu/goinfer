@@ -14,8 +14,8 @@ import (
 )
 
 // ReadMainCfg the configuration file, then apply the env vars and finally verify the settings.
-func (cfg *Cfg) ReadMainCfg(giCfg string, noAPIKey bool) error {
-	err := cfg.load(giCfg)
+func (cfg *Cfg) ReadMainCfg(mainCfg string, noAPIKey bool) error {
+	err := cfg.load(mainCfg)
 	if err != nil {
 		return err
 	}
@@ -37,13 +37,13 @@ func (cfg *Cfg) ReadMainCfg(giCfg string, noAPIKey bool) error {
 }
 
 // load the configuration file (if filename not empty).
-func (cfg *Cfg) load(giCfg string) error {
-	if giCfg == "" {
+func (cfg *Cfg) load(mainCfg string) error {
+	if mainCfg == "" {
 		return nil
 	}
-	yml, err := os.ReadFile(filepath.Clean(giCfg))
+	yml, err := os.ReadFile(filepath.Clean(mainCfg))
 	if err != nil {
-		slog.Error("Failed to read", "file", giCfg)
+		slog.Error("Failed to read", "file", mainCfg)
 		return gie.Wrap(err, gie.TypeConfiguration, "", "")
 	}
 

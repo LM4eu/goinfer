@@ -39,8 +39,8 @@ func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
 		all[name] = ModelInfo{flags, path, e}
 	}
 
-	for name := range cfg.Proxy.Models {
-		if len(name) > 3 && name[:3] == "GI_" && cfg.Proxy.Models[name].Unlisted {
+	for name := range cfg.Swap.Models {
+		if len(name) > 3 && name[:3] == "GI_" && cfg.Swap.Models[name].Unlisted {
 			continue // do not report models for /goinfer endpoint
 		}
 
@@ -48,7 +48,7 @@ func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
 		if ok {
 			info.Error = "" // OK: model is both present in FS and configured in llama-swap.yml
 		} else {
-			cmd := strings.SplitN(cfg.Proxy.Models[name].Cmd, "--model", 2)
+			cmd := strings.SplitN(cfg.Swap.Models[name].Cmd, "--model", 2)
 			if len(cmd) > 0 {
 				info.Flags = cmd[0]
 			}
@@ -144,20 +144,20 @@ func (cfg *Cfg) countModels() int {
 }
 
 func (cfg *Cfg) validateModelFiles() error {
-	if len(cfg.Proxy.Models) == 0 {
+	if len(cfg.Swap.Models) == 0 {
 		n := cfg.countModels()
 		if n == 0 {
 			slog.Error("No *.gguf files found", "dir", cfg.ModelsDir)
 			return gie.ErrConfigValidation
 		}
 
-		slog.Warn("No model configured => Use flag -gen-px-cfg to fill the config with", "files", n)
+		slog.Warn("No model configured => Use flag -gen-swap-cfg to fill the config with", "models", n)
 		return nil
 	}
 
-	for i := range cfg.Proxy.Models {
+	for i := range cfg.Swap.Models {
 		var previous string
-		for arg := range strings.SplitSeq(cfg.Proxy.Models[i].Cmd, " ") {
+		for arg := range strings.SplitSeq(cfg.Swap.Models[i].Cmd, " ") {
 			if previous == "-m" || previous == "--model" {
 				err := validateFile(arg)
 				if err != nil {

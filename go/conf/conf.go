@@ -17,10 +17,10 @@ import (
 
 type (
 	Cfg struct {
-		Server    ServerCfg    `json:"server"         yaml:"server"`
-		Llama     LlamaCfg     `json:"llama"          yaml:"llama"`
-		ModelsDir string       `json:"models_dir"     yaml:"models_dir"`
-		Proxy     proxy.Config `json:"proxy,omitzero" yaml:"proxy,omitempty"`
+		Server    ServerCfg    `json:"server"        yaml:"server"`
+		Llama     LlamaCfg     `json:"llama"         yaml:"llama"`
+		ModelsDir string       `json:"models_dir"    yaml:"models_dir"`
+		Swap      proxy.Config `json:"swap,omitzero" yaml:"swap,omitempty"`
 	}
 
 	ServerCfg struct {
@@ -53,7 +53,7 @@ var defaultGoInferCfg = Cfg{
 		Listen: map[string]string{
 			":5143": "webui,models",
 			":2222": "openai,goinfer",
-			":5555": "llama-swap proxy",
+			":5555": "llama-swap",
 		},
 		APIKeys: map[string]string{},
 		Host:    "",
@@ -71,15 +71,15 @@ var defaultGoInferCfg = Cfg{
 func (cfg *Cfg) RefreshLogLevel(verbose, debug bool) {
 	switch {
 	case debug:
-		cfg.Proxy.LogLevel = "debug"
+		cfg.Swap.LogLevel = "debug"
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 	case verbose:
-		cfg.Proxy.LogLevel = "info"
+		cfg.Swap.LogLevel = "info"
 		slog.SetLogLoggerLevel(slog.LevelInfo)
-	case cfg.Proxy.LogLevel == "error":
+	case cfg.Swap.LogLevel == "error":
 		slog.SetLogLoggerLevel(slog.LevelError)
 	default:
-		cfg.Proxy.LogLevel = "warn"
+		cfg.Swap.LogLevel = "warn"
 		slog.SetLogLoggerLevel(slog.LevelWarn)
 	}
 }

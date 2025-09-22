@@ -26,8 +26,8 @@ import (
 )
 
 const (
-	giCfg = "goinfer.yml"
-	pxCfg = "llama-swap.yml"
+	mainCfg = "goinfer.yml"
+	swapCfg = "llama-swap.yml"
 )
 
 func main() {
@@ -39,10 +39,10 @@ func main() {
 // Depending on the flags, this function also creates config files and exits.
 func getCfg() *conf.Cfg {
 	quiet := flag.Bool("q", false, "quiet mode (disable verbose output)")
-	debug := flag.Bool("debug", false, "debug mode")
-	genGiCfg := flag.Bool("gen-gi-cfg", false, "generate "+giCfg+" (main config file)")
-	genPxCfg := flag.Bool("gen-px-cfg", false, "generate "+pxCfg+" (proxy config file)")
-	noAPIKey := flag.Bool("no-api-key", false, "disable API key check")
+	debug := flag.Bool("debug", false, "debug mode (set debug ABI keys with -gen-main-cfg)")
+	noAPIKey := flag.Bool("no-api-key", false, "disable API key check/generation (with -gen-main-cfg)")
+	genMainCfg := flag.Bool("gen-main-cfg", false, "generate "+mainCfg+" (Main config file)")
+	genSwapCfg := flag.Bool("gen-swap-cfg", false, "generate "+swapCfg+" (Swap config file)")
 	garcon.SetVersionFlag()
 	flag.Parse()
 
@@ -51,24 +51,24 @@ func getCfg() *conf.Cfg {
 	cfg.RefreshLogLevel(!*quiet, *debug)
 
 	// generate "goinfer.yml"
-	if *genGiCfg {
-		err := cfg.WriteMainCfg(giCfg, *debug, *noAPIKey)
+	if *genMainCfg {
+		err := cfg.WriteMainCfg(mainCfg, *debug, *noAPIKey)
 		if err != nil {
-			slog.Error("Cannot create main config", "file", giCfg, "error", err)
+			slog.Error("Cannot create main config", "file", mainCfg, "error", err)
 			os.Exit(1)
 		}
 	}
 
 	// verify "goinfer.yml" can be successfully loaded
-	err := cfg.ReadMainCfg(giCfg, *noAPIKey)
+	err := cfg.ReadMainCfg(mainCfg, *noAPIKey)
 	if err != nil {
-		slog.Error("Cannot load main config", "file", giCfg, "error", err)
+		slog.Error("Cannot load main config", "file", mainCfg, "error", err)
 		os.Exit(1)
 	}
 
 	// successfully generated "goinfer.yml"
-	if *genGiCfg {
-		slog.Info("Generated main", "config", giCfg)
+	if *genMainCfg {
+		slog.Info("Generated main", "config", mainCfg)
 		if !*quiet {
 			cfg.Print()
 		}
@@ -76,29 +76,29 @@ func getCfg() *conf.Cfg {
 	}
 
 	// generate "llama-swap.yml"
-	if *genPxCfg {
+	if *genSwapCfg {
 		err = os.WriteFile("template.jinja", []byte("{{- messages[0].content -}}"), 0o600)
 		if err != nil {
 			slog.Error("Cannot write", "file", "template.jinja", "error", err)
 			os.Exit(1)
 		}
-		err = cfg.WriteProxyCfg(pxCfg, !*quiet, *debug)
+		err = cfg.WriteSwapCfg(swapCfg, !*quiet, *debug)
 		if err != nil {
-			slog.Error("Cannot create proxy config", "file", pxCfg, "error", err)
+			slog.Error("Cannot create Swap config", "file", swapCfg, "error", err)
 			os.Exit(1)
 		}
 	}
 
 	// verify "llama-swap.yml" can be successfully loaded
-	cfg.Proxy, err = proxy.LoadConfig(pxCfg)
+	cfg.Swap, err = proxy.LoadConfig(swapCfg)
 	if err != nil {
-		slog.Error("Cannot load proxy config", "file", pxCfg, "error", err)
+		slog.Error("Cannot load Swap config", "file", swapCfg, "error", err)
 		os.Exit(1)
 	}
 
 	// successfully generated "llama-swap.yml"
-	if *genPxCfg {
-		slog.Info("Generated proxy config", "file", pxCfg, "models", len(cfg.Proxy.Models))
+	if *genSwapCfg {
+		slog.Info("Generated Swap config", "file", swapCfg, "models", len(cfg.Swap.Models))
 		if *debug {
 			cfg.Print()
 		}
@@ -131,8 +131,8 @@ func startServers(cfg *conf.Cfg) {
 	// Use errgroup to coordinate the servers shutdown
 	var grp errgroup.Group
 
-	// Start proxy (Gin) and Echo servers (if configured)
-	startProxyServer(ctx, cfg, &grp)
+	// Start Swap (Gin) and Echo servers (if configured)
+	startSwapServer(ctx, cfg, &grp)
 	startEchoServers(ctx, cfg, &grp)
 
 	// prints a startup message when all servers are running.
@@ -153,7 +153,7 @@ func startEchoServers(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group) {
 	inf := &infer.Infer{Cfg: cfg}
 	for addr, services := range cfg.Server.Listen {
 		if strings.Contains(services, "swap") {
-			continue // reserved for llama-swap proxy
+			continue // reserved for llama-swap
 		}
 
 		enableWebUI := strings.Contains(services, "webui")
@@ -185,22 +185,22 @@ func url(addr string) string {
 	return "http://" + addr
 }
 
-// startProxyServer starts the llama-swap proxy if configured in the config.
-func startProxyServer(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group) {
+// startSwapServer starts the llama-swap if configured in the config.
+func startSwapServer(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group) {
 	for addr, services := range cfg.Server.Listen {
 		if !strings.Contains(services, "swap") {
 			continue
 		}
 
-		proxyHandler := proxy.New(cfg.Proxy)
-		proxyServer := &http.Server{
+		swapHandler := proxy.New(cfg.Swap)
+		swapServer := &http.Server{
 			Addr:    addr,
-			Handler: proxyHandler,
+			Handler: swapHandler,
 		}
 
 		grp.Go(func() error {
-			slog.DebugContext(ctx, "start Gin (llama-swap proxy)", "url", url(proxyServer.Addr))
-			return startProxy(ctx, proxyServer, proxyHandler)
+			slog.DebugContext(ctx, "start Gin (llama-swap)", "url", url(swapServer.Addr))
+			return startSwap(ctx, swapServer, swapHandler)
 		})
 	}
 }
@@ -220,18 +220,18 @@ func startEcho(ctx context.Context, e *echo.Echo, addr string) error {
 	}
 }
 
-// startProxy starts a llama-swap proxy server with graceful shutdown handling.
-func startProxy(ctx context.Context, proxyServer *http.Server, proxyHandler http.Handler) error {
+// startSwap starts a llama-swap server with graceful shutdown handling.
+func startSwap(ctx context.Context, swapServer *http.Server, swapHandler http.Handler) error {
 	err := make(chan error, 1)
 	go func() {
-		err <- proxyServer.ListenAndServe()
+		err <- swapServer.ListenAndServe()
 	}()
 
 	select {
 	case er := <-err:
 		return er
 	case <-ctx.Done():
-		return stopProxy(ctx, proxyServer, proxyHandler)
+		return stopSwap(ctx, swapServer, swapHandler)
 	}
 }
 
@@ -249,22 +249,22 @@ func stopEcho(ctx context.Context, e *echo.Echo, addr string) error {
 	return nil
 }
 
-// stopProxy performs graceful shutdown of a llama-swap proxy server.
-func stopProxy(ctx context.Context, proxyServer *http.Server, proxyHandler http.Handler) error {
-	slog.InfoContext(ctx, "Shutting down Proxy (Gin)", "url", url(proxyServer.Addr))
+// stopSwap performs graceful shutdown of a llama-swap server.
+func stopSwap(ctx context.Context, swapServer *http.Server, swapHandler http.Handler) error {
+	slog.InfoContext(ctx, "Shutting down Swap (Gin)", "url", url(swapServer.Addr))
 
-	// Check if proxyHandler has a Shutdown method
-	if shutdownHandler, ok := proxyHandler.(interface{ Shutdown() }); ok {
+	// check if swapHandler has a Shutdown method
+	if shutdownHandler, ok := swapHandler.(interface{ Shutdown() }); ok {
 		shutdownHandler.Shutdown()
 	}
 
-	err := proxyServer.Shutdown(ctx)
+	err := swapServer.Shutdown(ctx)
 	if err != nil {
-		slog.ErrorContext(ctx, "Proxy shutdown", "error", err)
+		slog.ErrorContext(ctx, "Swap shutdown", "error", err)
 		return err
 	}
 
-	slog.InfoContext(ctx, "Proxy stopped gracefully", "url", url(proxyServer.Addr))
+	slog.InfoContext(ctx, "Swap stopped gracefully", "url", url(swapServer.Addr))
 	return nil
 }
 
