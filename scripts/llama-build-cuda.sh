@@ -1,11 +1,11 @@
 #!/bin/bash
 
-set -xe
-
 command -V cmake  || { echo REQUIRED: install cmake  && exit ; }
 command -V ninja  || { echo REQUIRED: install ninja  && exit ; }
 command -V ccache || { echo REQUIRED: install ccache && exit ; }
 #ommand -V cargo  || { echo REQUIRED: install rustup and run: rustup default stable && exit ; }
+
+set -xe
 
 cd ${0%/*}  # go to the directory of this script
 cd ../../llama.cpp
