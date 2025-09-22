@@ -2,13 +2,11 @@
 
 set -xe
 
-# optional parameter: git tag
-tag=$1
+# optional parameters: repo and git tag
+dir=${1:-${0%/*}../../llama.cpp}
+tag=$2
 
-# go to the directory of this script
-cd ${0%/*}
-
-cd ../../llama.cpp
+cd "$dir"
 
 git fetch
 
