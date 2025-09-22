@@ -82,14 +82,13 @@ Goinfer will listen on the ports defined in the config. Default ports:
 # List the available models
 curl -X GET localhost:5555/v1/ | jq
 
-# Send an inference query
+# Pick up a model and
+# send an inference query
 curl -X POST localhost:5555/v1/chat/completions  \
   -H "Authorization: Bearer $GI_API_KEY_ADMIN"   \
-  -H "Content-Type: application/json"            \
   -d '{
         "model": "aya-expanse_8b_Q4_K_M",
-        "messages": [{"role":"user","content":"Hello, world!"}],
-        "stream": false
+        "messages": [{"role":"user","content":"Hello AI"}]
       }'
 ```
 
@@ -270,14 +269,13 @@ The client will connect, register its available models and start listening for i
 # List the available models
 curl -X GET https://my-goinfer-server.com/v1/models
 
-# Send an inference query
+# Pick up a model and
+# send an inference query
 curl -X POST https://my-goinfer-server.com/v1/chat/completions  \
   -H "Authorization: Bearer $GI_API_KEY_ADMIN"                  \
-  -H "Content-Type: application/json"                           \
   -d '{
         "model":"Qwen2.5-1.5B-Instruct-Q4_K_M",
-        "messages":[{"role":"user","content":"Say hello in French"}],
-        "stream":false
+        "messages":[{"role":"user","content":"Say hello in French"}]
       }'
 ```
 
