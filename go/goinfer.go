@@ -99,7 +99,7 @@ func getCfg() *conf.Cfg {
 	// successfully generated "llama-swap.yml"
 	if *genPxCfg {
 		slog.Info("Generated proxy config", "file", pxCfg, "models", len(cfg.Proxy.Models))
-		if !*quiet {
+		if *debug {
 			cfg.Print()
 		}
 		os.Exit(0)
