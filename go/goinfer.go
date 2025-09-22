@@ -46,16 +46,14 @@ func getCfg() *conf.Cfg {
 	garcon.SetVersionFlag()
 	flag.Parse()
 
-	var cfg conf.Cfg
-
-	if *debug {
-		slog.Debug("Debug mode is on")
-		cfg.Debug = true
+	cfg := conf.Cfg{
+		Verbose: !*quiet,
+		Debug:   *debug,
 	}
 
-	cfg.Verbose = !*quiet
+	cfg.RefreshLogLevel()
 
-	// Generate config
+	// generate "goinfer.yml"
 	if *genGiCfg {
 		err := cfg.WriteMainCfg(giCfg, *noAPIKey)
 		if err != nil {
@@ -64,13 +62,14 @@ func getCfg() *conf.Cfg {
 		}
 	}
 
-	// Verify we can upload the config
+	// verify "goinfer.yml" can be successfully loaded
 	err := cfg.ReadMainCfg(giCfg, *noAPIKey)
 	if err != nil {
 		slog.Error("Cannot load main config", "file", giCfg, "error", err)
 		os.Exit(1)
 	}
 
+	// successfully generated "goinfer.yml"
 	if *genGiCfg {
 		slog.Info("Generated main", "config", giCfg)
 		if cfg.Verbose {
@@ -79,6 +78,7 @@ func getCfg() *conf.Cfg {
 		os.Exit(0)
 	}
 
+	// generate "llama-swap.yml"
 	if *genPxCfg {
 		err = os.WriteFile("template.jinja", []byte("{{- messages[0].content -}}"), 0o600)
 		if err != nil {
@@ -92,13 +92,14 @@ func getCfg() *conf.Cfg {
 		}
 	}
 
-	// Load the llama-swap.yml config
+	// verify "llama-swap.yml" can be successfully loaded
 	cfg.Proxy, err = proxy.LoadConfig(pxCfg)
 	if err != nil {
 		slog.Error("Cannot load proxy config", "file", pxCfg, "error", err)
 		os.Exit(1)
 	}
 
+	// successfully generated "llama-swap.yml"
 	if *genPxCfg {
 		slog.Info("Generated proxy config", "file", pxCfg, "models", len(cfg.Proxy.Models))
 		if cfg.Verbose {
@@ -108,16 +109,7 @@ func getCfg() *conf.Cfg {
 	}
 
 	// command line precedes config file
-	switch {
-	case cfg.Debug:
-		cfg.Proxy.LogLevel = "debug"
-	case cfg.Verbose:
-		cfg.Proxy.LogLevel = "info"
-	case cfg.Proxy.LogLevel == "error":
-		cfg.Proxy.LogLevel = "error" // unchanged
-	default:
-		cfg.Proxy.LogLevel = "warn"
-	}
+	cfg.RefreshLogLevel()
 
 	if *noAPIKey {
 		cfg.Server.APIKeys = nil

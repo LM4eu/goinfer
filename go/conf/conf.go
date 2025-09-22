@@ -66,6 +66,22 @@ var defaultGoInferCfg = Cfg{
 	},
 }
 
+func (cfg *Cfg) RefreshLogLevel() {
+	switch {
+	case cfg.Debug:
+		cfg.Proxy.LogLevel = "debug"
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+	case cfg.Verbose:
+		cfg.Proxy.LogLevel = "info"
+		slog.SetLogLoggerLevel(slog.LevelInfo)
+	case cfg.Proxy.LogLevel == "error":
+		slog.SetLogLoggerLevel(slog.LevelError)
+	default:
+		cfg.Proxy.LogLevel = "warn"
+		slog.SetLogLoggerLevel(slog.LevelWarn)
+	}
+}
+
 // Print configuration.
 func (cfg *Cfg) Print() {
 	slog.Info("-----------------------------")
