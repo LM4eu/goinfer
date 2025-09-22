@@ -82,7 +82,7 @@ func (cfg *Cfg) WriteProxyCfg(pxCfg string) error {
 		"cmd-goinfer": cmd + " " + goinfer,
 	}
 
-	modelFiles, err := cfg.searchAll()
+	modelFiles, err := cfg.search()
 	if err != nil {
 		return err
 	}

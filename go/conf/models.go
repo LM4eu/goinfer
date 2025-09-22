@@ -24,7 +24,7 @@ type ModelInfo struct {
 // found under the directories listed in cfg.ModelsDir (colon-separated).
 // It walks each directory recursively, aggregates matching files, and returns any error encountered.
 func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
-	modelFiles, err := cfg.searchAll()
+	modelFiles, err := cfg.search()
 	if err != nil {
 		if cfg.Debug {
 			slog.Info("Search models", "err", err)
@@ -65,14 +65,14 @@ func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
 	return all, err
 }
 
-// searchAll returns a slice of absolute file paths for all *.gguf model files
+// search returns a slice of absolute file paths for all *.gguf model files
 // found under the directories listed in cfg.ModelsDir (colon-separated).
 // It walks each directory recursively, aggregates matching files, and returns any error encountered.
-func (cfg *Cfg) searchAll() ([]string, error) {
+func (cfg *Cfg) search() ([]string, error) {
 	modelFiles := make([]string, 0, len(cfg.ModelsDir)/2)
 
 	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
-		err := cfg.search(&modelFiles, strings.TrimSpace(root))
+		err := cfg.append(&modelFiles, strings.TrimSpace(root))
 		if err != nil {
 			if cfg.Verbose {
 				slog.Info("Searching model files", "root", root)
@@ -84,7 +84,7 @@ func (cfg *Cfg) searchAll() ([]string, error) {
 	return modelFiles, nil
 }
 
-func (cfg *Cfg) search(files *[]string, root string) error {
+func (cfg *Cfg) append(files *[]string, root string) error {
 	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return gie.Wrap(err, gie.TypeNotFound, "filepath.WalkDir", "path="+d.Name())
@@ -142,7 +142,7 @@ func extractFlags(path string) (string, string) {
 }
 
 func (cfg *Cfg) countModels() int {
-	modelFiles, err := cfg.searchAll()
+	modelFiles, err := cfg.search()
 	if err != nil {
 		return 0
 	}
