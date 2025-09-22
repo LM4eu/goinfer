@@ -164,7 +164,7 @@ func (cfg *Cfg) validateModelFiles() error {
 	for i := range cfg.Proxy.Models {
 		var previous string
 		for arg := range strings.SplitSeq(cfg.Proxy.Models[i].Cmd, " ") {
-			if previous == "-m" {
+			if previous == "-m" || previous == "--model" {
 				err := validateFile(arg)
 				if err != nil {
 					return err
