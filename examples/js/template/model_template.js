@@ -4,7 +4,7 @@ import { PromptTemplate } from "modprompt";
 // in this example we use the model:
 // https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q4_K_M.gguf
 const model = "mistral-7b-instruct-v0.1.Q4_K_M.gguf"
-const apiKey = "c0ffee15c00150c0ffee15600dbadc0de15d3ad101cafe61f760cafe7357c0d3";
+const apiKey = "C0ffee15C00150C0ffee15900dBadC0de15Dead101Cafe91f790Cafe7e57C0de";
 const prompt = "What is the capital of Kenya?";
 
 async function readState() {

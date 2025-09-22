@@ -6,7 +6,7 @@ import { PromptTemplate } from "modprompt";
 // and the predefined task uses this one:
 // https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q4_K_M.gguf
 const model = "tinyllama-1.1b-chat-v0.3.Q8_0.gguf"
-const apiKey = "c0ffee15c00150c0ffee15600dbadc0de15d3ad101cafe61f760cafe7357c0d3";
+const apiKey = "C0ffee15C00150C0ffee15900dBadC0de15Dead101Cafe91f790Cafe7e57C0de";
 const template = "<|im_start|>system\nYou are a javascript coding assistant<|im_end|>\n<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant ```json";
 
 async function baseQuery(prompt) {

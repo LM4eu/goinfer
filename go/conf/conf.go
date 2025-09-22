@@ -38,8 +38,8 @@ type (
 
 const (
 	// Sentence: Coffee is cool, so coffee is good. Bad code is dead, lol. Cafe gift, go cafe, test code.
-	// Hex code: c0ffee 15 c001  50 c0ffee 15 600d  bad c0de 15 d3ad  101  cafe 61f7  60 cafe, 7357 c0d3.
-	debugAPIKey = "c0ffee15c00150c0ffee15600dbadc0de15d3ad101cafe61f760cafe7357c0d3"
+	// Hex code: C0ffee 15 C001, 50 C0ffee 15 900d. Bad C0de 15 Dead, 101. Cafe 91f7, 90 Cafe, 7e57C0de.
+	debugAPIKey = "C0ffee15C00150C0ffee15900dBadC0de15Dead101Cafe91f790Cafe7e57C0de"
 	unsetAPIKey = "PLEASE ⚠️ Set your private 64-hex-digit API keys (32 bytes) 🚨"
 )
 

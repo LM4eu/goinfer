@@ -5,7 +5,7 @@ import requests
 # in this example we use the model:
 # https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q4_K_M.gguf
 MODEL = "mistral-7b-instruct-v0.1.Q4_K_M.gguf"
-KEY = "c0ffee15c00150c0ffee15600dbadc0de15d3ad101cafe61f760cafe7357c0d3"
+KEY = "C0ffee15C00150C0ffee15900dBadC0de15Dead101Cafe91f790Cafe7e57C0de"
 URL = "https://152334h.github.io/blog/non-determinism-in-gpt-4/"
 TEMPLATE = "<s>[INST] {prompt} [/INST]"
 PROMPT = "summarize this text to the main bullet points:"

@@ -6,7 +6,7 @@
 // wget https://huggingface.co/TheBloke/Nous-Hermes-Llama-2-7B-GGML/resolve/main/nous-hermes-llama-2-7b.ggmlv3.q4_K_M.bin
 const task = "code/json/fix";
 const _prompt = `{a: 1, b: [42,43,],}`;
-const apiKey = "c0ffee15c00150c0ffee15600dbadc0de15d3ad101cafe61f760cafe7357c0d3";
+const apiKey = "C0ffee15C00150C0ffee15900dBadC0de15Dead101Cafe91f790Cafe7e57C0de";
 
 async function main() {
   const response = await fetch(`http://localhost:5143/task/execute`, {
