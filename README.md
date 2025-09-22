@@ -79,6 +79,10 @@ Goinfer will listen on the ports defined in the config. Default ports:
 - `:2222` for the OpenAI‑compatible API
 
 ```sh
+# List the available models
+curl -X GET localhost:2222/v1/models
+
+# Send an inference query
 curl -X POST localhost:2222/v1/chat/completions  \
   -H "Authorization: Bearer $GI_API_KEY_ADMIN"   \
   -H "Content-Type: application/json"            \
@@ -240,6 +244,8 @@ groups:
 
 ## Server / Client mode
 
+⚠️ **Not yet implemented** ⚠️
+
 ### 1. Run the **server** (static IP / DNS)
 
 On a VPS, cloud VM, or any machine with a public address.
@@ -260,10 +266,14 @@ The client will connect, register its available models and start listening for i
 
 ### 3. Test the API
 
-```bash
-curl -X POST https://my-goinfer-server.example.com/v1/chat/completions \
-  -H "Authorization: Bearer <user-api-key>" \
-  -H "Content-Type: application/json" \
+```sh
+# List the available models
+curl -X GET https://my-goinfer-server.com/v1/models
+
+# Send an inference query
+curl -X POST https://my-goinfer-server.com/v1/chat/completions  \
+  -H "Authorization: Bearer $GI_API_KEY_ADMIN"                  \
+  -H "Content-Type: application/json"                           \
   -d '{
         "model":"Qwen2.5-1.5B-Instruct-Q4_K_M",
         "messages":[{"role":"user","content":"Say hello in French"}],
@@ -280,11 +290,22 @@ Service      | Path                   | Method | Description
 models       | `/models`              | GET    | List GGUF files currently present on the file system
 proxy/openai | `/v1/chat/completions` | POST   | OpenAI‑compatible chat endpoint
 proxy        | `/v1/models`           | GET    | List models from configuration
-proxy        | `/v1/*`                | POST   | Classic completion endpoint
+proxy        | `/v1/*`                | POST   | Other OpenAI endpoints
 goinfer      | `/goinfer`             | POST   | Custom inference API
 webui        | `/`                    | GET    | **Infergui**, static assets in `go/infer/dist`
 
-All endpoints require an `Authorization: Bearer <API_KEY>` header. The `admin` key grants full access to the admin routes.
+All endpoints require an `Authorization: Bearer $GI_API_KEY_ADMIN` header.
+The `admin` key grants full access to the admin routes.
+
+The proxy service is based on `llama-swap`.
+Its OpenAI-compatible endpoints are configured by Goinfer to start `llama-server` with two different command line arguments:
+
+1. the classic command line when the requested model is one of `/v1/models`
+2. the extra arguments `--jinja --chat-template-file template.jinja` when the requested model is prefixed with `GI_`
+
+The first one is suitable for most of the use cases such as RooCode.
+
+The second one is a specific for tools like `agent-smith` requiring full inference control (no default Jinja template).
 
 ## Developer info
 
@@ -316,9 +337,7 @@ Any      | Home GPU rig | Access to another home GPU rig that forbids external T
 
 ### High Priority (✅ in progress)
 
-1. Complete integration of `llama‑swap`(e.g.: swap model in RooCode)
-
-2. Specific usage of `llama‑swap` API for `agent-smith` requirements (no default Jinja template). The hidden models for `agent-smith` are prefixed with `GI_`.
+Manage the OpenRouter API key of a AI-powered frontend.
 
 ### Medium Priority
 
