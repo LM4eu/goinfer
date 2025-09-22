@@ -76,18 +76,18 @@ export GI_LLAMA_EXE=/path/to/my/llama-server
 Goinfer will listen on the ports defined in the config. Default ports:
 
 - `:5143` for the Web UI
-- `:2222` for the OpenAI‑compatible API
+- `:5555` for the OpenAI‑compatible API
 
 ```sh
 # List the available models
-curl -X GET localhost:2222/v1/models
+curl -X GET localhost:5555/v1/ | jq
 
 # Send an inference query
-curl -X POST localhost:2222/v1/chat/completions  \
+curl -X POST localhost:5555/v1/chat/completions  \
   -H "Authorization: Bearer $GI_API_KEY_ADMIN"   \
   -H "Content-Type: application/json"            \
   -d '{
-        "model": "default",
+        "model": "aya-expanse_8b_Q4_K_M",
         "messages": [{"role":"user","content":"Hello, world!"}],
         "stream": false
       }'
@@ -157,7 +157,7 @@ server:
     # format:  <address>: <comma‑separated list of enabled services>
     # <address> can be <ip|host>:<port> or simply :<port> when <host> is localhost
     ":5143": webui,models           # UI + model list
-    ":2222": openai,goinfer         # OpenAI‑compatible API + raw goinfer endpoint
+    ":5555": openai,goinfer         # OpenAI‑compatible API + raw goinfer endpoint
     ":5555": llama-swap proxy       # optional llama‑swap proxy
 
 llama:
