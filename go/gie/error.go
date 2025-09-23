@@ -37,25 +37,43 @@ const (
 
 var (
 	// Validation errors.
-	ErrInvalidPrompt  = newGIE(TypeValidation, "INVALID_PROMPT", "prompt must be a string")
+
+	// ErrInvalidPrompt indicates an invalid prompt error.
+	ErrInvalidPrompt = newGIE(TypeValidation, "INVALID_PROMPT", "prompt must be a string")
+	// ErrModelNotLoaded indicates a model not loaded error.
 	ErrModelNotLoaded = newGIE(TypeValidation, "MODEL_NOT_LOADED", "model not loaded")
-	ErrInvalidFormat  = newGIE(TypeValidation, "INVALID_FORMAT", "invalid request format")
-	ErrInvalidParams  = newGIE(TypeValidation, "INVALID_PARAMS", "invalid parameter values")
+	// ErrInvalidFormat indicates an invalid request format error.
+	ErrInvalidFormat = newGIE(TypeValidation, "INVALID_FORMAT", "invalid request format")
+	// ErrInvalidParams indicates invalid parameter values error.
+	ErrInvalidParams = newGIE(TypeValidation, "INVALID_PARAMS", "invalid parameter values")
 
 	// Configuration errors.
+
+	// ErrConfigValidation indicates a configuration validation error.
 	ErrConfigValidation = newGIE(TypeConfiguration, "CONFIG_VALIDATION", "configuration validation failed")
-	ErrAPIKeyMissing    = newGIE(TypeConfiguration, "API_KEY_MISSING", "API key is missing")
-	ErrInvalidAPIKey    = newGIE(TypeConfiguration, "INVALID_API_KEY", "invalid API key format")
+	// ErrAPIKeyMissing indicates a missing API key error.
+	ErrAPIKeyMissing = newGIE(TypeConfiguration, "API_KEY_MISSING", "API key is missing")
+	// ErrInvalidAPIKey indicates an invalid API key format error.
+	ErrInvalidAPIKey = newGIE(TypeConfiguration, "INVALID_API_KEY", "invalid API key format")
 
 	// Inference errors.
-	ErrInferRunning    = newGIE(TypeInference, "INFERENCE_RUNNING", "infer already running")
+
+	// ErrInferRunning indicates an inference already running error.
+	ErrInferRunning = newGIE(TypeInference, "INFERENCE_RUNNING", "infer already running")
+	// ErrInferNotRunning indicates no inference running error.
 	ErrInferNotRunning = newGIE(TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
-	ErrInferFailed     = newGIE(TypeInference, "INFERENCE_FAILED", "infer failed")
-	ErrInferStopped    = newGIE(TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
-	ErrChanClosed      = newGIE(TypeInference, "CHANNEL_CLOSED", "channel closed unexpectedly")
-	ErrClientCanceled  = newGIE(TypeInference, "CLIENT_CANCELED", "request canceled by client")
+	// ErrInferFailed indicates an inference failed error.
+	ErrInferFailed = newGIE(TypeInference, "INFERENCE_FAILED", "infer failed")
+	// ErrInferStopped indicates inference stopped by controller error.
+	ErrInferStopped = newGIE(TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
+	// ErrChanClosed indicates a channel closed unexpectedly error.
+	ErrChanClosed = newGIE(TypeInference, "CHANNEL_CLOSED", "channel closed unexpectedly")
+	// ErrClientCanceled indicates a request canceled by client error.
+	ErrClientCanceled = newGIE(TypeInference, "CLIENT_CANCELED", "request canceled by client")
 
 	// Timeout errors.
+
+	// ErrReqTimeout indicates a request timeout error.
 	ErrReqTimeout = newGIE(TypeTimeout, "REQUEST_TIMEOUT", "request timeout")
 )
 
