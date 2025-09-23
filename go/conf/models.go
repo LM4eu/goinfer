@@ -122,7 +122,7 @@ func nameWithSlash(truncated string) string {
 	// TODO: keep the folder name within the model name
 	name := filepath.Base(truncated)
 
-	countDashes := 0
+	countPos := -1
 
 	for i, char := range name {
 		switch {
@@ -131,11 +131,20 @@ func nameWithSlash(truncated string) string {
 		case unicode.IsLower(char):
 			continue
 		case char == '-':
-			countDashes++
-			if countDashes > 1 {
+			if i < 4 {
 				return name
 			}
+			if countPos > -1 {
+				return name
+			}
+			countPos = i
 		case char == '_':
+			if i < 4 {
+				return name
+			}
+			if i-countPos < 2 {
+				return name
+			}
 			n := []byte(name)
 			n[i] = '/'
 			return string(n)
