@@ -530,7 +530,7 @@ linters:
       ignore-map-index-ok: true # Ignore "ok" variables that hold the bool return value of a map index, Default: false
       ignore-chan-recv-ok: true # Ignore "ok" variables that hold the bool return value of a channel receive, Default: false
       ignore-names: # Ignore these variable names.
-        - e
+        - tt
         - er
       ignore-decls: # Ignore these variable declarations.
         - err error
