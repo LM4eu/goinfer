@@ -5,24 +5,27 @@
 package conf
 
 import (
+	"bytes"
 	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
 
 	"github.com/LM4eu/goinfer/gie"
 )
 
+// ModelInfo is used for the response of the /models endpoint, including:
+// - command‑line flags found of file system
+// - eventual error (if the model is missing or misconfigured).
 type ModelInfo struct {
 	Flags string `json:"flags,omitempty" yaml:"flags,omitempty"`
 	Path  string `json:"path,omitempty"  yaml:"path,omitempty"`
 	Error string `json:"error,omitempty" yaml:"error,omitempty"`
 }
 
-// Search returns a slice of absolute file paths for all *.gguf model files
-// found under the directories listed in cfg.ModelsDir (colon-separated).
-// It walks each directory recursively, aggregates matching files, and returns any error encountered.
+// ListModels returns the model names from the config and from the models_dir.
 func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
 	modelFiles, err := cfg.search()
 	if err != nil {
@@ -31,7 +34,7 @@ func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
 
 	all := make(map[string]ModelInfo, len(modelFiles))
 	for _, path := range modelFiles {
-		name, flags := extractFlags(path)
+		name, flags := getNameAndFlags(path)
 		e := "file present but not configured in llama-swap.yml"
 		if _, ok := all[name]; ok {
 			e = "two files have same model name (must be unique)"
@@ -65,7 +68,8 @@ func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
 
 // search returns a slice of absolute file paths for all *.gguf model files
 // found under the directories listed in cfg.ModelsDir (colon-separated).
-// It walks each directory recursively, aggregates matching files, and returns any error encountered.
+// It walks each directory recursively, aggregates matching files,
+// and returns any error encountered.
 func (cfg *Cfg) search() ([]string, error) {
 	modelFiles := make([]string, 0, len(cfg.ModelsDir)/2)
 
@@ -80,6 +84,8 @@ func (cfg *Cfg) search() ([]string, error) {
 	return modelFiles, nil
 }
 
+// add walks the given root directory and appends any valid *.gguf model file paths to the
+// provided slice. It validates each file using validateFile and logs debug information.
 func add(files *[]string, root string) error {
 	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -105,26 +111,73 @@ func add(files *[]string, root string) error {
 	})
 }
 
-// extractFlags extracts the model name and its flags from a file path.
-// It looks for a pattern starting with "&" and splits the remaining string by "&"
-// to get individual flag components.
-// Each component is then split by "=" to separate key and value,
-// with the key prefixed by "-" to form command-line style flags.
-// Returns the model name and a single string with flags separated by spaces.
-func extractFlags(path string) (string, string) {
-	base := filepath.Base(path)
-	ext := filepath.Ext(base)
-	stem := strings.TrimSuffix(base, ext)
+func getNameAndFlags(path string) (string, string) {
+	truncated, flags := extractFlags(path)
+	name := nameWithSlash(truncated)
+	return name, flags
+}
 
-	pos := strings.Index(stem, "&")
-	if pos < 0 {
-		return stem, ""
+// nameWithSlash converts the first underscore in a model name to a slash.
+func nameWithSlash(truncated string) string {
+	// TODO: keep the folder name within the model name
+	name := filepath.Base(truncated)
+
+	countDashes := 0
+
+	for i, char := range name {
+		switch {
+		case i > 8:
+			return name
+		case unicode.IsLower(char):
+			continue
+		case char == '-':
+			countDashes++
+			if countDashes > 1 {
+				return name
+			}
+		case char == '_':
+			n := []byte(name)
+			n[i] = '/'
+			return string(n)
+		default:
+			return name
+		}
 	}
+	return name
+}
+
+// extractFlags returns the truncated path and the llama-server flags from a file path.
+// It first checks for a companion ".args" file; if present, its contents are used as flags.
+// Otherwise, it parses flags encoded in the filename after an '&' delimiter.
+// Returns the truncated path (without extension) and a space‑separated flag string.
+func extractFlags(path string) (string, string) {
+	truncated := strings.TrimSuffix(path, ".gguf")
+
+	// Huge GGUF are spilt into smaller files ending with -00001-of-00003.gguf
+	pos := strings.LastIndex(truncated, "-00001-of-")
+	if pos > 0 {
+		truncated = truncated[:pos]
+	}
+
+	// 1. Is there a file containing the command line arguments?
+	args, err := os.ReadFile(filepath.Clean(truncated + ".args"))
+	if err == nil {
+		return truncated, oneLine(args)
+	}
+
+	// 2. Are there flags encoded within the filename?
+	// Find the position of the last '/' (directory separator) and then locate the first '&' after that.
+	slash := max(strings.LastIndexByte(truncated, '/'), 0)
+	amp := strings.IndexByte(truncated[slash:], '&')
+	if amp < 0 {
+		return truncated, ""
+	}
+	pos = slash + amp
 
 	var flags []string
 
 	// Slice after the first '&' to avoid an empty first element.
-	for f := range strings.SplitSeq(stem[pos+1:], "&") {
+	for f := range strings.SplitSeq(truncated[pos+1:], "&") {
 		kv := strings.SplitN(f, "=", 2)
 		if len(kv) > 0 {
 			kv[0] = "-" + kv[0]
@@ -132,9 +185,34 @@ func extractFlags(path string) (string, string) {
 		}
 	}
 
-	return stem[:pos], strings.Join(flags, " ")
+	return truncated[:pos], strings.Join(flags, " ")
 }
 
+// oneLine converts the `.args` file into a single space‑separated string,
+// removing trailing backslashes, trimming whitespace, ignoring empty lines or comments.
+func oneLine(input []byte) string {
+	keep := make([]byte, 0, len(input))
+
+	for line := range bytes.SplitSeq(input, []byte("\n")) {
+		// Remove trailing backslash
+		if bytes.HasSuffix(line, []byte("\\")) {
+			line = line[:len(line)-1]
+		}
+		// Remove leading/trailing whitespace
+		line = bytes.TrimSpace(line)
+		// Skip blank lines and comments
+		if len(line) == 0 || bytes.HasPrefix(line, []byte("#")) {
+			continue
+		}
+		// Convert the byte slice to a string before appending.
+		keep = append(keep, line...)
+		keep = append(keep, ' ')
+	}
+
+	return string(keep)
+}
+
+// countModels returns the number of models that are currently present on file system.
 func (cfg *Cfg) countModels() int {
 	modelFiles, err := cfg.search()
 	if err != nil {
@@ -143,6 +221,9 @@ func (cfg *Cfg) countModels() int {
 	return len(modelFiles)
 }
 
+// validateModelFiles checks that the configuration contains at least one model file and
+// that each model referenced in the swap configuration exists on disk.
+// It logs warnings and errors as appropriate.
 func (cfg *Cfg) validateModelFiles() error {
 	if len(cfg.Swap.Models) == 0 {
 		n := cfg.countModels()
@@ -170,6 +251,9 @@ func (cfg *Cfg) validateModelFiles() error {
 	return nil
 }
 
+// validateFile verifies that the given path points to
+// an existing, readable, and sufficiently large *.gguf file.
+// It also normalizes the path and checks for series files.
 func validateFile(path string) error {
 	cleaned := filepath.Clean(path)
 	if cleaned != path {

@@ -82,7 +82,7 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	}
 
 	for _, path := range modelFiles {
-		name, flags := extractFlags(path)
+		name, flags := getNameAndFlags(path)
 		cfg.setModelSettings(path, name, flags, false) // OpenAI
 		cfg.setModelSettings(path, name, flags, true)  // Goinfer
 	}
