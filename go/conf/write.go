@@ -72,19 +72,18 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 		"cmd-goinfer": cmd + " " + goinfer,
 	}
 
-	modelFiles, err := cfg.search()
+	info, err := cfg.search()
 	if err != nil {
 		return err
 	}
 
 	if cfg.Swap.Models == nil {
-		cfg.Swap.Models = make(map[string]proxy.ModelConfig, 2*len(modelFiles))
+		cfg.Swap.Models = make(map[string]proxy.ModelConfig, 2*len(info))
 	}
 
-	for _, path := range modelFiles {
-		name, flags := getNameAndFlags(path)
-		cfg.setModelSettings(path, name, flags, false) // OpenAI
-		cfg.setModelSettings(path, name, flags, true)  // Goinfer
+	for name, mi := range info {
+		cfg.setModelSettings(name, mi.Path, mi.Flags, false) // OpenAI
+		cfg.setModelSettings(name, mi.Path, mi.Flags, true)  // Goinfer
 	}
 
 	yml, er := yaml.Marshal(&cfg.Swap)
@@ -102,7 +101,7 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 
 // Set the settings of a model within the llama-swap configuration.
 // For /goinfer API, hide the model + prefix the with GI_.
-func (cfg *Cfg) setModelSettings(path, name, flags string, goinfer bool) {
+func (cfg *Cfg) setModelSettings(name, path, flags string, goinfer bool) {
 	macro := "${cmd-openai}"
 	if goinfer {
 		macro = "${cmd-goinfer}"

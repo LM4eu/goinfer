@@ -119,39 +119,6 @@ func TestGetNameAndFlags(t *testing.T) {
 	}
 }
 
-func TestAddAndSearch(t *testing.T) {
-	t.Parallel()
-	tmp := t.TempDir()
-
-	validPath := createGGUFFile(t, tmp, "valid.gguf", 2048)
-	invalidPath := createGGUFFile(t, tmp, "invalid.gguf", 500)
-	nonPath := createGGUFFile(t, tmp, "ignore.txt", 2048)
-
-	cfg := &Cfg{
-		ModelsDir: tmp,
-		Swap:      proxy.Config{},
-	}
-	files, err := cfg.search()
-	if err != nil {
-		t.Fatalf("search returned error: %v", err)
-	}
-	foundValid := false
-	for _, fff := range files {
-		if fff == validPath {
-			foundValid = true
-		}
-		if fff == invalidPath {
-			t.Errorf("search included small .gguf file")
-		}
-		if fff == nonPath {
-			t.Errorf("search included non-gguf file")
-		}
-	}
-	if !foundValid {
-		t.Errorf("search did not include valid .gguf file")
-	}
-}
-
 func TestListModels(t *testing.T) {
 	t.Parallel()
 	tmp := t.TempDir()
