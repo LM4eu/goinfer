@@ -37,45 +37,26 @@ const (
 
 var (
 	// Validation errors.
-	ErrPromptRequired = newGIE(TypeValidation, "PROMPT_REQUIRED", "prompt is required")
 	ErrInvalidPrompt  = newGIE(TypeValidation, "INVALID_PROMPT", "prompt must be a string")
 	ErrModelNotLoaded = newGIE(TypeValidation, "MODEL_NOT_LOADED", "model not loaded")
 	ErrInvalidFormat  = newGIE(TypeValidation, "INVALID_FORMAT", "invalid request format")
 	ErrInvalidParams  = newGIE(TypeValidation, "INVALID_PARAMS", "invalid parameter values")
 
 	// Configuration errors.
-	ErrConfigLoadFailed   = newGIE(TypeConfiguration, "CONFIG_LOAD_FAILED", "failed to load configuration")
-	ErrConfigValidation   = newGIE(TypeConfiguration, "CONFIG_VALIDATION", "configuration validation failed")
-	ErrAPIKeyMissing      = newGIE(TypeConfiguration, "API_KEY_MISSING", "API key is missing")
-	ErrInvalidAPIKey      = newGIE(TypeConfiguration, "INVALID_API_KEY", "invalid API key format")
-	ErrModelFilesNotFound = newGIE(TypeConfiguration, "MODEL_FILES_NOT_FOUND", "no model files found")
-	ErrSwapConfigFailed   = newGIE(TypeConfiguration, "SWAP_CONFIG_FAILED", "failed to configure proxy")
+	ErrConfigValidation = newGIE(TypeConfiguration, "CONFIG_VALIDATION", "configuration validation failed")
+	ErrAPIKeyMissing    = newGIE(TypeConfiguration, "API_KEY_MISSING", "API key is missing")
+	ErrInvalidAPIKey    = newGIE(TypeConfiguration, "INVALID_API_KEY", "invalid API key format")
 
 	// Inference errors.
 	ErrInferRunning    = newGIE(TypeInference, "INFERENCE_RUNNING", "infer already running")
 	ErrInferNotRunning = newGIE(TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
 	ErrInferFailed     = newGIE(TypeInference, "INFERENCE_FAILED", "infer failed")
-	ErrInferCanceled   = newGIE(TypeInference, "INFERENCE_CANCELED", "infer canceled")
 	ErrInferStopped    = newGIE(TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
 	ErrChanClosed      = newGIE(TypeInference, "CHANNEL_CLOSED", "channel closed unexpectedly")
 	ErrClientCanceled  = newGIE(TypeInference, "CLIENT_CANCELED", "request canceled by client")
 
-	// Server errors.
-	ErrServerStart    = newGIE(TypeServer, "SERVER_START_FAILED", "failed to start server")
-	ErrServerShutdown = newGIE(TypeServer, "SERVER_SHUTDOWN_FAILED", "failed to shutdown server")
-	ErrSwapShutdown   = newGIE(TypeServer, "SWAP_SHUTDOWN_FAILED", "failed to shutdown proxy")
-
 	// Timeout errors.
-	ErrReqTimeout    = newGIE(TypeTimeout, "REQUEST_TIMEOUT", "request timeout")
-	ErrStreamTimeout = newGIE(TypeTimeout, "STREAM_TIMEOUT", "stream timeout")
-
-	// NotFound errors.
-	ErrModelNotFound    = newGIE(TypeNotFound, "MODEL_NOT_FOUND", "model not found")
-	ErrResourceNotFound = newGIE(TypeNotFound, "RESOURCE_NOT_FOUND", "resource not found")
-
-	// Unauthorized errors.
-	ErrUnauthorized       = newGIE(TypeUnauthorized, "UNAUTHORIZED", "unauthorized")
-	ErrInvalidCredentials = newGIE(TypeUnauthorized, "INVALID_CREDENTIALS", "invalid credentials")
+	ErrReqTimeout = newGIE(TypeTimeout, "REQUEST_TIMEOUT", "request timeout")
 )
 
 // newGIE creates a new GoInferError.
