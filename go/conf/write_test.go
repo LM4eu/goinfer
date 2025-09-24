@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package conf
 
 import (
@@ -20,7 +24,7 @@ func TestWriteWithHeader(t *testing.T) {
 	require.NoError(t, err)
 
 	// Read back the file and verify contents.
-	content, err := os.ReadFile(filePath)
+	content, err := os.ReadFile(filepath.Clean(filePath))
 	require.NoError(t, err)
 
 	expected := header + "\n\n" + string(data)
