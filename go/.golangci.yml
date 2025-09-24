@@ -531,7 +531,6 @@ linters:
       ignore-chan-recv-ok: true # Ignore "ok" variables that hold the bool return value of a channel receive, Default: false
       ignore-names: # Ignore these variable names.
         - tt
-        - er
       ignore-decls: # Ignore these variable declarations.
         - err error
         - er  error # avoid shadowing err
@@ -540,6 +539,7 @@ linters:
         - i int
         - k string
         - m echo.Map
+        - mi ModelInfo
         - v string
 
     whitespace:
