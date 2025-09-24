@@ -39,7 +39,8 @@ func TestUnderlineToSlash(t *testing.T) {
 		{"team-org_model_name", "team-org/model_name"},
 		{"modelname", "modelname"},
 		{"abcdefgh_i_j", "abcdefgh/i_j"},
-		{"abcdefghi_i_j", "abcdefghi_i_j"},
+		{"abcdefghi_i_j", "abcdefghi/i_j"},
+		{"abcdefghii_i_j", "abcdefghii_i_j"},
 		{"UIWEB_name", "UIWEB_name"},
 		{"model1_2", "model1_2"},
 		{"model-1-2", "model-1-2"},
@@ -56,9 +57,18 @@ func TestUnderlineToSlash(t *testing.T) {
 		{"ab-fr_llama-1", "ab-fr_llama-1"},
 		{"abc-fr_llama-1", "abc-fr_llama-1"},
 		{"abcd-fr_llama-1", "abcd-fr/llama-1"},
+		{"/home/me/models/abcd-fr_llama-1", "abcd-fr/llama-1"},
+		{"/home/me/models/group/abcd-fr_llama-1", "abcd-fr/llama-1"},
+		{"/home/me/models/group/abcd-f_llama-1", "group/abcd-f_llama-1"},
+		{"/home/me/models/30b/abcd-f_llama-1", "abcd-f_llama-1"},
+		{"/home/me/models/mistralai/abcd-f_llama-1", "mistralai/abcd-f_llama-1"},
+		{"/home/me/models/mistralai/mistralai_llama-1", "mistralai/llama-1"},
+		{"/home/me/models/sub/ollex/granite3.3_8b_Q4_K_M", "ollex/granite3.3_8b_Q4_K_M"},
+		{"/home/me/models/ollex/granite3.3_8b_Q4_K_M", "ollex/granite3.3_8b_Q4_K_M"},
+		{"/home/me/models/granite3.3_8b_Q4_K_M", "granite3.3_8b_Q4_K_M"},
 	}
 	for _, tt := range tests {
-		if got := nameWithSlash("/root/dir", tt.in); got != tt.want {
+		if got := nameWithSlash("/home/me/models", tt.in); got != tt.want {
 			t.Errorf("underlineToSlash(%q) = %q, want %q", tt.in, got, tt.want)
 		}
 	}

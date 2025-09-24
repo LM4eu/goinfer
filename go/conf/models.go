@@ -111,7 +111,7 @@ func add(info map[string]ModelInfo, root string) error {
 		name, flags := getNameAndFlags(root, path)
 		mi := ModelInfo{flags, path, ""}
 		if old, ok := info[name]; ok {
-			slog.Warn("Duplicated models", "name", name, "old", old, "new", mi)
+			slog.Warn("Duplicated models", "dir", root, "name", name, "old", old, "new", mi)
 			mi.Error = "two files have same model name (must be unique)"
 		}
 		info[name] = mi
@@ -130,11 +130,11 @@ func getNameAndFlags(root, path string) (string, string) {
 func nameWithSlash(root, truncated string) string {
 	name := filepath.Base(truncated)
 
-	countPos := -1
+	pos := -1
 
 	for i, char := range name {
 		switch {
-		case i > 8:
+		case i > 9:
 			return nameWithDir(root, truncated, name)
 		case unicode.IsLower(char):
 			continue
@@ -142,15 +142,15 @@ func nameWithSlash(root, truncated string) string {
 			if i < 4 {
 				return nameWithDir(root, truncated, name)
 			}
-			if countPos > -1 {
+			if pos > -1 {
 				return nameWithDir(root, truncated, name)
 			}
-			countPos = i
+			pos = i
 		case char == '_':
 			if i < 4 {
 				return nameWithDir(root, truncated, name)
 			}
-			if i-countPos < 2 {
+			if i-pos < 3 {
 				return nameWithDir(root, truncated, name)
 			}
 			n := []byte(name)
@@ -166,10 +166,29 @@ func nameWithSlash(root, truncated string) string {
 // nameWithDir prefixes the model name with its folder name.
 func nameWithDir(root, truncated, name string) string {
 	dir := filepath.Dir(truncated)
-	if len(dir)-len(root) < 1 {
+	if len(dir) <= len(root) {
 		return name
 	}
 	dir = filepath.Base(dir)
+	pos := -1
+	for i, char := range dir {
+		switch {
+		case i > 12:
+			return name
+		case unicode.IsLower(char):
+			continue
+		case char == '-':
+			if i < 4 {
+				return name
+			}
+			if pos > -1 {
+				return name
+			}
+			pos = i
+		default:
+			return name
+		}
+	}
 	return dir + "/" + name
 }
 
