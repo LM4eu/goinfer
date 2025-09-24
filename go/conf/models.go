@@ -127,18 +127,26 @@ func getNameAndFlags(root, path string) (string, string) {
 }
 
 // nameWithSlash converts the first underscore in a model name to a slash.
+// If there is a dash, only top domain names between the dash and the slash.
 func nameWithSlash(root, truncated string) string {
 	name := filepath.Base(truncated)
 
 	pos := -1
 
 	for i, char := range name {
+		if i > 9 {
+			if pos < 0 { // the limit is 9 letters without a dash
+				return nameWithDir(root, truncated, name)
+			}
+			if i > 11 { // otherwise the limit is 10 letters + one dash
+				return nameWithDir(root, truncated, name)
+			}
+		}
+
 		switch {
-		case i > 9:
-			return nameWithDir(root, truncated, name)
 		case unicode.IsLower(char):
 			continue
-		case char == '-':
+		case char == '-': // dash
 			if i < 4 {
 				return nameWithDir(root, truncated, name)
 			}
@@ -146,7 +154,14 @@ func nameWithSlash(root, truncated string) string {
 				return nameWithDir(root, truncated, name)
 			}
 			pos = i
-		case char == '_':
+		case char == '_': // underscore
+			if pos > 0 {
+				n := i - pos // number of letters before the dash
+				ok := n == 3 || n == 4
+				if !ok {
+					return nameWithDir(root, truncated, name)
+				}
+			}
 			if i < 4 {
 				return nameWithDir(root, truncated, name)
 			}
@@ -164,6 +179,7 @@ func nameWithSlash(root, truncated string) string {
 }
 
 // nameWithDir prefixes the model name with its folder name.
+// If there is a dash, only top domain names between the dash and the slash.
 func nameWithDir(root, truncated, name string) string {
 	dir := filepath.Dir(truncated)
 	if len(dir) <= len(root) {
@@ -186,6 +202,13 @@ func nameWithDir(root, truncated, name string) string {
 			}
 			pos = i
 		default:
+			return name
+		}
+	}
+	if pos > 0 {
+		n := len(dir) - pos // number of letters before the dash
+		ok := n == 3 || n == 4
+		if !ok {
 			return name
 		}
 	}

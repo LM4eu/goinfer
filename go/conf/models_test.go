@@ -38,9 +38,11 @@ func TestUnderlineToSlash(t *testing.T) {
 	}{
 		{"team-org_model_name", "team-org/model_name"},
 		{"modelname", "modelname"},
-		{"abcdefgh_i_j", "abcdefgh/i_j"},
-		{"abcdefghi_i_j", "abcdefghi/i_j"},
-		{"abcdefghii_i_j", "abcdefghii_i_j"},
+		{"abcdefgh_fr_8", "abcdefgh/fr_8"},
+		{"abcdefghi_fr_9", "abcdefghi/fr_9"},
+		{"abcdefghij_fr_10", "abcdefghij_fr_10"},
+		{"abcdefghijk_fr_11", "abcdefghijk_fr_11"},
+		{"abcdefghijkl_fr_12", "abcdefghijkl_fr_12"},
 		{"UIWEB_name", "UIWEB_name"},
 		{"model1_2", "model1_2"},
 		{"model-1-2", "model-1-2"},
@@ -66,9 +68,21 @@ func TestUnderlineToSlash(t *testing.T) {
 		{"/home/me/models/sub/ollex/granite3.3_8b_Q4_K_M", "ollex/granite3.3_8b_Q4_K_M"},
 		{"/home/me/models/ollex/granite3.3_8b_Q4_K_M", "ollex/granite3.3_8b_Q4_K_M"},
 		{"/home/me/models/granite3.3_8b_Q4_K_M", "granite3.3_8b_Q4_K_M"},
+		{"/home/me/models/folder/example-com_granite3.3_8b_Q4_K_M", "example-com/granite3.3_8b_Q4_K_M"},
+		{"/home/me/models/folder/example-eu_granite3.3_8b_Q4_K_M", "example-eu/granite3.3_8b_Q4_K_M"},
+		{"/home/me/models/folder/example-x_granite3.3_8b_Q4_K_M", "folder/example-x_granite3.3_8b_Q4_K_M"},
+		{"/home/me/models/folder/example-four_granite3.3_8b_Q4_K_M", "folder/example-four_granite3.3_8b_Q4_K_M"},
+		{"/home/me/models/folder/example-four/granite3.3_8b_Q4_K_M", "granite3.3_8b_Q4_K_M"},
+		{"/home/me/models/folder/example-com/granite3.3_8b_Q4_K_M", "example-com/granite3.3_8b_Q4_K_M"},
+		{"/home/me/models/folder/example-fr/granite3.3_8b_Q4_K_M", "example-fr/granite3.3_8b_Q4_K_M"},
+		{"/home/me/models/folder/example-o/granite3.3_8b_Q4_K_M", "granite3.3_8b_Q4_K_M"},
+		{"/home/me/models/folder/example/granite3.3_8b_Q4_K_M", "example/granite3.3_8b_Q4_K_M"},
+		{"/home/me/models/folder/granite3.3_8b_Q4_K_M", "folder/granite3.3_8b_Q4_K_M"},
+		{"/home/me/models/granite3.3_8b_Q4_K_M", "granite3.3_8b_Q4_K_M"},
 	}
 	for _, tt := range tests {
-		if got := nameWithSlash("/home/me/models", tt.in); got != tt.want {
+		got := nameWithSlash("/home/me/models", tt.in)
+		if got != tt.want {
 			t.Errorf("underlineToSlash(%q) = %q, want %q", tt.in, got, tt.want)
 		}
 	}
