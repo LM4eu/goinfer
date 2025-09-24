@@ -108,7 +108,7 @@ func add(info map[string]ModelInfo, root string) error {
 
 		slog.Debug("Found", "model", path)
 
-		name, flags := getNameAndFlags(path)
+		name, flags := getNameAndFlags(root, path)
 		mi := ModelInfo{flags, path, ""}
 		if old, ok := info[name]; ok {
 			slog.Warn("Duplicated models", "name", name, "old", old, "new", mi)
@@ -120,15 +120,14 @@ func add(info map[string]ModelInfo, root string) error {
 	})
 }
 
-func getNameAndFlags(path string) (string, string) {
+func getNameAndFlags(root, path string) (string, string) {
 	truncated, flags := extractFlags(path)
-	name := nameWithSlash(truncated)
+	name := nameWithSlash(root, truncated)
 	return name, flags
 }
 
 // nameWithSlash converts the first underscore in a model name to a slash.
-func nameWithSlash(truncated string) string {
-	// TODO: keep the folder name within the model name
+func nameWithSlash(root, truncated string) string {
 	name := filepath.Base(truncated)
 
 	countPos := -1
@@ -136,32 +135,42 @@ func nameWithSlash(truncated string) string {
 	for i, char := range name {
 		switch {
 		case i > 8:
-			return name
+			return nameWithDir(root, truncated, name)
 		case unicode.IsLower(char):
 			continue
 		case char == '-':
 			if i < 4 {
-				return name
+				return nameWithDir(root, truncated, name)
 			}
 			if countPos > -1 {
-				return name
+				return nameWithDir(root, truncated, name)
 			}
 			countPos = i
 		case char == '_':
 			if i < 4 {
-				return name
+				return nameWithDir(root, truncated, name)
 			}
 			if i-countPos < 2 {
-				return name
+				return nameWithDir(root, truncated, name)
 			}
 			n := []byte(name)
 			n[i] = '/'
 			return string(n)
 		default:
-			return name
+			return nameWithDir(root, truncated, name)
 		}
 	}
-	return name
+	return nameWithDir(root, truncated, name)
+}
+
+// nameWithDir prefixes the model name with its folder name.
+func nameWithDir(root, truncated, name string) string {
+	dir := filepath.Dir(truncated)
+	if len(dir)-len(root) < 1 {
+		return name
+	}
+	dir = filepath.Base(dir)
+	return dir + "/" + name
 }
 
 // extractFlags returns the truncated path and the llama-server flags from a file path.

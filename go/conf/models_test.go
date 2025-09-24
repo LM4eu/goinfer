@@ -58,7 +58,7 @@ func TestUnderlineToSlash(t *testing.T) {
 		{"abcd-fr_llama-1", "abcd-fr/llama-1"},
 	}
 	for _, tt := range tests {
-		if got := nameWithSlash(tt.in); got != tt.want {
+		if got := nameWithSlash("/root/dir", tt.in); got != tt.want {
 			t.Errorf("underlineToSlash(%q) = %q, want %q", tt.in, got, tt.want)
 		}
 	}
@@ -110,7 +110,7 @@ func TestGetNameAndFlags(t *testing.T) {
 	t.Parallel()
 	tmp := t.TempDir()
 	modelPath := createGGUFFile(t, tmp, "my_model&opt=val.gguf", 2048)
-	name, flags := getNameAndFlags(modelPath)
+	name, flags := getNameAndFlags(tmp, modelPath)
 	if name == "" {
 		t.Errorf("getNameAndFlags name is empty")
 	}
