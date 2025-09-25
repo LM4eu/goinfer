@@ -24,6 +24,7 @@ func (cfg *Cfg) WriteMainCfg(mainCfg string, debug, noAPIKey bool) error {
 	cfg.Server = defaultGoInferCfg.Server
 
 	cfg.applyEnvVars()
+	cfg.trimParamValues()
 
 	cfg.setAPIKeys(debug, noAPIKey)
 

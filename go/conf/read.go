@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/LM4eu/goinfer/gie"
 	"go.yaml.in/yaml/v4"
@@ -21,6 +22,7 @@ func (cfg *Cfg) ReadMainCfg(mainCfg string, noAPIKey bool) error {
 	}
 
 	cfg.applyEnvVars()
+	cfg.trimParamValues()
 
 	// Concatenate host and ports => addr = "host:port"
 	listen := make(map[string]string, len(cfg.Server.Listen))
@@ -99,4 +101,17 @@ func (cfg *Cfg) applyEnvVars() {
 		cfg.Llama.Exe = exe
 		slog.Debug("use", "GI_LLAMA_EXE", exe)
 	}
+}
+
+// trimParamValues cleans each parameter.
+func (cfg *Cfg) trimParamValues() {
+	cfg.ModelsDir = strings.TrimSpace(cfg.ModelsDir)
+	cfg.ModelsDir = strings.Trim(cfg.ModelsDir, ":")
+
+	cfg.Server.Host = strings.TrimSpace(cfg.Server.Host)
+
+	cfg.Server.Origins = strings.TrimSpace(cfg.Server.Origins)
+	cfg.Server.Origins = strings.Trim(cfg.Server.Origins, ",")
+
+	cfg.Llama.Exe = strings.TrimSpace(cfg.Llama.Exe)
 }
