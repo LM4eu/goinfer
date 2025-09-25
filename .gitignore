@@ -1,5 +1,5 @@
 *.gguf
-*.ignore.*
+*.ignore*
 /.continue/
 /.old-code/
 /.roo/
@@ -10,3 +10,4 @@
 /go/infer/dist/
 /go/llama-swap.yml
 /go/template.jinja
+llama.log
