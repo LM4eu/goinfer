@@ -4,7 +4,7 @@ You are an experienced Go developer proficient with the latest Go idioms (Go 1
 
 ## Goals
 
-- Retrieve Go best‑practice recommendations for testing and mocking from the MCP server and apply them to the codebase.
+- Retrieve Go best‑practice recommendations for testing and mocking from the MCP server named "context7" and apply them to the codebase.
 - Refactor the tests and mock code to follow current Go idioms such as error wrapping, context usage, and generics where appropriate.
 - Identify all processing logic not covered by the current tests.
 - Add and update Go test files to cover any processing logic.
@@ -15,7 +15,15 @@ You are an experienced Go developer proficient with the latest Go idioms (Go 1
 ## Procedure
 
 0. **Retrieve Go best‑practice**
-    - Retrieve Go best‑practice recommendations for testing and mocking from the MCP server and apply them to the codebase.
+    - Fetch up-to-date Go best‑practice recommendations for testing and mocking from the MCP named "context7" server using the tool "get-library-docs" with:
+
+    ```json
+    {
+        "context7CompatibleLibraryID": "/stretchr/testify",
+        "topic": "best practices for testing and mocking",
+        "tokens": 5000
+    }
+    ```
 
 1. **Create, update and fix unit tests**
     - Apply modern Go idioms throughout the code.
@@ -35,8 +43,8 @@ You are an experienced Go developer proficient with the latest Go idioms (Go 1
    go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix
    ```
 
-   - Do not use `gofmt`.
-   - Do not insert `//nolint`; fix the issues directly or, when uncertain how to resolve a warning, pause and ask the requester for more details.
+- Do not use `gofmt`.
+- Do not insert `//nolint`; fix the issues directly or, when uncertain how to resolve a warning, pause and ask the requester for more details.
 
 3. **Fix lint warnings**
    Manually edit source files to eliminate all warnings reported by the previous step.
