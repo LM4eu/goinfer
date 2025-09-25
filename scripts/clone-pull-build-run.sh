@@ -136,9 +136,8 @@ clone_checkout_pull ggml-org/llama.cpp "${branchLC:-master}" "${tagLC:-}"
   cmake --build build/ --config Release --clean-first --target llama-server # llama-gguf
 )
 
-# --- llama-swap ---
 cd "${BASH_SOURCE[0]%/*}/../.."
-clone_checkout_pull mostlygeek/llama-swap "${branchLS:-main}" "${tagLS:-}"
+clone_checkout_pull LM4eu/llama-swap "${branchLS:-main}" "${tagLS:-}"
 [[ -n "$build" ]] || { [[ -f proxy/ui_dist/index.html ]] || build="missing proxy/ui_dist/index.html" ; }
 [[ -z "$build" ]] || (
   echo "Build llama-swap because $build"
@@ -146,7 +145,7 @@ clone_checkout_pull mostlygeek/llama-swap "${branchLS:-main}" "${tagLS:-}"
   set -x
   cd ui
   pwd
-  npm ci --prefer-offline --no-audit --no-fund
+  npm ci --prefer-offline --no-audit --no-fund --omit=dev
   npm run build
 )
 

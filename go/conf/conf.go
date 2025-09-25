@@ -11,7 +11,7 @@ import (
 	"syscall"
 
 	"github.com/LM4eu/goinfer/gie"
-	"github.com/mostlygeek/llama-swap/proxy"
+	"github.com/LM4eu/llama-swap/proxy"
 	"go.yaml.in/yaml/v4"
 )
 

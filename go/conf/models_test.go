@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mostlygeek/llama-swap/proxy"
+	"github.com/LM4eu/llama-swap/proxy"
 )
 
 // createGGUFFile creates a temporary .gguf file of the given size (bytes).

@@ -1,15 +1,15 @@
 // to set the latest version of llama-swap:
 //
-//    go get github.com/mostlygeek/llama-swap@main
+//    go get github.com/LM4eu/llama-swap@main
 
 module github.com/LM4eu/goinfer
 
 go 1.25.1
 
 require (
+	github.com/LM4eu/llama-swap v0.0.0-20250925224418-bab7d1f3968a
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/labstack/gommon v0.4.2
-	github.com/mostlygeek/llama-swap v0.1.6-0.20250919174717-fc3bb716df40
 	github.com/stretchr/testify v1.11.1
 	github.com/teal-finance/garcon v0.35.2
 	go.yaml.in/yaml/v4 v4.0.0-rc.2
