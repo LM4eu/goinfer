@@ -51,8 +51,8 @@ var defaultGoInferCfg = Cfg{
 	ModelsDir: "/home/me/models",
 	Server: ServerCfg{
 		Listen: map[string]string{
-			":2222": "webui models openai goinfer",
 			":5555": "llama-swap",
+			":6666": "webui models openai goinfer",
 		},
 		APIKeys: map[string]string{},
 		Host:    "",

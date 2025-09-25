@@ -45,38 +45,68 @@ Category            | Feature
 ## Build
 
 - Go 1.25+
-- `llama.cpp` see [`scripts/llama-build-cuda.sh`](./scripts/llama-build-cuda.sh)
-- One or more `*.gguf` model files.
+- NodeJS
+- `llama.cpp`
+- One or more `*.gguf` model files
+
+### Using the all-in-one script
+
+The  [`clone-pull-build-run.sh`](./scripts/clone-pull-build-run.sh)
+script clones all dependencies (llama.cpp, llama-swap, infergui) and build every thing.
+Then you can reuse this script to `git pull` these dependencies and to to rebuild them.
+This script also discovers your GGUF files and generates the configuration files.
+Finally the script also runs Goinfer.
+
+```bash
+git clone https://github.com/LM4eu/goinfer
+scripts/clone-pull-build-run.sh
+```
+
+See the documentation within the [script](./scripts/clone-pull-build-run.sh).
+
+### Manual build + configure
+
+To manually build Goinfer:
 
 ```bash
 git clone https://github.com/mostlygeek/llama-swap
 git clone https://github.com/LM4eu/goinfer
 git clone https://github.com/synw/infergui
 
-cd infergui
+cd ../llama-swap/ui
+npm i
+npm run build
+
+cd ../../infergui
+npm i
 npm run build
 mv dist ../goinfer/go/infer
 
 cd ../goinfer/go
-go build -o goinfer .
+go build .
 ```
+
+Generate the default configuration files in two steps:
+
+```bash
+export GI_MODELS_DIR=/path/to/my/models
+export GI_LLAMA_EXE=/path/to/my/llama-server
+./goinfer -gen-main-cfg  # generates goinfer.yml
+./goinfer -gen-swap-cfg  # generates llama-swap.yml
+```
+
+You may edit the configuration files to adapt to your specific case.
 
 ## First Run
 
 ```bash
-# generate a default configuration file
-export GI_MODELS_DIR=/path/to/my/models
-export GI_LLAMA_EXE=/path/to/my/llama-server
-./goinfer -gen-main-cfg
-
-# and go
 ./goinfer -no-api-key
 ```
 
 Goinfer will listen on the ports defined in the config. Default ports:
 
-- `:5143` for the Web UI
-- `:5555` for the OpenAI‑compatible API
+- `:5555` for the OpenAI‑compatible API provided by llama-swap
+- `:6666` for the Web UI and some API endpoints
 
 ```sh
 # List the available models
@@ -90,6 +120,9 @@ curl -X POST localhost:5555/v1/chat/completions  \
         "model": "aya-expanse_8b_Q4_K_M",
         "messages": [{"role":"user","content":"Hello AI"}]
       }'
+
+# List the models with the custom goinfer API
+curl -X GET localhost:6666/models | jq
 ```
 
 ## Configuration files
@@ -97,18 +130,17 @@ curl -X POST localhost:5555/v1/chat/completions  \
 Generates `goinfer.yml` and `llama-swap.yml` with:
 
 ```bash
-# optional
 export GI_MODELS_DIR=/path/to/my/models
 export GI_LLAMA_EXE=/path/to/my/llama-server
 export GI_HOST=0.0.0.0  # exposing llama-server is not recommended
-export GI_ORIGINS=      # you may disable CORS (not recommended)
+export GI_ORIGINS=      # disable CORS is not recommended
 export GI_API_KEY_ADMIN="PLEASE SET SECURE API KEY"
 export GI_API_KEY_USER="PLEASE SET SECURE API KEY"
 
 cd goinfer/go
 
-go run . -gen-main-cfg  # goinfer.yml
-go run . -gen-swap-cfg  # llama-swap.yml
+go run . -gen-main-cfg  # generates goinfer.yml
+go run . -gen-swap-cfg  # generates llama-swap.yml
 ```
 
 ### API keys
@@ -136,7 +168,7 @@ You can also provide multiple paths separated by `:` as the following:
 GI_MODELS_DIR=/path1:/path2:/path3
 ```
 
-## Main `goinfer.yml`
+### Main `goinfer.yml`
 
 ```yaml
 # Goinfer recursively search GGUF files in one or multiple folders separated by ':'
@@ -155,7 +187,7 @@ server:
   listen:
     # format:  <address>: <comma‑separated list of enabled services>
     # <address> can be <ip|host>:<port> or simply :<port> when <host> is localhost
-    ":5143": webui,models    # UI + model list
+    ":6666": webui,models    # UI + model list
     ":5555": openai,goinfer  # OpenAI‑compatible API + raw goinfer endpoint
     ":5555": llama-swap      # OpenAI‑compatible API by llama‑swap
 
@@ -172,7 +204,7 @@ llama:
 - **Origins** – Set to the domains you’ll be calling the server from (including `localhost` for testing).
 - **Ports** – Adjust as needed; make sure the firewall on the server allows them.
 
-## Swap `llama‑swap.yml`
+### Swap `llama‑swap.yml`
 
 Official documentation see: [github.com/mostlygeek/llama-swap/wiki/Configuration](https://github.com/mostlygeek/llama-swap/wiki/Configuration)
 
