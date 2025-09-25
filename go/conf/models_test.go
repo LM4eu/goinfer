@@ -229,7 +229,7 @@ func TestValidateModelFiles_NoSwapModels(t *testing.T) {
 		ModelsDir: tmp,
 		Swap:      proxy.Config{},
 	}
-	err := cfg.validateModelFiles()
+	err := cfg.ValidateSwap()
 	if err == nil {
 		t.Fatalf("validateModelFiles should error when no models and no swap config")
 	}
@@ -248,7 +248,7 @@ func TestValidateModelFiles_WithSwapModels(t *testing.T) {
 			},
 		},
 	}
-	err := cfg.validateModelFiles()
+	err := cfg.ValidateSwap()
 	if err != nil {
 		t.Fatalf("validateModelFiles error: %v", err)
 	}

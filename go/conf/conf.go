@@ -130,12 +130,7 @@ func printEnvVar(key string, confidential bool) {
 	}
 }
 
-func (cfg *Cfg) validate(noAPIKey bool) error {
-	err := cfg.validateModelFiles()
-	if err != nil {
-		return err
-	}
-
+func (cfg *Cfg) validateMain(noAPIKey bool) error {
 	if noAPIKey {
 		slog.Info("Flag -no-api-key => Do not verify API keys.")
 		return nil

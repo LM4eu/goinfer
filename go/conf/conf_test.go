@@ -173,7 +173,7 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("json unmarshal error: %v", err)
 	}
-	err = cfg2.validate(false)
+	err = cfg2.validateMain(false)
 	if err != nil {
 		t.Fatalf("validation error: %v", err)
 	}
@@ -185,7 +185,7 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 		},
 		Llama: defaultGoInferCfg.Llama,
 	}
-	err = cfgMissing.validate(false)
+	err = cfgMissing.validateMain(false)
 	if err == nil {
 		t.Fatalf("expected validation error for missing admin API key")
 	}

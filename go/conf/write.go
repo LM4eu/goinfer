@@ -33,12 +33,12 @@ func (cfg *Cfg) WriteMainCfg(mainCfg string, debug, noAPIKey bool) error {
 		return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_MARSHAL", "failed to write config file")
 	}
 
-	err = writeWithHeader(mainCfg, "# Configuration of https://github.com/LM4eu/goinfer", yml)
+	err = cfg.validateMain(noAPIKey)
 	if err != nil {
 		return err
 	}
 
-	return cfg.validate(noAPIKey)
+	return writeWithHeader(mainCfg, "# Configuration of https://github.com/LM4eu/goinfer", yml)
 }
 
 // WriteSwapCfg generates the llama-swap configuration.
@@ -85,6 +85,11 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	for name, mi := range info {
 		cfg.setModelSettings(name, mi.Path, mi.Flags, false) // OpenAI
 		cfg.setModelSettings(name, mi.Path, mi.Flags, true)  // Goinfer
+	}
+
+	err = cfg.ValidateSwap()
+	if err != nil {
+		return err
 	}
 
 	yml, er := yaml.Marshal(&cfg.Swap)

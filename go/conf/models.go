@@ -290,17 +290,16 @@ func (cfg *Cfg) countModels() int {
 	return len(modelFiles)
 }
 
-// validateModelFiles checks that the configuration contains at least one model file and
+// ValidateSwap checks that the configuration contains at least one model file and
 // that each model referenced in the swap configuration exists on disk.
 // It logs warnings and errors as appropriate.
-func (cfg *Cfg) validateModelFiles() error {
+func (cfg *Cfg) ValidateSwap() error {
 	if len(cfg.Swap.Models) == 0 {
 		n := cfg.countModels()
 		if n == 0 {
 			slog.Error("No *.gguf files found", "dir", cfg.ModelsDir)
 			return gie.ErrConfigValidation
 		}
-
 		slog.Warn("No model configured => Use flag -gen-swap-cfg to fill the config with", "models", n)
 		return nil
 	}

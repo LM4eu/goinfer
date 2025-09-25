@@ -35,7 +35,7 @@ func (cfg *Cfg) ReadMainCfg(mainCfg string, noAPIKey bool) error {
 	cfg.Server.Listen = listen
 
 	// Validate configuration
-	return cfg.validate(noAPIKey)
+	return cfg.validateMain(noAPIKey)
 }
 
 // load the configuration file (if filename not empty).

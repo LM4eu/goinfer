@@ -84,7 +84,7 @@ func getCfg() *conf.Cfg {
 		}
 		err = cfg.WriteSwapCfg(swapCfg, !*quiet, *debug)
 		if err != nil {
-			slog.Error("Cannot create Swap config", "file", swapCfg, "error", err)
+			slog.Error("Failed creating a valid Swap config", "file", swapCfg, "error", err)
 			os.Exit(1)
 		}
 	}
@@ -93,6 +93,11 @@ func getCfg() *conf.Cfg {
 	cfg.Swap, err = proxy.LoadConfig(swapCfg)
 	if err != nil {
 		slog.Error("Cannot load Swap config", "file", swapCfg, "error", err)
+		os.Exit(1)
+	}
+	err = cfg.ValidateSwap()
+	if err != nil {
+		slog.Error("Swap config ", "file", swapCfg, "error", err)
 		os.Exit(1)
 	}
 
