@@ -2,7 +2,7 @@
 
 ## Goal  
 
-Re‑organize the diff in the **Goinfer** repository into a series of logically independent commits. Each commit may span multiple files but must be safe to reorder or cherry‑pick without further manual adjustments. The entire process must run autonomously, ending with a clean working tree and a series of well‑documented commits.
+Re‑organize the diff in the repository into a series of logically independent commits. Each commit may span multiple files but must be safe to reorder or cherry‑pick without further manual adjustments. The entire process must run autonomously, ending with a clean working tree and a series of well‑documented commits.
 
 ## Overview  
 
