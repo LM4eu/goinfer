@@ -87,12 +87,15 @@ func (cfg *Cfg) search() (map[string]ModelInfo, error) {
 // add walks the given root directory and appends any valid *.gguf model file paths to the
 // provided slice. It validates each file using validateFile and logs debug information.
 func add(info map[string]ModelInfo, root string) error {
-	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+	return filepath.WalkDir(root, func(path string, dir fs.DirEntry, err error) error {
 		if err != nil {
-			return gie.Wrap(err, gie.TypeNotFound, "filepath.WalkDir", "path="+d.Name())
+			if dir == nil {
+				return gie.Wrap(err, gie.TypeNotFound, "filepath.WalkDir", "")
+			}
+			return gie.Wrap(err, gie.TypeNotFound, "filepath.WalkDir", "path="+dir.Name())
 		}
 
-		if d.IsDir() {
+		if dir.IsDir() {
 			return nil // => step into this directory
 		}
 
