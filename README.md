@@ -189,7 +189,7 @@ llama:
   exe: /home/me/llama.cpp/build/bin/llama-server
   args:
     # common args used for every model
-    common: "--props --no-webui --no-warmup"
+    common: "--props --no-warmup"
     # extra args for the goinfer endpoint (Jinja templating)
     goinfer: "--jinja --chat-template-file template.jinja"
 ```
