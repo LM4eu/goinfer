@@ -21,7 +21,7 @@ set -xe
 # 	--n-cpu-moe 1
 
 # current directory
-cd ${0%/*}
+cd ${BASH_SOURCE[0]%/*}
 
 [[ "$1" == "llama" ]] && prj="llama.cpp" || prj="ik_llama.cpp"
 

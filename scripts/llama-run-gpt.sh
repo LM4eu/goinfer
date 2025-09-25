@@ -23,7 +23,7 @@ set -xe
 # 	--n-cpu-moe 1
 
 # current directory
-cd ${0%/*}
+cd ${BASH_SOURCE[0]%/*}
 
 ../../llama.cpp/build/bin/llama-server   \
 	--threads -1                         \

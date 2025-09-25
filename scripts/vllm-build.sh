@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # current directory
-cd ${0%/*}
+cd ${BASH_SOURCE[0]%/*}
 cd ../vllm
 
 export CUDA_HOME=/opt/cuda

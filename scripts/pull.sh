@@ -3,7 +3,7 @@
 set -xe
 
 # optional parameters: repo and git tag
-dir=${1:-${0%/*}../../llama.cpp}
+dir=${1:-${BASH_SOURCE[0]%/*}../../llama.cpp}
 tag=$2
 
 cd "$dir"

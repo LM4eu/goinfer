@@ -8,7 +8,7 @@ gguf=$1
 
 
 # go to the directory of this script
-cd ${0%/*}
+cd ${BASH_SOURCE[0]%/*}
 
 # https://old.reddit.com/r/LocalLLaMA/comments/1kpe33n/speed_up_llamacpp_on_uneven_multigpu_setups_rtx/msxvxk3/
 

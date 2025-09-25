@@ -7,7 +7,7 @@ command -V ccache || { echo REQUIRED: install ccache && exit ; }
 
 set -xe
 
-cd ${0%/*}  # go to the directory of this script
+cd ${BASH_SOURCE[0]%/*}  # go to the directory of this script
 cd ../../llama.cpp
 
 # build directory
