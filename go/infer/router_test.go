@@ -28,14 +28,12 @@ func TestNewEcho(t *testing.T) {
 	tests := []struct {
 		name          string
 		wantRoutes    []string
-		enableWebUI   bool
 		enableModels  bool
 		enableGoinfer bool
 		enableOpenAPI bool
 	}{
 		{
 			name:          "all disabled",
-			enableWebUI:   false,
 			enableModels:  false,
 			enableGoinfer: false,
 			enableOpenAPI: false,
@@ -43,7 +41,6 @@ func TestNewEcho(t *testing.T) {
 		},
 		{
 			name:          "models only",
-			enableWebUI:   false,
 			enableModels:  true,
 			enableGoinfer: false,
 			enableOpenAPI: false,
@@ -51,7 +48,6 @@ func TestNewEcho(t *testing.T) {
 		},
 		{
 			name:          "full stack",
-			enableWebUI:   true,
 			enableModels:  true,
 			enableGoinfer: true,
 			enableOpenAPI: true,
@@ -68,7 +64,7 @@ func TestNewEcho(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			inf := &Infer{Cfg: cfg}
-			e := inf.NewEcho(cfg, ":0", tt.enableWebUI, tt.enableModels, tt.enableGoinfer, tt.enableOpenAPI)
+			e := inf.NewEcho(cfg, ":0", tt.enableModels, tt.enableGoinfer, tt.enableOpenAPI)
 
 			if e == nil {
 				t.Fatalf("NewEcho returned nil")

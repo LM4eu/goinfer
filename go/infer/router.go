@@ -5,7 +5,6 @@
 package infer
 
 import (
-	"embed"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -26,12 +25,9 @@ type Infer struct {
 	mu                          sync.Mutex
 }
 
-//go:embed all:dist
-var embeddedFiles embed.FS
-
 // NewEcho creates a new Echo server configured with Goinfer routes and middleware.
 func (inf *Infer) NewEcho(cfg *conf.Cfg, addr string,
-	enableWebUI, enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint bool,
+	enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint bool,
 ) *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true
@@ -65,18 +61,6 @@ func (inf *Infer) NewEcho(cfg *conf.Cfg, addr string,
 			return nil
 		}
 	})
-
-	// ------- Admin web frontend -------
-	if enableWebUI {
-		e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
-			Root:       "dist",
-			Index:      "index.html",
-			Browse:     false,
-			HTML5:      true,
-			Filesystem: http.FS(embeddedFiles),
-		}))
-		slog.Info("Listen", "GET", url(addr, "/"), "service", "webui")
-	}
 
 	// ------------ Models ------------
 	if enableModelsEndpoint {

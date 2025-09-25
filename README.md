@@ -26,7 +26,6 @@ Category            | Feature
 **API**             | OpenAI‑compatible HTTP API `/v1/`, streaming responses, Custom `/goinfer` API
 **Security**        | Per‑role API keys (`admin`, `user`), CORS control
 **Robustness**      | Independent of ISP‑provided IP, graceful reconnects
-**Web UI**          | UI via [Infergui](https://github.com/synw/infergui)
 **Admin control**   | Remote monitoring, delete/upload new GGUF files, reload config, `git pull llama.cpp`, re‑compile
 **Home-hosted LLM** | Run Goinfer on your GPU desktop and another Goinfer in a data‑center (static IP/DNS)
 
@@ -52,7 +51,7 @@ Category            | Feature
 ### Using the all-in-one script
 
 The  [`clone-pull-build-run.sh`](./scripts/clone-pull-build-run.sh)
-script clones all dependencies (llama.cpp, llama-swap, infergui) and build every thing.
+script clones the dependencies (llama.cpp and llama-swap) and build them.
 Then you can reuse this script to `git pull` these dependencies and to to rebuild them.
 This script also discovers your GGUF files and generates the configuration files.
 Finally the script also runs Goinfer.
@@ -71,16 +70,10 @@ To manually build Goinfer:
 ```bash
 git clone https://github.com/mostlygeek/llama-swap
 git clone https://github.com/LM4eu/goinfer
-git clone https://github.com/synw/infergui
 
 cd ../llama-swap/ui
 npm i
 npm run build
-
-cd ../../infergui
-npm i
-npm run build
-mv dist ../goinfer/go/infer
 
 cd ../goinfer/go
 go build .
@@ -105,8 +98,8 @@ You may edit the configuration files to adapt to your specific case.
 
 Goinfer will listen on the ports defined in the config. Default ports:
 
+- `:4444` for some historical API endpoints
 - `:5555` for the OpenAI‑compatible API provided by llama-swap
-- `:6666` for the Web UI and some API endpoints
 
 ```sh
 # List the available models
@@ -122,7 +115,7 @@ curl -X POST localhost:5555/v1/chat/completions  \
       }'
 
 # List the models with the custom goinfer API
-curl -X GET localhost:6666/models | jq
+curl -X GET localhost:4444/models | jq
 ```
 
 ## Configuration files
@@ -185,11 +178,12 @@ server:
     - "https://my‑frontend.example.com"
     - "http://localhost"
   listen:
-    # format:  <address>: <comma‑separated list of enabled services>
+    # format:  <address>: <list of enabled services>
     # <address> can be <ip|host>:<port> or simply :<port> when <host> is localhost
-    ":6666": webui,models    # UI + model list
-    ":5555": openai,goinfer  # OpenAI‑compatible API + raw goinfer endpoint
-    ":5555": llama-swap      # OpenAI‑compatible API by llama‑swap
+    ":2222": models      # list the available model files
+    ":3333": openai      # OpenAI‑compatible API
+    ":4444": goinfer     # raw goinfer endpoint
+    ":5555": llama-swap  # OpenAI‑compatible API by llama‑swap
 
 llama:
   exe: /home/me/llama.cpp/build/bin/llama-server
@@ -322,7 +316,6 @@ swap/openai | `/v1/chat/completions` | POST   | OpenAI‑compatible chat endpoin
 swap        | `/v1/models`           | GET    | List models from Swap config
 swap        | `/v1/*`                | POST   | Other OpenAI endpoints
 goinfer     | `/goinfer`             | POST   | Custom inference API
-webui       | `/`                    | GET    | **Infergui**, static assets in `go/infer/dist`
 
 All endpoints require an `Authorization: Bearer $GI_API_KEY_ADMIN` header.
 The `admin` key grants full access to the admin routes.
@@ -412,8 +405,7 @@ Feel free to open discussions for design ideas/decisions.
 - **License:** MIT – see [`LICENSE`](./LICENSE) file.
 - **Dependencies:**
   - [llama.cpp](https://github.com/ggml-org/llama.cpp) – Apache‑2.0
-  - [llama‑swap](https://github.com/mostlygeek/llama-swap) – MIT
-  - [Infergui](https://github.com/synw/infergui) – MIT
+  - [llama‑swap](https://github.com/LM4eu/llama-swap) – MIT
 
 ## Acknowledgements
 

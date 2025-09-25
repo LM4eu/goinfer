@@ -8,12 +8,12 @@ case "${1:-}" in
 Usage:
     ./clone-pull-build-run.sh [goinfer flags]
 
-This script does the complete clone/pull/build of the goinfer dependencies: llama.cpp, llama-swap, infergui
+This script does the complete clone/pull/build of the goinfer dependencies: llama.cpp and llama-swap
 Then the script generates the configuration based on the discovered GUFF files.
 Finally the script runs goinfer.
 
 This script can used both to:
-- prepare the dev environment (git clone llama.cpp, llama-swap, infergui)
+- prepare the dev environment (git clone dependencies)
 - run goinfer during the development cycle (rebuild dependencies only if new commit)
 
 The script defaults to `git pull` (latest commit).
@@ -148,22 +148,6 @@ clone_checkout_pull mostlygeek/llama-swap "${branchLS:-main}" "${tagLS:-}"
   pwd
   npm ci --prefer-offline --no-audit --no-fund
   npm run build
-)
-
-# --- infergui ---
-cd "${BASH_SOURCE[0]%/*}/../.."
-clone_checkout_pull synw/infergui main ""
-[[ -n "$build" ]] || { [[ -f ../goinfer/go/infer/dist/index.html ]] || build="missing goinfer/go/infer/dist/index.html" ; }
-[[ -z "$build" ]] || (
-  echo "Build infergui because $build"
-  # we may: rm dist/
-  set -x
-  pwd
-  npm ci --prefer-offline --no-audit --no-fund
-  npm run build
-  # copy /dist from inferui to goinfer
-  rm -rf     ../goinfer/go/infer/dist
-  cp -r dist ../goinfer/go/infer
 )
 
 # --- settings ---

@@ -159,21 +159,20 @@ func startEchoServers(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group) {
 			continue // reserved for llama-swap
 		}
 
-		enableWebUI := strings.Contains(services, "webui")
 		enableModelsEndpoint := strings.Contains(services, "model")
 		enableGoinferEndpoint := strings.Contains(services, "goinfer")
 		enableOpenAPIEndpoint := strings.Contains(services, "openai")
 
-		if !enableWebUI && !enableModelsEndpoint && !enableGoinferEndpoint && !enableOpenAPIEndpoint {
+		if !enableModelsEndpoint && !enableGoinferEndpoint && !enableOpenAPIEndpoint {
 			slog.ErrorContext(ctx, "Unexpected", "service", services)
 			os.Exit(1)
 		}
 
-		e := inf.NewEcho(cfg, addr, enableWebUI, enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint)
+		e := inf.NewEcho(cfg, addr, enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint)
 		if e != nil {
 			grp.Go(func() error {
 				slog.InfoContext(ctx, "start Echo", "url", url(addr), "origins", cfg.Server.Origins,
-					"webui", enableWebUI, "models", enableModelsEndpoint,
+					"models", enableModelsEndpoint,
 					"goinfer", enableGoinferEndpoint, "openai", enableOpenAPIEndpoint)
 				return startEcho(ctx, e, addr)
 			})
