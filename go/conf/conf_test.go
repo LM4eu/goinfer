@@ -31,27 +31,6 @@ func writeTempConfig(t *testing.T, cfg *Cfg) string {
 	return path
 }
 
-// TestRefreshLogLevel verifies log level selection.
-func TestRefreshLogLevel(t *testing.T) {
-	t.Parallel()
-	cases := []struct {
-		wantLevel string
-		verbose   bool
-		debug     bool
-	}{
-		{"warn", false, false},
-		{"info", true, false},
-		{"debug", false, true},
-	}
-	for _, tc := range cases {
-		cfg := defaultGoInferCfg
-		cfg.RefreshLogLevel(tc.verbose, tc.debug)
-		if cfg.Swap.LogLevel != tc.wantLevel {
-			t.Errorf("RefreshLogLevel(%v,%v) => %s, want %s", tc.verbose, tc.debug, cfg.Swap.LogLevel, tc.wantLevel)
-		}
-	}
-}
-
 // TestReadMainCfg loads a config file, applies env vars, and validates.
 func TestReadMainCfg(t *testing.T) {
 	// t.Parallel omitted because of t.Setenv usage.

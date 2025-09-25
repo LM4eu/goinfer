@@ -68,19 +68,27 @@ var defaultGoInferCfg = Cfg{
 	},
 }
 
-func (cfg *Cfg) RefreshLogLevel(verbose, debug bool) {
+func (cfg *Cfg) SetLogLevel(verbose, debug bool) {
 	switch {
 	case debug:
-		cfg.Swap.LogLevel = "debug"
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 	case verbose:
-		cfg.Swap.LogLevel = "info"
 		slog.SetLogLoggerLevel(slog.LevelInfo)
 	case cfg.Swap.LogLevel == "error":
 		slog.SetLogLoggerLevel(slog.LevelError)
 	default:
-		cfg.Swap.LogLevel = "warn"
 		slog.SetLogLoggerLevel(slog.LevelWarn)
+	}
+}
+
+func (cfg *Cfg) SetLogSwap(verbose, debug bool) {
+	switch {
+	case debug:
+		cfg.Swap.LogLevel = "debug"
+	case verbose:
+		cfg.Swap.LogLevel = "info"
+	case cfg.Swap.LogLevel != "error":
+		cfg.Swap.LogLevel = "warn"
 	}
 }
 

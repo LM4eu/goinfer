@@ -48,7 +48,7 @@ func getCfg() *conf.Cfg {
 
 	var cfg conf.Cfg
 
-	cfg.RefreshLogLevel(!*quiet, *debug)
+	cfg.SetLogLevel(!*quiet, *debug)
 
 	// generate "goinfer.yml"
 	if *genMainCfg {
@@ -106,8 +106,6 @@ func getCfg() *conf.Cfg {
 	}
 
 	// command line precedes config file
-	cfg.RefreshLogLevel(!*quiet, *debug)
-
 	if *noAPIKey {
 		cfg.Server.APIKeys = nil
 	}
