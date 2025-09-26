@@ -1,9 +1,9 @@
+.vscode/
 *.gguf
 *.ignore*
 /.continue/
 /.old-code/
 /.roo/
-/.vscode/
 /docsite/dist/
 /go/goinfer
 /go/goinfer.yml
