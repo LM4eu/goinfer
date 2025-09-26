@@ -46,12 +46,12 @@ set -E
 trap 'echo "ERROR status=$? at ${BASH_SOURCE[0]}:$LINENO" >&2 ; exit "$?"' ERR
 
 # --- this script use external tools ---
-command -V git    || { echo REQUIRED: install git    && exit 1; }
-command -V go     || { echo REQUIRED: install go     && exit 1; }
-command -V npm    || { echo REQUIRED: install npm    && exit 1; }
-command -V cmake  || { echo REQUIRED: install cmake  && exit 1; }
-command -V ninja  || { echo REQUIRED: install ninja  && exit 1; }
-command -V ccache || { echo REQUIRED: install ccache && exit 1; }
+command -v git    >/dev/null || { echo REQUIRED: install git    && exit 1; }
+command -v go     >/dev/null || { echo REQUIRED: install go     && exit 1; }
+command -v npm    >/dev/null || { echo REQUIRED: install npm    && exit 1; }
+command -v cmake  >/dev/null || { echo REQUIRED: install cmake  && exit 1; }
+command -v ninja  >/dev/null || { echo REQUIRED: install ninja  && exit 1; }
+command -v ccache >/dev/null || { echo REQUIRED: install ccache && exit 1; }
 
 # clone_checkout_pull sets build=... to trigger the build
 clone_checkout_pull() {
