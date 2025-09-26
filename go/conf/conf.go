@@ -6,7 +6,9 @@ package conf
 
 import (
 	"log/slog"
+	"net"
 	"os"
+	"slices"
 	"strings"
 	"syscall"
 
@@ -47,25 +49,38 @@ const (
 	argsGoinfer = "--jinja --chat-template-file template.jinja"
 )
 
-var defaultGoInferCfg = Cfg{
-	ModelsDir: "/home/me/models",
-	Server: ServerCfg{
-		Listen: map[string]string{
-			":4444": "models openai goinfer",
-			":5555": "llama-swap",
+var (
+	defaultGoInferCfg = Cfg{
+		ModelsDir: "/home/me/models",
+		Server: ServerCfg{
+			Listen: map[string]string{
+				":4444": "models openai goinfer",
+				":5555": "llama-swap",
+			},
+			APIKeys: map[string]string{},
+			Host:    "",
+			Origins: "localhost",
 		},
-		APIKeys: map[string]string{},
-		Host:    "",
-		Origins: "localhost",
-	},
-	Llama: LlamaCfg{
-		Exe: "/home/me/llama.cpp/build/bin/llama-server",
-		Args: map[string]string{
-			"common":  argsCommon,
-			"goinfer": argsGoinfer,
+		Llama: LlamaCfg{
+			Exe: "/home/me/llama.cpp/build/bin/llama-server",
+			Args: map[string]string{
+				"common":  argsCommon,
+				"goinfer": argsGoinfer,
+			},
 		},
-	},
-}
+	}
+
+	// The Fetch standard defines the bad ports the browsers should block.
+	// https://fetch.spec.whatwg.org/#port-blocking
+	badPorts = []string{
+		"0", "1", "7", "9", "11", "13", "15", "17", "19", "20", "21", "22", "23", "25",
+		"37", "42", "43", "53", "69", "77", "79", "87", "95", "101", "102", "103", "104", "109", "110",
+		"111", "113", "115", "117", "119", "123", "135", "137", "139", "143", "161", "179", "389", "427",
+		"465", "512", "513", "514", "515", "526", "530", "531", "532", "540", "548", "554", "556", "563",
+		"587", "601", "636", "989", "990", "993", "995", "1719", "1720", "1723", "2049", "3659", "4045",
+		"4190", "5060", "5061", "6000", "6566", "6665", "6666", "6667", "6668", "6669", "6679", "6697", "10080",
+	}
+)
 
 func (cfg *Cfg) SetLogLevel(verbose, debug bool) {
 	switch {
@@ -130,13 +145,19 @@ func printEnvVar(key string, confidential bool) {
 }
 
 func (cfg *Cfg) validateMain(noAPIKey bool) error {
+	err := cfg.validatePorts()
+	if err != nil {
+		return err
+	}
+
 	if noAPIKey {
 		slog.Info("Flag -no-api-key => Do not verify API keys.")
 		return nil
 	}
 
 	// Ensure admin API key exists
-	if _, exists := cfg.Server.APIKeys["admin"]; !exists {
+	_, exists := cfg.Server.APIKeys["admin"]
+	if !exists {
 		slog.Error("Admin API key is missing")
 		return gie.ErrAPIKeyMissing
 	}
@@ -155,5 +176,24 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 		}
 	}
 
+	return nil
+}
+
+// The Fetch standard defines the bad ports the browsers should block.
+// https://fetch.spec.whatwg.org/#port-blocking
+func (cfg *Cfg) validatePorts() error {
+	for hostPort := range cfg.Server.Listen {
+		_, port, err := net.SplitHostPort(hostPort)
+		if err != nil {
+			slog.Error("Cannot split", "hostPort", hostPort, "err", err)
+			return err
+		}
+		if slices.Contains(badPorts, port) {
+			const msg = "Chrome/Firefox block the bad ports"
+			slog.Error(msg, "port", port, "see", "https://fetch.spec.whatwg.org/#port-blocking")
+			return gie.Wrap(gie.ErrInvalidParams, gie.TypeConfiguration, "BAD_PORT",
+				msg+" port="+port+" See: https://fetch.spec.whatwg.org/#port-blocking")
+		}
+	}
 	return nil
 }

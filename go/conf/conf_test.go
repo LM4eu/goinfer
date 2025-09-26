@@ -165,6 +165,10 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 		Llama:     defaultGoInferCfg.Llama,
 	}
 	cfg.Server.APIKeys = map[string]string{"admin": "dummy"}
+	err = cfg.validateMain(false)
+	if err != nil {
+		t.Fatalf("validation1 error: %v", err)
+	}
 
 	// JSON round‑trip.
 	data, _ := json.Marshal(cfg)
@@ -175,7 +179,7 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 	}
 	err = cfg2.validateMain(false)
 	if err != nil {
-		t.Fatalf("validation error: %v", err)
+		t.Fatalf("validation2 error: %v", err)
 	}
 	// Missing admin key should fail.
 	cfgMissing := &Cfg{
