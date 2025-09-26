@@ -50,9 +50,9 @@ Category            | Feature
 
 ### Using the all-in-one script
 
-The  [`clone-pull-build-run.sh`](./scripts/clone-pull-build-run.sh)
-script clones the dependencies (llama.cpp and llama-swap) and build them.
-Then you can reuse this script to `git pull` these dependencies and to to rebuild them.
+The script [`clone-pull-build-run.sh`](./scripts/clone-pull-build-run.sh)
+clones the dependencies (llama.cpp and llama-swap) and build them.
+Then you can reuse this script to `git pull` and rebuild them.
 This script also discovers your GGUF files and generates the configuration files.
 Finally the script also runs Goinfer.
 
@@ -60,6 +60,20 @@ Finally the script also runs Goinfer.
 git clone https://github.com/LM4eu/goinfer
 scripts/clone-pull-build-run.sh
 ```
+
+To reuse your own `llama-server` set:  
+`export GI_LLAMA_EXE=/home/me/bin/llama-server`
+
+If that script has found too much directories
+containing `*.gguf` model files, then reduce it with:  
+`export GI_MODELS_DIR=/home/me/models:/home/me/other/path`
+
+Disable the API key if you run Goinfer in local:  
+`./clone-pull-build-run.sh -no-api-key`
+
+The one-line full example:  
+
+    GI_LLAMA_EXE=/home/me/bin/llama-server GI_MODELS_DIR=/home/me/models:/home/me/other/path ./clone-pull-build-run.sh -no-api-key
 
 See the documentation within the [script](./scripts/clone-pull-build-run.sh).
 

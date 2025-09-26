@@ -8,24 +8,35 @@ case "${1:-}" in
 Usage:
     ./clone-pull-build-run.sh [goinfer flags]
 
-This script does the complete clone/pull/build of the goinfer dependencies: llama.cpp and llama-swap
+This script `git clone`, `git pull` and build the goinfer dependencies: llama.cpp and llama-swap
 Then the script generates the configuration based on the discovered GUFF files.
-Finally the script runs goinfer.
+Finally the script runs goinfer with the provided [goinfer flags] if any.
 
-This script can used both to:
-- prepare the dev environment (git clone dependencies)
-- run goinfer during the development cycle (rebuild dependencies only if new commit)
+This script can used:
+- to prepare the dev environment
+- to run goinfer during the development cycle (rebuild only if new commit)
+
+If you have already your `llama-server` (or compatible fork),
+set `export GI_LLAMA_EXE=/home/me/bin/llama-server`.
+So this script will not try to clone/pull/build llama.cpp.
+
+You may notice the script finds too much directories
+containing `*.gguf` model files. To reduce, set manually:
+`export GI_MODELS_DIR=/home/me/models:/home/me/other/path`
+This will also speedup the script (no search for GUFF files)
+
+Command line flags are passed to goinfer.
+This is useful if you run Goinfer in local:
+`./clone-pull-build-run.sh -no-api-key`
+
+Full one-line example:  
+`GI_LLAMA_EXE=/home/me/bin/llama-server GI_MODELS_DIR=/home/me/models:/home/me/other/path ./clone-pull-build-run.sh -no-api-key`
 
 The script defaults to `git pull` (latest commit).
-Example specifying the Git tags of llama.cpp and llama-swap:
-    tagLC=b6666 tagLS=166 ./clone-pull-build-run.sh
-
-Provided env. vars have precedence. Example:
-    export GI_MODELS_DIR=/home/me/models
-    ./clone-pull-build-run.sh
-
-Command line flags are passed to goinfer. Example
-    ./clone-pull-build-run.sh -debug -no-api-key
+But you can specify the branch name or tag:
+`tagLC=b6666 tagLS=166 ./clone-pull-build-run.sh`
+`branchLC=master branchLS=main ./clone-pull-build-run.sh`
+(LC=llama.cpp LS=llama-swap)
 
 Note: the scripts enables CPU optimizations.
 EOF
