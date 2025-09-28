@@ -8,7 +8,7 @@ go 1.25.1
 
 require (
 	github.com/LM4eu/garcon v0.40.0
-	github.com/LM4eu/llama-swap v0.0.0-20250925224418-bab7d1f3968a
+	github.com/LM4eu/llama-swap v0.0.162
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/labstack/gommon v0.4.2
 	github.com/stretchr/testify v1.11.1
