@@ -172,7 +172,9 @@ export GI_MODELS_DIR=${GI_MODELS_DIR:?GI_MODELS_DIR is empty: Download a model f
 # clone/pull/build llama.cpp if GI_LLAMA_EXE is unset/empty
 export GI_LLAMA_EXE="${GI_LLAMA_EXE:-"$(llamaCpp >&2 && cd "${BASH_SOURCE[0]%/*}/../../llama.cpp/build/bin" && pwd )"/llama-server}"
 
-llamaSwap
+# The build of the llama-swap frontend is not required any more
+# because LM4eu/llama-swap v0.0.162 embeds a simple index.html
+# llamaSwap
 
 # --- goinfer ---
 cd "${BASH_SOURCE[0]%/*}/../go"
