@@ -17,9 +17,9 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/LM4eu/garcon/vv"
 	"github.com/LM4eu/llama-swap/proxy"
 	"github.com/labstack/echo/v4"
-	"github.com/teal-finance/garcon"
 
 	"github.com/LM4eu/goinfer/conf"
 	"github.com/LM4eu/goinfer/infer"
@@ -43,7 +43,7 @@ func getCfg() *conf.Cfg {
 	noAPIKey := flag.Bool("no-api-key", false, "disable API key check/generation (with -gen-main-cfg)")
 	genMainCfg := flag.Bool("gen-main-cfg", false, "generate "+mainCfg+" (Main config file)")
 	genSwapCfg := flag.Bool("gen-swap-cfg", false, "generate "+swapCfg+" (Swap config file)")
-	garcon.SetVersionFlag()
+	vv.SetVersionFlag()
 	flag.Parse()
 
 	var cfg conf.Cfg
