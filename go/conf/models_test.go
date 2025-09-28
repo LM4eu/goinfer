@@ -23,7 +23,7 @@ func createGGUFFile(t *testing.T, dir, name string, size int64) string {
 	}
 	defer f.Close()
 	if size > 0 {
-		_, err := f.Write(make([]byte, size))
+		_, err = f.Write(make([]byte, size))
 		if err != nil {
 			t.Fatalf("failed to write to file %s: %v", path, err)
 		}
@@ -201,7 +201,7 @@ func TestValidateFile(t *testing.T) {
 	}
 
 	// too small
-	small := createGGUFFile(t, tmp, "small.gguf", 500)
+	small := createGGUFFile(t, tmp, "small.gguf", 64)
 	err = validateFile(small)
 	if err == nil {
 		t.Errorf("validateFile(small) expected error")

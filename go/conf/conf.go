@@ -99,6 +99,8 @@ func (cfg *Cfg) SetLogSwap(verbose, debug bool) {
 	switch {
 	case debug:
 		cfg.Swap.LogLevel = "debug"
+	default:
+		fallthrough
 	case verbose:
 		cfg.Swap.LogLevel = "info"
 	case cfg.Swap.LogLevel != "error":
@@ -125,7 +127,7 @@ func (cfg *Cfg) Print() {
 		return
 	}
 
-	os.Stdout.Write(yml)
+	_, _ = os.Stdout.Write(yml)
 
 	slog.Info("-----------------------------")
 }
@@ -181,6 +183,8 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 
 // The Fetch standard defines the bad ports the browsers should block.
 // https://fetch.spec.whatwg.org/#port-blocking
+//
+//nolint:revive // for better readability => do not rewrite with `if !c { continue }`
 func (cfg *Cfg) validatePorts() error {
 	for hostPort := range cfg.Server.Listen {
 		_, port, err := net.SplitHostPort(hostPort)

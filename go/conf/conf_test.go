@@ -230,8 +230,8 @@ func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 		grp.Add(1)
 		go func() {
 			defer grp.Done()
-			cfg := &Cfg{}
-			err := cfg.ReadMainCfg(tmpFile, true)
+			cfg = &Cfg{}
+			err = cfg.ReadMainCfg(tmpFile, true)
 			if err != nil {
 				t.Errorf("ReadMainCfg error: %v", err)
 			}

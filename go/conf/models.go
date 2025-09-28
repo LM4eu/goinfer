@@ -106,7 +106,7 @@ func add(info map[string]ModelInfo, root string) error {
 		err = validateFile(path)
 		if err != nil {
 			slog.Debug("Skip", "model", path)
-			return nil //nolint:nilerr
+			return nil //nolint:nilerr // "return nil" to skip this file
 		}
 
 		slog.Debug("Found", "model", path)
@@ -123,6 +123,7 @@ func add(info map[string]ModelInfo, root string) error {
 	})
 }
 
+//nolint:gocritic,revive // return model name and llama-server flags
 func getNameAndFlags(root, path string) (string, string) {
 	truncated, flags := extractFlags(path)
 	name := nameWithSlash(root, truncated)
@@ -131,6 +132,8 @@ func getNameAndFlags(root, path string) (string, string) {
 
 // nameWithSlash converts the first underscore in a model name to a slash.
 // If there is a dash, only top domain names between the dash and the slash.
+//
+//nolint:revive // will refactor/split to reduce cognitive complexity (31).
 func nameWithSlash(root, truncated string) string {
 	name := filepath.Base(truncated)
 
@@ -222,6 +225,8 @@ func nameWithDir(root, truncated, name string) string {
 // It first checks for a companion ".args" file; if present, its contents are used as flags.
 // Otherwise, it parses flags encoded in the filename after an '&' delimiter.
 // Returns the truncated path (without extension) and a space‑separated flag string.
+//
+//nolint:gocritic,revive // return the truncated model filename and the llama-server flags.
 func extractFlags(path string) (string, string) {
 	truncated := strings.TrimSuffix(path, ".gguf")
 

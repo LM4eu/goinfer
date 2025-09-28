@@ -1,11 +1,11 @@
-# Documentation:
-# https://golangci-lint.run/usage/configuration/#run-configuration
-
-# Run the last version:
+# List linters:
+# go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest linters --no-config
+#
+# Run lastest:
 # go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --fix
-
-# List the available linters:
-# go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest linters --no-config --color always
+#
+# Doc:
+# https://golangci-lint.run/docs/configuration/file
 
 version: "2"
 
@@ -37,107 +37,16 @@ linters:
     - ireturn
     - mnd # Magic number
     - nlreturn
-    - revive
     - staticcheck
     - testpackage
     - wrapcheck
     - wsl
     - wsl_v5
 
-  enable:
-    - asasalint # Check for pass []any as any in variadic func(…any).
-    - asciicheck # Checks that all code identifiers does not have non-ASCII symbols in the name
-    - bidichk # Checks for dangerous unicode character sequences
-    - bodyclose # Checks whether HTTP response body is closed successfully
-    - canonicalheader # Canonicalheader checks whether net/http.Header uses canonical header
-    - containedctx # detects struct contained context.Context field
-    - contextcheck # Check whether the function uses a non-inherited context
-    - copyloopvar # detects places where loop variables are copied
-    - cyclop # function and package cyclomatic complexity
-    - decorder # declaration order and count of types, constants, variables and functions
-    - dupl # Detects duplicate fragments of code
-    - dupword # Checks for duplicate words in the source code
-    - durationcheck
-    - embeddedstructfieldcheck
-    - errcheck
-    - errchkjson
-    - errname
-    - errorlint
-    - exhaustive
-    - exhaustruct
-    - exptostd
-    - fatcontext
-    - forcetypeassert
-    - funcorder
-    - funlen
-    - gocheckcompilerdirectives
-    - gochecknoinits
-    - gochecksumtype
-    - gocognit
-    - goconst
-    - gocritic
-    - gocyclo
-    - godot
-    - godox
-    - goheader
-    - goprintffuncname # Checks that printf-like functions are named with f at the end.
-    - gosec # Inspects source code for security problems
-    - gosmopolitan
-    - govet
-    - grouper
-    - iface
-    - importas
-    - inamedparam
-    - ineffassign
-    - interfacebloat
-    - intrange
-    - lll
-    - loggercheck
-    - maintidx
-    - makezero
-    - mirror
-    - misspell
-    - musttag
-    - nakedret
-    - nestif
-    - nilerr
-    - nilnesserr
-    - nilnil
-    - noctx
-    - noinlineerr
-    - nolintlint
-    - nonamedreturns
-    - nosprintfhostport
-    - paralleltest
-    - perfsprint
-    - prealloc
-    - predeclared
-    - promlinter
-    - protogetter
-    - reassign
-    - recvcheck
-    - rowserrcheck
-    - sloglint
-    - spancheck
-    - sqlclosecheck
-    - tagalign
-    - tagliatelle
-    - testableexamples
-    - testifylint
-    - thelper
-    - tparallel
-    - unconvert
-    - unparam
-    - unused
-    - usestdlibvars
-    - usetesting
-    - varnamelen
-    - wastedassign
-    - whitespace
-    - zerologlint
-
   settings:
-    ##### ORDER ######
+    # https://golangci-lint.run/docs/linters/configuration/#copyloopvar
+    copyloopvar: # detects places where loop variables are copied
+      check-alias: true # Check all assigning the loop variable to another variable
 
     decorder:
       # Default: `type`, `const`, `var` and `func`
@@ -164,10 +73,6 @@ linters:
       # alphabetically sorted
       alphabetical: false # Default: false
 
-    # https://golangci-lint.run/docs/linters/configuration/#copyloopvar
-    copyloopvar: # detects places where loop variables are copied
-      check-alias: true # Check all assigning the loop variable to another variable
-
     dupl:
       threshold: 94 # Tokens count to trigger issue. Default: 150
 
@@ -178,6 +83,7 @@ linters:
 
     # https://golangci-lint.run/docs/linters/configuration/#errcheck
     # https://github.com/kisielk/errcheck
+
     errcheck:
       # check errors in type assertions: `a := b.(MyStruct)`
       check-type-assertions: true
@@ -365,23 +271,20 @@ linters:
       # Default: 0.0
       package-average: 7.5
 
+    # https://golangci-lint.run/docs/linters/configuration/#gocritic
     gocritic:
-      enabled-tags:
-        - diagnostic
-        - style
-        - performance
-        - experimental
-        - opinionated
+      enable-all: true
       disabled-checks:
-        - captLocal
-        - unnamedResult
-        - whyNoLint
+        - defaultCaseOrder
+        - emptyFallthrough
         # - dupImport # https://github.com/go-critic/go-critic/issues/845
         # - ifElseChain
         # - octalLiteral
+        # - singleCaseSwitch # Every time this occurred in the code, there was no other way
+        # - unnamedResult
+        # - whyNoLint
         # - wrapperFunc
         # - yodaStyleExpr
-        # - singleCaseSwitch # Every time this occurred in the code, there was no other way
 
     # comments end in a period
     godot:
@@ -414,6 +317,7 @@ linters:
         - G104
       severity: medium
 
+    # https://golangci-lint.run/docs/linters/configuration/#govet
     govet:
       enable-all: true
       settings:
@@ -461,8 +365,310 @@ linters:
     promlinter:
       strict: false
 
+    # https://golangci-lint.run/docs/linters/configuration/#revive
     revive:
-      enable-all-rules: true
+      max-open-files: 50 # Max open files at the same time.
+      severity: warning # can be error, See https://github.com/mgechev/revive#configuration
+      enable-all-rules: true # Enable all available rules (Default: false)
+      directives: # See https://github.com/mgechev/revive#comment-directives
+        - name: specify-disable-reason
+          severity: error
+      confidence: 0.9 # Default: 0.8 => ignore linting errors with less than 0.8 confidence
+      # Run `GL_DEBUG=revive golangci-lint run --enable-only=revive` to see default, all available rules, and enabled rules.
+      rules:
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#add-constant
+        - name: add-constant # use constant for magic numbers and string literals.
+          disabled: true
+          arguments:
+            - max-lit-count: "3"
+              allow-strs: '"","Listen","error","url","file","use","granite3.3_8b_Q4_K_M"'
+              allow-ints: "0,1,2,3,10,0o600,32,64,2048"
+              allow-floats: "0.0,0.,1.0,1.,2.0,2."
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#argument-limit
+        - name: argument-limit
+          arguments: [5]
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#atomic
+        - name: atomic # mistaken usage of the sync/atomic package
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#banned-characters
+        - name: banned-characters
+          arguments: ["Ω", "Σ", "σ"]
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#bare-return
+        - name: bare-return # Warns on bare (a.k.a. naked) returns
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#blank-imports
+        - name: blank-imports # Blank import should be only in a main or test package, or have a comment justifying it
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#bool-literal-in-expr
+        - name: bool-literal-in-expr # don't do: if value == false { … }
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#call-to-gc
+        - name: call-to-gc # garbage collector
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#cognitive-complexity
+        - name: cognitive-complexity
+          arguments: [19]
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#comment-spacings
+        - name: comment-spacings # Warn: //no space between // and the start
+          # arguments: [] # use arguments for the exceptions
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#comments-density
+        - name: comments-density
+          arguments: [8] # comments represent 8% or more
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#confusing-naming
+        - name: confusing-naming
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#confusing-results
+        - name: confusing-results # return multiple values of the same type could induce error
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#constant-logical-expr
+        - name: constant-logical-expr
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#context-as-argument
+        - name: context-as-argument # context.Context = first parameter of a function
+          arguments:
+            - allow-types-before: "*testing.T,*github.com/user/repo/testing.Harness"
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#context-keys-type
+        - name: context-keys-type # Basic types should not be used as a key in context.WithValue
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#cyclomatic
+        - name: cyclomatic
+          arguments: [16] # max function complexity
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#datarace
+        - name: datarace # dataraces by goroutines capturing named return values and for-range values
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#deep-exit
+        - name: deep-exit # functions should not stop program execution by exiting (except main and init)
+          exclude: ["github.com/LM4eu/goinfer", "goinfer.go", "./goinfer.go", "./..."]
+          disabled: true
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#defer
+        - name: defer # mistakes when using defer statement
+          # arguments: # enable all
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#dot-imports
+        - name: dot-imports # Importing with . makes the programs much harder to understand
+          arguments:
+            - allowed-packages: [""]
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#duplicated-imports
+        - name: duplicated-imports
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#early-return
+        - name: early-return # minimize nesting statements with early return
+          arguments:
+            # - "preserve-scope"
+            - "allow-jump"
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#empty-block
+        - name: empty-block
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#empty-lines
+        - name: empty-lines # warns heading or trailing newlines in code blocks
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#enforce-map-style
+        - name: enforce-map-style # enforces consistent usage of make(map[type]type) or map[type]type{} for map initialization
+          exclude: [""]   # "make":    enforces the usage of make(map[type]type)
+          arguments:      # "literal": enforces the usage of      map[type]type{}
+            - "literal"   # "any":     both (default)
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#enforce-repeated-arg-type-style
+        - name: enforce-repeated-arg-type-style # consistency in the declaration of repeated argument and return value types in Go functions
+          arguments: ["short"]
+            # # Or this parameter:
+            # - func-arg-style: "full"
+            #   func-ret-val-style: "short"
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#enforce-slice-style
+        - name: enforce-slice-style # initialize slice with make([]type, 0), []type{}, or var []type
+          exclude: [""]   # "make":    enforces the usage of make([]type, 0)
+          arguments:      # "literal": enforces the usage of      []type{}
+            - "literal"   # "nil":     enforces the usage of  var []type
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#enforce-switch-style
+        - name: enforce-switch-style
+          arguments: ["allowDefaultNotLast"] # (empty) or "allowNoDefault"
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#error-naming
+        - name: error-naming # variables of type error => prefix err
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#error-return
+        - name: error-return # errors should be last in the list of returned values
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#error-strings
+        - name: error-strings # error messages: no capitalized, no end with punctuation, no newline
+          # arguments:  # <-- provide the user functions that create errors
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#errorf
+        - name: errorf # replace errors.New(fmt.Sprintf()) => fmt.Errorf()
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#exported
+        - name: exported # Exported function should have comments
+          arguments:
+            - "check-private-receivers"             # enables checking public methods of private types
+            - "disable-stuttering-check"            # disables checking for method names that stutter with the package name (i.e. avoid failure messages of the form type name will be used as x.XY by other packages, and that stutters; consider calling this Y)
+            - "say-repetitive-instead-of-stutters"  # replaces the use of the term stutters by repetitive in failure messages
+            - "check-public-interface"              # enabled checking public method definitions in public interface types
+            - "disable-checks-on-constants"         # disable all checks on constant declarations
+            - "disable-checks-on-functions"         # disable all checks on function declarations
+            - "disable-checks-on-methods"           # disable all checks on method declarations
+            - "disable-checks-on-types"             # disable all checks on type declarations
+            - "disable-checks-on-variables"         # disable all checks on variable declarations
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#file-header
+        - name: file-header # common header for all source files in a project
+          arguments:
+            - Copyright 2025 The contributors of Goinfer.
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#file-length-limit
+        - name: file-length-limit # maximum number of lines per file
+          arguments:
+            - max: 2000
+              skip-comments: true
+              skip-blank-lines: false
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#filename-format
+        - name: filename-format # source file names = ^[_A-Za-z0-9][_A-Za-z0-9-]*\.go$
+          arguments:
+            - "^[a-z][_a-z0-9-]*\\.go$"
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#flag-parameter
+        - name: flag-parameter # control-coupled = a function controls the flow of another by passing it information on what to do
+          disabled: true
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#function-result-limit
+#       - name: forbidden-call-in-wg-go # Since Go 1.25, it is possible to create goroutines with the method waitgroup.Go
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#function-length
+        - name: function-length # Functions returning too many results can be hard to understand/use
+          arguments: [100, 0]
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#function-result-limit
+        - name: function-result-limit # Functions returning too many results
+          arguments: [4]
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#get-return
+        - name: get-return # prefix Get => function is supposed to return a value
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#identical-branches
+        - name: identical-branches # if-then-else conditional with identical implementations in both branches
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#identical-ifelseif-branches
+        - name: identical-ifelseif-branches
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#identical-ifelseif-conditions
+        - name: identical-ifelseif-conditions
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#identical-switch-branches
+        - name: identical-switch-branches
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#identical-switch-conditions
+        - name: identical-switch-conditions
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#if-return
+        - name: if-return
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#import-alias-naming
+        - name: import-alias-naming # lowercase import alias names
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#import-shadowing
+        - name: import-shadowing
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#imports-blocklist
+        - name: imports-blocklist
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#increment-decrement
+        - name: increment-decrement # i += 1 and i -= 1 => i++ and i--
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#indent-error-flow
+        - name: indent-error-flow # redundant else-blocks that can be eliminated from the code
+          # arguments:
+          #   - "preserve-scope" # preserve-scope: do not increase variable scope
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#line-length-limit
+        - name: line-length-limit
+          arguments: [300]
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#max-control-nesting
+        - name: max-control-nesting
+          arguments: [3]
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#max-public-structs
+        - name: max-public-structs
+          arguments: [8]
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#modifies-parameter
+        - name: modifies-parameter
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#modifies-value-receiver
+        - name: modifies-value-receiver
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#nested-structs
+        - name: nested-structs
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#optimize-operands-order
+        - name: optimize-operands-order
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#package-comments
+        - name: package-comments
+          disabled: true
+          exclude: ["goinfer.go"]
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#package-directory-mismatch
+        - name: package-directory-mismatch # name a package after the directory containing it
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#range
+        - name: range
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#range-val-address
+        - name: range-val-address
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#range-val-in-closure
+        - name: range-val-in-closure
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#receiver-naming
+        - name: receiver-naming # receiver names in a method should reflect their identity
+          arguments:
+            - max-length: 3
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#redefines-builtin-id
+        - name: redefines-builtin-id # Constant names like false, true, nil ; function names like append, make ; 
+          exclude: [""]              # and basic type names like bool, and byte are not reserved words of the language
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#redundant-build-tag
+        - name: redundant-build-tag
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#redundant-import-alias
+        - name: redundant-import-alias
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#redundant-test-main-exit
+        - name: redundant-test-main-exit
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#string-format
+        - name: string-format # some string literals are used for messages presented to users
+          # arguments:
+          #   - - 'core.WriteError[1].Message'
+          #     - '/^([^A-Z]|$)/'
+          #     - must not start with a capital letter
+          #   - - 'fmt.Errorf[0]'
+          #     - '/(^|[^\.!?])$/'
+          #     - must not end in punctuation
+          #   - - panic
+          #     - '/^[^\n]*$/'
+          #     - must not contain line breaks
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#string-of-int
+        - name: string-of-int
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#struct-tag
+        - name: struct-tag # struct tags are not checked at compile time
+          # arguments:
+          #   - "json,inline"
+          #   - "bson,outline,gnu"
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#superfluous-else
+        - name: superfluous-else
+          # arguments:
+          #   - "preserve-scope"
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#time-date
+        - name: time-date
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#time-equal
+        - name: time-equal
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#time-naming
+        - name: time-naming
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#unchecked-type-assertion
+        - name: unchecked-type-assertion # to prevent unexpected panic()
+          # arguments:
+          #   - accept-ignored-assertion-result: true # accept: foo, _ := bar(.*Baz).
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#unconditional-recursion
+        - name: unconditional-recursion
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#unexported-naming
+        - name: unexported-naming
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#unexported-return
+        - name: unexported-return
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#unhandled-error
+        - name: unhandled-error # function must explicitly handle returned errors
+          arguments:
+            - '^os\.(CreateTemp|WriteFile|Chmod)$'
+            - "^fmt.Printf"
+            - '^(bytes\.Buffer|string\.Writer)\.Write(Byte|Rune|String)?$'
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#unnecessary-format
+        - name: unnecessary-format
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#unnecessary-stmt
+        - name: unnecessary-stmt
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#unreachable-code
+        - name: unreachable-code
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#unsecure-url-scheme
+        - name: unsecure-url-scheme
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#unused-parameter
+        - name: unused-parameter # unused parameters can be a symptom of an unfinished refactoring or a bug
+          arguments:
+            - allow-regex: "^_"
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#unused-receiver
+        - name: unused-receiver
+          arguments:
+            - allow-regex: "^_"
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#use-any
+        - name: use-any
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#use-errors-new
+        - name: use-errors-new
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#use-fmt-print
+        - name: use-fmt-print # print and println => equivalents fmt.*
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#use-waitgroup-go
+        - name: use-waitgroup-go
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#useless-break
+        - name: useless-break
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#useless-fallthrough
+        - name: useless-fallthrough
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#var-declaration
+        - name: var-declaration
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#var-naming
+        - name: var-naming # warns when initialism, variable or package naming conventions are not followed
+          # arguments:                       # relax the rules
+          #   - ["ID"] # AllowList
+          #   - ["VM"] # DenyList
+          #   - - skip-initialism-name-checks: true
+          #       upper-case-const: true
+          #       skip-package-name-checks: true
+          #       extra-bad-package-names:
+          #         - helpers
+          #         - models
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#waitgroup-by-value
+        - name: waitgroup-by-value
 
     # https://golangci-lint.run/docs/linters/configuration/#sloglint
     sloglint:
@@ -532,10 +738,10 @@ linters:
       ignore-names: # Ignore these variable names.
         - tt
       ignore-decls: # Ignore these variable declarations.
-        - err error
-        - er  error # avoid shadowing err
         - c echo.Context
         - e *echo.Echo
+        - er  error # avoid shadowing err
+        - err error
         - i int
         - k string
         - m echo.Map
@@ -557,7 +763,6 @@ linters:
         - fmt.Errorf(
 
 run:
-  # timeout for analysis, e.g. 30s, 5m, default is 1m
   # exit code when at least one issue was found, default is 1
   issues-exit-code: 1
   # which dirs to skip: they won't be analyzed;
@@ -566,5 +771,6 @@ run:
   # from this option's value:
   #     vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
   go: "1.25"
+  # timeout for analysis, e.g. 30s, 5m, default is 1m
   timeout: 5m
 

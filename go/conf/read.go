@@ -50,7 +50,7 @@ func (cfg *Cfg) load(mainCfg string) error {
 	}
 
 	if len(yml) > 0 {
-		err := yaml.Unmarshal(yml, &cfg)
+		err = yaml.Unmarshal(yml, &cfg)
 		if err != nil {
 			slog.Error("Failed to yaml.Unmarshal", "100FirsBytes", string(yml[:100]))
 			return gie.Wrap(err, gie.TypeConfiguration, "", "")

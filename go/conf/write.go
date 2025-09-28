@@ -52,9 +52,9 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 		cfg.Swap.LogLevel = "warn"
 	}
 
-	cfg.Swap.StartPort = 5800         // first ${PORT} incremented for each model
-	cfg.Swap.HealthCheckTimeout = 120 // seconds to wait for a model to become ready
-	cfg.Swap.MetricsMaxInMemory = 500 // maximum number of metrics to keep in memory
+	cfg.Swap.StartPort = 5800
+	cfg.Swap.HealthCheckTimeout = 120
+	cfg.Swap.MetricsMaxInMemory = 500
 
 	common, ok := cfg.Llama.Args["common"]
 	if !ok {

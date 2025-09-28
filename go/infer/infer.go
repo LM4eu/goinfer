@@ -79,11 +79,11 @@ func parseInferQuery(ctx context.Context, m echo.Map) (*InferQuery, error) {
 	}
 
 	// Parse required prompt parameter
-	if val, ok := m["prompt"].(string); ok {
-		query.Prompt = val
-	} else {
+	val, ok := m["prompt"].(string)
+	if !ok {
 		return query, gie.ErrInvalidPrompt
 	}
+	query.Prompt = val
 
 	if val, ok := m["model"].(string); ok {
 		query.Model.Name = val

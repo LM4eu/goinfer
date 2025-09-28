@@ -56,7 +56,7 @@ func (inf *Infer) NewEcho(cfg *conf.Cfg, addr string,
 		return func(c echo.Context) error {
 			err := next(c)
 			if err != nil {
-				return gie.HandleError(err, c)
+				return gie.HandleErrorMiddleware(err, c)
 			}
 			return nil
 		}
@@ -119,12 +119,12 @@ func configureAPIKeyAuth(grp *echo.Group, cfg *conf.Cfg, service string) {
 		return
 	}
 
-	grp.Use(middleware.KeyAuth(func(received_key string, c echo.Context) (bool, error) {
+	grp.Use(middleware.KeyAuth(func(received_key string, _ echo.Context) (bool, error) {
 		if received_key == key {
 			return true, nil
 		}
 
-		slog.Warn("Received API key is NOT the configured one for service", "service", service)
+		slog.Warn("Received API key is NOT the configured for", "service", service, "len(received)", len(received_key), "len(expected)", len(key))
 		return false, nil
 	}))
 }

@@ -11,8 +11,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// HandleError is a centralized error handler for Echo middleware.
-func HandleError(err error, c echo.Context) error {
+// HandleErrorMiddleware is a centralized error handler for Echo middleware.
+func HandleErrorMiddleware(err error, c echo.Context) error {
 	// Log the error for debugging
 	c.Logger().Error(err)
 
@@ -28,31 +28,6 @@ func HandleValidationError(c echo.Context, err error) error {
 // HandleInferenceError handles inference-related errors.
 func HandleInferenceError(c echo.Context, err error) error {
 	return handleError(c, err, TypeInference, "INFERENCE_ERROR", "inference failed")
-}
-
-// HandleConfigError handles configuration-related errors.
-func HandleConfigError(c echo.Context, err error) error {
-	return handleError(c, err, TypeConfiguration, "CONFIG_ERROR", "configuration error")
-}
-
-// HandleUnauthorizedError handles authentication errors.
-func HandleUnauthorizedError(c echo.Context, err error) error {
-	return handleError(c, err, TypeUnauthorized, "UNAUTHORIZED", "unauthorized access")
-}
-
-// HandleNotFoundError handles resource not found errors.
-func HandleNotFoundError(c echo.Context, err error) error {
-	return handleError(c, err, TypeNotFound, "NOT_FOUND", "resource not found")
-}
-
-// HandleTimeoutError handles timeout-related errors.
-func HandleTimeoutError(c echo.Context, err error) error {
-	return handleError(c, err, TypeTimeout, "TIMEOUT_ERROR", "request timeout")
-}
-
-// HandleServerError handles server-related errors.
-func HandleServerError(c echo.Context, err error) error {
-	return handleError(c, err, TypeServer, "SERVER_ERROR", "internal server error")
 }
 
 // handleError centralizes error handling for HTTP responses.
@@ -88,7 +63,7 @@ func statusCode(errType ErrorType) int {
 	case TypeTimeout:
 		return http.StatusRequestTimeout
 	case TypeConfiguration, TypeInference, TypeServer:
-		return http.StatusInternalServerError
+		fallthrough
 	default:
 		return http.StatusInternalServerError
 	}

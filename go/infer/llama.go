@@ -119,7 +119,7 @@ func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *InferQuer
 
 	// Execute inference with basic retry logic
 	var err error
-	maxRetries := 3
+	const maxRetries = 3
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		// Check context
 		if ctx.Err() != nil {
@@ -191,6 +191,8 @@ func (inf *Infer) completeStream(ctx context.Context, c echo.Context, _ int) err
 }
 
 // streamToken handles token processing during prediction.
+//
+//nolint:revive // will refactor to reduce the number of arguments
 func (inf *Infer) streamToken(
 	ctx context.Context, nTok int, token string, jsonEncoder *json.Encoder,
 	c echo.Context, params *InferParams, startThinking time.Time,
@@ -236,7 +238,7 @@ func (inf *Infer) streamToken(
 	}
 
 	// Log token
-	inf.logToken(ctx, token)
+	logToken(ctx, token)
 
 	// Check if streaming
 	if !params.Stream {
@@ -254,7 +256,7 @@ func (inf *Infer) streamToken(
 }
 
 // logToken logs token information.
-func (inf *Infer) logToken(ctx context.Context, token string) {
+func logToken(ctx context.Context, token string) {
 	slog.InfoContext(ctx, "token", "value", token)
 }
 

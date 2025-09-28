@@ -78,9 +78,9 @@ func parseOpenAIRequest(c echo.Context) (*InferQuery, error) {
 				return nil, gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "INVALID_MESSAGE_CONTENT", "message "+strconv.Itoa(i)+" missing content")
 			}
 			if i > 0 {
-				builder.WriteString("\n")
+				_, _ = builder.WriteString("\n")
 			}
-			builder.WriteString(msg.Content)
+			_, _ = builder.WriteString(msg.Content)
 		}
 		prompt = builder.String()
 	}

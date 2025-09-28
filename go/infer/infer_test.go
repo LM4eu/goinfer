@@ -17,7 +17,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-//--- Helper -------------------------------------------------------------------
+// --- Helper -------------------------------------------------------------------
 
 // newEcho creates an echo instance and a test context wired to the provided
 // request and response recorder.
@@ -28,17 +28,22 @@ func newEcho(req *http.Request) (echo.Context, *httptest.ResponseRecorder) {
 	return c, rec
 }
 
-//--- 1. parseInferQuery – valid payload ---------------------------------------
+// --- 1. parseInferQuery – valid payload ---------------------------------------
 
 func TestParseInferQuery_ValidPayload(t *testing.T) {
 	t.Parallel()
+
+	const ctxSize = 2048
+	const temperature = 0.7
+	const maxTokens = 128
+
 	payload := map[string]any{
 		"prompt":      "hello",
 		"model":       "dummy-model",
-		"ctx":         2048,
+		"ctx":         ctxSize,
 		"stream":      true,
-		"temperature": 0.7,
-		"max_tokens":  128,
+		"temperature": temperature,
+		"max_tokens":  maxTokens,
 		"stop": []any{
 			"STOP1",
 			"STOP2",
@@ -54,17 +59,17 @@ func TestParseInferQuery_ValidPayload(t *testing.T) {
 	if query.Model.Name != "dummy-model" {
 		t.Errorf("Model.Name mismatch: want %q, got %q", "dummy-model", query.Model.Name)
 	}
-	if query.Model.Ctx != 2048 {
-		t.Errorf("Model.Ctx mismatch: want %d, got %d", 2048, query.Model.Ctx)
+	if query.Model.Ctx != ctxSize {
+		t.Errorf("Model.Ctx mismatch: want %d, got %d", ctxSize, query.Model.Ctx)
 	}
 	if !query.Params.Stream {
 		t.Errorf("Params.Stream should be true")
 	}
-	if query.Params.Sampling.Temperature != 0.7 {
-		t.Errorf("Params.Sampling.Temperature mismatch: want %v, got %v", 0.7, query.Params.Sampling.Temperature)
+	if query.Params.Sampling.Temperature != temperature {
+		t.Errorf("Params.Sampling.Temperature mismatch: want %v, got %v", temperature, query.Params.Sampling.Temperature)
 	}
-	if query.Params.Generation.MaxTokens != 128 {
-		t.Errorf("Params.Generation.MaxTokens mismatch: want %d, got %d", 128, query.Params.Generation.MaxTokens)
+	if query.Params.Generation.MaxTokens != maxTokens {
+		t.Errorf("Params.Generation.MaxTokens mismatch: want %d, got %d", maxTokens, query.Params.Generation.MaxTokens)
 	}
 	if len(query.Params.Generation.StopPrompts) != 2 ||
 		query.Params.Generation.StopPrompts[0] != "STOP1" ||
@@ -74,7 +79,7 @@ func TestParseInferQuery_ValidPayload(t *testing.T) {
 	}
 }
 
-//--- 2. parseInferQuery – missing required `prompt` -------------------------
+// --- 2. parseInferQuery – missing required `prompt` -------------------------
 
 func TestParseInferQuery_MissingPrompt(t *testing.T) {
 	t.Parallel()
@@ -90,7 +95,7 @@ func TestParseInferQuery_MissingPrompt(t *testing.T) {
 	}
 }
 
-//--- 3. getInt – type mismatch ------------------------------------------------
+// --- 3. getInt – type mismatch ------------------------------------------------
 
 func TestGetInt_TypeMismatch(t *testing.T) {
 	t.Parallel()
@@ -103,7 +108,7 @@ func TestGetInt_TypeMismatch(t *testing.T) {
 	}
 }
 
-//--- 4. getFloat – type mismatch ----------------------------------------------
+// --- 4. getFloat – type mismatch ----------------------------------------------
 
 func TestGetFloat_TypeMismatch(t *testing.T) {
 	t.Parallel()
@@ -116,7 +121,7 @@ func TestGetFloat_TypeMismatch(t *testing.T) {
 	}
 }
 
-//--- 5. Concurrency guard – only one inference at a time ---------------------
+// --- 5. Concurrency guard – only one inference at a time ---------------------
 
 func TestConcurrencyGuard(t *testing.T) {
 	t.Parallel()
