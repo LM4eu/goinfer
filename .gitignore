@@ -5,6 +5,7 @@
 /.old-code/
 /.roo/
 /docsite/dist/
+/go/go.work*
 /go/goinfer
 /go/goinfer.yml
 /go/infer/dist/
