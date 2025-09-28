@@ -82,13 +82,7 @@ See the documentation within the [script](./scripts/clone-pull-build-run.sh).
 To manually build Goinfer:
 
 ```bash
-git clone https://github.com/LM4eu/llama-swap
 git clone https://github.com/LM4eu/goinfer
-
-cd ../llama-swap/ui
-npm i
-npm run build
-
 cd ../goinfer/go
 go build .
 ```
