@@ -10,7 +10,7 @@ services:
     container_name: goinfer-llama
     build:
       context: .
-      dockerfile: ./Dockerfile
+      dockerfile: ./Containerfile
       args:
         # llama.cpp tags: https://github.com/ggml-org/llama.cpp/tags
         - llama_git_tag=b6131
