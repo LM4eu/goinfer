@@ -19,9 +19,9 @@ import (
 // WriteMainCfg populates the configuration with defaults, applies environment variables,
 // writes the resulting configuration to the given file, and mutates the receiver.
 func (cfg *Cfg) WriteMainCfg(mainCfg string, debug, noAPIKey bool) error {
-	cfg.Llama = defaultGoInferCfg.Llama
-	cfg.ModelsDir = defaultGoInferCfg.ModelsDir
-	cfg.Server = defaultGoInferCfg.Server
+	cfg.Llama = defaultGoinferCfg.Llama
+	cfg.ModelsDir = defaultGoinferCfg.ModelsDir
+	cfg.Server = defaultGoinferCfg.Server
 
 	cfg.applyEnvVars()
 	cfg.trimParamValues()

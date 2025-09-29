@@ -38,8 +38,8 @@ func TestReadMainCfg(t *testing.T) {
 	// Minimal config.
 	cfg := &Cfg{
 		ModelsDir: "/tmp/models",
-		Server:    defaultGoInferCfg.Server,
-		Llama:     defaultGoInferCfg.Llama,
+		Server:    defaultGoinferCfg.Server,
+		Llama:     defaultGoinferCfg.Llama,
 	}
 	// Provide a dummy admin API key to satisfy validation.
 	cfg.Server.APIKeys = map[string]string{"admin": "dummy"}
@@ -161,8 +161,8 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 	}
 	cfg := &Cfg{
 		ModelsDir: modelsDir,
-		Server:    defaultGoInferCfg.Server,
-		Llama:     defaultGoInferCfg.Llama,
+		Server:    defaultGoinferCfg.Server,
+		Llama:     defaultGoinferCfg.Llama,
 	}
 	cfg.Server.APIKeys = map[string]string{"admin": "dummy"}
 	err = cfg.validateMain(false)
@@ -187,7 +187,7 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 		Server: ServerCfg{
 			APIKeys: map[string]string{},
 		},
-		Llama: defaultGoInferCfg.Llama,
+		Llama: defaultGoinferCfg.Llama,
 	}
 	err = cfgMissing.validateMain(false)
 	if err == nil {
@@ -201,8 +201,8 @@ func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 
 	cfg := &Cfg{
 		ModelsDir: t.TempDir(),
-		Server:    defaultGoInferCfg.Server,
-		Llama:     defaultGoInferCfg.Llama,
+		Server:    defaultGoinferCfg.Server,
+		Llama:     defaultGoinferCfg.Llama,
 	}
 	yamlData, err := yaml.Marshal(cfg)
 	if err != nil {
