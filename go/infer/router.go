@@ -62,7 +62,7 @@ func (inf *Infer) NewEcho(cfg *conf.Cfg, addr string,
 		}
 	})
 
-	// ------------ Models ------------
+	// ------------ /models ------------
 	if enableModelsEndpoint {
 		grp := e.Group("/models")
 		configureAPIKeyAuth(grp, cfg, "model")
@@ -70,7 +70,7 @@ func (inf *Infer) NewEcho(cfg *conf.Cfg, addr string,
 		slog.Info("Listen", "GET", url(addr, "/models"))
 	}
 
-	// ----- Inference (llama.cpp) -----
+	// ----- /goinfer -----
 	if enableGoinferEndpoint {
 		grp := e.Group("/goinfer")
 		configureAPIKeyAuth(grp, cfg, "goinfer")
@@ -80,7 +80,7 @@ func (inf *Infer) NewEcho(cfg *conf.Cfg, addr string,
 		slog.Info("Listen", "GET", url(addr, "/goinfer/abort"))
 	}
 
-	// ----- Inference OpenAI API -----
+	// ----- /v1/* -----
 	if enableOpenAPIEndpoint {
 		grp := e.Group("/v1")
 		configureAPIKeyAuth(grp, cfg, "openai")
