@@ -2,88 +2,118 @@
 # Copyright 2025 The contributors of Goinfer.
 # SPDX-License-Identifier: MIT
 
-case "${1:-}" in
-  -h|--help)
-    cat << EOF
+help='
 Usage:
-    ./clone-pull-build-run.sh [goinfer flags]
 
-This script `git clone`, `git pull` and build the goinfer dependencies: llama.cpp and llama-swap
-Then the script generates the configuration based on the discovered GUFF files.
+  ./clone-pull-build-run.sh [-b|--build-swap] [goinfer flags]
+
+This script git-clone (git-pull) and builds llama.cpp with best optimizations.
+The flag --build-swap enables the same for llama-swap => enables the llama-swap frontend.
+The script also generates the configuration based on the discovered GUFF files.
 Finally the script runs goinfer with the provided [goinfer flags] if any.
 
-This script can used:
-- to prepare the dev environment
-- to run goinfer during the development cycle (rebuild only if new commit)
+This script can be used:
+- once, to setup all the dependencies and the configuration files
+- daily, to update the source code and rebuild only if a new commit is detected
+
+For better reproducibility, you can specify the tag or branch:
+
+  llamaCpp_tag=b6666 llamaSwap_tag=v0.0.166 ./clone-pull-build-run.sh`
+  llamaCpp_branch=master llamaSwap_branch=main ./clone-pull-build-run.sh`
 
 If you have already your `llama-server` (or compatible fork),
-set `export GI_LLAMA_EXE=/home/me/bin/llama-server`.
-So this script will not try to clone/pull/build llama.cpp.
+set `export GI_LLAMA_EXE=/home/me/path/llama-server`.
+This env. var. disables the clone/pull/build of llama.cpp.
 
-You may notice the script finds too much directories
-containing `*.gguf` model files. To reduce, set manually:
-`export GI_MODELS_DIR=/home/me/models:/home/me/other/path`
-This will also speedup the script (no search for GUFF files)
+If the script finds `*.gguf` model directories you prefer to ignore,
+set the GI_MODELS_DIR. This also speeds up the script (disables GUFF files search).
 
-Command line flags are passed to goinfer.
-This is useful if you run Goinfer in local:
-`./clone-pull-build-run.sh -no-api-key`
+  export GI_MODELS_DIR=/home/me/models:/home/me/other/path
 
-Full one-line example:  
-`GI_LLAMA_EXE=/home/me/bin/llama-server GI_MODELS_DIR=/home/me/models:/home/me/other/path ./clone-pull-build-run.sh -no-api-key`
+The [goinfer flags] are passed to goinfer, so you can run Goinfer without API keys:
 
-The script defaults to `git pull` (latest commit).
-But you can specify the branch name or tag:
-`tagLC=b6666 tagLS=166 ./clone-pull-build-run.sh`
-`branchLC=master branchLS=main ./clone-pull-build-run.sh`
-(LC=llama.cpp LS=llama-swap)
+  ~/repo/goinfer/scripts/clone-pull-build-run.sh -no-api-key
 
-Note: the scripts enables CPU optimizations.
-EOF
-  exit
-  ;;
-esac
+One-line example:
 
+  git pull && GI_LLAMA_EXE=~/path/llama-server GI_MODELS_DIR=~/path/models ./clone-pull-build-run.sh -p -no-api-key
+'
 
-# --- safe bash ---
-set -e           # Exit immediately if any command returns a non‑zero status
-set -u           # Unset variable => error
-set -o pipefail  # Make a pipeline fail if any component command fails
-set -o noclobber # Prevent accidental overwriting of files with > redirection
-shopt -s inherit_errexit # Also apply restrictions to $(command substitution)
+# Safe bash
+set -e                   # stop the script if any command returns a non‑zero status
+set -u                   # unset variable is an error => exit
+set -o pipefail          # pipeline fails if any of its components fails
+set -o noclobber         # prevent accidental file overwriting with > redirection
+shopt -s inherit_errexit # apply these restrictions to $(command substitution)
+
+# Color logs
+log() { echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[32m" "$@" "\033[m"; }
+err() { echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[31m" "$@" "\033[m"; }
 
 # print the script line number if something goes wrong
 set -E
-trap 'echo "ERROR status=$? at ${BASH_SOURCE[0]}:$LINENO" >&2 ; exit "$?"' ERR
+trap 's=$?; err "status=$? at ${BASH_SOURCE[0]}:$LINENO" >&2; exit $s' ERR
 
-# --- this script use external tools ---
+# Git repositories
+goinfer_dir="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd)"
+root_dir="$(cd "${goinfer_dir}/.." && pwd)"
+llamaCpp_dir="$(cd "${root_dir}/llama.cpp" && pwd)"
+
+build_swap=0
+
+case "${1:-}" in
+  -h|--help)
+    echo "$help"
+    exit
+    ;;
+  -b|--build-swap)
+    log "flag $1 => enable llama-swap build"
+    shift # drop this flag from command line
+    build_swap=1
+    ;;
+esac
+
+# if go.work present and uses llama-swap => enable llama-swap build
+work_file="$goinfer_dir/go/go.work"
+
+swap_in_work_file() {
+  sed 's|//.*||' "$work_file" 2>/dev/null | grep -sqw '../llama-swap' && 
+    log "found llama-swap in $work_file => enable llama-swap build" 
+}
+
+(( build_swap )) || { swap_in_work_file && build_swap=1 || build_swap=0 ; }
+
+# check the required external tools
+(( ! build_swap )) ||
+command -v npm    >/dev/null || { echo REQUIRED: install npm    && exit 1; }
 command -v git    >/dev/null || { echo REQUIRED: install git    && exit 1; }
 command -v go     >/dev/null || { echo REQUIRED: install go     && exit 1; }
-command -v npm    >/dev/null || { echo REQUIRED: install npm    && exit 1; }
 command -v cmake  >/dev/null || { echo REQUIRED: install cmake  && exit 1; }
 command -v ninja  >/dev/null || { echo REQUIRED: install ninja  && exit 1; }
 command -v ccache >/dev/null || { echo REQUIRED: install ccache && exit 1; }
 
-# clone_checkout_pull sets build=... to trigger the build
+# clone_checkout_pull sets the variable build_reason=... to trigger the build
 clone_checkout_pull() {
   local repo=$1
   local branch=$2
   local tag=$3
-  build=clone # the build reason
-  [ -d "${repo#*/}" ] && build= || git clone https://github.com/"$repo"
-  cd   "${repo#*/}"
-  ( set -x ; pwd ; git fetch --prune --tags )
+  build_reason=clone
+  [ -d "${repo#*/}" ] && build_reason= || 
+    ( log "repo $repo - clone"; set -x; pwd; git clone https://github.com/"$repo" )
+  cd "${repo#*/}"
+  ( log "repo $repo - fetch"; set -x; pwd; git fetch --prune --tags --all )
   if [[ -n "$tag" ]]
   then
-    build="tag: $tag"
-    ( set -x ; git checkout "$tag" )
+    build_reason="tag: $tag"
+    ( log "repo $repo - checkout $tag"; set -x; git checkout "$tag" )
   else
-    ( set -x ; git switch "$branch" )
+    ( log "repo $repo - switch $branch"; set -x; git switch "$branch" )
     local remote="$(git rev-parse "@{upstream}")"
     local local="$( git rev-parse HEAD)"
     if [[ "$remote" != "$local" ]]
     then
-      build="commit: $(git log -1 --pretty=format:%f)"
+      build_reason="new commit: $(git log -1 --pretty=format:%f)"
+      log "repo $repo - $build_reason";
       ( set -x ; git pull --ff-only )
     fi
   fi
@@ -93,12 +123,12 @@ clone_checkout_pull() {
 # CPU flags used to build llama.cpp and goinfer
 flags="$(grep "^flags" -wm1 /proc/cpuinfo) " # trailing space required
 
-llamaCpp() {
-  cd "${BASH_SOURCE[0]%/*}/../.."
-  clone_checkout_pull ggml-org/llama.cpp "${branchLC:-master}" "${tagLC:-}"
-  [[ -n "$build" ]] || { [[ -f build/bin/llama-server ]] || build="missing build/bin/llama-server" ; }
-  [[ -z "$build" ]] || (
-    echo "Build llama.cpp because $build"
+do_llamaCpp() {
+  cd "$root_dir"
+  clone_checkout_pull ggml-org/llama.cpp "${llamaCpp_branch:-master}" "${llamaCpp_tag:-}"
+  [[ -n "$build_reason" ]] || { [[ -f build/bin/llama-server ]] || build_reason="missing build/bin/llama-server" ; }
+  [[ -z "$build_reason" ]] || (
+    log "build llama.cpp because $build_reason"
     rm -rf build/  # this guarantees a clean build, ccache will restore deleted files
     GGML_AVX=$(        [[ "$flags" == *" avx "*         ]] && echo ON || echo OFF)
     GGML_AVX2=$(       [[ "$flags" == *" avx2 "*        ]] && echo ON || echo OFF)
@@ -148,13 +178,12 @@ llamaCpp() {
   )
 }
 
-
-llamaSwap(){
-  cd "${BASH_SOURCE[0]%/*}/../.."
-  clone_checkout_pull LM4eu/llama-swap "${branchLS:-main}" "${tagLS:-}"
-  [[ -n "$build" ]] || { [[ -f proxy/ui_dist/index.html ]] || build="missing proxy/ui_dist/index.html" ; }
-  [[ -z "$build" ]] || (
-    echo "Build llama-swap because $build"
+do_llamaSwap(){
+  cd "$root_dir"
+  clone_checkout_pull LM4eu/llama-swap "${llamaSwap_branch:-main}" "${llamaSwap_tag:-}"
+  [[ -n "$build_reason" ]] || { [[ -f proxy/ui_dist/index.html ]] || build_reason="missing proxy/ui_dist/index.html" ; }
+  [[ -z "$build_reason" ]] || (
+    log "build llama-swap because $build_reason"
     # we may: rm proxy/ui_dist/
     set -x
     cd ui
@@ -162,35 +191,44 @@ llamaSwap(){
     npm ci --prefer-offline --no-audit --no-fund --omit=dev
     npm run build
   )
+
+  swap_in_work_file || 
+  (
+    log "set up $work_file"
+    cd "$goinfer_dir/go"
+    set -x
+    go work init || :
+    go work use . ../../llama-swap
+    go work sync
+  )
 }
 
-GI_MODELS_DIR="${GI_MODELS_DIR:-$(p=;find "$HOME" /mnt -type f -name '*.gguf' -printf '%h\0'|
-sort -zu|while IFS= read -rd '' d;do [[ $p && $d == "$p"/* ]] && continue;echo -n "$d:";p=$d;done)}"
+GI_MODELS_DIR="${GI_MODELS_DIR:-$(log "search for *.gguf in $HOME and /mnt"; 
+p=; { find "$HOME" /mnt -type f -name '*.gguf' -printf '%h\0' || : ; } | sort -zu |
+while IFS= read -rd '' d;do [[ $p && $d == "$p"/* ]] && continue;echo -n "$d:";p=$d;done)}"
 
 export GI_MODELS_DIR=${GI_MODELS_DIR:?GI_MODELS_DIR is empty: Download a model file *.gguf or set GI_MODELS_DIR}
 
 # clone/pull/build llama.cpp if GI_LLAMA_EXE is unset/empty
-export GI_LLAMA_EXE="${GI_LLAMA_EXE:-"$(llamaCpp >&2 && cd "${BASH_SOURCE[0]%/*}/../../llama.cpp/build/bin" && pwd )"/llama-server}"
+export GI_LLAMA_EXE="${GI_LLAMA_EXE:-"$(do_llamaCpp >&2 && \ls -1 "$llamaCpp_dir/build/bin/llama-server")"}"
 
-# The build of the llama-swap frontend is not required any more
-# because LM4eu/llama-swap v0.0.162 embeds a simple index.html
-# llamaSwap
+(( ! build_swap )) || do_llamaSwap
 
-# --- goinfer ---
-cd "${BASH_SOURCE[0]%/*}/../go"
+log build goinfer with CPU-optimizations
 case "$flags" in
     *" avx512f "*)  export GOAMD64=v4;;
     *" avx2 "*)     export GOAMD64=v3;;
     *" sse2 "*)     export GOAMD64=v2;;
 esac
+cd "$goinfer_dir/go"
 set -x
 pwd
 go build .
 
-# --- generate config ---
+log generate config
 ./goinfer -gen-main-cfg "$@"
 ./goinfer -gen-swap-cfg "$@"
 
-# --- run goinfer ---
+log run goinfer
 export GIN_MODE="${GIN_MODE:-release}"
 ./goinfer "$@"

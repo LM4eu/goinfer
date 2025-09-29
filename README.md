@@ -43,7 +43,7 @@ Category            | Feature
 
 ## Build
 
-- Go 1.25+
+- Go 1.25
 - NodeJS
 - `llama.cpp`
 - One or more `*.gguf` model files
@@ -51,31 +51,37 @@ Category            | Feature
 ### Using the all-in-one script
 
 The script [`clone-pull-build-run.sh`](./scripts/clone-pull-build-run.sh)
-clones the dependencies (llama.cpp and llama-swap) and build them.
-Then you can reuse this script to `git pull` and rebuild them.
-This script also discovers your GGUF files and generates the configuration files.
-Finally the script also runs Goinfer.
+clones and compiles [llama.cpp](https://github.com/ggml-org/llama.cpp)
+using CPU optimizations. To enable the llama‑swap frontend,
+this script can also clone and build [llama‑swap](https://github.com/LM4eu/llama-swap)
+with the flag `--build--swap`:
 
 ```bash
 git clone https://github.com/LM4eu/goinfer
-scripts/clone-pull-build-run.sh
+goinfer/scripts/clone-pull-build-run.sh --build--swap
 ```
 
-To reuse your own `llama-server` set:  
-`export GI_LLAMA_EXE=/home/me/bin/llama-server`
+This script is perfect to setup the environment, and can also be used daily
+to update and build the dependencies on the fly.
 
-If that script has found too much directories
-containing `*.gguf` model files, then reduce it with:  
+No need to edit manually the configuration files, this script also
+discovers your GGUF files and generates the configuration files.
+
+The script ends by running a fully configured Goinfer server.
+
+To reuse your own `llama-server` set:  
+`export GI_LLAMA_EXE=/home/me/path/llama-server`
+
+If this script finds too much `*.gguf` files, set:  
 `export GI_MODELS_DIR=/home/me/models:/home/me/other/path`
 
 Disable the API key if you run Goinfer in local:  
 `./clone-pull-build-run.sh -no-api-key`
 
-The one-line full example:  
+Full example:  
+`GI_LLAMA_EXE=/home/me/bin/llama-server GI_MODELS_DIR=/home/me/models ./clone-pull-build-run.sh -no-api-key`
 
-    GI_LLAMA_EXE=/home/me/bin/llama-server GI_MODELS_DIR=/home/me/models:/home/me/other/path ./clone-pull-build-run.sh -no-api-key
-
-See the documentation within the [script](./scripts/clone-pull-build-run.sh).
+Use the flag `--help` or the usage within the [script](./scripts/clone-pull-build-run.sh).
 
 ### Manual build + configure
 
