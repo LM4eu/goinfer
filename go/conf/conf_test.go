@@ -89,7 +89,7 @@ func TestWriteMainCfg(t *testing.T) {
 	if err != nil {
 		t.Fatalf("WriteMainCfg failed: %v", err)
 	}
-	data, err := os.ReadFile(path) // #nosec G304
+	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		t.Fatalf("cannot read written config: %v", err)
 	}
@@ -150,7 +150,7 @@ func TestListModelsIntegration(t *testing.T) {
 	}
 }
 
-// TestCfg_UnmarshalAndValidate verifies JSON/YAML unmarshalling and validation.
+// TestCfg_UnmarshalAndValidate verifies JSON/YAML unmarshaling and validation.
 func TestCfg_UnmarshalAndValidate(t *testing.T) {
 	t.Parallel()
 	modelsDir := t.TempDir()
@@ -198,7 +198,6 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 // TestCfg_ConcurrentReadMainCfg runs ReadMainCfg concurrently.
 func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 	// t.Parallel omitted because of t.Setenv usage.
-
 	cfg := &Cfg{
 		ModelsDir: t.TempDir(),
 		Server:    defaultGoinferCfg.Server,

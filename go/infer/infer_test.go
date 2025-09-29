@@ -74,7 +74,6 @@ func TestParseInferQuery_ValidPayload(t *testing.T) {
 	if len(query.Params.Generation.StopPrompts) != 2 ||
 		query.Params.Generation.StopPrompts[0] != "STOP1" ||
 		query.Params.Generation.StopPrompts[1] != "STOP2" {
-
 		t.Errorf("StopPrompts not parsed correctly: %#v", query.Params.Generation.StopPrompts)
 	}
 }

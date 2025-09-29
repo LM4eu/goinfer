@@ -749,7 +749,8 @@ linters:
         - v string
 
     whitespace:
-      multi-if: true
+      multi-if: false # true => newline or comment after multi-line if statement
+      multi-func: false # true => newline or comment after multi-line function signature
 
     wrapcheck:
       ignore-interface-regexps:
