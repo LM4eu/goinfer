@@ -225,22 +225,20 @@ func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 	}
 
 	var grp sync.WaitGroup
-	for range 5 {
-		grp.Add(1)
-		go func() {
-			defer grp.Done()
-			cfg = &Cfg{}
-			err = cfg.ReadMainCfg(tmpFile, true)
+	for i := range 10 {
+		grp.Go(func() {
+			var config Cfg
+			err = config.ReadMainCfg(tmpFile, i&1 == 0)
 			if err != nil {
-				t.Errorf("ReadMainCfg error: %v", err)
+				t.Errorf("#%d ReadMainCfg error: %v", i, err)
 			}
-			if cfg.ModelsDir != dir {
-				t.Errorf("ModelsDir not overridden, got %s want %s", cfg.ModelsDir, dir)
+			if config.ModelsDir != dir {
+				t.Errorf("#%d ModelsDir not overridden, got %q want %q", i, config.ModelsDir, dir)
 			}
-			if cfg.Server.Host != "127.0.0.1" {
-				t.Errorf("Server.Host not overridden, got %s", cfg.Server.Host)
+			if config.Server.Host != "127.0.0.1" {
+				t.Errorf("#%d Server.Host not overridden, got %q want 127.0.0.1", i, config.Server.Host)
 			}
-		}()
+		})
 	}
 	grp.Wait()
 }
