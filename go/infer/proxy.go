@@ -21,7 +21,7 @@ func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c ech
 		inf.mu.Unlock()
 		errChan <- StreamedMsg{
 			Num:     0,
-			Content: gie.Wrap(gie.ErrInferRunning, gie.TypeInference, "INFERENCE_RUNNING", "infer already running").Error(),
+			Error:   gie.New(gie.InferErr, "infer already running"),
 			MsgType: ErrorMsgType,
 		}
 		return nil
@@ -45,7 +45,7 @@ func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c ech
 		} else {
 			errChan <- StreamedMsg{
 				Num:     0,
-				Content: gie.Wrap(gie.ErrChanClosed, gie.TypeInference, "CHANNEL_CLOSED", "infer channel closed unexpectedly").Error(),
+				Error:   gie.New(gie.InferErr, "inference channel closed unexpectedly"),
 				MsgType: ErrorMsgType,
 			}
 		}
@@ -55,7 +55,7 @@ func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c ech
 		} else {
 			errChan <- StreamedMsg{
 				Num:     0,
-				Content: gie.Wrap(gie.ErrChanClosed, gie.TypeInference, "CHANNEL_CLOSED", "error channel closed unexpectedly").Error(),
+				Error:   gie.New(gie.InferErr, "error channel closed unexpectedly"),
 				MsgType: ErrorMsgType,
 			}
 		}
@@ -63,7 +63,7 @@ func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c ech
 		slog.DebugContext(ctx, "Infer timeout")
 		errChan <- StreamedMsg{
 			Num:     0,
-			Content: gie.Wrap(gie.ErrReqTimeout, gie.TypeTimeout, "INFERENCE_TIMEOUT", "infer timeout").Error(),
+			Error:   gie.New(gie.Timeout, "inference timeout"),
 			MsgType: ErrorMsgType,
 		}
 	case <-ctx.Done():
@@ -73,7 +73,7 @@ func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c ech
 		inf.mu.Unlock()
 		errChan <- StreamedMsg{
 			Num:     0,
-			Content: gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CLIENT_CANCELED", "req canceled by client").Error(),
+			Error:   gie.New(gie.InferErr, "request canceled by client"),
 			MsgType: ErrorMsgType,
 		}
 	}
@@ -87,7 +87,7 @@ func (inf *Infer) abortInference() error {
 	inf.mu.Lock()
 	defer inf.mu.Unlock()
 	if !inf.IsInferring {
-		return gie.Wrap(gie.ErrInferNotRunning, gie.TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
+		return gie.New(gie.InferErr, "no inference running, nothing to abort")
 	}
 
 	slog.Debug("Aborting inference")

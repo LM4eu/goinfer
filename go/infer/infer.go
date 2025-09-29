@@ -162,7 +162,7 @@ func (inf *Infer) execute(c echo.Context, query *InferQuery) (*StreamedMsg, erro
 
 	err := inf.forwardInference(c.Request().Context(), query, c, resChan, errChan)
 	if err != nil {
-		return nil, gie.Wrap(err, gie.TypeInference, "PROXY_FORWARD_FAILED", "proxy manager forward inference failed")
+		return nil, gie.Wrap(err, gie.InferErr, "proxy manager forward inference failed")
 	}
 
 	// Process response
@@ -175,10 +175,7 @@ func (inf *Infer) execute(c echo.Context, query *InferQuery) (*StreamedMsg, erro
 
 	case errCh, ok := <-errChan:
 		if ok {
-			if errCh.MsgType == ErrorMsgType {
-				return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", "infer error: "+errCh.Content)
-			}
-			return nil, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", errCh.Content)
+			return nil, gie.Wrap(errCh.Error, gie.InferErr, string(errCh.MsgType))
 		}
 		return nil, gie.ErrChanClosed
 
@@ -212,10 +209,10 @@ func populateStopPrompts(m echo.Map, gen *Generation) error {
 	}
 	slice, ok := v.([]any)
 	if !ok {
-		return gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "STOP_INVALID_TYPE", "stop must be an array")
+		return gie.New(gie.Invalid, "invalid parameter type: stop must be an array")
 	}
 	if len(slice) > 10 {
-		return gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "STOP_TOO_LARGE", "stop array too large (max 10)")
+		return gie.New(gie.Invalid, "invalid size: stop array too large (max 10) got="+strconv.Itoa(len(slice)))
 	}
 	if len(slice) == 0 {
 		return nil
@@ -224,7 +221,7 @@ func populateStopPrompts(m echo.Map, gen *Generation) error {
 	for i, val := range slice {
 		str, ok := val.(string)
 		if !ok {
-			return gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "STOP_INVALID_ELEMENT", "stop["+strconv.Itoa(i)+"] must be a string")
+			return gie.New(gie.Invalid, "invalid parameter type: stop["+strconv.Itoa(i)+"] must be a string")
 		}
 		gen.StopPrompts[i] = str
 	}

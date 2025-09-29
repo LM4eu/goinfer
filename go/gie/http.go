@@ -22,47 +22,45 @@ func HandleErrorMiddleware(err error, c echo.Context) error {
 
 // HandleValidationError handles validation errors with proper HTTP status.
 func HandleValidationError(c echo.Context, err error) error {
-	return handleError(c, err, TypeValidation, "VALIDATION_ERROR", "validation failed")
+	return handleError(c, err, Invalid, "validation failed")
 }
 
 // HandleInferenceError handles inference-related errors.
 func HandleInferenceError(c echo.Context, err error) error {
-	return handleError(c, err, TypeInference, "INFERENCE_ERROR", "inference failed")
+	return handleError(c, err, InferErr, "inference failed")
 }
 
 // handleError centralizes error handling for HTTP responses.
-func handleError(c echo.Context, err error, expectedType ErrorType, wrapCode, wrapMsg string) error {
-	var giErr *GoInferError
-	if errors.As(err, &giErr) && giErr.Type == expectedType {
-		return c.JSON(statusCode(giErr.Type), giErr)
+func handleError(c echo.Context, err error, wrapCode ErrorCode, wrapMsg string) error {
+	var giErr *GoinferError
+	if errors.As(err, &giErr) {
+		return c.JSON(statusCode(giErr.Code), giErr)
 	}
 	// Not the expected type: wrap and forward
-	wrapped := Wrap(err, expectedType, wrapCode, wrapMsg)
+	wrapped := Wrap(err, wrapCode, wrapMsg)
 	return errorToEchoResponse(c, wrapped)
 }
 
-// errorToEchoResponse converts an GoInferError to an Echo error response.
+// errorToEchoResponse converts an GoinferError to an Echo error response.
 func errorToEchoResponse(c echo.Context, err error) error {
-	var giErr *GoInferError
+	var giErr *GoinferError
 	if !errors.As(err, &giErr) {
-		// If not an GoInferError, wrap it and return internal server error
-		giErr = Wrap(err, TypeServer, "INTERNAL_ERROR", "internal server error")
+		// If not an GoinferError, wrap it and return internal server error
+		giErr = Wrap(err, ServerErr, "internal server error")
 	}
-	return c.JSON(statusCode(giErr.Type), giErr)
+	return c.JSON(statusCode(giErr.Code), giErr)
 }
 
 // statusCode deduce the HTTP status code from an ErrorType.
-func statusCode(errType ErrorType) int {
+func statusCode(errType ErrorCode) int {
 	switch errType {
-	case TypeValidation:
+	case Invalid:
 		return http.StatusBadRequest
-	case TypeUnauthorized:
-		return http.StatusUnauthorized
-	case TypeNotFound:
+	case NotFound:
 		return http.StatusNotFound
-	case TypeTimeout:
+	case Timeout:
 		return http.StatusRequestTimeout
-	case TypeConfiguration, TypeInference, TypeServer:
+	case ConfigErr, InferErr, ServerErr:
 		fallthrough
 	default:
 		return http.StatusInternalServerError

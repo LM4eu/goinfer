@@ -2,94 +2,120 @@
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
 
-// Package gie is the Go Infer Error package.
+// Package gie (Go Infer Error) implements the GoinferError to be MCP compliant,
+// producing the error object as specified in JSON-RPC 2.0:
+// https://www.jsonrpc.org/specification#error_object
+//
+//	code must be a number
+//	 -32768 to -32000  Reserved for pre-defined errors:
+//	 -32700            Parse error, the server received an invalid JSON, or had an issue while parsing the JSON text
+//	 -32603            Internal JSON-RPC error
+//	 -32602            Invalid method parameters
+//	 -32601            Method not found, the method does not exist or is not available
+//	 -32600            Invalid Request, the JSON sent is not a valid Request object
+//	 -32099 to -32000  Implementation-defined server-errors
+//
+//	message  string providing a short description of the error (one concise single sentence).
+//
+//	data     optional, any type, additional information about the error.
 package gie
 
-type (
-	// ErrorType represents the type of error.
-	ErrorType string
+import (
+	"errors"
+	"fmt"
+	"strconv"
+)
 
-	// GoInferError is a structured error that includes type, code, and message.
-	GoInferError struct {
-		Cause   error     `json:"details,omitempty"` // Cause is serialized "details" in HTTP error response (JSON)
-		Type    ErrorType `json:"type,omitempty"`
-		Code    string    `json:"code,omitempty"`
+type (
+	// ErrorCode represents the type of error.
+	ErrorCode int
+
+	// GoinferError is a structured error that includes type, code, and message.
+	GoinferError struct {
+		Cause   any       `json:"data,omitempty"` // Cause is serialized "data" in HTTP error response (JSON-RPC 2.0)
 		Message string    `json:"message,omitempty"`
+		Code    ErrorCode `json:"code,omitempty"`
 	}
 )
 
 const (
-	// TypeValidation indicates validation errors.
-	TypeValidation ErrorType = "validation"
-	// TypeConfiguration indicates configuration errors.
-	TypeConfiguration ErrorType = "config"
-	// TypeInference indicates inference-related errors.
-	TypeInference ErrorType = "inference"
-	// TypeServer indicates server-related errors.
-	TypeServer ErrorType = "server"
-	// TypeTimeout indicates timeout-related errors.
-	TypeTimeout ErrorType = "timeout"
-	// TypeNotFound indicates resource not found errors.
-	TypeNotFound ErrorType = "not_found"
-	// TypeUnauthorized indicates authentication errors.
-	TypeUnauthorized ErrorType = "unauthorized"
+	// Invalid indicates validation errors.
+	Invalid ErrorCode = iota + -32149
+	// ConfigErr indicates configuration errors.
+	ConfigErr
+	// InferErr indicates inference-related errors.
+	InferErr
+	// ServerErr indicates server-related errors.
+	ServerErr
+	// Timeout indicates timeout-related errors.
+	Timeout
+	// NotFound indicates resource not found errors.
+	NotFound
 )
 
 var (
 	// Validation errors.
 
 	// ErrInvalidPrompt indicates an invalid prompt error.
-	ErrInvalidPrompt = newGIE(TypeValidation, "INVALID_PROMPT", "prompt must be a string")
-	// ErrModelNotLoaded indicates a model not loaded error.
-	ErrModelNotLoaded = newGIE(TypeValidation, "MODEL_NOT_LOADED", "model not loaded")
+	ErrInvalidPrompt = New(Invalid, "invalid prompt (must be a string)")
 	// ErrInvalidFormat indicates an invalid request format error.
-	ErrInvalidFormat = newGIE(TypeValidation, "INVALID_FORMAT", "invalid request format")
+	ErrInvalidFormat = New(Invalid, "invalid request format")
 	// ErrInvalidParams indicates invalid parameter values error.
-	ErrInvalidParams = newGIE(TypeValidation, "INVALID_PARAMS", "invalid parameter values")
+	ErrInvalidParams = New(Invalid, "invalid parameter values")
 
 	// Configuration errors.
 
 	// ErrConfigValidation indicates a configuration validation error.
-	ErrConfigValidation = newGIE(TypeConfiguration, "CONFIG_VALIDATION", "configuration validation failed")
+	ErrConfigValidation = New(ConfigErr, "config validation failed")
 	// ErrAPIKeyMissing indicates a missing API key error.
-	ErrAPIKeyMissing = newGIE(TypeConfiguration, "API_KEY_MISSING", "API key is missing")
+	ErrAPIKeyMissing = New(ConfigErr, "API key is missing")
 	// ErrInvalidAPIKey indicates an invalid API key format error.
-	ErrInvalidAPIKey = newGIE(TypeConfiguration, "INVALID_API_KEY", "invalid API key format")
+	ErrInvalidAPIKey = New(ConfigErr, "invalid API key format")
 
 	// Inference errors.
 
-	// ErrInferRunning indicates an inference already running error.
-	ErrInferRunning = newGIE(TypeInference, "INFERENCE_RUNNING", "infer already running")
-	// ErrInferNotRunning indicates no inference running error.
-	ErrInferNotRunning = newGIE(TypeInference, "INFERENCE_NOT_RUNNING", "no inference running, nothing to abort")
-	// ErrInferFailed indicates an inference failed error.
-	ErrInferFailed = newGIE(TypeInference, "INFERENCE_FAILED", "infer failed")
-	// ErrInferStopped indicates inference stopped by controller error.
-	ErrInferStopped = newGIE(TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
 	// ErrChanClosed indicates a channel closed unexpectedly error.
-	ErrChanClosed = newGIE(TypeInference, "CHANNEL_CLOSED", "channel closed unexpectedly")
+	ErrChanClosed = New(InferErr, "channel closed unexpectedly")
 	// ErrClientCanceled indicates a request canceled by client error.
-	ErrClientCanceled = newGIE(TypeInference, "CLIENT_CANCELED", "request canceled by client")
+	ErrClientCanceled = New(InferErr, "request canceled by client")
 
 	// Timeout errors.
 
 	// ErrReqTimeout indicates a request timeout error.
-	ErrReqTimeout = newGIE(TypeTimeout, "REQUEST_TIMEOUT", "request timeout")
+	ErrReqTimeout = New(Timeout, "request timeout")
 )
 
-// newGIE creates a new GoInferError.
-func newGIE(errType ErrorType, code, message string) *GoInferError {
-	return &GoInferError{
-		Type:    errType,
+// New creates a New GoinferError.
+func New(code ErrorCode, message string) *GoinferError {
+	return &GoinferError{
 		Code:    code,
 		Message: message,
 	}
 }
 
-// Wrap wraps an existing error with an GoInferError.
-func Wrap(err error, errType ErrorType, code, message string) *GoInferError {
-	return &GoInferError{
-		Type:    errType,
+func NewWithData(code ErrorCode, message string, data any) *GoinferError {
+	return &GoinferError{
+		Code:    code,
+		Message: message,
+		Cause:   data,
+	}
+}
+
+// Wrap wraps an existing error with an GoinferError.
+func Wrap(err error, code ErrorCode, message string) *GoinferError {
+	var giErr *GoinferError
+	if errors.As(err, &giErr) {
+		// merge errors when appropriate
+		if giErr.Cause == "" {
+			giErr.Cause = err
+			return giErr
+		} else if len(message) < 11 {
+			giErr.Message = message + ": " + giErr.Message
+			return giErr
+		}
+	}
+
+	return &GoinferError{
 		Code:    code,
 		Message: message,
 		Cause:   err,
@@ -97,15 +123,19 @@ func Wrap(err error, errType ErrorType, code, message string) *GoInferError {
 }
 
 // Error implements the error interface.
-func (e *GoInferError) Error() string {
-	str := e.Code + ": " + e.Message
+func (e *GoinferError) Error() string {
+	str := e.Message + " (" + strconv.Itoa(int(e.Code)) + ")"
 	if e.Cause != nil {
-		str += " cause=" + e.Cause.Error()
+		str += " cause: " + fmt.Sprint(e.Cause)
 	}
 	return str
 }
 
 // Unwrap returns the underlying error for error unwrapping.
-func (e *GoInferError) Unwrap() error {
-	return e.Cause
+func (e *GoinferError) Unwrap() error {
+	err, ok := e.Cause.(error)
+	if ok {
+		return err
+	}
+	return errors.New(fmt.Sprint(e.Cause))
 }

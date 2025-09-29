@@ -46,14 +46,14 @@ func (cfg *Cfg) load(mainCfg string) error {
 	yml, err := os.ReadFile(filepath.Clean(mainCfg))
 	if err != nil {
 		slog.Error("Failed to read", "file", mainCfg)
-		return gie.Wrap(err, gie.TypeConfiguration, "", "")
+		return gie.Wrap(err, gie.ConfigErr, "os.ReadFile file="+mainCfg)
 	}
 
 	if len(yml) > 0 {
 		err = yaml.Unmarshal(yml, &cfg)
 		if err != nil {
 			slog.Error("Failed to yaml.Unmarshal", "100FirsBytes", string(yml[:100]))
-			return gie.Wrap(err, gie.TypeConfiguration, "", "")
+			return gie.Wrap(err, gie.ConfigErr, "yaml.Unmarshal")
 		}
 	}
 

@@ -168,7 +168,7 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 	for k, v := range cfg.Server.APIKeys {
 		if strings.Contains(v, "PLEASE") {
 			slog.Error("Please set your private", "key", k)
-			return gie.Wrap(gie.ErrInvalidAPIKey, gie.TypeConfiguration, "API_KEY_NOT_SET", "please set your private '"+k+"' API key")
+			return gie.New(gie.ConfigErr, "API key not set, please set your private '"+k+"' API key")
 		}
 
 		if v == debugAPIKey {
@@ -194,9 +194,8 @@ func (cfg *Cfg) validatePorts() error {
 		}
 		if slices.Contains(badPorts, port) {
 			const msg = "Chrome/Firefox block the bad ports"
-			slog.Error(msg, "port", port, "see", "https://fetch.spec.whatwg.org/#port-blocking")
-			return gie.Wrap(gie.ErrInvalidParams, gie.TypeConfiguration, "BAD_PORT",
-				msg+" port="+port+" See: https://fetch.spec.whatwg.org/#port-blocking")
+			slog.Error(msg, "port", port, "reference", "https://fetch.spec.whatwg.org/#port-blocking")
+			return gie.NewWithData(gie.ConfigErr, msg, map[string]string{"port": port, "reference": "https://fetch.spec.whatwg.org/#port-blocking"})
 		}
 	}
 	return nil

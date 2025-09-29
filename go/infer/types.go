@@ -55,6 +55,7 @@ type (
 	StreamedMsg struct {
 		Data    map[string]any `json:"data,omitempty"`
 		Content string         `json:"content,omitempty"`
+		Error   error          `json:"error,omitempty"`
 		MsgType MsgType        `json:"msg_type,omitempty"`
 		Num     int            `json:"num,omitempty"`
 	}

@@ -36,7 +36,7 @@ func TestInfer_Method_ModelNotLoaded(t *testing.T) {
 	select {
 	case msg := <-errChan:
 		require.Equal(t, ErrorMsgType, msg.MsgType, "expected error message type")
-		require.Contains(t, msg.Content, "model not loaded", "error message should mention model not loaded")
+		require.Contains(t, msg.Error.Error(), "model not loaded", "error message should mention model not loaded")
 	default:
 		t.Fatalf("expected an error message on errChan")
 	}

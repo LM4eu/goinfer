@@ -30,7 +30,7 @@ func (cfg *Cfg) WriteMainCfg(mainCfg string, debug, noAPIKey bool) error {
 
 	yml, err := yaml.Marshal(&cfg)
 	if err != nil {
-		return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_MARSHAL", "failed to write config file")
+		return gie.Wrap(err, gie.ConfigErr, "failed to yaml.Marshal")
 	}
 
 	err = cfg.validateMain(noAPIKey)
@@ -94,7 +94,7 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 
 	yml, er := yaml.Marshal(&cfg.Swap)
 	if er != nil {
-		return gie.Wrap(er, gie.TypeConfiguration, "CONFIG_MARSHAL_FAILED", "failed to marshal the llama-swap config")
+		return gie.Wrap(er, gie.ConfigErr, "failed to marshal the llama-swap config")
 	}
 
 	err = writeWithHeader(swapCfg, "# Doc: https://github.com/mostlygeek/llama-swap/wiki/Configuration", yml)
@@ -182,7 +182,7 @@ func writeWithHeader(path, header string, data []byte) error {
 	path = filepath.Clean(path)
 	file, err := os.Create(path)
 	if err != nil {
-		return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_WRITE_FAILED", "failed to create file")
+		return gie.Wrap(err, gie.ConfigErr, "failed to create file="+path)
 	}
 
 	_, err = file.WriteString(header + "\n\n")
@@ -195,7 +195,7 @@ func writeWithHeader(path, header string, data []byte) error {
 		err = er
 	}
 	if err != nil {
-		return gie.Wrap(err, gie.TypeConfiguration, "CONFIG_WRITE_FAILED", "failed to write file")
+		return gie.Wrap(err, gie.ConfigErr, "failed to write file="+path)
 	}
 
 	return nil

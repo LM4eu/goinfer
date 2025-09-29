@@ -29,22 +29,22 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 
 	// Early validation checks
 	if ctx.Err() != nil {
-		err := gie.Wrap(ctx.Err(), gie.TypeInference, "CTX_CANCELED", "infer canceled")
+		err := gie.Wrap(ctx.Err(), gie.InferErr, "infer canceled")
 		slog.ErrorContext(ctx, "Context canceled at infer start", "error", err)
 		errChan <- StreamedMsg{
 			Num:     0,
-			Content: err.Error(),
+			Error:   err,
 			MsgType: ErrorMsgType,
 		}
 		return
 	}
 
 	if query.Model.Name == "" {
-		err := gie.Wrap(gie.ErrModelNotLoaded, gie.TypeValidation, "MODEL_NOT_LOADED", "model not loaded: "+query.Model.Name)
+		err := gie.New(gie.Invalid, "model not loaded model="+query.Model.Name)
 		slog.ErrorContext(ctx, "Model not loaded", "model", query.Model.Name, "error", err)
 		errChan <- StreamedMsg{
 			Num:     0,
-			Content: err.Error(),
+			Error:   err,
 			MsgType: ErrorMsgType,
 		}
 		return
@@ -60,7 +60,7 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 		inf.ContinueInferringController = false
 		errChan <- StreamedMsg{
 			Num:     nTok + 1,
-			Content: gie.Wrap(err, gie.TypeInference, "INFERENCE_FAILED", "infer failed").Error(),
+			Error:   gie.Wrap(err, gie.InferErr, "infer failed"),
 			MsgType: ErrorMsgType,
 		}
 		return
@@ -73,7 +73,7 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 			// Forward the error to the caller via errChan
 			errChan <- StreamedMsg{
 				Num:     0,
-				Content: err.Error(),
+				Error:   err,
 				MsgType: ErrorMsgType,
 			}
 			return
@@ -85,9 +85,9 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 		return
 	}
 
+	// infer completed
 	successMsg := StreamedMsg{
 		Num:     nTok + 1,
-		Content: "infer_completed",
 		MsgType: SystemMsgType,
 		Data: map[string]any{
 			"request_id": reqID,
@@ -123,12 +123,12 @@ func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *InferQuer
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		// Check context
 		if ctx.Err() != nil {
-			err = gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CTX_CANCELED", "infer canceled")
+			err = gie.New(gie.InferErr, "request canceled by client")
 			break
 		}
 
 		if !inf.ContinueInferringController {
-			err = gie.Wrap(gie.ErrInferStopped, gie.TypeInference, "INFERENCE_STOPPED", "infer stopped by controller")
+			err = gie.New(gie.InferErr, "inference stopped by controller")
 			break
 		}
 
@@ -173,7 +173,7 @@ func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *InferQuer
 // completeStream handles streaming termination.
 func (inf *Infer) completeStream(ctx context.Context, c echo.Context, _ int) error {
 	if ctx.Err() != nil {
-		err := gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "STREAM_CANCELED", "stream termination canceled")
+		err := gie.New(gie.InferErr, "stream termination canceled by client")
 		slog.InfoContext(ctx, "Context‑aware error", "request_id", ctx.Value(RequestID), "operation", "stream_termination", "error", err)
 		return err
 	}
@@ -184,7 +184,7 @@ func (inf *Infer) completeStream(ctx context.Context, c echo.Context, _ int) err
 		inf.ContinueInferringController = false
 		inf.mu.Unlock()
 		slog.ErrorContext(ctx, "Context‑aware error", "request_id", ctx.Value(RequestID), "operation", "stream_termination", "error", err)
-		return gie.Wrap(err, gie.TypeInference, "STREAM_TERMINATION_FAILED", "stream termination failed")
+		return gie.Wrap(err, gie.InferErr, "stream termination failed")
 	}
 
 	return nil
@@ -200,7 +200,7 @@ func (inf *Infer) streamToken(
 ) error {
 	// Check context
 	if ctx.Err() != nil {
-		return gie.Wrap(gie.ErrClientCanceled, gie.TypeInference, "CTX_CANCELED", "context canceled")
+		return gie.New(gie.InferErr, "streamToken: request canceled by client")
 	}
 
 	// Handle first token
@@ -224,7 +224,7 @@ func (inf *Infer) streamToken(
 
 			err := write(ctx, c, jsonEncoder, sMsg)
 			if err != nil {
-				return gie.Wrap(err, gie.TypeInference, "STREAM_START_FAILED", "cannot stream start_emitting")
+				return gie.Wrap(err, gie.InferErr, "cannot start_emitting stream")
 			}
 		}
 	}

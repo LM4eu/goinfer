@@ -90,9 +90,9 @@ func add(info map[string]ModelInfo, root string) error {
 	return filepath.WalkDir(root, func(path string, dir fs.DirEntry, err error) error {
 		if err != nil {
 			if dir == nil {
-				return gie.Wrap(err, gie.TypeNotFound, "filepath.WalkDir", "")
+				return gie.Wrap(err, gie.NotFound, "filepath.WalkDir")
 			}
-			return gie.Wrap(err, gie.TypeNotFound, "filepath.WalkDir", "path="+dir.Name())
+			return gie.Wrap(err, gie.NotFound, "filepath.WalkDir path="+dir.Name())
 		}
 
 		if dir.IsDir() {
@@ -373,8 +373,7 @@ func validateFile(path string) error {
 
 	if path[pos-len(first):pos] != first {
 		slog.Debug("KO Model file is part of a series, but only the first one is referenced", "path", path)
-		return gie.Wrap(nil, gie.TypeConfiguration, "MODEL_IS_SERIES_BUT_NOT_THE_FIRST",
-			"Model file is part of a series, but only the first one is referenced, file="+path)
+		return gie.New(gie.ConfigErr, "Model file is part of a series, but only the first one is referenced, file="+path)
 	}
 
 	slog.Debug("OK Model file is the first of a series", "path", path)

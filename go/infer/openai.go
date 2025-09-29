@@ -25,7 +25,7 @@ func (inf *Infer) handleChatCompletions(c echo.Context) error {
 	// Parse the OpenAI request into an InferQuery.
 	query, err := parseOpenAIRequest(c)
 	if err != nil {
-		return gie.HandleValidationError(c, gie.Wrap(err, gie.TypeValidation, "OPENAI_PARSE_ERROR", "failed to parse OpenAI request"))
+		return gie.HandleValidationError(c, gie.Wrap(err, gie.Invalid, "failed to parse OpenAI request"))
 	}
 
 	// Reuse the existing inference flow through Infer.
@@ -36,7 +36,7 @@ func (inf *Infer) handleChatCompletions(c echo.Context) error {
 	// Execute inference with request context.
 	err = inf.forwardInference(c.Request().Context(), query, c, resChan, errChan)
 	if err != nil {
-		return gie.HandleInferenceError(c, gie.Wrap(err, gie.TypeInference, "PROXY_FORWARD_FAILED", "proxy manager forward inference failed"))
+		return gie.HandleInferenceError(c, gie.Wrap(err, gie.InferErr, "proxy manager forward inference failed"))
 	}
 
 	// Wait for the first result or error to respond.
@@ -44,7 +44,7 @@ func (inf *Infer) handleChatCompletions(c echo.Context) error {
 	case res := <-resChan:
 		return c.JSON(http.StatusOK, res.Data)
 	case err := <-errChan:
-		return gie.HandleInferenceError(c, gie.Wrap(gie.ErrInferFailed, gie.TypeInference, "INFERENCE_ERROR", err.Content))
+		return gie.HandleInferenceError(c, err.Error)
 	}
 }
 
@@ -63,7 +63,7 @@ func parseOpenAIRequest(c echo.Context) (*InferQuery, error) {
 	err := c.Bind(&req)
 	if err != nil {
 		slog.ErrorContext(c.Request().Context(), "Failed to bind OpenAI request", "error", err)
-		return nil, gie.Wrap(err, gie.TypeValidation, "OPENAI_BIND_ERROR", "failed to bind OpenAI request")
+		return nil, gie.Wrap(err, gie.Invalid, "failed to bind OpenAI request")
 	}
 
 	// Determine prompt: if messages provided, concatenate contents, else use fallback prompt.
@@ -72,10 +72,10 @@ func parseOpenAIRequest(c echo.Context) (*InferQuery, error) {
 		var builder strings.Builder
 		for i, msg := range req.Messages {
 			if msg.Role == "" {
-				return nil, gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "INVALID_MESSAGE_ROLE", "message "+strconv.Itoa(i)+" missing role")
+				return nil, gie.New(gie.Invalid, "invalid message "+strconv.Itoa(i)+" missing role")
 			}
 			if msg.Content == "" {
-				return nil, gie.Wrap(gie.ErrInvalidParams, gie.TypeValidation, "INVALID_MESSAGE_CONTENT", "message "+strconv.Itoa(i)+" missing content")
+				return nil, gie.New(gie.Invalid, "invalid message "+strconv.Itoa(i)+" missing content")
 			}
 			if i > 0 {
 				_, _ = builder.WriteString("\n")
