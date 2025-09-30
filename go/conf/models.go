@@ -112,6 +112,15 @@ func add(info map[string]ModelInfo, root string) error {
 		slog.Debug("Found", "model", path)
 
 		name, flags := getNameAndFlags(root, path)
+
+		// When using models like GPT OSS, we need to provide a grammar file.
+		// see: https://github.com/ggml-org/llama.cpp/discussions/15396#discussioncomment-14145537
+		// We want to have the possibility to keep the model and grammar files within the same directory.
+		// But we also want to be free to move that directory
+		// without having to update the path within tho command line arguments.
+		// Thus, we use $DIR as a placeholder for the directory.
+		strings.ReplaceAll(flags, "$DIR", filepath.Dir(path))
+
 		mi := ModelInfo{flags, path, ""}
 		if old, ok := info[name]; ok {
 			slog.Warn("Duplicated models", "dir", root, "name", name, "old", old, "new", mi)
