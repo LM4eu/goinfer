@@ -6,9 +6,11 @@ package infer
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -19,9 +21,9 @@ import (
 
 // --- Helper -------------------------------------------------------------------
 
-// newEcho creates an echo instance and a test context wired to the provided
+// newEchoCtx creates an echo instance and a test context wired to the provided
 // request and response recorder.
-func newEcho(req *http.Request) (echo.Context, *httptest.ResponseRecorder) {
+func newEchoCtx(req *http.Request) (echo.Context, *httptest.ResponseRecorder) {
 	rec := httptest.NewRecorder()
 	e := echo.New()
 	c := e.NewContext(req, rec)
@@ -37,21 +39,32 @@ func TestParseInferQuery_ValidPayload(t *testing.T) {
 	const temperature = 0.7
 	const maxTokens = 128
 
-	payload := map[string]any{
+	strCtxSize := strconv.Itoa(ctxSize)
+	strTemperature := fmt.Sprint(temperature)
+	strMaxTokens := strconv.Itoa(maxTokens)
+
+	body := `{
 		"prompt":      "hello",
 		"model":       "dummy-model",
-		"ctx":         ctxSize,
+		"ctx":         ` + strCtxSize + `,
 		"stream":      true,
-		"temperature": temperature,
-		"max_tokens":  maxTokens,
+		"temperature": ` + strTemperature + `,
+		"max_tokens":  ` + strMaxTokens + `,
 		"stop": []any{
 			"STOP1",
 			"STOP2",
 		},
-	}
-	query, err := parseInferQuery(t.Context(), payload)
+	}`
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/infer", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	echoCtx, _ := newEchoCtx(req)
+
+	query, err := parseInferQuery(echoCtx)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
+	}
+	if query == nil {
+		t.Fatal("Unexpected nil query")
 	}
 	if query.Prompt != "hello" {
 		t.Errorf("Prompt mismatch: want %q, got %q", "hello", query.Prompt)
@@ -82,10 +95,11 @@ func TestParseInferQuery_ValidPayload(t *testing.T) {
 
 func TestParseInferQuery_MissingPrompt(t *testing.T) {
 	t.Parallel()
-	payload := map[string]any{
-		"model": "dummy",
-	}
-	_, err := parseInferQuery(t.Context(), payload)
+	body := `{"model": "dummy"}`
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/infer", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	echoCtx, _ := newEchoCtx(req)
+	_, err := parseInferQuery(echoCtx)
 	if err == nil {
 		t.Fatalf("expected error for missing prompt, got nil")
 	}
@@ -137,7 +151,7 @@ func TestConcurrencyGuard(t *testing.T) {
 	// Minimal request body – any valid JSON works; the handler will early‑exit
 	// because IsInferring is already true.
 	body := `{"prompt":"test"}`
-	req := httptest.NewRequest(http.MethodPost, "/infer", strings.NewReader(body))
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/infer", strings.NewReader(body))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
 	// Run two concurrent calls to inferHandler.
@@ -148,7 +162,7 @@ func TestConcurrencyGuard(t *testing.T) {
 		grp.Add(1)
 		go func(idx int) {
 			defer grp.Done()
-			c, rec := newEcho(req)
+			c, rec := newEchoCtx(req)
 			_ = inf.inferHandler(c) // ignore returned error; handler writes status
 			results[idx] = rec.Code
 		}(i)
