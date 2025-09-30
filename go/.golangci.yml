@@ -36,6 +36,7 @@ linters:
     - gomodguard # another Go module dependencies blocker, more featured than depguard
     - ireturn
     - mnd # Magic number
+    - nonamedreturns
     - nlreturn
     - staticcheck
     - testpackage
