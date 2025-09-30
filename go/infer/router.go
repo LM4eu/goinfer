@@ -12,6 +12,7 @@ import (
 
 	"github.com/LM4eu/goinfer/conf"
 	"github.com/LM4eu/goinfer/gie"
+	"github.com/LM4eu/llama-swap/proxy"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -20,6 +21,7 @@ import (
 // Infer manages proxying requests to the backend LLM engine.
 type Infer struct {
 	Cfg                         *conf.Cfg
+	ProxyMan                    *proxy.ProxyManager
 	IsInferring                 bool
 	ContinueInferringController bool
 	mu                          sync.Mutex

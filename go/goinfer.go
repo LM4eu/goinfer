@@ -135,8 +135,8 @@ func startServers(cfg *conf.Cfg) {
 	var grp errgroup.Group
 
 	// Start Swap (Gin) and Echo servers (if configured)
-	startSwapServer(ctx, cfg, &grp)
-	startEchoServers(ctx, cfg, &grp)
+	proxyMan := startSwapServer(ctx, cfg, &grp)
+	startEchoServers(ctx, cfg, &grp, proxyMan)
 
 	// prints a startup message when all servers are running.
 	slog.Info("-----------------------------")
@@ -152,8 +152,8 @@ func startServers(cfg *conf.Cfg) {
 }
 
 // startEchoServers starts all HTTP Echo servers configured in the config.
-func startEchoServers(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group) {
-	inf := &infer.Infer{Cfg: cfg}
+func startEchoServers(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group, proxyMan *proxy.ProxyManager) {
+	inf := &infer.Infer{Cfg: cfg, ProxyMan: proxyMan}
 	for addr, services := range cfg.Server.Listen {
 		if strings.Contains(services, "swap") {
 			continue // reserved for llama-swap
@@ -188,23 +188,27 @@ func url(addr string) string {
 }
 
 // startSwapServer starts the llama-swap if configured in the config.
-func startSwapServer(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group) {
+func startSwapServer(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group) *proxy.ProxyManager {
+	var proxyMan *proxy.ProxyManager
+
 	for addr, services := range cfg.Server.Listen {
 		if !strings.Contains(services, "swap") {
 			continue
 		}
 
-		swapHandler := proxy.New(cfg.Swap)
+		proxyMan = proxy.New(cfg.Swap)
 		swapServer := &http.Server{
 			Addr:    addr,
-			Handler: swapHandler,
+			Handler: proxyMan,
 		}
 
 		grp.Go(func() error {
 			slog.DebugContext(ctx, "start Gin (llama-swap)", "url", url(swapServer.Addr))
-			return startSwap(ctx, swapServer, swapHandler)
+			return startSwap(ctx, swapServer, proxyMan)
 		})
 	}
+
+	return proxyMan
 }
 
 // startEcho starts a HTTP server with graceful shutdown handling.
