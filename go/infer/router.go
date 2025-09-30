@@ -72,14 +72,14 @@ func (inf *Infer) NewEcho(cfg *conf.Cfg, addr string,
 		slog.Info("Listen", "GET", url(addr, "/models"))
 	}
 
-	// ----- /goinfer -----
+	// ----- /infer -----
 	if enableGoinferEndpoint {
-		grp := e.Group("/goinfer")
+		grp := e.Group("/infer")
 		configureAPIKeyAuth(grp, cfg, "goinfer")
 		grp.POST("", inf.inferHandler)
 		grp.GET("/abort", inf.abortHandler)
-		slog.Info("Listen", "POST", url(addr, "/goinfer"))
-		slog.Info("Listen", "GET", url(addr, "/goinfer/abort"))
+		slog.Info("Listen", "POST", url(addr, "/infer"))
+		slog.Info("Listen", "GET", url(addr, "/infer/abort"))
 	}
 
 	// ----- /v1/* -----

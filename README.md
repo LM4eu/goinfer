@@ -23,7 +23,7 @@ Existing tools (`llama‑swap`, `olla`, VPNs, WireGuard, etc.) either require in
 Category            | Feature
 --------------------|----------
 **Model handling**  | Load multiple `*.gguf` models, switch at runtime, change any inference parameter
-**API**             | OpenAI‑compatible HTTP API `/v1/`, streaming responses, Custom `/goinfer` API
+**API**             | OpenAI‑compatible HTTP API `/v1/`, streaming responses, Custom `/infer` API
 **Security**        | Per‑role API keys (`admin`, `user`), CORS control
 **Robustness**      | Independent of ISP‑provided IP, graceful reconnects
 **Admin control**   | Remote monitoring, delete/upload new GGUF files, reload config, `git pull llama.cpp`, re‑compile
@@ -329,7 +329,7 @@ models      | `/models`              | GET    | List GGUF files currently presen
 swap/openai | `/v1/chat/completions` | POST   | OpenAI‑compatible chat endpoint
 swap        | `/v1/models`           | GET    | List models from Swap config
 swap        | `/v1/*`                | POST   | Other OpenAI endpoints
-goinfer     | `/goinfer`             | POST   | Custom inference API
+goinfer     | `/infer`               | POST   | Custom inference API
 
 All endpoints require an `Authorization: Bearer $GI_API_KEY_ADMIN` header.
 The `admin` key grants full access to the admin routes.
@@ -387,7 +387,7 @@ Two `goinfer` instances (client / server mode):
 
 ### Low Priority
 
-- `/goinfer` endpoint for full inference parameters control
+- `/infer` endpoint for full inference parameters control
 
 - Comprehensive **web admin** (monitoring, download/delete `.gguf`, edit config, restart, `git pull` + rebuild `llama.cpp`, remote shell, upgrade Linux, reboot the machine, and other SysAdmin tasks)
 

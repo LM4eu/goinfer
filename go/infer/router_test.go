@@ -53,8 +53,8 @@ func TestNewEcho(t *testing.T) {
 			enableOpenAPI: true,
 			wantRoutes: []string{
 				"/models",
-				"/goinfer",
-				"/goinfer/abort",
+				"/infer",
+				"/infer/abort",
 				"/v1/chat/completions",
 			},
 		},
