@@ -43,25 +43,22 @@ func TestParseInferQuery_ValidPayload(t *testing.T) {
 	strTemperature := fmt.Sprint(temperature)
 	strMaxTokens := strconv.Itoa(maxTokens)
 
-	body := `{
-		"prompt":      "hello",
+	body := `
+	{	"prompt":      "hello",
 		"model":       "dummy-model",
 		"ctx":         ` + strCtxSize + `,
 		"stream":      true,
 		"temperature": ` + strTemperature + `,
 		"max_tokens":  ` + strMaxTokens + `,
-		"stop": []any{
-			"STOP1",
-			"STOP2",
-		},
-	}`
+		"stop": ["STOP1", "STOP2"]
+	}	}`
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/infer", strings.NewReader(body))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	echoCtx, _ := newEchoCtx(req)
 
 	query, err := parseInferQuery(echoCtx)
 	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+		t.Fatalf("expected no error, body=%v err=%v", body, err)
 	}
 	if query == nil {
 		t.Fatal("Unexpected nil query")
@@ -69,8 +66,8 @@ func TestParseInferQuery_ValidPayload(t *testing.T) {
 	if query.Prompt != "hello" {
 		t.Errorf("Prompt mismatch: want %q, got %q", "hello", query.Prompt)
 	}
-	if query.Name != "dummy-model" {
-		t.Errorf("Model.Name mismatch: want %q, got %q", "dummy-model", query.Name)
+	if query.Model != "dummy-model" {
+		t.Errorf("Model.Name mismatch: want %q, got %q", "dummy-model", query.Model)
 	}
 	if query.Ctx != ctxSize {
 		t.Errorf("Model.Ctx mismatch: want %d, got %d", ctxSize, query.Ctx)
