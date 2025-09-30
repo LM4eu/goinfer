@@ -13,16 +13,16 @@ import (
 	"syscall"
 
 	"github.com/LM4eu/goinfer/gie"
-	"github.com/LM4eu/llama-swap/proxy"
+	"github.com/LM4eu/llama-swap/proxy/config"
 	"go.yaml.in/yaml/v4"
 )
 
 type (
 	Cfg struct {
-		Server    ServerCfg    `json:"server"        yaml:"server"`
-		Llama     LlamaCfg     `json:"llama"         yaml:"llama"`
-		ModelsDir string       `json:"models_dir"    yaml:"models_dir"`
-		Swap      proxy.Config `json:"swap,omitzero" yaml:"swap,omitempty"`
+		Server    ServerCfg     `json:"server"        yaml:"server"`
+		Llama     LlamaCfg      `json:"llama"         yaml:"llama"`
+		ModelsDir string        `json:"models_dir"    yaml:"models_dir"`
+		Swap      config.Config `json:"swap,omitzero" yaml:"swap,omitempty"`
 	}
 
 	ServerCfg struct {

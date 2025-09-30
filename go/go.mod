@@ -8,7 +8,8 @@ go 1.25.1
 
 require (
 	github.com/LM4eu/garcon v0.40.0
-	github.com/LM4eu/llama-swap v0.0.162
+	github.com/LM4eu/llama-swap v0.162.1
+	github.com/gin-gonic/gin v1.11.0
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/labstack/gommon v0.4.2
 	github.com/stretchr/testify v1.11.1
@@ -29,7 +30,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.10 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
-	github.com/gin-gonic/gin v1.11.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.27.0 // indirect

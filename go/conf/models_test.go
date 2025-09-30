@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/LM4eu/llama-swap/proxy"
+	"github.com/LM4eu/llama-swap/proxy/config"
 )
 
 // createGGUFFile creates a temporary .gguf file of the given size (bytes).
@@ -151,8 +151,8 @@ func TestListModels(t *testing.T) {
 
 	cfg := &Cfg{
 		ModelsDir: tmp,
-		Swap: proxy.Config{
-			Models: map[string]proxy.ModelConfig{
+		Swap: config.Config{
+			Models: map[string]config.ModelConfig{
 				"diskmodel": {Cmd: "", Unlisted: false},
 				"missing":   {Cmd: "--model missing.gguf", Unlisted: false},
 				"GI_hidden": {Cmd: "", Unlisted: true},
@@ -182,7 +182,7 @@ func TestCountModels(t *testing.T) {
 
 	cfg := &Cfg{
 		ModelsDir: tmp,
-		Swap:      proxy.Config{},
+		Swap:      config.Config{},
 	}
 	if n := cfg.countModels(); n != 2 {
 		t.Errorf("countModels = %d, want 2", n)
@@ -227,7 +227,7 @@ func TestValidateModelFiles_NoSwapModels(t *testing.T) {
 	tmp := t.TempDir()
 	cfg := &Cfg{
 		ModelsDir: tmp,
-		Swap:      proxy.Config{},
+		Swap:      config.Config{},
 	}
 	err := cfg.ValidateSwap()
 	if err == nil {
@@ -242,8 +242,8 @@ func TestValidateModelFiles_WithSwapModels(t *testing.T) {
 
 	cfg := &Cfg{
 		ModelsDir: tmp,
-		Swap: proxy.Config{
-			Models: map[string]proxy.ModelConfig{
+		Swap: config.Config{
+			Models: map[string]config.ModelConfig{
 				"ref": {Cmd: "--model " + modelPath, Unlisted: false},
 			},
 		},

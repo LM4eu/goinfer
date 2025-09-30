@@ -11,7 +11,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/LM4eu/llama-swap/proxy"
+	"github.com/LM4eu/llama-swap/proxy/config"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -135,8 +135,8 @@ func TestListModelsIntegration(t *testing.T) {
 	}
 	cfg := &Cfg{
 		ModelsDir: tmp,
-		Swap: proxy.Config{
-			Models: map[string]proxy.ModelConfig{
+		Swap: config.Config{
+			Models: map[string]config.ModelConfig{
 				"model1": {Cmd: "", Unlisted: false},
 			},
 		},

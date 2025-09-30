@@ -19,6 +19,7 @@ import (
 
 	"github.com/LM4eu/garcon/vv"
 	"github.com/LM4eu/llama-swap/proxy"
+	"github.com/LM4eu/llama-swap/proxy/config"
 	"github.com/labstack/echo/v4"
 
 	"github.com/LM4eu/goinfer/conf"
@@ -90,7 +91,7 @@ func getCfg() *conf.Cfg {
 	}
 
 	// verify "llama-swap.yml" can be successfully loaded
-	cfg.Swap, err = proxy.LoadConfig(swapCfg)
+	cfg.Swap, err = config.LoadConfig(swapCfg)
 	if err != nil {
 		slog.Error("Cannot load Swap config", "file", swapCfg, "error", err)
 		os.Exit(1)

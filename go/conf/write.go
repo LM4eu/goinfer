@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/LM4eu/goinfer/gie"
-	"github.com/LM4eu/llama-swap/proxy"
+	"github.com/LM4eu/llama-swap/proxy/config"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -79,7 +79,7 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	}
 
 	if cfg.Swap.Models == nil {
-		cfg.Swap.Models = make(map[string]proxy.ModelConfig, 2*len(info))
+		cfg.Swap.Models = make(map[string]config.ModelConfig, 2*len(info))
 	}
 
 	for name, mi := range info {
@@ -113,7 +113,7 @@ func (cfg *Cfg) setModelSettings(name, path, flags string, goinfer bool) {
 		macro = "${cmd-goinfer}"
 	}
 
-	modelCfg := proxy.ModelConfig{
+	modelCfg := config.ModelConfig{
 		Cmd:           macro + " -m " + path + " " + flags,
 		Proxy:         "http://localhost:${PORT}",
 		CheckEndpoint: "/health",
