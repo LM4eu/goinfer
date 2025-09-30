@@ -23,6 +23,7 @@ type ModelInfo struct {
 	Flags string `json:"flags,omitempty" yaml:"flags,omitempty"`
 	Path  string `json:"path,omitempty"  yaml:"path,omitempty"`
 	Error string `json:"error,omitempty" yaml:"error,omitempty"`
+	Size  int64  `json:"size,omitempty"  yaml:"size,omitempty"`
 }
 
 // ListModels returns the model names from the config and from the models_dir.
@@ -36,7 +37,7 @@ func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
 
 	for name, mi := range info {
 		if info[name].Error == "" {
-			info[name] = ModelInfo{mi.Flags, mi.Path, notConfigured}
+			info[name] = ModelInfo{mi.Flags, mi.Path, notConfigured, mi.Size}
 		}
 	}
 
@@ -103,7 +104,7 @@ func add(info map[string]ModelInfo, root string) error {
 			return nil
 		}
 
-		err = validateFile(path)
+		size, err := getFileSize(path)
 		if err != nil {
 			slog.Debug("Skip", "model", path)
 			return nil //nolint:nilerr // "return nil" to skip this file
@@ -121,7 +122,7 @@ func add(info map[string]ModelInfo, root string) error {
 		// Thus, we use $DIR as a placeholder for the directory.
 		strings.ReplaceAll(flags, "$DIR", filepath.Dir(path))
 
-		mi := ModelInfo{flags, path, ""}
+		mi := ModelInfo{flags, path, "", size}
 		if old, ok := info[name]; ok {
 			slog.Warn("Duplicated models", "dir", root, "name", name, "old", old, "new", mi)
 			mi.Error = "two files have same model name (must be unique)"
@@ -325,7 +326,7 @@ func (cfg *Cfg) ValidateSwap() error {
 		var previous string
 		for arg := range strings.SplitSeq(cfg.Swap.Models[i].Cmd, " ") {
 			if previous == "-m" || previous == "--model" {
-				err := validateFile(arg)
+				_, err := getFileSize(arg)
 				if err != nil {
 					return err
 				}
@@ -336,10 +337,10 @@ func (cfg *Cfg) ValidateSwap() error {
 	return nil
 }
 
-// validateFile verifies that the given path points to
+// getFileSize verifies that the given path points to
 // an existing, readable, and sufficiently large *.gguf file.
 // It also normalizes the path and checks for series files.
-func validateFile(path string) error {
+func getFileSize(path string) (int64, error) {
 	cleaned := filepath.Clean(path)
 	if cleaned != path {
 		slog.Warn("Malformed", "current", path, "better", cleaned)
@@ -350,26 +351,27 @@ func validateFile(path string) error {
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		slog.Warn("Model file does not exist", "path", path)
-		return err
+		return 0, err
 	}
 
 	// Check if the file is readable
 	file, err := os.Open(path)
 	if err != nil {
 		slog.Warn("Model file is not readable", "path", path)
-		return err
+		return 0, err
 	}
 
 	err = file.Close()
 	if err != nil {
 		slog.Warn("Model file fails closing", "path", path)
-		return err
+		return 0, err
 	}
 
 	// is empty?
-	if info.Size() < 1000 {
+	size := info.Size()
+	if size < 1000 {
 		slog.Warn("Model file is empty (or too small)", "path", path)
-		return gie.ErrConfigValidation
+		return 0, gie.ErrConfigValidation
 	}
 
 	// Huge GGUF are spilt into smaller files ending with -00001-of-00003.gguf
@@ -377,14 +379,14 @@ func validateFile(path string) error {
 	pos := strings.LastIndex(path, "-of-")
 	const first = "00001"
 	if pos < len(first) {
-		return nil // OK
+		return size, nil // OK
 	}
 
 	if path[pos-len(first):pos] != first {
 		slog.Debug("KO Model file is part of a series, but only the first one is referenced", "path", path)
-		return gie.New(gie.ConfigErr, "Model file is part of a series, but only the first one is referenced, file="+path)
+		return 0, gie.New(gie.ConfigErr, "Model file is part of a series, but only the first one is referenced, file="+path)
 	}
 
 	slog.Debug("OK Model file is the first of a series", "path", path)
-	return nil // OK
+	return size, nil // OK
 }

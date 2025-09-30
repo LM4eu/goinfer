@@ -195,28 +195,31 @@ func TestValidateFile(t *testing.T) {
 
 	// valid
 	valid := createGGUFFile(t, tmp, "valid.gguf", 2048)
-	err := validateFile(valid)
+	size, err := getFileSize(valid)
 	if err != nil {
 		t.Errorf("validateFile(valid) error: %v", err)
+	}
+	if size != 2048 {
+		t.Errorf("file size: got %d want 2048", size)
 	}
 
 	// too small
 	small := createGGUFFile(t, tmp, "small.gguf", 64)
-	err = validateFile(small)
+	_, err = getFileSize(small)
 	if err == nil {
 		t.Errorf("validateFile(small) expected error")
 	}
 
 	// series first part
 	firstSeries := createGGUFFile(t, tmp, "model-00001-of-00003.gguf", 2048)
-	err = validateFile(firstSeries)
+	_, err = getFileSize(firstSeries)
 	if err != nil {
 		t.Errorf("validateFile(firstSeries) error: %v", err)
 	}
 
 	// series non-first part
 	secondSeries := createGGUFFile(t, tmp, "model-00002-of-00003.gguf", 2048)
-	err = validateFile(secondSeries)
+	_, err = getFileSize(secondSeries)
 	if err == nil {
 		t.Errorf("validateFile(secondSeries) expected error")
 	}
