@@ -51,7 +51,7 @@ func parseInferQuery(c echo.Context) (*InferQuery, error) {
 
 	// Parse required prompt parameter
 	if query.Prompt == "" {
-		return nil, gie.New(gie.Invalid, "missing mandatory prompt field within the infer request")
+		return nil, gie.ErrInvalidPrompt
 	}
 
 	return &query, nil

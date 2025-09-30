@@ -57,7 +57,7 @@ var (
 	// Validation errors.
 
 	// ErrInvalidPrompt indicates an invalid prompt error.
-	ErrInvalidPrompt = New(Invalid, "invalid prompt (mandatory)")
+	ErrInvalidPrompt = New(Invalid, "missing mandatory prompt field within the infer request")
 	// ErrInvalidFormat indicates an invalid request format error.
 	ErrInvalidFormat = New(Invalid, "invalid request format")
 	// ErrInvalidParams indicates invalid parameter values error.
