@@ -85,18 +85,15 @@ func parseOpenAIRequest(c echo.Context) (*InferQuery, error) {
 		prompt = builder.String()
 	}
 
-	query := &InferQuery{
-		Prompt: prompt,
-		Model:  Model{Name: req.Model},
-		Params: DefaultInferParams,
-	}
+	query := DefaultQuery
+	query.Prompt = prompt
 	if req.Temperature != 0 {
-		query.Params.Sampling.Temperature = float32(req.Temperature)
+		query.Temperature = float32(req.Temperature)
 	}
 	if req.MaxTokens != 0 {
-		query.Params.Generation.MaxTokens = req.MaxTokens
+		query.MaxTokens = req.MaxTokens
 	}
-	query.Params.Stream = req.Stream
+	query.Stream = req.Stream
 
-	return query, nil
+	return &query, nil
 }

@@ -69,25 +69,25 @@ func TestParseInferQuery_ValidPayload(t *testing.T) {
 	if query.Prompt != "hello" {
 		t.Errorf("Prompt mismatch: want %q, got %q", "hello", query.Prompt)
 	}
-	if query.Model.Name != "dummy-model" {
-		t.Errorf("Model.Name mismatch: want %q, got %q", "dummy-model", query.Model.Name)
+	if query.Name != "dummy-model" {
+		t.Errorf("Model.Name mismatch: want %q, got %q", "dummy-model", query.Name)
 	}
-	if query.Model.Ctx != ctxSize {
-		t.Errorf("Model.Ctx mismatch: want %d, got %d", ctxSize, query.Model.Ctx)
+	if query.Ctx != ctxSize {
+		t.Errorf("Model.Ctx mismatch: want %d, got %d", ctxSize, query.Ctx)
 	}
-	if !query.Params.Stream {
+	if !query.Stream {
 		t.Errorf("Params.Stream should be true")
 	}
-	if query.Params.Sampling.Temperature != temperature {
-		t.Errorf("Params.Sampling.Temperature mismatch: want %v, got %v", temperature, query.Params.Sampling.Temperature)
+	if query.Temperature != temperature {
+		t.Errorf("Params.Sampling.Temperature mismatch: want %v, got %v", temperature, query.Temperature)
 	}
-	if query.Params.Generation.MaxTokens != maxTokens {
-		t.Errorf("Params.Generation.MaxTokens mismatch: want %d, got %d", maxTokens, query.Params.Generation.MaxTokens)
+	if query.MaxTokens != maxTokens {
+		t.Errorf("Params.Generation.MaxTokens mismatch: want %d, got %d", maxTokens, query.MaxTokens)
 	}
-	if len(query.Params.Generation.StopPrompts) != 2 ||
-		query.Params.Generation.StopPrompts[0] != "STOP1" ||
-		query.Params.Generation.StopPrompts[1] != "STOP2" {
-		t.Errorf("StopPrompts not parsed correctly: %#v", query.Params.Generation.StopPrompts)
+	if len(query.StopPrompts) != 2 ||
+		query.StopPrompts[0] != "STOP1" ||
+		query.StopPrompts[1] != "STOP2" {
+		t.Errorf("StopPrompts not parsed correctly: %#v", query.StopPrompts)
 	}
 }
 

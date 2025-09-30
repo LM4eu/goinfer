@@ -39,9 +39,9 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 		return
 	}
 
-	if query.Model.Name == "" {
-		err := gie.New(gie.Invalid, "model not loaded model="+query.Model.Name)
-		slog.ErrorContext(ctx, "Model not loaded", "model", query.Model.Name, "error", err)
+	if query.Name == "" {
+		err := gie.New(gie.Invalid, "model not loaded model="+query.Name)
+		slog.ErrorContext(ctx, "Model not loaded", "model", query.Name, "error", err)
 		errChan <- StreamedMsg{
 			Num:     0,
 			Error:   err,
@@ -50,8 +50,7 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 		return
 	}
 
-	slog.DebugContext(ctx, "Infer params")
-	slog.DebugContext(ctx, "params", "value", query.Params)
+	slog.DebugContext(ctx, "Infer", "query", query)
 
 	// Execute inference
 	nTok, err := inf.runInfer(ctx, c, query)
@@ -67,7 +66,7 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 	}
 
 	// Handle streaming completion if needed
-	if query.Params.Stream {
+	if query.Stream {
 		err = inf.completeStream(ctx, c, nTok)
 		if err != nil {
 			// Forward the error to the caller via errChan
@@ -91,7 +90,7 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 		MsgType: SystemMsgType,
 		Data: map[string]any{
 			"request_id": reqID,
-			"model":      query.Model.Name,
+			"model":      query.Name,
 			"status":     "success",
 			"timestamp":  time.Now().UTC().Format(time.RFC3339),
 		},
@@ -139,7 +138,7 @@ func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *InferQuer
 	}
 
 	// If successful, process tokens
-	if err == nil && query.Params.Stream {
+	if err == nil && query.Stream {
 		// Create JSON encoder for streaming
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		c.Response().WriteHeader(http.StatusOK)
@@ -155,7 +154,7 @@ func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *InferQuer
 			}
 
 			token := "token_" + strconv.Itoa(i)
-			err = inf.streamToken(ctx, nTok+i, token, jsonEncoder, c, &query.Params, startThinking, &startEmitting, &thinkingElapsed)
+			err = inf.streamToken(ctx, nTok+i, token, jsonEncoder, c, query, startThinking, &startEmitting, &thinkingElapsed)
 			if err != nil {
 				return nTok, err
 			}
@@ -195,7 +194,7 @@ func (inf *Infer) completeStream(ctx context.Context, c echo.Context, _ int) err
 //nolint:revive // will refactor to reduce the number of arguments
 func (inf *Infer) streamToken(
 	ctx context.Context, nTok int, token string, jsonEncoder *json.Encoder,
-	c echo.Context, params *InferParams, startThinking time.Time,
+	c echo.Context, params *InferQuery, startThinking time.Time,
 	startEmitting *time.Time, thinkingElapsed *time.Duration,
 ) error {
 	// Check context
