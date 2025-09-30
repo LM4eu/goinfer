@@ -49,7 +49,7 @@ func (inf *Infer) handleChatCompletions(c echo.Context) error {
 }
 
 // parseOpenAIRequest converts an OpenAI chat completion request into an InferQuery.
-func parseOpenAIRequest(c echo.Context) (*InferQuery, error) {
+func parseOpenAIRequest(c echo.Context) (*Query, error) {
 	// The OpenAI API expects a JSON body with fields such as model, messages, temperature, etc.
 	// For simplicity we map a subset of these fields to the internal InferQuery.
 	var req struct {
@@ -85,7 +85,7 @@ func parseOpenAIRequest(c echo.Context) (*InferQuery, error) {
 		prompt = builder.String()
 	}
 
-	query := DefaultQuery
+	query := defaultQuery
 	query.Prompt = prompt
 	if req.Temperature != 0 {
 		query.Temperature = float32(req.Temperature)

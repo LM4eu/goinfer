@@ -14,7 +14,7 @@ import (
 )
 
 // forwardInference forwards an inference request to the backend.
-func (inf *Infer) forwardInference(ctx context.Context, query *InferQuery, c echo.Context, resChan, errChan chan<- StreamedMsg) error {
+func (inf *Infer) forwardInference(ctx context.Context, query *Query, c echo.Context, resChan, errChan chan<- StreamedMsg) error {
 	// Check if infer is already running
 	inf.mu.Lock()
 	if inf.IsInferring {

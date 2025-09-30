@@ -39,8 +39,8 @@ func (inf *Infer) inferHandler(c echo.Context) error {
 }
 
 // parseInferQuery parses infer parameters from echo.Map directly.
-func parseInferQuery(c echo.Context) (*InferQuery, error) {
-	query := DefaultQuery
+func parseInferQuery(c echo.Context) (*Query, error) {
+	query := defaultQuery
 
 	err := json.NewDecoder(c.Request().Body).Decode(&query)
 	if err == io.EOF {

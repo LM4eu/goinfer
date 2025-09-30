@@ -23,7 +23,7 @@ type CtxKeyRequestID string
 const RequestID CtxKeyRequestID = "RequestID"
 
 // Infer performs language model inference.
-func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, resChan, errChan chan<- StreamedMsg) {
+func (inf *Infer) Infer(ctx context.Context, query *Query, c echo.Context, resChan, errChan chan<- StreamedMsg) {
 	// Create context with request ID
 	ctx = context.WithValue(ctx, RequestID, reqID())
 
@@ -39,9 +39,9 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 		return
 	}
 
-	if query.Name == "" {
-		err := gie.New(gie.Invalid, "model not loaded model="+query.Name)
-		slog.ErrorContext(ctx, "Model not loaded", "model", query.Name, "error", err)
+	if query.Model == "" {
+		err := gie.New(gie.Invalid, "model not loaded model="+query.Model)
+		slog.ErrorContext(ctx, "Model not loaded", "model", query.Model, "error", err)
 		errChan <- StreamedMsg{
 			Num:     0,
 			Error:   err,
@@ -90,7 +90,7 @@ func (inf *Infer) Infer(ctx context.Context, query *InferQuery, c echo.Context, 
 		MsgType: SystemMsgType,
 		Data: map[string]any{
 			"request_id": reqID,
-			"model":      query.Name,
+			"model":      query.Model,
 			"status":     "success",
 			"timestamp":  time.Now().UTC().Format(time.RFC3339),
 		},
@@ -104,7 +104,7 @@ func reqID() string {
 }
 
 // runInfer performs the actual inference with token streaming.
-func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *InferQuery) (int, error) {
+func (inf *Infer) runInfer(ctx context.Context, c echo.Context, query *Query) (int, error) {
 	// Start the infer process
 	inf.mu.Lock()
 	inf.IsInferring = true
@@ -194,7 +194,7 @@ func (inf *Infer) completeStream(ctx context.Context, c echo.Context, _ int) err
 //nolint:revive // will refactor to reduce the number of arguments
 func (inf *Infer) streamToken(
 	ctx context.Context, nTok int, token string, jsonEncoder *json.Encoder,
-	c echo.Context, params *InferQuery, startThinking time.Time,
+	c echo.Context, params *Query, startThinking time.Time,
 	startEmitting *time.Time, thinkingElapsed *time.Duration,
 ) error {
 	// Check context

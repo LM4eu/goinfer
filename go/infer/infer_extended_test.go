@@ -24,7 +24,7 @@ func TestInfer_Method_ModelNotLoaded(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := echo.New().NewContext(req, rec)
 
-	var query InferQuery // empty model name triggers validation error
+	var query Query // empty model name triggers validation error
 
 	resChan := make(chan StreamedMsg, 1)
 	errChan := make(chan StreamedMsg, 1)
