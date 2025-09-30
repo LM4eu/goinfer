@@ -6,11 +6,13 @@
 package infer
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/LM4eu/goinfer/gie"
 	"github.com/labstack/echo/v4"
@@ -25,7 +27,7 @@ func (inf *Infer) inferHandler(c echo.Context) error {
 	}
 
 	if query == nil {
-		return gie.New(gie.InferErr, "invalid infer query")
+		return gie.New(gie.ServerErr, "invalid infer request")
 	}
 
 	if inf.ProxyMan == nil {
@@ -33,6 +35,20 @@ func (inf *Infer) inferHandler(c echo.Context) error {
 	}
 
 	ginCtx := echo2gin(c)
+
+	if query.Timeout > 0 {
+		ctx, cancel := context.WithTimeout(ginCtx.Request.Context(), time.Duration(query.Timeout)*time.Second)
+		defer cancel()
+		ginCtx.Request = ginCtx.Request.WithContext(ctx)
+	}
+
+	body, err := json.Marshal(query)
+	if err != nil {
+		return gie.Wrap(err, gie.ServerErr, "failed to marshal infer request")
+	}
+	ginCtx.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+	ginCtx.Request.URL.Path = "/v1/chat/completions"
+
 	inf.ProxyMan.ProxyOAIHandler(ginCtx)
 	return nil
 }
