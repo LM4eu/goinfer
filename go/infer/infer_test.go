@@ -108,6 +108,21 @@ func TestParseInferQuery_MissingPrompt(t *testing.T) {
 	}
 }
 
+func TestParseInferQuery_OnlyPrompt(t *testing.T) {
+	t.Parallel()
+	body := `{"prompt": "hello LM4"}`
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/infer", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	echoCtx, _ := newEchoCtx(req)
+	query, err := parseInferQuery(echoCtx)
+	if err != nil {
+		t.Errorf("Error when prompt is provided err=%v", err)
+	}
+	if query == nil {
+		t.Fatal("Unexpected nil query")
+	}
+}
+
 // --- 3. getInt – type mismatch ------------------------------------------------
 
 func TestGetInt_TypeMismatch(t *testing.T) {
