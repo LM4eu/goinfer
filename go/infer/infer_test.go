@@ -155,9 +155,7 @@ func TestConcurrencyGuard(t *testing.T) {
 	t.Parallel()
 	// Build a dummy Infer instance – we can keep Cfg nil because the handler
 	// never dereferences it before the mutex check.
-	inf := &Infer{
-		Cfg: nil,
-	}
+	var inf Infer
 	// Simulate an ongoing inference by setting the flag under lock.
 	inf.mu.Lock()
 	inf.IsInferring = true
