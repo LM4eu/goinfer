@@ -16,7 +16,7 @@ import (
 )
 
 // Helper to create a temporary configuration file.
-func writeTempConfig(t *testing.T, cfg *Cfg) string {
+func writeTempCfg(t *testing.T, cfg *Cfg) string {
 	t.Helper()
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "config.yaml")
@@ -44,7 +44,7 @@ func TestReadMainCfg(t *testing.T) {
 	// Provide a dummy admin API key to satisfy validation.
 	cfg.Server.APIKeys = map[string]string{"admin": "dummy"}
 
-	path := writeTempConfig(t, cfg)
+	path := writeTempCfg(t, cfg)
 
 	// Override via env.
 	dir := filepath.Dir(path)
@@ -227,16 +227,16 @@ func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 	var grp sync.WaitGroup
 	for i := range 10 {
 		grp.Go(func() {
-			var config Cfg
-			err = config.ReadMainCfg(tmpFile, i&1 == 0)
+			var cfg Cfg
+			err = cfg.ReadMainCfg(tmpFile, i&1 == 0)
 			if err != nil {
 				t.Errorf("#%d ReadMainCfg error: %v", i, err)
 			}
-			if config.ModelsDir != dir {
-				t.Errorf("#%d ModelsDir not overridden, got %q want %q", i, config.ModelsDir, dir)
+			if cfg.ModelsDir != dir {
+				t.Errorf("#%d ModelsDir not overridden, got %q want %q", i, cfg.ModelsDir, dir)
 			}
-			if config.Server.Host != "127.0.0.1" {
-				t.Errorf("#%d Server.Host not overridden, got %q want 127.0.0.1", i, config.Server.Host)
+			if cfg.Server.Host != "127.0.0.1" {
+				t.Errorf("#%d Server.Host not overridden, got %q want 127.0.0.1", i, cfg.Server.Host)
 			}
 		})
 	}
