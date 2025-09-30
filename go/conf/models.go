@@ -120,7 +120,7 @@ func add(info map[string]ModelInfo, root string) error {
 		// But we also want to be free to move that directory
 		// without having to update the path within tho command line arguments.
 		// Thus, we use $DIR as a placeholder for the directory.
-		strings.ReplaceAll(flags, "$DIR", filepath.Dir(path))
+		flags = strings.ReplaceAll(flags, "$DIR", filepath.Dir(path))
 
 		mi := ModelInfo{flags, path, "", size}
 		if old, ok := info[name]; ok {
