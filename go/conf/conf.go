@@ -40,9 +40,9 @@ type (
 
 const (
 	// Sentence: Coffee is cool, so coffee is good. Bad code is dead, lol. Cafe gift, go cafe, test code.
-	// Hex code: C0ffee 15 C001, 50 C0ffee 15 900d. Bad C0de 15 Dead, 101. Cafe 91f7, 90 Cafe, 7e57C0de.
+	// Hex code: C0ffee 15 C001, 50 C0ffee 15 900d. Bad C0de 15 Dead, 101. Cafe 91f7, 90 Cafe, 7e57 C0de.
 	debugAPIKey = "C0ffee15C00150C0ffee15900dBadC0de15Dead101Cafe91f790Cafe7e57C0de"
-	unsetAPIKey = "PLEASE ⚠️ Set your private 64-hex-digit API keys (32 bytes) 🚨"
+	unsetAPIKey = "Please ⚠️ Set your private 64-hex-digit API keys (32 bytes)"
 
 	// Arguments for llama-server command line.
 	argsCommon  = "--props --no-warmup"
@@ -166,7 +166,7 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 
 	// Check API keys
 	for k, v := range cfg.Server.APIKeys {
-		if strings.Contains(v, "PLEASE") {
+		if strings.Contains(v, "Please") {
 			slog.Error("Please set your private", "key", k)
 			return gie.New(gie.ConfigErr, "API key not set, please set your private '"+k+"' API key")
 		}
