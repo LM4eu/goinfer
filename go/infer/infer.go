@@ -20,53 +20,26 @@ import (
 func (inf *Infer) inferHandler(c echo.Context) error {
 	// Initialize context with timeout
 	ctx, cancel := context.WithTimeout(c.Request().Context(), 30*time.Second)
-	defer cancel()
-
-	// Check if infer is already running using Infer
-	inf.mu.Lock()
-	if inf.IsInferring {
-		slog.Info("Infer already running")
-		inf.mu.Unlock()
-		return c.NoContent(http.StatusAccepted)
-	}
-	inf.mu.Unlock()
 
 	// Bind request parameters
 	reqMap := echo.Map{}
 	err := c.Bind(&reqMap)
 	if err != nil {
+		cancel()
 		return gie.HandleValidationError(c, gie.ErrInvalidFormat)
 	}
 
 	// Parse infer parameters directly
 	query, err := parseInferQuery(ctx, reqMap)
 	if err != nil {
+		cancel()
 		return gie.HandleValidationError(c, gie.ErrInvalidParams)
 	}
 
-	// Setup streaming response if needed
-	if query.Params.Stream {
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-		c.Response().WriteHeader(http.StatusOK)
+	if query.Timeout == 0 {
+		ctx, cancel = context.WithTimeout(c.Request().Context(), time.Duration(query.Timeout)*time.Second)
 	}
-
-	// Execute infer directly (no retry)
-	result, err := inf.execute(c, query)
-	if err != nil {
-		// Use the generic inference error handler to avoid exposing internal error messages.
-		return gie.HandleInferenceError(c, err)
-	}
-
-	// Handle the infer result
-	slog.Debug("-----------------------------")
-	for key, value := range result.Data {
-		slog.Debug("result", "key", key, "value", value)
-	}
-	slog.Debug("-----------------------------")
-
-	if !query.Params.Stream {
-		return c.JSON(http.StatusOK, result.Data)
-	}
+	defer cancel()
 	return nil
 }
 

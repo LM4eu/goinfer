@@ -46,9 +46,10 @@ type (
 
 	// InferQuery represents an inference task request.
 	InferQuery struct {
-		Prompt string      `json:"prompt,omitempty" yaml:"prompt,omitempty"`
-		Model  Model       `json:"model"            yaml:"model"`
-		Params InferParams `json:"params"           yaml:"params"`
+		Prompt  string      `json:"prompt,omitempty" yaml:"prompt,omitempty"`
+		Model   Model       `json:"model"            yaml:"model"`
+		Params  InferParams `json:"params"           yaml:"params"`
+		Timeout int         `json:"timeout"          yaml:"timeout"` // in seconds
 	}
 
 	// StreamedMsg represents a streamed message from the inference engine.
