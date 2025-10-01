@@ -6,7 +6,9 @@ Built on top of **[llama.cpp](https://github.com/ggml-org/llama.cpp)** and **[ll
 
 **TL;DR** – Deploy a **client** on a GPU‑rich desktop, a **server** on a machine with a static IP (or DNS), and let the server forward inference requests to the client. No VPN, no port‑forwarding, end‑to‑end encryption.
 
-## Problem: Remote access to home-hosted LLM
+## problem: Remote access to home-hosted LLM
+
+⚠️ **Not yet implemented** ⚠️
 
 Local‑LLM enthusiasts often hit a wall when they try to expose a model to the Internet:
 
@@ -14,11 +16,11 @@ Local‑LLM enthusiasts often hit a wall when they try to expose a model to the 
 - **Network topology** – most home routers block inbound connections, so the GPU machine can’t be *reached* from outside and home IP changes.
 - **Privacy** – using third‑party inference services defeats the purpose of running models locally.
 
-Existing tools (`llama‑swap`, `olla`, VPNs, WireGuard, etc.) either require inbound ports, complex network plumbing, or a custom client on every device.
+Existing tools ([llamactl](https://github.com/lordmathis/llamactl), [llama‑swap](https://github.com/mostlygeek/llama-swap), [olla](https://github.com/thushan/olla), [llm-proxy/rust](https://github.com/x5iu/llm-proxy), [llm-proxy/py](https://github.com/llm-proxy/llm-proxy), [langroute](https://github.com/bluewave-labs/langroute), [optillm](https://github.com/codelion/optillm), VPNs, WireGuard, SSH...) either require inbound ports, complex network plumbing, or a custom client on every device.
 
 **Goinfer** solves these issues by flipping the connection direction: the GPU‑rich **client** (home) *initiates* a secure outbound connection to a **server** with a static IP. The server then acts as a public façade, forwarding inference requests back to the client (home-hosted LLM).
 
-## Key Features
+## key features
 
 Category            | Feature
 --------------------|----------
@@ -29,53 +31,96 @@ Category            | Feature
 **Admin control**   | Remote monitoring, delete/upload new GGUF files, reload config, `git pull llama.cpp`, re‑compile
 **Home-hosted LLM** | Run Goinfer on your GPU desktop and another Goinfer in a data‑center (static IP/DNS)
 
-## Client/Server Mode
+## build
 
-    +-------------------+          +-------------------+          +-------------------+
-    |  GPU‑rich desktop |  <--->   |   Goinfer Server  |  <--->   |   End‑user / App  |
-    |   (goinfer client)           | (static IP/DNS)   |          |   (browser, API)  |
-    +-------------------+          +-------------------+          +-------------------+
-
-    Client  → initiates outbound TLS connection (HTTPS/HTTP3) → Server
-    Server  → receives public requests, forwards them over the same channel → Client → llama‑server → model inference → response back through the tunnel.
-
-*No inbound ports are opened on the client side.*
-
-## Build
-
-- Go 1.25
-- NodeJS
-- `llama.cpp`
+- [Go](https://gist.github.com/MichaelCurrin/ca6b3b955172ff993184d39807dd68d4) (any version, `go` will automatically use Go-1.25 to build Goinfer)
+- GCC/LLVM if you want to build [llama.cpp](https://github.com/ggml-org/llama.cpp) or [ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp/) or …
+- NodeJS (optional, llama.cpp frontend is already built)
 - One or more `*.gguf` model files
 
-### Using the all-in-one script
+### container
 
-The script [`clone-pull-build-run.sh`](./scripts/clone-pull-build-run.sh)
-clones and compiles [llama.cpp](https://github.com/ggml-org/llama.cpp)
-using CPU optimizations. To enable the llama‑swap frontend,
-this script can also clone and build [llama‑swap](https://github.com/LM4eu/llama-swap)
-with the flag `--build--swap`:
+See the [Containerfile](./Containerfile)
+to build a Docker/Podman image
+with official Nvidia images,
+CUDA-13, GCC-14 and optimized CPU flags.
+
+### first run
 
 ```bash
 git clone https://github.com/LM4eu/goinfer
-goinfer/scripts/clone-pull-build-run.sh --build--swap
+cd goinfer/go
+
+# discover the parent directories of your GUFF files
+export GI_MODELS_DIR="$(find ~ /mnt -name '*.gguf' -printf '%h\0' | sort -zu |
+while read -d '' d; do [[ $p && $d == $p/* ]] && continue; echo -n $d: ; p=$d; done)"
+
+# set the path of your inference engine (llama.cpp/ik_llama.cpp/...)
+export GI_LLAMA_EXE=/home/me/bin/llama-server
+
+# generates the config (you may want to edit it)
+go run . -gen
+
+# voilà, it's running
+go run . -no-api-key
 ```
 
-This script is perfect to setup the environment, and can also be used daily
-to update and build the dependencies on the fly.
+Goinfer listens on the ports defined in `goinfer.yml`.
+Default ports:
 
-No need to edit manually the configuration files, this script also
-discovers your GGUF files and generates the configuration files.
+- `:4444` for historical API endpoints `/models` and `/infer`
+- `:5555` for OpenAI‑compatible API (provided by llama-swap)
+
+```sh
+# use the default model
+curl -X POST localhost:4444/infer -d '{"prompt":"Hello AI"}'
+
+# list the models
+curl -X GET localhost:4444/models | jq
+
+# pick up a model and prompt it
+curl -X POST localhost:4444/infer \
+  -d '{ "model":"qwen-3b", "prompt":"Hello AI" }'
+
+# same using the OpenAI API
+curl -X POST localhost:5555/v1/chat/completions \
+  -d '{ "model": "qwen-3b",                     \
+        "messages": [ {"role":"user",           \
+                       "content":"Hello AI"}]   \
+      }'
+```
+
+### all-in-one script
+
+Build all dependencies and run Goinfer with the bash script
+[`clone-pull-build-run.sh`](./scripts/clone-pull-build-run.sh)
+
+- clone and build [llama.cpp](https://github.com/ggml-org/llama.cpp) using optimizations flags
+- clone and build the [llama‑swap](https://github.com/LM4eu/llama-swap) frontend with `--build--swap`:
+
+    ```sh
+    git clone https://github.com/LM4eu/goinfer
+    goinfer/scripts/clone-pull-build-run.sh --build--swap
+    ```
+
+Perfect to setup the environment,
+and to update/build daily the dependencies.
+
+No need to edit manually the configuration files:
+this script discovers your GGUF files.
+Your personalized configuration files is automatically generated.
 
 The script ends by running a fully configured Goinfer server.
 
 To reuse your own `llama-server` set:  
 `export GI_LLAMA_EXE=/home/me/path/llama-server`
+(this will prevent cloning/building the llama.cpp)
 
 If this script finds too much `*.gguf` files, set:  
 `export GI_MODELS_DIR=/home/me/models:/home/me/other/path`
+(this will disable the GUFF search and speedup the script)
 
-Disable the API key if you run Goinfer in local:  
+Run Goinfer in local without the API key:  
 `./clone-pull-build-run.sh -no-api-key`
 
 Full example:  
@@ -83,99 +128,61 @@ Full example:
 
 Use the flag `--help` or the usage within the [script](./scripts/clone-pull-build-run.sh).
 
-### Manual build + configure
+## configuration
 
-To manually build Goinfer:
+### environment variables
 
-```bash
-git clone https://github.com/LM4eu/goinfer
-cd ../goinfer/go
-go build .
-```
-
-Generate the default configuration files in two steps:
+Discover the parent directories of your GUFF models:
 
 ```bash
+export GI_MODELS_DIR="$(find "$HOME" /mnt -type f -name '*.gguf' -printf '%h\0' | sort -zu |
+while IFS= read -rd '' d;do [[ $p && $d == "$p"/* ]] && continue;echo -n "$d:";p=$d;done)"
+
+# else manually
+
 export GI_MODELS_DIR=/path/to/my/models
-export GI_LLAMA_EXE=/path/to/my/llama-server
-./goinfer -gen-main-cfg  # generates goinfer.yml
-./goinfer -gen-swap-cfg  # generates llama-swap.yml
+
+# multiple paths
+
+export GI_MODELS_DIR=/path1:/path2:/path3
 ```
-
-You may edit the configuration files to adapt to your specific case.
-
-## First Run
-
-```bash
-./goinfer -no-api-key
-```
-
-Goinfer will listen on the ports defined in the config. Default ports:
-
-- `:4444` for some historical API endpoints
-- `:5555` for the OpenAI‑compatible API provided by llama-swap
-
-```sh
-# List the available models
-curl -X GET localhost:5555/v1/ | jq
-
-# Pick up a model and
-# send an inference query
-curl -X POST localhost:5555/v1/chat/completions  \
-  -H "Authorization: Bearer $GI_API_KEY_ADMIN"   \
-  -d '{
-        "model": "aya-expanse_8b_Q4_K_M",
-        "messages": [{"role":"user","content":"Hello AI"}]
-      }'
-
-# List the models with the custom goinfer API
-curl -X GET localhost:4444/models | jq
-```
-
-## Configuration files
-
-Generates `goinfer.yml` and `llama-swap.yml` with:
-
-```bash
-export GI_MODELS_DIR=/path/to/my/models
-export GI_LLAMA_EXE=/path/to/my/llama-server
-export GI_HOST=0.0.0.0  # exposing llama-server is not recommended
-export GI_ORIGINS=      # disable CORS is not recommended
-export GI_API_KEY_ADMIN="PLEASE SET SECURE API KEY"
-export GI_API_KEY_USER="PLEASE SET SECURE API KEY"
-
-cd goinfer/go
-
-go run . -gen-main-cfg  # generates goinfer.yml
-go run . -gen-swap-cfg  # generates llama-swap.yml
-```
-
-### API keys
-
-The flag `-gen-main-cfg` also generates two random API keys in `goinfer.yml`.
-This flag can be combined with:
-
-- `-debug` sets the debug API key (only during the dev cycle)
-
-- `-no-api-key` avoids generating API keys
-
-### `GI_MODELS_DIR`
 
 `GI_MODELS_DIR` is the root path where your models are stored.
 `goinfer` will search `*.gguf` files within all `GI_MODELS_DIR` sub-folders.
 So you can organize your models within a folders tree.
 
-```bash
-GI_MODELS_DIR=/path/to/my/models ./goinfer -gen-main-cfg
-```
-
-You can also provide multiple paths separated by `:` as the following:
+The other environment variables are:
 
 ```bash
-GI_MODELS_DIR=/path1:/path2:/path3
+export GI_LLAMA_EXE=/path/to/my/llama-server
+export GI_HOST=0.0.0.0  # exposing llama-server is risky
+export GI_ORIGINS=      # disable CORS is risky
+export GI_API_KEY_ADMIN="PLEASE SET SECURE API KEY"
+export GI_API_KEY_USER="PLEASE SET SECURE API KEY"
 ```
 
-### Main `goinfer.yml`
+### API keys
+
+The flag `-gen` also generates two random API keys in `goinfer.yml`.
+This flag can be combined with:
+
+- `-debug` to set the debug API key (only during the dev cycle)
+
+- `-no-api-key` to replace API keys by "Please ⚠️ Set your API keys"
+    admin: "PLEASE
+
+Set the Authorization header within the HTTP request:
+
+- `Authorization: Bearer $GI_API_KEY_ADMIN`
+- `Authorization: Bearer $GI_API_KEY_USER`
+
+```sh
+curl -X POST https://localhost:4444/infer  \
+  -H "Authorization: Bearer $GI_API_KEY_ADMIN"    \
+  -d '{ "prompt": "Say hello in French" }'
+```
+
+### `goinfer.yml`
 
 ```yaml
 # Goinfer recursively search GGUF files in one or multiple folders separated by ':'
@@ -185,7 +192,7 @@ models_dir: /home/me/models
 server:
   api_key:
     # ⚠️ Set your API keys, can be 64‑hex‑digit (32‑byte) 🚨
-    # Generate with `./goinfer -gen-main-cfg`
+    # Generate these random API keys with: ./goinfer -gen
     admin: "PLEASE SET ADMIN API KEY"
     user:  "PLEASE SET USER API KEY"
   origins:   # CORS whitelist
@@ -212,9 +219,13 @@ llama:
 - **Origins** – Set to the domains you’ll be calling the server from (including `localhost` for testing).
 - **Ports** – Adjust as needed; make sure the firewall on the server allows them.
 
-### Swap `llama‑swap.yml`
+### `llama‑swap.yml`
 
-Official documentation see: [github.com/mostlygeek/llama-swap/wiki/Configuration](https://github.com/mostlygeek/llama-swap/wiki/Configuration)
+At startup, Goinfer verifies the available GUFF files
+and generates the `llama‑swap.yml` file.
+
+Official documentation:
+[github.com/mostlygeek/llama-swap/wiki/Configuration](https://github.com/mostlygeek/llama-swap/wiki/Configuration)
 
 ```yaml
 logLevel: info            # debug, info, warn, error
@@ -281,9 +292,74 @@ groups:
       - "forever-modelC"
 ```
 
-## Server / Client mode
+## developer info
+
+- flags override environment variables that override YAML config: `Cfg` defined in [`conf.go`](go/conf/conf.go)
+- GUFF files discovery: `Search()` in [`models.go`](go/conf/models.go)
+- Graceful shutdown handling: `handleShutdown()` in [`goinfer.go`](go/goinfer.go)
+- API‑key authentication per service: `configureAPIKeyAuth()` in [`router.go`](go/infer/router.go)
+- Comprehensive error handling: `gie` package in [`errors.go`](go/gie/errors.go)
+
+## API endpoints
+
+Each service can be enabled/disabled in `goinfer.yml`.
+
+Path                  | Method | Service | Description
+----------------------|--------|---------|------------
+`/`                   | GET    | swap    | llama.cpp Web UI
+`/ui`                 | GET    | swap    | llama-swap Web UI
+`/models`             | GET    | models  | List available GGUF files
+`/infer`              | POST   | infer   | Custom inference API
+`/v1/chat/completions`| POST   | swap    | OpenAI‑compatible chat endpoint
+`/v1/models`          | GET    | swap    | List models from Swap config
+`/v1/*`               | POST   | swap    | Other OpenAI endpoints
+
+All endpoints require an `Authorization: Bearer $GI_API_KEY_USER` header.
+
+llama-swap starts `llama-server` using the command lines configured in `llama-swap.yml`.
+Goinfer generates that `llama-swap.yml` file setting two different command lines for each model:
+
+1. classic command line for models listed by `/v1/models` (to be used by tools like Cline / RooCode)
+2. with extra arguments `--jinja --chat-template-file template.jinja` when the requested model is prefixed with `GI_`
+
+The first one is suitable for most of the use cases such as Cline / RooCode.
+The second one is a specific use case for tools like
+[`agent-smith`](https://github.com/synw/agent-smith)
+requiring full inference control (e.g. no default Jinja template).
+
+## server/client mode
 
 ⚠️ **Not yet implemented** ⚠️
+
+### design
+
+    ╭──────────────────┐  1 ──>  ╭───────────────────┐         ╭──────────────┐
+    │ GPU‑rich desktop │         │ host static IP/DNS│  <── 2  │ end‑user app │
+    │ (Goinfer client) │  <── 3  │  (Goinfer server) │         │ (browser/API)│
+    └──────────────────╯  4 ──>  └───────────────────╯  5 ──>  └──────────────╯
+
+1. Goinfer client connects to the Goinfer server having a static IP (and DNS)
+2. the end user sends a prompt to the cloud-hosted Goinfer server
+3. the Goinfer server reuses the connection to the Goinfer client and forwards it the prompt
+4. the Goinfer client reply the processed prompt by the local LLM using llama.cpp
+5. the Goinfer server forwards the response to the end‑user
+
+No inbound ports are opened on neither the Goinfer client nor the end-user app,
+maximizing security and anonymity between the GPU‑rich desktop and the end‑user.
+
+Another layer of security is the encrypted double authentication
+between the Goinfer client and the Goinfer server.
+Furthermore, we recommend to use HTTPS on port 443
+for all these communications to avoid sub-domains
+because sub-domains remain visible over HTTPS, not URL paths.
+
+High availability is provided by the multiple-clients/multiple-servers architecture:
+
+- The end-user app connects to one of the available Goinfer servers.
+- All the running Goinfer clients connects to all the Goinfer servers.
+- The Goinfer servers favor the most idle Goinfer clients depending on their capacity
+  (vision prompts are sent to GPU-capable clients running the adequate LLM).
+- Fallback to CPU offloading when appropriate.
 
 ### 1. Run the **server** (static IP / DNS)
 
@@ -306,61 +382,45 @@ The client will connect, register its available models and start listening for i
 ### 3. Test the API
 
 ```sh
-# List the available models
+# list the available models
 curl -X GET https://my-goinfer-server.com/v1/models
 
-# Pick up a model and
-# send an inference query
-curl -X POST https://my-goinfer-server.com/v1/chat/completions  \
-  -H "Authorization: Bearer $GI_API_KEY_ADMIN"                  \
-  -d '{
-        "model":"Qwen2.5-1.5B-Instruct-Q4_K_M",
-        "messages":[{"role":"user","content":"Say hello in French"}]
+# pick up a model and prompt it
+curl -X POST https://my-goinfer-server.com/v1/chat/completions \
+  -H "Authorization: Bearer $GI_API_KEY_ADMIN"                 \
+  -d '{                                                        \
+        "model":"Qwen2.5-1.5B-Instruct-Q4_K_M",                \
+        "messages":[{"role":"user",                            \
+                     "content":"Say hello in French"}]         \
       }'
 ```
 
-You should receive a JSON response generated by the model running on your GPU rig.
-
-## API Endpoints
-
-Service     | Path                   | Method | Description
-------------|------------------------|--------|------------
-models      | `/models`              | GET    | List GGUF files currently present on the file system
-swap/openai | `/v1/chat/completions` | POST   | OpenAI‑compatible chat endpoint
-swap        | `/v1/models`           | GET    | List models from Swap config
-swap        | `/v1/*`                | POST   | Other OpenAI endpoints
-goinfer     | `/infer`               | POST   | Custom inference API
-
-All endpoints require an `Authorization: Bearer $GI_API_KEY_ADMIN` header.
-The `admin` key grants full access to the admin routes.
-
-The Swap service is based on `llama-swap`.
-`llama-swap` starts automatically `llama-server` using the command lines configured in `llama-swap.yml`. Goinfer generates this `llama-swap.yml` file setting two different command line arguments for each model:
-
-1. the classic command line for models listed by `/v1/models` (to be used by tools like RooCode)
-2. the extra arguments `--jinja --chat-template-file template.jinja` when the requested model is prefixed with `GI_`
-
-The first one is suitable for most of the use cases such as RooCode.
-The second one is a specific use case for tools like [`agent-smith`](https://github.com/synw/agent-smith) requiring full inference control (e.g. no default Jinja template).
-
-## Developer info
-
-- **Config‑driven** setup with YAML files and environment variable overrides (`Cfg` defined in [`conf.go`](go/conf/conf.go:20)).
-- Automatic **model discovery** in a configurable directory (`Search` in [`models.go`](go/conf/models.go:20)).
-- Graceful shutdown handling (`handleShutdown` in [`goinfer.go`](go/goinfer.go:279)).
-- API‑key authentication per service (`configureAPIKeyAuth` in [`router.go`](go/infer/router.go:119)).
-- Comprehensive error handling with the `gie` package (`HandleError` in [`http.go`](go/gie/http.go:14)).
+You receive a JSON response generated by the model running on your GPU rig.
 
 ## History & Roadmap
 
-### Origin
+### March 2023
 
-Goinfer has been initiated in March 2023 for two needs:
+In March 2023, [Goinfer](https://github.com/LM4eu/goinfer)
+was an early local LLM proxy swapping models and supporting
+Ollama, Llama.cpp, and KoboldCpp.
+Goinfer has been initiated for two needs:
 
 1. to swap engine and model at runtime, something that didn’t exist back then
 2. to infer pre-configured templated prompts
 
-This second point has been moved to the new project [github.com/synw/agent-smith](https://github.com/synw/agent-smith) with more templated prompts in [github.com/synw/agent-smith-plugins](https://github.com/synw/agent-smith-plugins).
+This second point has been moved to the project
+[github.com/synw/agent-smith](https://github.com/synw/agent-smith)
+with more templated prompts in
+[github.com/synw/agent-smith-plugins](https://github.com/synw/agent-smith-plugins).
+
+### August 2025
+
+To simplify the maintenance, we decided in August 2025
+to replace our process management with another well-maintained project.
+As we do not use Ollama/KoboldCpp any more,
+we integrated [llama-swap](https://github.com/mostlygeek/llama-swap)
+into Goinfer to handle communication with `llama-server`.
 
 ### New needs
 
@@ -431,13 +491,20 @@ Special thanks to:
 
 ## See also
 
-Some LLM Proxies:
+Some other active local-LLM proxies:
 
-- [github.com/mostlygeek/llama-swap](https://github.com/mostlygeek/llama-swap)
-- [github.com/inference-gateway/inference-gateway](https://github.com/inference-gateway/inference-gateway)
-- [github.com/thushan/olla](https://github.com/thushan/olla)
+- [github/mostlygeek/llama-swap](https://github.com/mostlygeek/llama-swap)
+- [github/inference-gateway/inference-gateway](https://github.com/inference-gateway/inference-gateway)
+- [github/thushan/olla](https://github.com/thushan/olla)
+- [github/lordmathis/llamactl](https://github.com/lordmathis/llamactl)
+- [github/mostlygeek/llama‑swap](https://github.com/mostlygeek/llama-swap)
+- [github/thushan/olla](https://github.com/thushan/olla)
+- [github/x5iu/llm-proxy](https://github.com/x5iu/llm-proxy) (rust)
+- [github/llm-proxy/llm-proxy](https://github.com/llm-proxy/llm-proxy) (python, inactive)
+- [github/bluewave-labs/langroute](https://github.com/bluewave-labs/langroute)
+- [github/codelion/optillm](https://github.com/codelion/optillm)
 
-Compared to alternatives, we like [llama-swap](https://github.com/mostlygeek/llama-swap) for its readable source code and because its author contributes regularly. So we integrated it into Goinfer to handle communication with `llama-server` (or other inference engines compatible with the OpenAI API).
+Compared to alternatives, we like [llama-swap](https://github.com/mostlygeek/llama-swap) for its readable source code and because its author contributes regularly. So we integrated it into Goinfer to handle communication with `llama-server` (or other compatible forks as [ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp/)). We also like [llamactl](https://github.com/lordmathis/llamactl) ;-)
 
 **Enjoy remote GPU inference with Goinfer!** 🚀
 
