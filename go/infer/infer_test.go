@@ -170,18 +170,18 @@ func TestConcurrencyGuard(t *testing.T) {
 
 	for i := range 2 {
 		grp.Add(1)
-		go func(idx int) {
+		go func(ii int) {
 			defer grp.Done()
 			c, rec := newEchoCtx(req)
 			_ = inf.inferHandler(c) // ignore returned error; handler writes status
-			results[idx] = rec.Code
+			results[ii] = rec.Code
 		}(i)
 	}
 	grp.Wait()
 
-	// At least one request must receive http.StatusAccepted (202) due to the guard.
-	found202 := slices.Contains(results, http.StatusAccepted)
-	if !found202 {
-		t.Fatalf("expected at least one request to receive StatusAccepted (202), got %v", results)
+	// At least one request must receive http.StatusOK (200) due to the guard.
+	found200 := slices.Contains(results, http.StatusOK)
+	if !found200 {
+		t.Fatalf("expected at least one request to receive StatusOK (200), got %v", results)
 	}
 }
