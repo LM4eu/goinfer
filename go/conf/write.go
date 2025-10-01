@@ -79,13 +79,43 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	}
 
 	if cfg.Swap.Models == nil {
-		cfg.Swap.Models = make(map[string]config.ModelConfig, 2*len(info))
+		cfg.Swap.Models = make(map[string]config.ModelConfig, 2*len(info)+9)
 	}
 
+	var openaiCfg, goinferCfg, fimCfg config.ModelConfig
+	openaiCfg.Proxy = "http://localhost:${PORT}"
+	goinferCfg.Proxy = "http://localhost:${PORT}"
+	fimCfg.Proxy = "http://localhost:8012"
+	goinferCfg.Unlisted = true // hide model in /v1/models and /upstream responses
+
+	// Use two different settings of a model within the llama-swap configuration.
 	for name, mi := range info {
-		cfg.setModelSettings(name, mi.Path, mi.Flags, false) // OpenAI
-		cfg.setModelSettings(name, mi.Path, mi.Flags, true)  // Goinfer
+		goinferCfg.UseModelName = name // overrides the model name that is sent to /upstream server
+		args := " -m " + mi.Path + " " + mi.Flags
+		cfg.appModelCfg(name, "${cmd-openai}"+args, openaiCfg)         // API=OpenAI
+		cfg.appModelCfg("GI_"+name, "${cmd-goinfer}"+args, goinferCfg) // API=/goinfer (prefix with GI_ and hide the model)
 	}
+
+	// Output of `llama-server -h` contains:
+	//
+	// --embd-bge-small-en-default  bge-small-en-v1.5
+	// --embd-e5-small-en-default   e5-small-v2
+	// --embd-gte-small-default     gte-small
+	// --fim-qwen-1.5b-default      Qwen 2.5 Coder 1.5B
+	// --fim-qwen-3b-default        Qwen 2.5 Coder 3B
+	// --fim-qwen-7b-default        Qwen 2.5 Coder 7B
+	// --fim-qwen-7b-spec           Qwen 2.5 Coder 7B + 0.5B draft for speculative decoding
+	// --fim-qwen-14b-spec          Qwen 2.5 Coder 14B + 0.5B draft for speculative decoding
+	// --fim-qwen-30b-default       Qwen 3 Coder 30B A3B Instruct
+	cfg.appModelCfg("ggml-org/bge-small-en-v1.5-Q8_0-GGUF", "${cmd-openai} --embd-bge-small-en-default", openaiCfg)
+	cfg.appModelCfg("ggml-org/e5-small-v2-Q8_0-GGUF", "${cmd-openai} --embd-e5-small-en-default", openaiCfg)
+	cfg.appModelCfg("ggml-org/gte-small-Q8_0-GGUF", "${cmd-openai} --embd-gte-small-default", openaiCfg)
+	cfg.appModelCfg("ggml-org/Qwen2.5-Coder-1.5B-Q8_0-GGUF", "${cmd-openai} --fim-qwen-1.5b-default", fimCfg)
+	cfg.appModelCfg("ggml-org/Qwen2.5-Coder-3B-Q8_0-GGUF", "${cmd-openai} --fim-qwen-3b-default", fimCfg)
+	cfg.appModelCfg("ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF", "${cmd-openai} --fim-qwen-7b-default", fimCfg)
+	cfg.appModelCfg("ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF", "${cmd-openai} --fim-qwen-7b-spec", fimCfg)
+	cfg.appModelCfg("ggml-org/Qwen2.5-Coder-14B-Q8_0-GGUF", "${cmd-openai} --fim-qwen-14b-spec", fimCfg)
+	cfg.appModelCfg("ggml-org/Qwen3-Coder-30B-A3B-Instruct-Q8_0-GGUF", "${cmd-openai} --fim-qwen-30b-default", fimCfg)
 
 	err = cfg.ValidateSwap()
 	if err != nil {
@@ -105,38 +135,19 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	return nil
 }
 
-// Set the settings of a model within the llama-swap configuration.
-// For /goinfer API, hide the model + prefix the with GI_.
-func (cfg *Cfg) setModelSettings(name, path, flags string, goinfer bool) {
-	macro := "${cmd-openai}"
-	if goinfer {
-		macro = "${cmd-goinfer}"
-	}
+// Add the model settings within the llama-swap configuration.
+func (cfg *Cfg) appModelCfg(modelName, cmd string, mc config.ModelConfig) {
+	mCfg := mc // copy
+	mCfg.Cmd = cmd
+	mCfg.CheckEndpoint = "/health"
 
-	modelCfg := config.ModelConfig{
-		Cmd:           macro + " -m " + path + " " + flags,
-		Proxy:         "http://localhost:${PORT}",
-		CheckEndpoint: "/health",
-	}
-
-	if goinfer {
-		// hide model name in /v1/models and /upstream API response
-		modelCfg.Unlisted = true
-		// overrides the model name that is sent to upstream server
-		modelCfg.UseModelName = name
-	}
-
-	modelName := name
-	if goinfer {
-		modelName = "GI_" + name
-	}
-
-	_, ok := cfg.Swap.Models[modelName]
+	old, ok := cfg.Swap.Models[modelName]
 	if ok {
-		slog.Debug("Overwrite config", "model", modelName)
+		slog.Debug("Overwrite config", "old", old)
+		slog.Debug("Overwrite config", "new", modelName)
 	}
 
-	cfg.Swap.Models[modelName] = modelCfg
+	cfg.Swap.Models[modelName] = mCfg
 }
 
 func (cfg *Cfg) setAPIKeys(debug, noAPIKey bool) {
