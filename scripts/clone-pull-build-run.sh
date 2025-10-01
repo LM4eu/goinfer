@@ -226,8 +226,7 @@ pwd
 go build .
 
 log generate config
-./goinfer -gen-main-cfg "$@"
-./goinfer -gen-swap-cfg "$@"
+./goinfer -gen "$@"
 
 log run goinfer
 export GIN_MODE="${GIN_MODE:-release}"

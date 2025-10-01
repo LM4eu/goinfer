@@ -19,7 +19,7 @@ where the `*.gguf` models are stored.
 `goinfer` will also parse the subfolders, so you keep organizing your models within a folders tree.
 
 ```bash
-GI_MODELS_DIR=/path/to/my/models go run . -gen-main-cfg -debug
+GI_MODELS_DIR=/path/to/my/models go run . -gen -debug
 ```
 
 Provide the path to your `*.gguf` models directory
@@ -47,7 +47,7 @@ Generate a config file, providing the path to your models directory (where  resi
 So you can organize your models within a folders tree.
 
 ```bash
-GI_MODELS_DIR=/path/to/my/models ./goinfer -gen-main-cfg
+GI_MODELS_DIR=/path/to/my/models ./goinfer -gen
 ```
 
 You can also provide multiple paths separated by `:` as the following:
@@ -56,7 +56,7 @@ You can also provide multiple paths separated by `:` as the following:
 GI_MODELS_DIR=/path1:/path2:/path3
 ```
 
-Note: the `-gen-main-cfg` flag also generates your random API keys in the config file.
+Note: the `-gen` flag also generates your random API keys in the config file.
 
 Run the server:
 

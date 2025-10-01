@@ -318,7 +318,7 @@ func (cfg *Cfg) ValidateSwap() error {
 			slog.Error("No *.gguf files found", "dir", cfg.ModelsDir)
 			return gie.ErrConfigValidation
 		}
-		slog.Warn("No model configured => Use flag -gen-swap-cfg to fill the config with", "models", n)
+		slog.Warn("No model configured => Restart Goinfer to refresh llama-swap.yml", "models", n)
 		return nil
 	}
 

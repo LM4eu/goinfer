@@ -40,10 +40,9 @@ func main() {
 // Depending on the flags, this function also creates config files and exits.
 func getCfg() *conf.Cfg {
 	quiet := flag.Bool("q", false, "quiet mode (disable verbose output)")
-	debug := flag.Bool("debug", false, "debug mode (set debug ABI keys with -gen-main-cfg)")
-	noAPIKey := flag.Bool("no-api-key", false, "disable API key check/generation (with -gen-main-cfg)")
-	genMainCfg := flag.Bool("gen-main-cfg", false, "generate "+mainCfg+" (Main config file)")
-	genSwapCfg := flag.Bool("gen-swap-cfg", false, "generate "+swapCfg+" (Swap config file)")
+	debug := flag.Bool("debug", false, "debug mode (set debug ABI keys with -gen)")
+	noAPIKey := flag.Bool("no-api-key", false, "disable API key check/generation (with -gen)")
+	genCfg := flag.Bool("gen", false, "generate "+mainCfg)
 	vv.SetVersionFlag()
 	flag.Parse()
 
@@ -52,7 +51,7 @@ func getCfg() *conf.Cfg {
 	cfg.SetLogLevel(!*quiet, *debug)
 
 	// generate "goinfer.yml"
-	if *genMainCfg {
+	if *genCfg {
 		err := cfg.WriteMainCfg(mainCfg, *debug, *noAPIKey)
 		if err != nil {
 			slog.Error("Cannot create main config", "file", mainCfg, "error", err)
@@ -68,7 +67,7 @@ func getCfg() *conf.Cfg {
 	}
 
 	// successfully generated "goinfer.yml"
-	if *genMainCfg {
+	if *genCfg {
 		slog.Info("Generated main", "config", mainCfg)
 		if !*quiet {
 			cfg.Print()
@@ -76,18 +75,18 @@ func getCfg() *conf.Cfg {
 		os.Exit(0)
 	}
 
+	// generate "template.jinja"
+	err = os.WriteFile("template.jinja", []byte("{{- messages[0].content -}}"), 0o600)
+	if err != nil {
+		slog.Error("Cannot write", "file", "template.jinja", "error", err)
+		os.Exit(1)
+	}
+
 	// generate "llama-swap.yml"
-	if *genSwapCfg {
-		err = os.WriteFile("template.jinja", []byte("{{- messages[0].content -}}"), 0o600)
-		if err != nil {
-			slog.Error("Cannot write", "file", "template.jinja", "error", err)
-			os.Exit(1)
-		}
-		err = cfg.WriteSwapCfg(swapCfg, !*quiet, *debug)
-		if err != nil {
-			slog.Error("Failed creating a valid Swap config", "file", swapCfg, "error", err)
-			os.Exit(1)
-		}
+	err = cfg.WriteSwapCfg(swapCfg, !*quiet, *debug)
+	if err != nil {
+		slog.Error("Failed creating a valid Swap config", "file", swapCfg, "error", err)
+		os.Exit(1)
 	}
 
 	// verify "llama-swap.yml" can be successfully loaded
@@ -102,14 +101,7 @@ func getCfg() *conf.Cfg {
 		os.Exit(1)
 	}
 
-	// successfully generated "llama-swap.yml"
-	if *genSwapCfg {
-		slog.Info("Generated Swap config", "file", swapCfg, "models", len(cfg.Swap.Models))
-		if *debug {
-			cfg.Print()
-		}
-		os.Exit(0)
-	}
+	slog.Info("Generated Swap config", "file", swapCfg, "models", len(cfg.Swap.Models))
 
 	// command line precedes config file
 	if *noAPIKey {
