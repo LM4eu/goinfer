@@ -136,7 +136,7 @@ Discover the parent directories of your GUFF models:
 
 ```bash
 export GI_MODELS_DIR="$(find "$HOME" /mnt -type f -name '*.gguf' -printf '%h\0' | sort -zu |
-while IFS= read -rd '' d;do [[ $p && $d == "$p"/* ]] && continue;echo -n "$d:";p=$d;done)"
+while IFS= read -rd '' d; do [[ $p && $d == "$p"/* ]] && continue; echo -n "$d:"; p=$d; done)"
 
 # else manually
 
@@ -153,12 +153,18 @@ So you can organize your models within a folders tree.
 
 The other environment variables are:
 
-```bash
+```sh
 export GI_LLAMA_EXE=/path/to/my/llama-server
 export GI_HOST=0.0.0.0  # exposing llama-server is risky
-export GI_ORIGINS=      # disable CORS is risky
+export GI_ORIGINS=      # disabling CORS is risky
 export GI_API_KEY_ADMIN="PLEASE SET SECURE API KEY"
 export GI_API_KEY_USER="PLEASE SET SECURE API KEY"
+```
+
+Disable Gin debug logs:
+
+```sh
+export GIN_MODE=release 
 ```
 
 ### API keys
