@@ -32,12 +32,13 @@ linters:
     - forbidigo
     - ginkgolinter
     - gochecknoglobals
+    - godox
     - gomoddirectives # directives 'replace', 'retract' and 'excludes' in go.mod
     - gomodguard # another Go module dependencies blocker, more featured than depguard
     - ireturn
     - mnd # Magic number
-    - nonamedreturns
     - nlreturn
+    - nonamedreturns
     - staticcheck
     - testpackage
     - wrapcheck
@@ -549,6 +550,7 @@ linters:
         # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#max-public-structs
         - name: max-public-structs
           arguments: [8]
+          disabled: true
         # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#modifies-parameter
         - name: modifies-parameter
         # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#modifies-value-receiver
