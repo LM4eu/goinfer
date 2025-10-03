@@ -46,8 +46,8 @@ const (
 	unsetAPIKey = "Please ⚠️ Set your private 64-hex-digit API keys (32 bytes)"
 
 	// Arguments for llama-server command line.
-	argsCommon  = "--props --no-warmup"
-	argsGoinfer = "--jinja --chat-template-file template.jinja"
+	argsCommon = "--props --no-warmup"
+	argsInfer  = "--jinja --chat-template-file template.jinja"
 )
 
 var (
