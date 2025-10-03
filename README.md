@@ -25,7 +25,7 @@ Existing tools ([llamactl](https://github.com/lordmathis/llamactl), [llama‑swa
 Category            | Feature
 --------------------|----------
 **Model handling**  | Load multiple `*.gguf` models, switch at runtime, change any inference parameter
-**API**             | OpenAI‑compatible HTTP API `/v1/`, streaming responses, Custom `/infer` API
+**API**             | OpenAI‑compatible HTTP API `/v1/`, LLama.cpp-compatible `/completions` API, streaming responses
 **Security**        | Per‑role API keys (`admin`, `user`), CORS control
 **Robustness**      | Independent of ISP‑provided IP, graceful reconnects
 **Admin control**   | Remote monitoring, delete/upload new GGUF files, reload config, `git pull llama.cpp`, re‑compile
@@ -68,18 +68,18 @@ go run . -no-api-key
 Goinfer listens on the ports defined in `goinfer.yml`.
 Default ports:
 
-- `:4444` for historical API endpoints `/models` and `/infer`
+- `:4444` for extra-featured endpoints `/models`, `/completions`, `/v1/chat/completions`
 - `:5555` for OpenAI‑compatible API (provided by llama-swap)
 
 ```sh
 # use the default model
-curl -X POST localhost:4444/infer -d '{"prompt":"Hello AI"}'
+curl -X POST localhost:4444/completions -d '{"prompt":"Hello"}'
 
 # list the models
 curl -X GET localhost:4444/models | jq
 
 # pick up a model and prompt it
-curl -X POST localhost:4444/infer \
+curl -X POST localhost:4444/completion \
   -d '{ "model":"qwen-3b", "prompt":"Hello AI" }'
 
 # same using the OpenAI API
@@ -207,9 +207,7 @@ server:
   listen:
     # format:  <address>: <list of enabled services>
     # <address> can be <ip|host>:<port> or simply :<port> when <host> is localhost
-    ":2222": models      # list the available model files
-    ":3333": openai      # OpenAI‑compatible API
-    ":4444": goinfer     # raw goinfer endpoint
+    ":4444": infer        # historical goinfer endpoints
     ":5555": llama-swap  # OpenAI‑compatible API by llama‑swap
 
 llama:
@@ -217,8 +215,8 @@ llama:
   args:
     # common args used for every model
     common: "--props --no-warmup"
-    # extra args for the goinfer endpoint (Jinja templating)
-    goinfer: "--jinja --chat-template-file template.jinja"
+    # extra args for the completion endpoint (Jinja templating)
+    infer: "--jinja --chat-template-file template.jinja"
 ```
 
 - **API keys** – Never commit them. Use env. var. `GI_API_KEY` or a secrets manager in production.
@@ -241,7 +239,7 @@ startPort: 6000           # first ${PORT} incremented for each model
 
 macros:  # macros to reduce common conf settings
   "cmd-openai": "./llama-server --port ${PORT} --props --no-webui --no-warmup"
-  "cmd-goinfer": "./llama-server --port ${PORT} --props --no-webui --no-warmup --jinja --chat-template-file template.jinja"
+  "cmd-infer": "./llama-server --port ${PORT} --props --no-webui --no-warmup --jinja --chat-template-file template.jinja"
 
 models:
   "Qwen2.5-1.5B-Instruct-Q4_K_M":  # model names used in API requests
@@ -310,17 +308,17 @@ groups:
 
 Each service can be enabled/disabled in `goinfer.yml`.
 
-Path                  | Method | Service | Description
-----------------------|--------|---------|------------
-`/`                   | GET    | swap    | llama.cpp Web UI
-`/ui`                 | GET    | swap    | llama-swap Web UI
-`/models`             | GET    | models  | List available GGUF files
-`/infer`              | POST   | infer   | Custom inference API
-`/v1/chat/completions`| POST   | swap    | OpenAI‑compatible chat endpoint
-`/v1/models`          | GET    | swap    | List models from Swap config
-`/v1/*`               | POST   | swap    | Other OpenAI endpoints
+Path                  | Method | Description
+----------------------|--------|------------
+`/`                   |  GET   | llama.cpp Web UI
+`/ui`                 |  GET   | llama-swap Web UI
+`/models`             |  GET   | List available GGUF models
+`/completions`        |  POST  | Llama.cpp inference API
+`/v1/models`          |  GET   | List models from Swap config
+`/v1/chat/completions`|  POST  | OpenAI‑compatible chat endpoint
+`/v1/*`               |  POST  | Other OpenAI endpoints
 
-All endpoints require an `Authorization: Bearer $GI_API_KEY_USER` header.
+All endpoints require an `Authorization: Bearer $GI_API_KEY` header.
 
 llama-swap starts `llama-server` using the command lines configured in `llama-swap.yml`.
 Goinfer generates that `llama-swap.yml` file setting two different command lines for each model:
@@ -428,6 +426,10 @@ As we do not use Ollama/KoboldCpp any more,
 we integrated [llama-swap](https://github.com/mostlygeek/llama-swap)
 into Goinfer to handle communication with `llama-server`.
 
+### October 2025
+
+Restored `/completions` endpoint for full inference parameters control.
+
 ### New needs
 
 Today the needs have evolved. We need most right now is a proxy that can act as a secure intermediary between a **client (frontend/CLI)** and **a inference engine (local/cloud)** with these these constrains:
@@ -452,8 +454,6 @@ Two `goinfer` instances (client / server mode):
 - we could imagine installing a client `goinfer` on every computer with a good GPU, and the server `goinfer` that forwards inference requests to the connected client `goinfer` according to the requested model
 
 ### Low Priority
-
-- `/infer` endpoint for full inference parameters control
 
 - Comprehensive **web admin** (monitoring, download/delete `.gguf`, edit config, restart, `git pull` + rebuild `llama.cpp`, remote shell, upgrade Linux, reboot the machine, and other SysAdmin tasks)
 
