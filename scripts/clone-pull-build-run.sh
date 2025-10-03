@@ -52,7 +52,7 @@ err() { echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[31m" "$@" "\033[m"; }
 
 # print the script line number if something goes wrong
 set -E
-trap 's=$?; err "status=$? at ${BASH_SOURCE[0]}:$LINENO" >&2; exit $s' ERR
+trap 'set +x; s=$?; err "status=$? at ${BASH_SOURCE[0]}:$LINENO" >&2; exit $s' ERR
 
 # Git repositories
 goinfer_dir="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd)"
@@ -195,8 +195,8 @@ do_llamaSwap(){
   swap_in_work_file || 
   (
     log "set up $work_file"
-    cd "$goinfer_dir/go"
     set -x
+    cd "$goinfer_dir/go"
     go work init || :
     go work use . ../../llama-swap
     go work sync
@@ -214,20 +214,29 @@ export GI_LLAMA_EXE="${GI_LLAMA_EXE:-"$(do_llamaCpp >&2 && \ls -1 "$llamaCpp_dir
 
 (( ! build_swap )) || do_llamaSwap
 
-log build goinfer with CPU-optimizations
-case "$flags" in
-    *" avx512f "*)  export GOAMD64=v4;;
-    *" avx2 "*)     export GOAMD64=v3;;
-    *" sse2 "*)     export GOAMD64=v2;;
-esac
-cd "$goinfer_dir/go"
-set -x
-pwd
-go build .
+ cd "$goinfer_dir/go"
 
-log generate config
-./goinfer -gen "$@"
+(
+  log build goinfer with CPU-optimizations
+  case "$flags" in
+      *" avx512f "*)  export GOAMD64=v4;;
+      *" avx2 "*)     export GOAMD64=v3;;
+      *" sse2 "*)     export GOAMD64=v2;;
+  esac
+  pwd
+  set -x
+  go build .
+)
 
-log run goinfer
-export GIN_MODE="${GIN_MODE:-release}"
-./goinfer "$@"
+(
+  log generate config
+  set -x
+  ./goinfer -gen "$@"
+)
+
+(
+  log run goinfer
+  set -x
+  export GIN_MODE="${GIN_MODE:-release}"
+  ./goinfer "$@"
+)
