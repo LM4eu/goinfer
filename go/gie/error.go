@@ -2,7 +2,7 @@
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
 
-// Package gie (Go Infer Error) implements the GoinferError to be MCP compliant,
+// Package gie (Go Infer Error) implements the gie.Error to be MCP compliant,
 // producing the error object as specified in JSON-RPC 2.0:
 // https://www.jsonrpc.org/specification#error_object
 //
@@ -15,7 +15,7 @@
 //	 -32600            Invalid Request, the JSON sent is not a valid Request object
 //	 -32099 to -32000  Implementation-defined server-errors
 //
-//	message  string providing a short description of the error (one concise single sentence).
+//	msg  string providing a short description of the error (one concise single sentence).
 //
 //	data     optional, any type, additional information about the error.
 package gie
@@ -23,28 +23,39 @@ package gie
 import (
 	"errors"
 	"fmt"
+	"log/slog"
+	"runtime"
 	"strconv"
+	"time"
 )
 
 type (
-	// ErrorCode represents the type of error.
-	ErrorCode int
-
-	// GoinferError is a structured error that includes type, code, and message.
-	GoinferError struct {
-		Cause   any       `json:"data,omitempty"` // Cause is serialized "data" in HTTP error response (JSON-RPC 2.0)
-		Message string    `json:"message,omitempty"`
-		Code    ErrorCode `json:"code,omitempty"`
+	// Error implements the error structure defined in JSON-RPC 2.0.
+	Error struct {
+		Message string `json:"msg,omitempty"`
+		Data    Data   `json:"data,omitempty"`
+		Code    Code   `json:"code,omitempty"`
 	}
+
+	Data struct {
+		Cause  any          `                          json:"cause,omitempty"`
+		Source *slog.Source `                          json:"source,omitempty"`
+		Attrs  []slog.Attr  `attrs:"details,omitempty"`
+	}
+
+	// Code represents the type of error.
+	Code int
 )
 
 const (
 	// Invalid indicates validation errors.
-	Invalid ErrorCode = iota + -32149
+	Invalid Code = iota + -32149
 	// ConfigErr indicates configuration errors.
 	ConfigErr
 	// InferErr indicates inference-related errors.
 	InferErr
+	// UserAbort occurs when /abort is requested.
+	UserAbort
 	// ServerErr indicates server-related errors.
 	ServerErr
 	// Timeout indicates timeout-related errors.
@@ -53,89 +64,62 @@ const (
 	NotFound
 )
 
-var (
-	// Validation errors.
-
-	// ErrInvalidPrompt indicates an invalid prompt error.
-	ErrInvalidPrompt = New(Invalid, "missing mandatory prompt field within the infer request")
-	// ErrInvalidFormat indicates an invalid request format error.
-	ErrInvalidFormat = New(Invalid, "invalid request format")
-	// ErrInvalidParams indicates invalid parameter values error.
-	ErrInvalidParams = New(Invalid, "invalid parameter values")
-
-	// Configuration errors.
-
-	// ErrConfigValidation indicates a configuration validation error.
-	ErrConfigValidation = New(ConfigErr, "config validation failed")
-	// ErrAPIKeyMissing indicates a missing API key error.
-	ErrAPIKeyMissing = New(ConfigErr, "API key is missing")
-	// ErrInvalidAPIKey indicates an invalid API key format error.
-	ErrInvalidAPIKey = New(ConfigErr, "invalid API key format")
-
-	// Inference errors.
-
-	// ErrChanClosed indicates a channel closed unexpectedly error.
-	ErrChanClosed = New(InferErr, "channel closed unexpectedly")
-	// ErrClientCanceled indicates a request canceled by client error.
-	ErrClientCanceled = New(InferErr, "request canceled by client")
-
-	// Timeout errors.
-
-	// ErrReqTimeout indicates a request timeout error.
-	ErrReqTimeout = New(Timeout, "request timeout")
-)
-
-// New creates a New GoinferError.
-func New(code ErrorCode, message string) *GoinferError {
-	return &GoinferError{
-		Code:    code,
-		Message: message,
-	}
+// New creates a new gie.Error.
+func New(code Code, msg string, args ...any) *Error {
+	return wrap(nil, code, msg, args...)
 }
 
-func NewWithData(code ErrorCode, message string, data any) *GoinferError {
-	return &GoinferError{
-		Code:    code,
-		Message: message,
-		Cause:   data,
-	}
+// Wrap an existing error.
+func Wrap(err error, code Code, msg string, args ...any) *Error {
+	return wrap(err, code, msg, args...)
 }
 
-// Wrap wraps an existing error with an GoinferError.
-func Wrap(err error, code ErrorCode, message string) *GoinferError {
-	var giErr *GoinferError
-	if errors.As(err, &giErr) {
-		// merge errors when appropriate
-		if giErr.Cause == "" {
-			giErr.Cause = err
-			return giErr
-		} else if len(message) < 11 {
-			giErr.Message = message + ": " + giErr.Message
-			return giErr
-		}
-	}
+//nolint:revive // wrap is the common function for New() and Wrap().
+func wrap(err error, code Code, msg string, args ...any) *Error {
+	var pcs [1]uintptr
+	runtime.Callers(3, pcs[:]) // skip 3 calls in the callstack: [runtime.Callers, wrap, New/Wrap]
+	record := slog.NewRecord(time.Now(), 0, "", pcs[0])
+	record.Add(args...)
 
-	return &GoinferError{
+	attrs := make([]slog.Attr, 0, record.NumAttrs())
+	record.Attrs(func(a slog.Attr) bool { attrs = append(attrs, a); return true })
+
+	return &Error{
 		Code:    code,
-		Message: message,
-		Cause:   err,
+		Message: msg,
+		Data: Data{
+			Attrs:  attrs,
+			Source: record.Source(),
+			Cause:  err,
+		},
 	}
 }
 
 // Error implements the error interface.
-func (e *GoinferError) Error() string {
+func (e *Error) Error() string {
 	str := e.Message + " (" + strconv.Itoa(int(e.Code)) + ")"
-	if e.Cause != nil {
-		str += " cause: " + fmt.Sprint(e.Cause)
+	for _, a := range e.Data.Attrs {
+		str += " " + a.Key + "=" + a.Value.String()
+	}
+	if e.Data.Cause != nil {
+		str += " cause: " + fmt.Sprint(e.Data.Cause)
+	}
+	if e.Data.Source != nil {
+		str += " in " + e.Data.Source.Function +
+			" " + e.Data.Source.File +
+			":" + strconv.Itoa(e.Data.Source.Line)
 	}
 	return str
 }
 
 // Unwrap returns the underlying error for error unwrapping.
-func (e *GoinferError) Unwrap() error {
-	err, ok := e.Cause.(error)
+func (e *Error) Unwrap() error {
+	if e.Data.Cause == nil {
+		return nil
+	}
+	err, ok := e.Data.Cause.(error)
 	if ok {
 		return err
 	}
-	return errors.New(fmt.Sprint(e.Cause))
+	return errors.New(fmt.Sprint(e.Data.Cause))
 }

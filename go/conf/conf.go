@@ -183,7 +183,7 @@ func (cfg *Cfg) validatePorts() error {
 		if slices.Contains(badPorts, port) {
 			const msg = "Chrome/Firefox block the bad ports"
 			slog.Error(msg, "port", port, "reference", "https://fetch.spec.whatwg.org/#port-blocking")
-			return gie.NewWithData(gie.ConfigErr, msg, map[string]string{"port": port, "reference": "https://fetch.spec.whatwg.org/#port-blocking"})
+			return gie.New(gie.ConfigErr, msg, "port", port, "reference", "https://fetch.spec.whatwg.org/#port-blocking")
 		}
 	}
 	return nil

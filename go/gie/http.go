@@ -31,8 +31,8 @@ func HandleInferenceError(c echo.Context, err error) error {
 }
 
 // handleError centralizes error handling for HTTP responses.
-func handleError(c echo.Context, err error, wrapCode ErrorCode, wrapMsg string) error {
-	var giErr *GoinferError
+func handleError(c echo.Context, err error, wrapCode Code, wrapMsg string) error {
+	var giErr *Error
 	if errors.As(err, &giErr) {
 		return c.JSON(statusCode(giErr.Code), giErr)
 	}
@@ -43,7 +43,7 @@ func handleError(c echo.Context, err error, wrapCode ErrorCode, wrapMsg string) 
 
 // errorToEchoResponse converts an GoinferError to an Echo error response.
 func errorToEchoResponse(c echo.Context, err error) error {
-	var giErr *GoinferError
+	var giErr *Error
 	if !errors.As(err, &giErr) {
 		// If not an GoinferError, wrap it and return internal server error
 		giErr = Wrap(err, ServerErr, "internal server error")
@@ -52,7 +52,7 @@ func errorToEchoResponse(c echo.Context, err error) error {
 }
 
 // statusCode deduce the HTTP status code from an ErrorType.
-func statusCode(errType ErrorCode) int {
+func statusCode(errType Code) int {
 	switch errType {
 	case Invalid:
 		return http.StatusBadRequest
@@ -60,6 +60,8 @@ func statusCode(errType ErrorCode) int {
 		return http.StatusNotFound
 	case Timeout:
 		return http.StatusRequestTimeout
+	case UserAbort:
+		return http.StatusNoContent
 	case ConfigErr, InferErr, ServerErr:
 		fallthrough
 	default:
