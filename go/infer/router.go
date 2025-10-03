@@ -20,11 +20,11 @@ import (
 
 // Infer manages proxying requests to the backend LLM engine.
 type Infer struct {
-	Cfg                         *conf.Cfg
-	ProxyMan                    *proxy.ProxyManager
-	IsInferring                 bool
-	ContinueInferringController bool
-	mu                          sync.Mutex
+	Cfg           *conf.Cfg
+	ProxyMan      *proxy.ProxyManager
+	isInferring   bool
+	stopInferring bool
+	mu            sync.Mutex
 }
 
 // NewEcho creates a new Echo server configured with Goinfer routes and middleware.
