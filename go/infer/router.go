@@ -76,7 +76,7 @@ func (inf *Infer) NewEcho(addr string) *echo.Echo {
 	// ---- /abort --------------
 	grp.GET("abort", inf.abortHandler) // abort all running inferences
 
-		slog.Info("Listen", "GET", url(addr, "/models"))
+	slog.Info("Listen", "GET", url(addr, "/models"))
 	slog.Info("Listen", "POST", url(addr, "/completion (legacy)"))
 	slog.Info("Listen", "POST", url(addr, "/completions"))
 	slog.Info("Listen", "POST", url(addr, "/v1/chat/completions (OpenAI API)"))
