@@ -10,8 +10,8 @@
 #
 # Run:
 #
-#    docker run --rm -p 5143:5143 -v $PWD/goinfer.yml:/app/goinfer.yml goinfer-llama
-#    podman run --rm -p 5143:5143 -v $PWD/goinfer.yml:/app/goinfer.yml goinfer-llama
+#    docker run --rm -p 4444:4444 -v $PWD/goinfer.yml:/app/goinfer.yml goinfer-llama
+#    podman run --rm -p 4444:4444 -v $PWD/goinfer.yml:/app/goinfer.yml goinfer-llama
 
 
 # Arguments:
@@ -330,7 +330,7 @@ ENV TZ=UTC0
 ENTRYPOINT ["./goinfer"]
 
 # Default argument appended to ENTRYPOINT
-CMD ["-local"]
+CMD [""]
 
 
 # --------------------------------------------------------------------
@@ -356,6 +356,6 @@ WORKDIR /app
 ENTRYPOINT ["/app/goinfer"]
 
 # Default argument appended to ENTRYPOINT
-CMD ["-local"]
+CMD [""]
 
 HEALTHCHECK CMD [ "curl", "-f", "http://localhost:8080/health" ]
