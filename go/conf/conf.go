@@ -19,10 +19,11 @@ import (
 
 type (
 	Cfg struct {
-		Server    ServerCfg     `json:"server"        yaml:"server"`
-		Llama     LlamaCfg      `json:"llama"         yaml:"llama"`
-		ModelsDir string        `json:"models_dir"    yaml:"models_dir"`
-		Swap      config.Config `json:"swap,omitzero" yaml:"swap,omitempty"`
+		Templates map[string]string `json:"templates,omitzero" yaml:"templates,omitempty"`
+		Server    ServerCfg         `json:"server"             yaml:"server"`
+		Llama     LlamaCfg          `json:"llama"              yaml:"llama"`
+		ModelsDir string            `json:"models_dir"         yaml:"models_dir"`
+		Swap      config.Config     `json:"swap,omitzero"      yaml:"swap,omitempty"`
 	}
 
 	ServerCfg struct {

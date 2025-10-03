@@ -6,6 +6,7 @@ package conf
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -16,15 +17,27 @@ import (
 	"github.com/LM4eu/goinfer/gie"
 )
 
+type (
 // ModelInfo is used for the response of the /models endpoint, including:
 // - command‑line flags found of file system
 // - eventual error (if the model is missing or misconfigured).
-type ModelInfo struct {
+	ModelInfo struct {
+		Template *TemplateInfo `json:"template,omitempty" yaml:"template,omitempty"`
+		Flags    string        `json:"cmd,omitempty"      yaml:"cmd,omitempty"`
+		Path     string        `json:"path,omitempty"     yaml:"path,omitempty"`
+		Error    string        `json:"error,omitempty"    yaml:"error,omitempty"`
+		Size     int64         `json:"size,omitempty"     yaml:"size,omitempty"`
+	}
+
+	TemplateInfo struct {
+		Name  string `json:"name,omitempty"  yaml:"name,omitempty"`
 	Flags string `json:"flags,omitempty" yaml:"flags,omitempty"`
-	Path  string `json:"path,omitempty"  yaml:"path,omitempty"`
 	Error string `json:"error,omitempty" yaml:"error,omitempty"`
-	Size  int64  `json:"size,omitempty"  yaml:"size,omitempty"`
+		Ctx   int    `json:"ctx,omitempty"   yaml:"ctx,omitempty"`
 }
+)
+
+const notConfigured = "file present but not configured in llama-swap.yml"
 
 // ListModels returns the model names from the config and from the models_dir.
 func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
@@ -33,38 +46,52 @@ func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
 		slog.Debug("Search models", "err", err)
 	}
 
-	const notConfigured = "file present but not configured in llama-swap.yml"
-
 	for name, mi := range info {
 		if info[name].Error == "" {
-			info[name] = ModelInfo{mi.Flags, mi.Path, notConfigured, mi.Size}
+			mi.Error = notConfigured
+			info[name] = mi
 		}
 	}
 
 	for name := range cfg.Swap.Models {
 		if len(name) > 3 && name[:3] == "GI_" && cfg.Swap.Models[name].Unlisted {
-			continue // do not report models for /goinfer endpoint
+			continue // do not report models for /completion endpoint
 		}
+		cfg.refineModelInfo(info, name)
+	}
 
+	return info, err
+}
+
+func (cfg *Cfg) refineModelInfo(info map[string]ModelInfo, name string) {
 		mi, ok := info[name]
 		if ok {
 			if mi.Error == notConfigured {
 				mi.Error = "" // OK: model is both present in FS and configured in llama-swap.yml
 			}
-		} else {
-			cmd := strings.SplitN(cfg.Swap.Models[name].Cmd, "--model", 2)
-			if len(cmd) > 0 {
-				mi.Flags = cmd[0]
-			}
-			if len(cmd) > 1 {
-				mi.Path = cmd[1]
-			}
-			mi.Error = "file absent but configured in llama-swap.yml"
-		}
 		info[name] = mi
+		return
 	}
 
-	return info, err
+	if mi.Flags != "" {
+		return // change nothing
+	}
+
+	// after the first space, the arguments
+	pos := strings.Index(cfg.Swap.Models[name].Cmd, " ")
+	if pos > 1 {
+		// split the arguments at -m: -first -args -m path/to/file.gguf
+		args := strings.SplitN(cfg.Swap.Models[name].Cmd[pos:], " -m ", 2)
+		mi.Flags = args[0]
+		if len(args) > 1 {
+			mi.Path = args[1]
+			mi.Error = "file absent but configured in llama-swap.yml"
+		}
+	} else {
+		slog.Warn("missing space characters", "cmd", cfg.Swap.Models[name].Cmd)
+		mi.Error = "missing space characters in cmd=" + cfg.Swap.Models[name].Cmd
+		}
+		info[name] = mi
 }
 
 // search returns a slice of absolute file paths for all *.gguf model files
@@ -73,13 +100,26 @@ func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
 // and returns any error encountered.
 func (cfg *Cfg) search() (map[string]ModelInfo, error) {
 	info := make(map[string]ModelInfo, len(cfg.Swap.Models)/2)
+	templates := map[string]TemplateInfo{}
 
+	// 1. collect templates.yml and GUFF files
 	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
-		err := add(info, strings.TrimSpace(root))
+		err := add(info, templates, strings.TrimSpace(root))
 		if err != nil {
 			slog.Debug("Searching model files", "root", root)
 			return nil, err
 		}
+	}
+
+	// 2. Fill the TemplateInfo in the right ModelInfo
+	for name, ti := range templates {
+		mi := info[name]
+		mi.Template = &ti
+		if mi.Flags != "" {
+			mi.Flags = ti.Flags
+			ti.Flags = ""
+		}
+		info[name] = mi
 	}
 
 	return info, nil
@@ -87,7 +127,7 @@ func (cfg *Cfg) search() (map[string]ModelInfo, error) {
 
 // add walks the given root directory and appends any valid *.gguf model file paths to the
 // provided slice. It validates each file using validateFile and logs debug information.
-func add(info map[string]ModelInfo, root string) error {
+func add(info map[string]ModelInfo, templates map[string]TemplateInfo, root string) error {
 	return filepath.WalkDir(root, func(path string, dir fs.DirEntry, err error) error {
 		if err != nil {
 			if dir == nil {
@@ -100,11 +140,57 @@ func add(info map[string]ModelInfo, root string) error {
 			return nil // => step into this directory
 		}
 
-		if !strings.HasSuffix(path, ".gguf") {
+		if filepath.Base(path) == "templates.yml" {
+			err = addTemplates(templates, root, path)
+			if err != nil {
+				return err
+			}
+		}
+
+		if strings.HasSuffix(path, ".gguf") {
+			err = addGUFF(info, root, path)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
+func addTemplates(templates map[string]TemplateInfo, root, path string) error {
+	data, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		return gie.Wrap(err, gie.ConfigErr, "os.ReadFile", "file", path)
+	}
+
+	if len(data) == 0 {
+		slog.Info("Empty template", "file", path)
 			return nil
 		}
 
-		size, err := getFileSize(path)
+	slog.Debug("Found", "template", path)
+
+	var tpl map[string]TemplateInfo
+	err = json.Unmarshal(data, &tpl)
+	if err != nil {
+		return gie.Wrap(err, gie.ConfigErr, "json.Unmarshal", "file", path, "100FirsBytes", string(data[:100]))
+	}
+
+	for name, ti := range tpl {
+		if old, ok := templates[name]; ok {
+			slog.Warn("Duplicated templates", "dir", root, "name", name, "old", old, "new", ti)
+			ti.Error = "two files have same model name (must be unique)"
+		}
+		ti.Flags = replaceDIR(path, ti.Flags)
+		templates[name] = ti
+	}
+
+	return nil
+}
+
+func addGUFF(info map[string]ModelInfo, root, path string) error {
+	size, err := verify(path)
 		if err != nil {
 			slog.Debug("Skip", "model", path)
 			return nil //nolint:nilerr // "return nil" to skip this file
@@ -114,15 +200,9 @@ func add(info map[string]ModelInfo, root string) error {
 
 		name, flags := getNameAndFlags(root, path)
 
-		// When using models like GPT OSS, we need to provide a grammar file.
-		// see: https://github.com/ggml-org/llama.cpp/discussions/15396#discussioncomment-14145537
-		// We want to have the possibility to keep the model and grammar files within the same directory.
-		// But we also want to be free to move that directory
-		// without having to update the path within tho command line arguments.
-		// Thus, we use $DIR as a placeholder for the directory.
-		flags = strings.ReplaceAll(flags, "$DIR", filepath.Dir(path))
+	flags = replaceDIR(path, flags)
 
-		mi := ModelInfo{flags, path, "", size}
+	mi := ModelInfo{nil, flags, path, "", size}
 		if old, ok := info[name]; ok {
 			slog.Warn("Duplicated models", "dir", root, "name", name, "old", old, "new", mi)
 			mi.Error = "two files have same model name (must be unique)"
@@ -130,7 +210,17 @@ func add(info map[string]ModelInfo, root string) error {
 		info[name] = mi
 
 		return nil
-	})
+}
+
+// replaceDIR in flags by the current dir of he file.
+// When using models like GPT OSS, we need to provide a grammar file.
+// see: https://github.com/ggml-org/llama.cpp/discussions/15396#discussioncomment-14145537
+// We want to have the possibility to keep the model and grammar files within the same directory.
+// But we also want to be free to move that directory
+// without having to update the path within tho command line arguments.
+// Thus, we use $DIR as a placeholder for the directory.
+func replaceDIR(path, flags string) string {
+	return strings.ReplaceAll(flags, "$DIR", filepath.Dir(path))
 }
 
 //nolint:gocritic,revive // return model name and llama-server flags
@@ -315,8 +405,7 @@ func (cfg *Cfg) ValidateSwap() error {
 	if len(cfg.Swap.Models) == 0 {
 		n := cfg.countModels()
 		if n == 0 {
-			slog.Error("No *.gguf files found", "dir", cfg.ModelsDir)
-			return gie.ErrConfigValidation
+			return gie.New(gie.ConfigErr, "No *.gguf files found", "dir", cfg.ModelsDir)
 		}
 		slog.Warn("No model configured => Restart Goinfer to refresh llama-swap.yml", "models", n)
 		return nil
@@ -326,10 +415,12 @@ func (cfg *Cfg) ValidateSwap() error {
 		var previous string
 		for arg := range strings.SplitSeq(cfg.Swap.Models[i].Cmd, " ") {
 			if previous == "-m" || previous == "--model" {
-				_, err := getFileSize(arg)
+				modelFile := arg // the argument after -m|--model is the GUFF file
+				_, err := verify(modelFile)
 				if err != nil {
 					return err
 				}
+				break
 			}
 			previous = arg
 		}
