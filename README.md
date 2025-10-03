@@ -157,8 +157,7 @@ The other environment variables are:
 export GI_LLAMA_EXE=/path/to/my/llama-server
 export GI_HOST=0.0.0.0  # exposing llama-server is risky
 export GI_ORIGINS=      # disabling CORS is risky
-export GI_API_KEY_ADMIN="PLEASE SET SECURE API KEY"
-export GI_API_KEY_USER="PLEASE SET SECURE API KEY"
+export GI_API_KEY="PLEASE SET SECURE API KEY"
 ```
 
 Disable Gin debug logs:
@@ -179,12 +178,9 @@ This flag can be combined with:
 
 Set the Authorization header within the HTTP request:
 
-- `Authorization: Bearer $GI_API_KEY_ADMIN`
-- `Authorization: Bearer $GI_API_KEY_USER`
-
 ```sh
-curl -X POST https://localhost:4444/infer  \
-  -H "Authorization: Bearer $GI_API_KEY_ADMIN"    \
+curl -X POST https://localhost:4444/completions  \
+  -H "Authorization: Bearer $GI_API_KEY"         \
   -d '{ "prompt": "Say hello in French" }'
 ```
 
