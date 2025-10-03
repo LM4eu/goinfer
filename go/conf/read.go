@@ -25,14 +25,14 @@ func (cfg *Cfg) ReadMainCfg(mainCfg string, noAPIKey bool) error {
 	cfg.trimParamValues()
 
 	// Concatenate host and ports => addr = "host:port"
-	listen := make(map[string]string, len(cfg.Server.Listen))
-	for addr, services := range cfg.Server.Listen {
+	listen := make(map[string]string, len(cfg.Listen))
+	for addr, services := range cfg.Listen {
 		if addr == "" || addr[0] == ':' {
-			addr = cfg.Server.Host + addr
+			addr = cfg.Host + addr
 		}
 		listen[addr] = services
 	}
-	cfg.Server.Listen = listen
+	cfg.Listen = listen
 
 	// Validate configuration
 	return cfg.validateMain(noAPIKey)
@@ -73,18 +73,18 @@ func (cfg *Cfg) applyEnvVars() {
 	}
 
 	if host := os.Getenv("GI_HOST"); host != "" {
-		cfg.Server.Host = host
+		cfg.Host = host
 		slog.Debug("use", "GI_HOST", host)
 	}
 
 	if origins := os.Getenv("GI_ORIGINS"); origins != "" {
-		cfg.Server.Origins = origins
+		cfg.Origins = origins
 		slog.Debug("use", "GI_ORIGINS", origins)
 	}
 
 	// Load API key from environment
 	if key := os.Getenv("GI_API_KEY"); key != "" {
-		cfg.Server.APIKey = key
+		cfg.APIKey = key
 		slog.Debug("set api_key = GI_API_KEY")
 	}
 
@@ -99,10 +99,10 @@ func (cfg *Cfg) trimParamValues() {
 	cfg.ModelsDir = strings.TrimSpace(cfg.ModelsDir)
 	cfg.ModelsDir = strings.Trim(cfg.ModelsDir, ":")
 
-	cfg.Server.Host = strings.TrimSpace(cfg.Server.Host)
+	cfg.Host = strings.TrimSpace(cfg.Host)
 
-	cfg.Server.Origins = strings.TrimSpace(cfg.Server.Origins)
-	cfg.Server.Origins = strings.Trim(cfg.Server.Origins, ",")
+	cfg.Origins = strings.TrimSpace(cfg.Origins)
+	cfg.Origins = strings.Trim(cfg.Origins, ",")
 
 	cfg.Llama.Exe = strings.TrimSpace(cfg.Llama.Exe)
 }

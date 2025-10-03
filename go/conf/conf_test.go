@@ -36,15 +36,13 @@ func TestReadMainCfg(t *testing.T) {
 	// t.Parallel omitted because of t.Setenv usage.
 
 	// Minimal config.
-	cfg := &Cfg{
-		ModelsDir: "/tmp/models",
-		Server:    defaultCfg.Server,
-		Llama:     defaultCfg.Llama,
-	}
-	// Provide a dummy admin API key to satisfy validation.
-	cfg.Server.APIKey = "dummy"
+	cfg := DefaultCfg
+	cfg.ModelsDir = "/tmp/models"
 
-	path := writeTempCfg(t, cfg)
+	// Provide a dummy admin API key to satisfy validation.
+	cfg.APIKey = "dummy"
+
+	path := writeTempCfg(t, &cfg)
 
 	// Override via env.
 	dir := filepath.Dir(path)
@@ -65,7 +63,7 @@ func TestReadMainCfg(t *testing.T) {
 	if cfg.ModelsDir != dir {
 		t.Errorf("ReadMainCfg did not apply GI_MODELS_DIR")
 	}
-	if cfg.Server.Host != "127.0.0.1" {
+	if cfg.Host != "127.0.0.1" {
 		t.Errorf("ReadMainCfg did not apply GI_HOST")
 	}
 }
@@ -159,12 +157,9 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot create model file: %v", err)
 	}
-	cfg := &Cfg{
-		ModelsDir: modelsDir,
-		Server:    defaultCfg.Server,
-		Llama:     defaultCfg.Llama,
-	}
-	cfg.Server.APIKey = "dummy"
+	cfg := DefaultCfg
+	cfg.ModelsDir = modelsDir
+	cfg.APIKey = "dummy"
 	err = cfg.validateMain(false)
 	if err != nil {
 		t.Fatalf("validation1 error: %v", err)
@@ -182,13 +177,9 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 		t.Fatalf("validation2 error: %v", err)
 	}
 	// Missing admin key should fail.
-	cfgMissing := &Cfg{
-		ModelsDir: modelsDir,
-		Server: ServerCfg{
-			APIKey: "",
-		},
-		Llama: defaultCfg.Llama,
-	}
+	cfgMissing := DefaultCfg
+	cfgMissing.ModelsDir = modelsDir
+	cfgMissing.APIKey = ""
 	err = cfgMissing.validateMain(false)
 	if err == nil {
 		t.Fatalf("expected validation error for missing admin API key")
@@ -198,11 +189,8 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 // TestCfg_ConcurrentReadMainCfg runs ReadMainCfg concurrently.
 func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 	// t.Parallel omitted because of t.Setenv usage.
-	cfg := &Cfg{
-		ModelsDir: t.TempDir(),
-		Server:    defaultCfg.Server,
-		Llama:     defaultCfg.Llama,
-	}
+	cfg := DefaultCfg
+	cfg.ModelsDir = t.TempDir()
 	yamlData, err := yaml.Marshal(cfg)
 	if err != nil {
 		t.Fatalf("yaml marshal error: %v", err)
@@ -235,8 +223,8 @@ func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 			if cfg.ModelsDir != dir {
 				t.Errorf("#%d ModelsDir not overridden, got %q want %q", i, cfg.ModelsDir, dir)
 			}
-			if cfg.Server.Host != "127.0.0.1" {
-				t.Errorf("#%d Server.Host not overridden, got %q want 127.0.0.1", i, cfg.Server.Host)
+			if cfg.Host != "127.0.0.1" {
+				t.Errorf("#%d Server.Host not overridden, got %q want 127.0.0.1", i, cfg.Host)
 			}
 		})
 	}

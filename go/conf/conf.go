@@ -19,21 +19,17 @@ import (
 
 type (
 	Cfg struct {
+		Llama     Llama             `json:"llama"              yaml:"llama"`
 		Templates map[string]string `json:"templates,omitzero" yaml:"templates,omitempty"`
-		Server    ServerCfg         `json:"server"             yaml:"server"`
-		Llama     LlamaCfg          `json:"llama"              yaml:"llama"`
+		Listen    map[string]string `json:"listen"             yaml:"listen"`
 		ModelsDir string            `json:"models_dir"         yaml:"models_dir"`
+		APIKey    string            `json:"api_key"            yaml:"api_key"`
+		Host      string            `json:"host"               yaml:"host"`
+		Origins   string            `json:"origins"            yaml:"origins"`
 		Swap      config.Config     `json:"swap,omitzero"      yaml:"swap,omitempty"`
 	}
 
-	ServerCfg struct {
-		Listen  map[string]string `json:"listen"           yaml:"listen"`
-		APIKey  string            `json:"api_key"          yaml:"api_key"`
-		Host    string            `json:"host,omitzero"    yaml:"host,omitempty"`
-		Origins string            `json:"origins,omitzero" yaml:"origins,omitempty"`
-	}
-
-	LlamaCfg struct {
+	Llama struct {
 		Args map[string]string `json:"args" yaml:"args"`
 		Exe  string            `json:"exe"  yaml:"exe"`
 	}
@@ -51,18 +47,16 @@ const (
 )
 
 var (
-	defaultCfg = Cfg{
+	DefaultCfg = Cfg{
 		ModelsDir: "/home/me/models",
-		Server: ServerCfg{
-			Listen: map[string]string{
-				":4444": "infer",
-				":5555": "llama-swap",
-			},
-			APIKey:  "",
-			Host:    "",
-			Origins: "localhost",
+		APIKey:    "",
+		Host:      "",
+		Listen: map[string]string{
+			":4444": "infer",
+			":5555": "llama-swap",
 		},
-		Llama: LlamaCfg{
+		Origins: "localhost",
+		Llama: Llama{
 			Exe: "/home/me/llama.cpp/build/bin/llama-server",
 			Args: map[string]string{
 				"common": argsCommon,
@@ -158,13 +152,13 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 	}
 
 	// Check API key
-	if cfg.Server.APIKey == "" || strings.Contains(cfg.Server.APIKey, "Please") {
+	if cfg.APIKey == "" || strings.Contains(cfg.APIKey, "Please") {
 		return gie.New(gie.ConfigErr, "API key not set, please set your private API key")
 	}
-	if cfg.Server.APIKey == debugAPIKey {
+	if cfg.APIKey == debugAPIKey {
 		slog.Warn("API key is DEBUG => security threat")
-	} else if len(cfg.Server.APIKey) < 64 {
-		slog.Warn("API key should be 64+ hex digits", "len", len(cfg.Server.APIKey))
+	} else if len(cfg.APIKey) < 64 {
+		slog.Warn("API key should be 64+ hex digits", "len", len(cfg.APIKey))
 	}
 
 	return nil
@@ -175,7 +169,7 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 //
 //nolint:revive // for better readability => do not rewrite with `if !c { continue }`
 func (cfg *Cfg) validatePorts() error {
-	for hostPort := range cfg.Server.Listen {
+	for hostPort := range cfg.Listen {
 		_, port, err := net.SplitHostPort(hostPort)
 		if err != nil {
 			slog.Error("Cannot split", "hostPort", hostPort, "err", err)

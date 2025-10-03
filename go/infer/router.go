@@ -42,9 +42,9 @@ func (inf *Infer) NewEcho(addr string) *echo.Echo {
 	}
 
 	// Middleware CORS
-	if inf.Cfg.Server.Origins != "" {
+	if inf.Cfg.Origins != "" {
 		e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-			AllowOrigins:     strings.Split(inf.Cfg.Server.Origins, ","),
+			AllowOrigins:     strings.Split(inf.Cfg.Origins, ","),
 			AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAuthorization},
 			AllowMethods:     []string{http.MethodGet, http.MethodOptions, http.MethodPost},
 			AllowCredentials: true,
@@ -95,16 +95,16 @@ func url(addr, endpoint string) string {
 
 // configureAPIKeyAuth sets up API‑key authentication for a grp.
 func (inf *Infer) configureAPIKeyAuth(grp *echo.Group) {
-	if inf.Cfg.Server.APIKey == "" {
+	if inf.Cfg.APIKey == "" {
 		slog.Warn("Empty API key => disable API key security")
 		return
 	}
 
 	grp.Use(middleware.KeyAuth(func(received_key string, _ echo.Context) (bool, error) {
-		if received_key == inf.Cfg.Server.APIKey {
+		if received_key == inf.Cfg.APIKey {
 			return true, nil
 		}
-		slog.Warn("Mismatched API key", "len(received)", len(received_key), "len(expected)", len(inf.Cfg.Server.APIKey))
+		slog.Warn("Mismatched API key", "len(received)", len(received_key), "len(expected)", len(inf.Cfg.APIKey))
 		return false, nil
 	}))
 }

@@ -68,9 +68,7 @@ func TestConcurrencyGuard(t *testing.T) {
 func TestConfigureAPIKeyAuth_NoKey(t *testing.T) {
 	t.Parallel()
 	cfg := &conf.Cfg{
-		Server: conf.ServerCfg{
-			APIKey: "", // no API key
-		},
+		APIKey: "", // no API key
 	}
 	e := echo.New()
 	grp := e.Group("/test")
@@ -97,9 +95,7 @@ func TestConfigureAPIKeyAuth_WithKey(t *testing.T) {
 	t.Parallel()
 	const apiKey = "secret-key"
 	cfg := &conf.Cfg{
-		Server: conf.ServerCfg{
-			APIKey: apiKey,
-		},
+		APIKey: apiKey,
 	}
 
 	e := echo.New()

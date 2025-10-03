@@ -46,7 +46,7 @@ func getCfg() *conf.Cfg {
 	vv.SetVersionFlag()
 	flag.Parse()
 
-	var cfg conf.Cfg
+	cfg := conf.DefaultCfg
 
 	cfg.SetLogLevel(!*quiet, *debug)
 
@@ -105,7 +105,7 @@ func getCfg() *conf.Cfg {
 
 	// command line precedes config file
 	if *noAPIKey {
-		cfg.Server.APIKey = ""
+		cfg.APIKey = ""
 	}
 
 	if *debug {
@@ -147,7 +147,7 @@ func startServers(cfg *conf.Cfg) {
 // startEchoServers starts all HTTP Echo servers configured in the config.
 func startEchoServers(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group, proxyMan *proxy.ProxyManager) {
 	inf := &infer.Infer{Cfg: cfg, ProxyMan: proxyMan}
-	for addr, services := range cfg.Server.Listen {
+	for addr, services := range cfg.Listen {
 		if !strings.Contains(services, "infer") {
 			continue
 		}
@@ -155,7 +155,7 @@ func startEchoServers(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group, p
 		e := inf.NewEcho(addr)
 		if e != nil {
 			grp.Go(func() error {
-				slog.InfoContext(ctx, "start Echo", "url", url(addr), "origins", cfg.Server.Origins)
+				slog.InfoContext(ctx, "start Echo", "url", url(addr), "origins", cfg.Origins)
 				return startEcho(ctx, e, addr)
 			})
 		}
@@ -173,7 +173,7 @@ func url(addr string) string {
 func startSwapServer(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group) *proxy.ProxyManager {
 	var proxyMan *proxy.ProxyManager
 
-	for addr, services := range cfg.Server.Listen {
+	for addr, services := range cfg.Listen {
 		if !strings.Contains(services, "swap") {
 			continue
 		}
