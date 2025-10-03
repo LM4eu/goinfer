@@ -156,22 +156,17 @@ func (cfg *Cfg) setAPIKeys(debug, noAPIKey bool) {
 		return
 	}
 
-	cfg.Server.APIKeys = make(map[string]string, 2)
-
 	switch {
 	case noAPIKey:
-		cfg.Server.APIKeys["admin"] = unsetAPIKey
-		cfg.Server.APIKeys["user"] = unsetAPIKey
+		cfg.Server.APIKey = unsetAPIKey
 		slog.Info("Flag -no-api-key => Do not generate API keys")
 
 	case debug:
-		cfg.Server.APIKeys["admin"] = debugAPIKey
-		cfg.Server.APIKeys["user"] = debugAPIKey
+		cfg.Server.APIKey = debugAPIKey
 		slog.Warn("API keys are DEBUG => security threat")
 
 	default:
-		cfg.Server.APIKeys["admin"] = gen64HexDigits()
-		cfg.Server.APIKeys["user"] = gen64HexDigits()
+		cfg.Server.APIKey = gen64HexDigits()
 		slog.Info("Generated random secured API keys")
 	}
 }

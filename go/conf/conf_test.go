@@ -42,7 +42,7 @@ func TestReadMainCfg(t *testing.T) {
 		Llama:     defaultGoinferCfg.Llama,
 	}
 	// Provide a dummy admin API key to satisfy validation.
-	cfg.Server.APIKeys = map[string]string{"admin": "dummy"}
+	cfg.Server.APIKey = "dummy"
 
 	path := writeTempCfg(t, cfg)
 
@@ -164,7 +164,7 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 		Server:    defaultGoinferCfg.Server,
 		Llama:     defaultGoinferCfg.Llama,
 	}
-	cfg.Server.APIKeys = map[string]string{"admin": "dummy"}
+	cfg.Server.APIKey = "dummy"
 	err = cfg.validateMain(false)
 	if err != nil {
 		t.Fatalf("validation1 error: %v", err)
@@ -185,7 +185,7 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 	cfgMissing := &Cfg{
 		ModelsDir: modelsDir,
 		Server: ServerCfg{
-			APIKeys: map[string]string{},
+			APIKey: "",
 		},
 		Llama: defaultGoinferCfg.Llama,
 	}
@@ -216,7 +216,7 @@ func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 	t.Setenv("GI_MODELS_DIR", dir)
 	t.Setenv("GI_HOST", "127.0.0.1")
 	// Set admin API key to satisfy validation.
-	t.Setenv("GI_API_KEY_ADMIN", "dummy")
+	t.Setenv("GI_API_KEY", "dummy")
 	// Ensure a model file exists for validation.
 	modelPath := filepath.Join(dir, "model.gguf")
 	err = os.WriteFile(modelPath, make([]byte, 2048), 0o600)
