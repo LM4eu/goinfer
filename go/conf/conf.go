@@ -50,7 +50,7 @@ const (
 )
 
 var (
-	defaultGoinferCfg = Cfg{
+	defaultCfg = Cfg{
 		ModelsDir: "/home/me/models",
 		Server: ServerCfg{
 			Listen: map[string]string{

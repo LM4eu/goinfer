@@ -19,9 +19,9 @@ import (
 // WriteMainCfg populates the configuration with defaults, applies environment variables,
 // writes the resulting configuration to the given file, and mutates the receiver.
 func (cfg *Cfg) WriteMainCfg(mainCfg string, debug, noAPIKey bool) error {
-	cfg.Llama = defaultGoinferCfg.Llama
-	cfg.ModelsDir = defaultGoinferCfg.ModelsDir
-	cfg.Server = defaultGoinferCfg.Server
+	cfg.Llama = defaultCfg.Llama
+	cfg.ModelsDir = defaultCfg.ModelsDir
+	cfg.Server = defaultCfg.Server
 
 	cfg.applyEnvVars()
 	cfg.trimParamValues()
@@ -63,7 +63,7 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 
 	infer, ok := cfg.Llama.Args["infer"]
 	if !ok {
-		goinfer = argsGoinfer
+		infer = argsInfer
 	}
 
 	cmd := cfg.Llama.Exe + " --port ${PORT} " + common
