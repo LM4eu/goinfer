@@ -18,9 +18,9 @@ import (
 )
 
 type (
-// ModelInfo is used for the response of the /models endpoint, including:
-// - command‑line flags found of file system
-// - eventual error (if the model is missing or misconfigured).
+	// ModelInfo is used for the response of the /models endpoint, including:
+	// - command‑line flags found of file system
+	// - eventual error (if the model is missing or misconfigured).
 	ModelInfo struct {
 		Template *TemplateInfo `json:"template,omitempty" yaml:"template,omitempty"`
 		Flags    string        `json:"cmd,omitempty"      yaml:"cmd,omitempty"`
@@ -31,10 +31,10 @@ type (
 
 	TemplateInfo struct {
 		Name  string `json:"name,omitempty"  yaml:"name,omitempty"`
-	Flags string `json:"flags,omitempty" yaml:"flags,omitempty"`
-	Error string `json:"error,omitempty" yaml:"error,omitempty"`
+		Flags string `json:"flags,omitempty" yaml:"flags,omitempty"`
+		Error string `json:"error,omitempty" yaml:"error,omitempty"`
 		Ctx   int    `json:"ctx,omitempty"   yaml:"ctx,omitempty"`
-}
+	}
 )
 
 const notConfigured = "file present but not configured in llama-swap.yml"
@@ -64,11 +64,11 @@ func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
 }
 
 func (cfg *Cfg) refineModelInfo(info map[string]ModelInfo, name string) {
-		mi, ok := info[name]
-		if ok {
-			if mi.Error == notConfigured {
-				mi.Error = "" // OK: model is both present in FS and configured in llama-swap.yml
-			}
+	mi, ok := info[name]
+	if ok {
+		if mi.Error == notConfigured {
+			mi.Error = "" // OK: model is both present in FS and configured in llama-swap.yml
+		}
 		info[name] = mi
 		return
 	}
@@ -90,8 +90,8 @@ func (cfg *Cfg) refineModelInfo(info map[string]ModelInfo, name string) {
 	} else {
 		slog.Warn("missing space characters", "cmd", cfg.Swap.Models[name].Cmd)
 		mi.Error = "missing space characters in cmd=" + cfg.Swap.Models[name].Cmd
-		}
-		info[name] = mi
+	}
+	info[name] = mi
 }
 
 // search returns a slice of absolute file paths for all *.gguf model files
@@ -166,8 +166,8 @@ func addTemplates(templates map[string]TemplateInfo, root, path string) error {
 
 	if len(data) == 0 {
 		slog.Info("Empty template", "file", path)
-			return nil
-		}
+		return nil
+	}
 
 	slog.Debug("Found", "template", path)
 
@@ -191,25 +191,25 @@ func addTemplates(templates map[string]TemplateInfo, root, path string) error {
 
 func addGUFF(info map[string]ModelInfo, root, path string) error {
 	size, err := verify(path)
-		if err != nil {
-			slog.Debug("Skip", "model", path)
-			return nil //nolint:nilerr // "return nil" to skip this file
-		}
+	if err != nil {
+		slog.Debug("Skip", "model", path)
+		return nil //nolint:nilerr // "return nil" to skip this file
+	}
 
-		slog.Debug("Found", "model", path)
+	slog.Debug("Found", "model", path)
 
-		name, flags := getNameAndFlags(root, path)
+	name, flags := getNameAndFlags(root, path)
 
 	flags = replaceDIR(path, flags)
 
 	mi := ModelInfo{nil, flags, path, "", size}
-		if old, ok := info[name]; ok {
-			slog.Warn("Duplicated models", "dir", root, "name", name, "old", old, "new", mi)
-			mi.Error = "two files have same model name (must be unique)"
-		}
-		info[name] = mi
+	if old, ok := info[name]; ok {
+		slog.Warn("Duplicated models", "dir", root, "name", name, "old", old, "new", mi)
+		mi.Error = "two files have same model name (must be unique)"
+	}
+	info[name] = mi
 
-		return nil
+	return nil
 }
 
 // replaceDIR in flags by the current dir of he file.
@@ -428,21 +428,26 @@ func (cfg *Cfg) ValidateSwap() error {
 	return nil
 }
 
-// getFileSize verifies that the given path points to
-// an existing, readable, and sufficiently large *.gguf file.
+// verify that the given GUFF file is an existing,
+// readable, and sufficiently large *.gguf file.
 // It also normalizes the path and checks for series files.
-func getFileSize(path string) (int64, error) {
+func verify(path string) (int64, error) {
 	cleaned := filepath.Clean(path)
 	if cleaned != path {
 		slog.Warn("Malformed", "current", path, "better", cleaned)
 		path = cleaned
 	}
 
-	// Check if the file exists
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		slog.Warn("Model file does not exist", "path", path)
 		return 0, err
+	}
+
+	// is empty?
+	size := info.Size()
+	if size < 1000 {
+		return 0, gie.New(gie.ConfigErr, "Model file is empty (or too small)", "path", path)
 	}
 
 	// Check if the file is readable
@@ -456,13 +461,6 @@ func getFileSize(path string) (int64, error) {
 	if err != nil {
 		slog.Warn("Model file fails closing", "path", path)
 		return 0, err
-	}
-
-	// is empty?
-	size := info.Size()
-	if size < 1000 {
-		slog.Warn("Model file is empty (or too small)", "path", path)
-		return 0, gie.ErrConfigValidation
 	}
 
 	// Huge GGUF are spilt into smaller files ending with -00001-of-00003.gguf

@@ -160,7 +160,7 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 	// Check API key
 	if cfg.Server.APIKey == "" || strings.Contains(cfg.Server.APIKey, "Please") {
 		return gie.New(gie.ConfigErr, "API key not set, please set your private API key")
-		}
+	}
 	if cfg.Server.APIKey == debugAPIKey {
 		slog.Warn("API key is DEBUG => security threat")
 	} else if len(cfg.Server.APIKey) < 64 {

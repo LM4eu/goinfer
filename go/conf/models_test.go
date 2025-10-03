@@ -153,9 +153,9 @@ func TestListModels(t *testing.T) {
 		ModelsDir: tmp,
 		Swap: config.Config{
 			Models: map[string]config.ModelConfig{
-				"diskmodel": {Cmd: "", Unlisted: false},
-				"missing":   {Cmd: "--model missing.gguf", Unlisted: false},
-				"GI_hidden": {Cmd: "", Unlisted: true},
+				"diskmodel": {Cmd: "llama-server -flag", Unlisted: false},
+				"missing":   {Cmd: "llama-server -flag -m missing.gguf", Unlisted: false},
+				"GI_hidden": {Cmd: "llama-server -flag -m mistral.gguf", Unlisted: true},
 			},
 		},
 	}
@@ -195,7 +195,7 @@ func TestValidateFile(t *testing.T) {
 
 	// valid
 	valid := createGGUFFile(t, tmp, "valid.gguf", 2048)
-	size, err := getFileSize(valid)
+	size, err := verify(valid)
 	if err != nil {
 		t.Errorf("validateFile(valid) error: %v", err)
 	}
@@ -205,21 +205,21 @@ func TestValidateFile(t *testing.T) {
 
 	// too small
 	small := createGGUFFile(t, tmp, "small.gguf", 64)
-	_, err = getFileSize(small)
+	_, err = verify(small)
 	if err == nil {
 		t.Errorf("validateFile(small) expected error")
 	}
 
 	// series first part
 	firstSeries := createGGUFFile(t, tmp, "model-00001-of-00003.gguf", 2048)
-	_, err = getFileSize(firstSeries)
+	_, err = verify(firstSeries)
 	if err != nil {
 		t.Errorf("validateFile(firstSeries) error: %v", err)
 	}
 
 	// series non-first part
 	secondSeries := createGGUFFile(t, tmp, "model-00002-of-00003.gguf", 2048)
-	_, err = getFileSize(secondSeries)
+	_, err = verify(secondSeries)
 	if err == nil {
 		t.Errorf("validateFile(secondSeries) expected error")
 	}
