@@ -61,14 +61,15 @@ print("Checking the news for interesting topics ...")
 
 # run the inference query
 payload = {
+    "model": MODEL,
+    "ctx": 4096,
     "prompt": PROMPT,
-    "model": {"name": MODEL, "ctx": 4096},
     "temperature": 0.5,
     "top_p": 0.35,
     "repeat_penalty": 1.2,
 }
 headers = {"Authorization": f"Bearer {KEY}"}
-url = "http://localhost:5143/completion"
+url = "http://localhost:4444/completion"
 response = requests.post(url, headers=headers, json=payload)
 data = response.json()
 print("Model response:")

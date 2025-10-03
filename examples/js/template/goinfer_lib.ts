@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { useGoinfer, ModelState } from "@goinfer/api";
+import { useGoinfer, Models } from "@goinfer/api";
 import { PromptTemplate } from "modprompt";
 
 // use ts-node-esm goinfer_lib.ts to run this
@@ -11,7 +11,7 @@ const apiKey = "C0ffee15C00150C0ffee15900dBadC0de15Dead101Cafe91f790Cafe7e57C0de
 const prompt = "List the planets in the solar system";
 
 const api = useGoinfer({
-  serverUrl: "http://localhost:5143",
+  serverUrl: "http://localhost:4444",
   apiKey: apiKey,
   onToken: (token) => {
     process.stdout.write(token);
@@ -19,8 +19,8 @@ const api = useGoinfer({
 });
 
 async function main() {
-  const modelsState: ModelState = await api.modelsState();
-  const template = new PromptTemplate(modelsState.models[model].name);
+  const models: Models = await api.models();
+  const template = new PromptTemplate(models.models[model].template.name);
   const result = await api.infer(prompt, template.render(), {
     temperature: 0.6
   });

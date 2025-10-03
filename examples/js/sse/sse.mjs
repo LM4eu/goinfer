@@ -30,32 +30,18 @@ function onParse(event) {
 
 const parser = createParser(onParse)
 
-async function loadModel() {
-  // load the model
-  const response = await fetch(`http://localhost:5143/model/start`, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      name: model
-    })
-  });
-  if (response.status != 204) {
-    throw new Error("Can not load model", response)
-  }
-}
-
 async function runInference() {
   const paramDefaults = {
     prompt: prompt,
     template: template,
-    stream: true,
+    llama: {
+      stream: true,
+    }
   };
+
   const completionParams = { ...paramDefaults, prompt };
-  const response = await fetch("http://localhost:5143/completion", {
+
+  const response = await fetch("http://localhost:4444/completion", {
     method: 'POST',
     body: JSON.stringify(completionParams),
     headers: {
@@ -64,7 +50,9 @@ async function runInference() {
       'Authorization': `Bearer ${apiKey}`,
     },
   });
+
   const reader = response.body.getReader();
+  
   const decoder = new TextDecoder();
   while (true) {
     const result = await reader.read();
@@ -77,7 +65,6 @@ async function runInference() {
 }
 
 async function main() {
-  await loadModel();
   return await runInference();
 }
 

@@ -10,17 +10,8 @@ const apiKey = "C0ffee15C00150C0ffee15900dBadC0de15Dead101Cafe91f790Cafe7e57C0de
 const template = "<s>[INST] {prompt} [/INST]";
 const prompt = "List the planets in the solar system";
 
-const api = useApi({ "serverUrl": "http://localhost:5143" });
+const api = useApi({ "serverUrl": "http://localhost:4444" });
 api.addHeader('Authorization', `Bearer ${apiKey}`);
-
-async function loadModel() {
-  const res = await api.post("/model/start", {
-    name: model
-  });
-  if (!res.ok) {
-    throw new Error("Can not load model", res)
-  }
-}
 
 async function runInference() {
   process.stdout.setEncoding('utf8');
@@ -35,13 +26,18 @@ async function runInference() {
         break;
     }
   };
+
   const abortController = new AbortController();
+  
   const _payload = {
     prompt: prompt,
     template: template,
-    stream: true,
-    temperature: 0.6,
+    llama: {
+      stream: true,
+      temperature: 0.6,
+    }
   };
+
   await api.postSse(
     "/completion",
     _payload,
@@ -53,7 +49,6 @@ async function runInference() {
 }
 
 async function main() {
-  await loadModel();
   await runInference();
 }
 

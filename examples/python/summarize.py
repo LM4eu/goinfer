@@ -1,7 +1,6 @@
 import trafilatura
 import requests
 
-
 # in this example we use the model:
 # https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q4_K_M.gguf
 MODEL = "mistral-7b-instruct-v0.1.Q4_K_M.gguf"
@@ -21,17 +20,14 @@ print(text)
 print("------------------------")
 print("Summarizing text ...")
 
-
 # run the inference query
 payload = {
-    "model": {
-        "name": MODEL,
-        "ctx": 8192,
-    },
-    "prompt": f"{PROMPT}\n\n{text}",
+    "model": MODEL,
+    "ctx": 8192,
     "template": TEMPLATE,
+    "prompt": f"{PROMPT}\n\n{text}",
 }
-url = "http://localhost:5143/completion"
+url = "http://localhost:4444/completion"
 headers = {"Authorization": f"Bearer {KEY}"}
 response = requests.post(url, headers=headers, json=payload)
 data = response.json()

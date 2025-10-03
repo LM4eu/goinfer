@@ -27,7 +27,7 @@ async function runInference() {
     temperature: 0.5,
     messages: [
       {
-        "role": "system",
+        "role": "system", // can also be "developer"
         "content": "You are a helpful assistant."
       },
       {
@@ -37,7 +37,7 @@ async function runInference() {
     ]
   };
   const completionParams = { ...params, prompt };
-  const response = await fetch("http://localhost:5143/v1/chat/completions", {
+  const response = await fetch("http://localhost:5555/v1/chat/completions", {
     method: 'POST',
     body: JSON.stringify(completionParams),
     headers: {

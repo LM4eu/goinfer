@@ -11,7 +11,7 @@ const prompt = "List the planets in the solar system";
 
 const api = new ChatGPTAPI({
   apiKey: apiKey,
-  apiBaseUrl: "http://localhost:5143/v1",
+  apiBaseUrl: "http://localhost:4444/v1",
   completionParams: {
     model: model,
     stream: true,

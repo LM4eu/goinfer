@@ -11,17 +11,15 @@ PROMPT = "list the planets in the solar system"
 
 # run the inference query
 payload = {
-    "model": {
-        "name": MODEL,
-        "ctx": 4096,
-    },
-    "prompt": PROMPT,
+    "model": MODEL,
+    "ctx": 4096,
     "template": TEMPLATE,
+    "prompt": PROMPT,
     "stream": True,
     "temperature": 0.6,
 }
 headers = {"Authorization": f"Bearer {KEY}", "Accept": "text/event-stream"}
-url = "http://localhost:5143/completion"
+url = "http://localhost:4444/completion"
 response = requests.post(url, stream=True, headers=headers, json=payload)
 client = sseclient.SSEClient(response)
 for event in client.events():
