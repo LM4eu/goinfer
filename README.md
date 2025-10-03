@@ -191,20 +191,19 @@ curl -X POST https://localhost:4444/completions  \
 # List your GGUF dirs with `locate .gguf | sed -e 's,/[^/]*$,,' | uniq`
 models_dir: /home/me/models 
 
-server:
-  api_key:
-    # ⚠️ Set your API keys, can be 64‑hex‑digit (32‑byte) 🚨
-    # Generate these random API keys with: ./goinfer -gen
-    admin: "PLEASE SET ADMIN API KEY"
-    user:  "PLEASE SET USER API KEY"
-  origins:   # CORS whitelist
-    - "https://my‑frontend.example.com"
-    - "http://localhost"
-  listen:
-    # format:  <address>: <list of enabled services>
-    # <address> can be <ip|host>:<port> or simply :<port> when <host> is localhost
-    ":4444": infer        # historical goinfer endpoints
-    ":5555": llama-swap  # OpenAI‑compatible API by llama‑swap
+api_key:
+  # ⚠️ Set your API keys, can be 64‑hex‑digit (32‑byte) 🚨
+  # Generate these random API keys with: ./goinfer -gen
+  admin: "PLEASE SET ADMIN API KEY"
+  user:  "PLEASE SET USER API KEY"
+origins:   # CORS whitelist
+  - "https://my‑frontend.example.com"
+  - "http://localhost"
+listen:
+  # format:  <address>: <list of enabled services>
+  # <address> can be <ip|host>:<port> or simply :<port> when <host> is localhost
+  ":4444": infer        # historical goinfer endpoints
+  ":5555": llama-swap  # OpenAI‑compatible API by llama‑swap
 
 llama:
   exe: /home/me/llama.cpp/build/bin/llama-server
