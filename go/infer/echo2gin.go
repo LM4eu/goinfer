@@ -76,18 +76,29 @@ func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if w.size < 0 {
 		w.size = 0
 	}
-	return w.ResponseWriter.(http.Hijacker).Hijack()
+	hijacker, ok := w.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, gie.New(gie.ServerErr, "w.ResponseWriter is not http.Hijacker")
+	}
+	return hijacker.Hijack()
 }
 
 // CloseNotify implements the http.CloseNotifier interface.
 func (w *responseWriter) CloseNotify() <-chan bool {
-	return w.ResponseWriter.(http.CloseNotifier).CloseNotify()
+	notifier, ok := w.ResponseWriter.(http.CloseNotifier)
+	if !ok {
+		return nil
+	}
+	return notifier.CloseNotify()
 }
 
 // Flush implements the http.Flusher interface.
 func (w *responseWriter) Flush() {
 	w.WriteHeaderNow()
-	w.ResponseWriter.(http.Flusher).Flush()
+	flusher, ok := w.ResponseWriter.(http.Flusher)
+	if ok {
+		flusher.Flush()
+	}
 }
 
 func (w *responseWriter) Pusher() (pusher http.Pusher) {
