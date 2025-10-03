@@ -64,8 +64,7 @@ func TestNewEcho(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			inf := &Infer{Cfg: cfg}
-			e := inf.NewEcho(cfg, ":0", tt.enableModels, tt.enableGoinfer, tt.enableOpenAPI)
-
+	e := inf.NewEcho(":0")
 			if e == nil {
 				t.Fatalf("NewEcho returned nil")
 			}

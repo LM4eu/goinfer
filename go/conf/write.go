@@ -61,7 +61,7 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 		common = argsCommon
 	}
 
-	goinfer, ok := cfg.Llama.Args["goinfer"]
+	infer, ok := cfg.Llama.Args["infer"]
 	if !ok {
 		goinfer = argsGoinfer
 	}
@@ -151,7 +151,7 @@ func (cfg *Cfg) appModelCfg(modelName, cmd string, mc config.ModelConfig) {
 }
 
 func (cfg *Cfg) setAPIKeys(debug, noAPIKey bool) {
-	if len(cfg.Server.APIKeys) > 0 {
+	if cfg.Server.APIKey == "" {
 		slog.Info("Configuration file uses API keys from environment")
 		return
 	}

@@ -27,7 +27,7 @@ type (
 
 	ServerCfg struct {
 		Listen  map[string]string `json:"listen"           yaml:"listen"`
-		APIKeys map[string]string `json:"api_key"          yaml:"api_key"`
+		APIKey  string            `json:"api_key"          yaml:"api_key"`
 		Host    string            `json:"host,omitzero"    yaml:"host,omitempty"`
 		Origins string            `json:"origins,omitzero" yaml:"origins,omitempty"`
 	}
@@ -54,18 +54,18 @@ var (
 		ModelsDir: "/home/me/models",
 		Server: ServerCfg{
 			Listen: map[string]string{
-				":4444": "models openai goinfer",
+				":4444": "infer",
 				":5555": "llama-swap",
 			},
-			APIKeys: map[string]string{},
+			APIKey:  "",
 			Host:    "",
 			Origins: "localhost",
 		},
 		Llama: LlamaCfg{
 			Exe: "/home/me/llama.cpp/build/bin/llama-server",
 			Args: map[string]string{
-				"common":  argsCommon,
-				"goinfer": argsGoinfer,
+				"common": argsCommon,
+				"infer":  argsInfer,
 			},
 		},
 	}
@@ -115,8 +115,7 @@ func (cfg *Cfg) Print() {
 	printEnvVar("GI_MODELS_DIR", false)
 	printEnvVar("GI_HOST", false)
 	printEnvVar("GI_ORIGINS", false)
-	printEnvVar("GI_API_KEY_ADMIN", true)
-	printEnvVar("GI_API_KEY_USER", true)
+	printEnvVar("GI_API_KEY", true)
 	printEnvVar("GI_LLAMA_EXE", false)
 
 	slog.Info("-----------------------------")
@@ -157,25 +156,14 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 		return nil
 	}
 
-	// Ensure admin API key exists
-	_, exists := cfg.Server.APIKeys["admin"]
-	if !exists {
-		slog.Error("Admin API key is missing")
-		return gie.ErrAPIKeyMissing
-	}
-
-	// Check API keys
-	for k, v := range cfg.Server.APIKeys {
-		if strings.Contains(v, "Please") {
-			slog.Error("Please set your private", "key", k)
-			return gie.New(gie.ConfigErr, "API key not set, please set your private '"+k+"' API key")
+	// Check API key
+	if cfg.Server.APIKey == "" || strings.Contains(cfg.Server.APIKey, "Please") {
+		return gie.New(gie.ConfigErr, "API key not set, please set your private API key")
 		}
-
-		if v == debugAPIKey {
-			slog.Warn("API key is DEBUG => security threat", "key", k)
-		} else if len(v) < 64 {
-			slog.Warn("API key should be 64+ hex digits", "key", k, "len", len(v))
-		}
+	if cfg.Server.APIKey == debugAPIKey {
+		slog.Warn("API key is DEBUG => security threat")
+	} else if len(cfg.Server.APIKey) < 64 {
+		slog.Warn("API key should be 64+ hex digits", "len", len(cfg.Server.APIKey))
 	}
 
 	return nil

@@ -79,22 +79,10 @@ func (cfg *Cfg) applyEnvVars() {
 		slog.Debug("use", "GI_ORIGINS", origins)
 	}
 
-	// Load user API key from environment
-	if key := os.Getenv("GI_API_KEY_USER"); key != "" {
-		if cfg.Server.APIKeys == nil {
-			cfg.Server.APIKeys = make(map[string]string, 2)
-		}
-		cfg.Server.APIKeys["user"] = key
-		slog.Debug("set api_key[user] = GI_API_KEY_USER")
-	}
-
-	// Load admin API key from environment
-	if key := os.Getenv("GI_API_KEY_ADMIN"); key != "" {
-		if cfg.Server.APIKeys == nil {
-			cfg.Server.APIKeys = make(map[string]string, 1)
-		}
-		cfg.Server.APIKeys["admin"] = key
-		slog.Debug("set api_key[admin] = GI_API_KEY_ADMIN")
+	// Load API key from environment
+	if key := os.Getenv("GI_API_KEY"); key != "" {
+		cfg.Server.APIKey = key
+		slog.Debug("set api_key = GI_API_KEY")
 	}
 
 	if exe := os.Getenv("GI_LLAMA_EXE"); exe != "" {

@@ -221,7 +221,7 @@ llama:
     goinfer: "--jinja --chat-template-file template.jinja"
 ```
 
-- **API keys** – Never commit them. Use env. vars `GI_API_KEY_ADMIN` `GI_API_KEY_USER` or a secrets manager in production.
+- **API keys** – Never commit them. Use env. var. `GI_API_KEY` or a secrets manager in production.
 - **Origins** – Set to the domains you’ll be calling the server from (including `localhost` for testing).
 - **Ports** – Adjust as needed; make sure the firewall on the server allows them.
 
@@ -393,7 +393,7 @@ curl -X GET https://my-goinfer-server.com/v1/models
 
 # pick up a model and prompt it
 curl -X POST https://my-goinfer-server.com/v1/chat/completions \
-  -H "Authorization: Bearer $GI_API_KEY_ADMIN"                 \
+  -H "Authorization: Bearer $GI_API_KEY"                       \
   -d '{                                                        \
         "model":"Qwen2.5-1.5B-Instruct-Q4_K_M",                \
         "messages":[{"role":"user",                            \

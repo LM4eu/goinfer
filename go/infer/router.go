@@ -28,9 +28,7 @@ type Infer struct {
 }
 
 // NewEcho creates a new Echo server configured with Goinfer routes and middleware.
-func (inf *Infer) NewEcho(cfg *conf.Cfg, addr string,
-	enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint bool,
-) *echo.Echo {
+func (inf *Infer) NewEcho(addr string) *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true
 
@@ -44,9 +42,9 @@ func (inf *Infer) NewEcho(cfg *conf.Cfg, addr string,
 	}
 
 	// Middleware CORS
-	if cfg.Server.Origins != "" {
+	if inf.Cfg.Server.Origins != "" {
 		e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-			AllowOrigins:     strings.Split(cfg.Server.Origins, ","),
+			AllowOrigins:     strings.Split(inf.Cfg.Server.Origins, ","),
 			AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAuthorization},
 			AllowMethods:     []string{http.MethodGet, http.MethodOptions, http.MethodPost},
 			AllowCredentials: true,
@@ -64,31 +62,25 @@ func (inf *Infer) NewEcho(cfg *conf.Cfg, addr string,
 		}
 	})
 
-	// ------------ /models ------------
-	if enableModelsEndpoint {
-		grp := e.Group("/models")
-		configureAPIKeyAuth(grp, cfg, "model")
-		grp.GET("", inf.modelsHandler)
+	grp := e.Group("/")
+	inf.configureAPIKeyAuth(grp)
+
+	// ---- /models -------------------
+	grp.GET("models", inf.modelsHandler)
+
+	// ----- /completion --------------
+	grp.POST("completion", inf.completionHandler) // legacy
+	grp.POST("completions", inf.completionHandler)
+	grp.POST("v1/chat/completions", inf.chatCompletionsHandler) // OpenAI API
+
+	// ---- /abort --------------
+	grp.GET("abort", inf.abortHandler) // abort all running inferences
+
 		slog.Info("Listen", "GET", url(addr, "/models"))
-	}
-
-	// ----- /infer -----
-	if enableGoinferEndpoint {
-		grp := e.Group("/infer")
-		configureAPIKeyAuth(grp, cfg, "goinfer")
-		grp.POST("", inf.inferHandler)
-		grp.GET("/abort", inf.abortHandler)
-		slog.Info("Listen", "POST", url(addr, "/infer"))
-		slog.Info("Listen", "GET", url(addr, "/infer/abort"))
-	}
-
-	// ----- /v1/* -----
-	if enableOpenAPIEndpoint {
-		grp := e.Group("/v1")
-		configureAPIKeyAuth(grp, cfg, "openai")
-		grp.POST("/chat/completions", inf.handleChatCompletions)
-		slog.Info("Listen", "POST", url(addr, "/v1/chat/completions"), "service", "openai")
-	}
+	slog.Info("Listen", "POST", url(addr, "/completion (legacy)"))
+	slog.Info("Listen", "POST", url(addr, "/completions"))
+	slog.Info("Listen", "POST", url(addr, "/v1/chat/completions (OpenAI API)"))
+	slog.Info("Listen", "GET", url(addr, "/abort (abort all running inferences)"))
 
 	return e
 }
@@ -102,31 +94,17 @@ func url(addr, endpoint string) string {
 }
 
 // configureAPIKeyAuth sets up API‑key authentication for a grp.
-func configureAPIKeyAuth(grp *echo.Group, cfg *conf.Cfg, service string) {
-	// Select the API key with preference order
-	key, exists := cfg.Server.APIKeys[service]
-	if !exists {
-		key, exists = cfg.Server.APIKeys["user"]
-		if !exists {
-			key, exists = cfg.Server.APIKeys["admin"]
-			if !exists {
-				slog.Warn("No API key => disable API key security", "service", service)
-				return
-			}
-		}
-	}
-
-	if key == "" {
-		slog.Warn("Empty API key => disable API key for service", "service", service)
+func (inf *Infer) configureAPIKeyAuth(grp *echo.Group) {
+	if inf.Cfg.Server.APIKey == "" {
+		slog.Warn("Empty API key => disable API key security")
 		return
 	}
 
 	grp.Use(middleware.KeyAuth(func(received_key string, _ echo.Context) (bool, error) {
-		if received_key == key {
+		if received_key == inf.Cfg.Server.APIKey {
 			return true, nil
 		}
-
-		slog.Warn("Received API key is NOT the configured for", "service", service, "len(received)", len(received_key), "len(expected)", len(key))
+		slog.Warn("Mismatched API key", "len(received)", len(received_key), "len(expected)", len(inf.Cfg.Server.APIKey))
 		return false, nil
 	}))
 }

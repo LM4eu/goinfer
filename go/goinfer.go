@@ -105,7 +105,7 @@ func getCfg() *conf.Cfg {
 
 	// command line precedes config file
 	if *noAPIKey {
-		cfg.Server.APIKeys = nil
+		cfg.Server.APIKey = ""
 	}
 
 	if *debug {
@@ -148,25 +148,14 @@ func startServers(cfg *conf.Cfg) {
 func startEchoServers(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group, proxyMan *proxy.ProxyManager) {
 	inf := &infer.Infer{Cfg: cfg, ProxyMan: proxyMan}
 	for addr, services := range cfg.Server.Listen {
-		if strings.Contains(services, "swap") {
-			continue // reserved for llama-swap
+		if !strings.Contains(services, "infer") {
+			continue
 		}
 
-		enableModelsEndpoint := strings.Contains(services, "model")
-		enableGoinferEndpoint := strings.Contains(services, "goinfer")
-		enableOpenAPIEndpoint := strings.Contains(services, "openai")
-
-		if !enableModelsEndpoint && !enableGoinferEndpoint && !enableOpenAPIEndpoint {
-			slog.ErrorContext(ctx, "Unexpected", "service", services)
-			os.Exit(1)
-		}
-
-		e := inf.NewEcho(cfg, addr, enableModelsEndpoint, enableGoinferEndpoint, enableOpenAPIEndpoint)
+		e := inf.NewEcho(addr)
 		if e != nil {
 			grp.Go(func() error {
-				slog.InfoContext(ctx, "start Echo", "url", url(addr), "origins", cfg.Server.Origins,
-					"models", enableModelsEndpoint,
-					"goinfer", enableGoinferEndpoint, "openai", enableOpenAPIEndpoint)
+				slog.InfoContext(ctx, "start Echo", "url", url(addr), "origins", cfg.Server.Origins)
 				return startEcho(ctx, e, addr)
 			})
 		}
