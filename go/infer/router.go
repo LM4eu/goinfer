@@ -5,8 +5,10 @@
 package infer
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 
@@ -28,7 +30,7 @@ type Infer struct {
 }
 
 // NewEcho creates a new Echo server configured with Goinfer routes and middleware.
-func (inf *Infer) NewEcho(addr string) *echo.Echo {
+func (inf *Infer) NewEcho() *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true
 
@@ -85,12 +87,34 @@ func (inf *Infer) NewEcho(addr string) *echo.Echo {
 	return e
 }
 
-func url(addr, endpoint string) string {
-	url := "http://"
+// PrintRoutes creates a new Echo server configured with Goinfer routes and middleware.
+func PrintRoutes(e *echo.Echo, addr string) {
+	routes := e.Routes()
+
+	wide := 0
+	sort.Slice(routes, func(i, j int) bool {
+		wide = max(wide, len(routes[i].Path))
+		// sort by Method and by Path
+		if routes[i].Method == routes[j].Method {
+			return routes[i].Path < routes[j].Path
+		}
+		return routes[i].Method < routes[j].Method
+	})
+
 	if addr != "" && addr[0] == ':' {
-		url += "localhost"
+		addr = "http://localhost" + addr
+	} else {
+		addr = "http://" + addr
 	}
-	return url + addr + endpoint
+	wide += len(addr)
+
+	var sb strings.Builder
+	for _, route := range routes {
+		line := fmt.Sprintf("%-5s %-*s %s\n", route.Method, wide, addr+route.Path, route.Name)
+		_, _ = sb.WriteString(line)
+	}
+
+	slog.Info("routes:\n" + sb.String())
 }
 
 // configureAPIKeyAuth sets up API‑key authentication for a grp.

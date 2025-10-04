@@ -145,10 +145,3 @@ func TestModelsHandler_Empty(t *testing.T) {
 	require.Contains(t, string(body), `"count":0`)
 	require.Contains(t, string(body), `"models":{}`)
 }
-
-// Test the url helper builds the correct address.
-func TestURLHelper(t *testing.T) {
-	t.Parallel()
-	require.Equal(t, "http://localhost:8080/test", url(":8080", "/test"))
-	require.Equal(t, "http://127.0.0.1:9090/api", url("127.0.0.1:9090", "/api"))
-}

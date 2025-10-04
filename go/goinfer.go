@@ -152,13 +152,12 @@ func startEchoServers(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group, p
 			continue
 		}
 
-		e := inf.NewEcho(addr)
-		if e != nil {
-			grp.Go(func() error {
-				slog.InfoContext(ctx, "start Echo", "url", url(addr), "origins", cfg.Origins)
-				return startEcho(ctx, e, addr)
-			})
-		}
+		e := inf.NewEcho()
+		infer.PrintRoutes(e, addr)
+		grp.Go(func() error {
+			slog.InfoContext(ctx, "start Echo", "url", url(addr), "origins", cfg.Origins)
+			return startEcho(ctx, e, addr)
+		})
 	}
 }
 

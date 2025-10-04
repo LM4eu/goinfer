@@ -20,7 +20,7 @@ func TestNewEcho(t *testing.T) {
 	}
 
 	inf := &Infer{Cfg: cfg}
-	e := inf.NewEcho(":0")
+	e := inf.NewEcho()
 	if e == nil {
 		t.Fatalf("NewEcho returned nil")
 	}
