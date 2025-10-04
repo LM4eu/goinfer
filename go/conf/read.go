@@ -66,10 +66,14 @@ func (cfg *Cfg) load(mainCfg string) error {
 // applyEnvVars read optional env vars to change the configuration.
 // The environment variables precede the config file.
 func (cfg *Cfg) applyEnvVars() {
-	// Load environment variables
 	if dir := os.Getenv("GI_MODELS_DIR"); dir != "" {
 		cfg.ModelsDir = dir
 		slog.Debug("use", "GI_MODELS_DIR", dir)
+	}
+
+	if def := os.Getenv("GI_DEFAULT_MODEL"); def != "" {
+		cfg.DefaultModel = def
+		slog.Debug("use", "GI_DEFAULT_MODEL", def)
 	}
 
 	if host := os.Getenv("GI_HOST"); host != "" {
@@ -82,7 +86,6 @@ func (cfg *Cfg) applyEnvVars() {
 		slog.Debug("use", "GI_ORIGINS", origins)
 	}
 
-	// Load API key from environment
 	if key := os.Getenv("GI_API_KEY"); key != "" {
 		cfg.APIKey = key
 		slog.Debug("set api_key = GI_API_KEY")

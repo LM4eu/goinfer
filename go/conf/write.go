@@ -21,6 +21,7 @@ import (
 func (cfg *Cfg) WriteMainCfg(mainCfg string, debug, noAPIKey bool) error {
 	cfg.setAPIKeys(debug, noAPIKey)
 	cfg.applyEnvVars()
+	cfg.setDefaultModel()
 	cfg.trimParamValues()
 
 	yml, err := yaml.Marshal(&cfg)
@@ -67,9 +68,67 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 		"cmd-infer":  cfg.Llama.Exe + " " + common + " --port ${PORT} " + infer,
 	}
 
-	info, err := cfg.search()
+	_, err := cfg.setSwapModels()
 	if err != nil {
 		return err
+	}
+
+	err = cfg.ValidateSwap()
+	if err != nil {
+		return err
+	}
+
+	yml, er := yaml.Marshal(&cfg.Swap)
+	if er != nil {
+		return gie.Wrap(er, gie.ConfigErr, "failed to marshal the llama-swap config")
+	}
+
+	err = writeWithHeader(swapCfg, "# Doc: https://github.com/mostlygeek/llama-swap/wiki/Configuration", yml)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (cfg *Cfg) setDefaultModel() {
+	info, err := cfg.setSwapModels()
+	if err != nil {
+		return
+	}
+
+	_, ok := cfg.Swap.Models[cfg.DefaultModel]
+	if ok {
+		return // DefaultModel is valid
+	}
+
+	minSize := int64(math.MaxInt64)
+	minName := ""
+	for model, mi := range info {
+		if minSize > mi.Size {
+			minSize = mi.Size
+			minName = model
+		}
+
+		if !strings.Contains(mi.Path, cfg.DefaultModel) {
+			continue
+		}
+
+		slog.Info("overwrite default_model", "old", cfg.DefaultModel, "new", model)
+		cfg.DefaultModel = model
+		return
+	}
+
+	if cfg.DefaultModel != "" {
+		slog.Info("overwrite default_model", "old", cfg.DefaultModel, "new", minName)
+	}
+	cfg.DefaultModel = minName
+}
+
+func (cfg *Cfg) setSwapModels() (map[string]ModelInfo, error) {
+	info, err := cfg.search()
+	if err != nil {
+		return nil, err
 	}
 
 	if cfg.Swap.Models == nil {
@@ -113,22 +172,7 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 		cfg.addModelCfg("GI_"+name, "${cmd-infer}"+args, goinferCfg) //
 	}
 
-	err = cfg.ValidateSwap()
-	if err != nil {
-		return err
-	}
-
-	yml, er := yaml.Marshal(&cfg.Swap)
-	if er != nil {
-		return gie.Wrap(er, gie.ConfigErr, "failed to marshal the llama-swap config")
-	}
-
-	err = writeWithHeader(swapCfg, "# Doc: https://github.com/mostlygeek/llama-swap/wiki/Configuration", yml)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return info, nil
 }
 
 // Add the model settings within the llama-swap configuration.

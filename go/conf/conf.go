@@ -19,14 +19,15 @@ import (
 
 type (
 	Cfg struct {
-		Llama     Llama             `json:"llama"              yaml:"llama"`
-		Templates map[string]string `json:"templates,omitzero" yaml:"templates,omitempty"`
-		Listen    map[string]string `json:"listen"             yaml:"listen"`
-		ModelsDir string            `json:"models_dir"         yaml:"models_dir"`
-		APIKey    string            `json:"api_key"            yaml:"api_key"`
-		Host      string            `json:"host"               yaml:"host"`
-		Origins   string            `json:"origins"            yaml:"origins"`
-		Swap      config.Config     `json:"swap,omitzero"      yaml:"swap,omitempty"`
+		Llama        Llama             `json:"llama"              yaml:"llama"`
+		Templates    map[string]string `json:"templates,omitzero" yaml:"templates,omitempty"`
+		Listen       map[string]string `json:"listen"             yaml:"listen"`
+		ModelsDir    string            `json:"models_dir"         yaml:"models_dir"`
+		DefaultModel string            `json:"default_model"      yaml:"default_model"`
+		APIKey       string            `json:"api_key"            yaml:"api_key"`
+		Host         string            `json:"host"               yaml:"host"`
+		Origins      string            `json:"origins"            yaml:"origins"`
+		Swap         config.Config     `json:"swap,omitzero"      yaml:"swap,omitempty"`
 	}
 
 	Llama struct {
@@ -48,9 +49,10 @@ const (
 
 var (
 	DefaultCfg = Cfg{
-		ModelsDir: "/home/me/models",
-		APIKey:    "",
-		Host:      "",
+		ModelsDir:    "/home/me/models",
+		DefaultModel: "ggml-org/Qwen2.5-Coder-1.5B-Q8_0-GGUF",
+		APIKey:       "",
+		Host:         "",
 		Listen: map[string]string{
 			":4444": "infer",
 			":5555": "llama-swap",
@@ -108,6 +110,7 @@ func (cfg *Cfg) Print() {
 	slog.Info("-----------------------------")
 
 	printEnvVar("GI_MODELS_DIR", false)
+	printEnvVar("GI_DEFAULT_MODEL", false)
 	printEnvVar("GI_HOST", false)
 	printEnvVar("GI_ORIGINS", false)
 	printEnvVar("GI_API_KEY", true)
