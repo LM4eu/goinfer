@@ -39,7 +39,7 @@ const (
 	// Sentence: Coffee is cool, so coffee is good. Bad code is dead, lol. Cafe gift, go cafe, test code.
 	// Hex code: C0ffee 15 C001, 50 C0ffee 15 900d. Bad C0de 15 Dead, 101. Cafe 91f7, 90 Cafe, 7e57 C0de.
 	debugAPIKey = "C0ffee15C00150C0ffee15900dBadC0de15Dead101Cafe91f790Cafe7e57C0de"
-	unsetAPIKey = "Please ⚠️ Set your private 64-hex-digit API keys (32 bytes)"
+	unsetAPIKey = "Please ⚠️ Set your private 64-hex-digit API key (32 bytes)"
 
 	// Arguments for llama-server command line.
 	argsCommon = "--props --no-warmup"
@@ -147,7 +147,7 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 	}
 
 	if noAPIKey {
-		slog.Info("Flag -no-api-key => Do not verify API keys.")
+		slog.Info("Flag -no-api-key => Do not verify API key.")
 		return nil
 	}
 

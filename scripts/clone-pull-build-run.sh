@@ -30,7 +30,8 @@ set the GI_MODELS_DIR. This also speeds up the script (disables GUFF files searc
 
   export GI_MODELS_DIR=/home/me/models:/home/me/other/path
 
-The [goinfer flags] are passed to goinfer, so you can run Goinfer without API keys:
+The [goinfer flags] are passed to goinfer.
+For example, to run Goinfer in local without API key:
 
   ~/repo/goinfer/scripts/clone-pull-build-run.sh -no-api-key
 

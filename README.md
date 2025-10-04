@@ -26,7 +26,7 @@ Category            | Feature
 --------------------|----------
 **Model handling**  | Load multiple `*.gguf` models, switch at runtime, change any inference parameter
 **API**             | OpenAI‑compatible HTTP API `/v1/`, LLama.cpp-compatible `/completions` API, streaming responses
-**Security**        | Per‑role API keys (`admin`, `user`), CORS control
+**Security**        | API key, CORS control
 **Robustness**      | Independent of ISP‑provided IP, graceful reconnects
 **Admin control**   | Remote monitoring, delete/upload new GGUF files, reload config, `git pull llama.cpp`, re‑compile
 **Home-hosted LLM** | Run Goinfer on your GPU desktop and another Goinfer in a data‑center (static IP/DNS)
@@ -166,14 +166,14 @@ Disable Gin debug logs:
 export GIN_MODE=release 
 ```
 
-### API keys
+### API key
 
-The flag `-gen` also generates two random API keys in `goinfer.yml`.
+The flag `-gen` also generates a random API key in `goinfer.yml`.
 This flag can be combined with:
 
-- `-debug` to set the debug API key (only during the dev cycle)
+- `-debug` sets the debug API key (only during the dev cycle)
 
-- `-no-api-key` to replace API keys by "Please ⚠️ Set your API keys"
+- `-no-api-key` sets the API key with "Please ⚠️ Set your API key"
     admin: "PLEASE
 
 Set the Authorization header within the HTTP request:
@@ -191,11 +191,9 @@ curl -X POST https://localhost:4444/completions  \
 # List your GGUF dirs with `locate .gguf | sed -e 's,/[^/]*$,,' | uniq`
 models_dir: /home/me/models 
 
-api_key:
-  # ⚠️ Set your API keys, can be 64‑hex‑digit (32‑byte) 🚨
-  # Generate these random API keys with: ./goinfer -gen
-  admin: "PLEASE SET ADMIN API KEY"
-  user:  "PLEASE SET USER API KEY"
+# ⚠️ Set your API key, can be 64‑hex‑digit (32‑byte) 🚨
+# Generate these random API key with: ./goinfer -gen
+api_key: "PLEASE SET USER API KEY"
 origins:   # CORS whitelist
   - "https://my‑frontend.example.com"
   - "http://localhost"
@@ -214,7 +212,7 @@ llama:
     infer: "--jinja --chat-template-file template.jinja"
 ```
 
-- **API keys** – Never commit them. Use env. var. `GI_API_KEY` or a secrets manager in production.
+- **API key** – Never commit them. Use env. var. `GI_API_KEY` or a secrets manager in production.
 - **Origins** – Set to the domains you’ll be calling the server from (including `localhost` for testing).
 - **Ports** – Adjust as needed; make sure the firewall on the server allows them.
 

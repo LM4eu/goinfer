@@ -19,10 +19,9 @@ import (
 // WriteMainCfg populates the configuration with defaults, applies environment variables,
 // writes the resulting configuration to the given file, and mutates the receiver.
 func (cfg *Cfg) WriteMainCfg(mainCfg string, debug, noAPIKey bool) error {
+	cfg.setAPIKeys(debug, noAPIKey)
 	cfg.applyEnvVars()
 	cfg.trimParamValues()
-
-	cfg.setAPIKeys(debug, noAPIKey)
 
 	yml, err := yaml.Marshal(&cfg)
 	if err != nil {
@@ -148,23 +147,18 @@ func (cfg *Cfg) addModelCfg(modelName, cmd string, mc *config.ModelConfig) {
 }
 
 func (cfg *Cfg) setAPIKeys(debug, noAPIKey bool) {
-	if cfg.APIKey == "" {
-		slog.Info("Configuration file uses API keys from environment")
-		return
-	}
-
 	switch {
 	case noAPIKey:
 		cfg.APIKey = unsetAPIKey
-		slog.Info("Flag -no-api-key => Do not generate API keys")
+		slog.Info("Flag -no-api-key => Do not generate API key")
 
 	case debug:
 		cfg.APIKey = debugAPIKey
-		slog.Warn("API keys are DEBUG => security threat")
+		slog.Warn("API key is DEBUG => security threat")
 
 	default:
 		cfg.APIKey = gen64HexDigits()
-		slog.Info("Generated random secured API keys")
+		slog.Info("Generated random secured API key")
 	}
 }
 
