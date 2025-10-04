@@ -56,16 +56,23 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	if !ok {
 		common = argsCommon
 	}
+	common = " " + strings.TrimSpace(common)
 
 	infer, ok := cfg.Llama.Args["infer"]
 	if !ok {
 		infer = argsInfer
 	}
+	infer = " " + strings.TrimSpace(infer)
+
+	v := ""
+	if debug {
+		v = " -v "
+	}
 
 	cfg.Swap.Macros = map[string]string{
-		"cmd-fim":    cfg.Llama.Exe + " " + common,
-		"cmd-openai": cfg.Llama.Exe + " " + common + " --port ${PORT}",
-		"cmd-infer":  cfg.Llama.Exe + " " + common + " --port ${PORT} " + infer,
+		"cmd-fim":    cfg.Llama.Exe + v + common,
+		"cmd-openai": cfg.Llama.Exe + v + common + " --port ${PORT}",
+		"cmd-infer":  cfg.Llama.Exe + v + common + " --port ${PORT}" + infer,
 	}
 
 	_, err := cfg.setSwapModels()
