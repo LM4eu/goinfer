@@ -79,32 +79,6 @@ var (
 	}
 )
 
-func (cfg *Cfg) SetLogLevel(verbose, debug bool) {
-	switch {
-	case debug:
-		slog.SetLogLoggerLevel(slog.LevelDebug)
-	case verbose:
-		slog.SetLogLoggerLevel(slog.LevelInfo)
-	case cfg.Swap.LogLevel == "error":
-		slog.SetLogLoggerLevel(slog.LevelError)
-	default:
-		slog.SetLogLoggerLevel(slog.LevelWarn)
-	}
-}
-
-func (cfg *Cfg) SetLogSwap(verbose, debug bool) {
-	switch {
-	case debug:
-		cfg.Swap.LogLevel = "debug"
-	default:
-		fallthrough
-	case verbose:
-		cfg.Swap.LogLevel = "info"
-	case cfg.Swap.LogLevel != "error":
-		cfg.Swap.LogLevel = "warn"
-	}
-}
-
 // Print configuration.
 func (cfg *Cfg) Print() {
 	slog.Info("-----------------------------")
