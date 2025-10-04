@@ -108,6 +108,9 @@ func (inf *Infer) NewEcho() *echo.Echo {
 	// ---- /abort --------------
 	grp.GET("abort", inf.abortHandler) // abort any running inference
 
+	grp.GET("favicon.ico", func(c echo.Context) error { return c.Blob(http.StatusOK, "image/svg+xml", favicon) })
+	grp.GET("favicon.svg", func(c echo.Context) error { return c.Blob(http.StatusOK, "image/svg+xml", favicon) })
+
 	return e
 }
 
