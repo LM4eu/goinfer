@@ -78,20 +78,35 @@ func (inf *Infer) NewEcho() *echo.Echo {
 
 	// ---- /models -------------------
 	grp.GET("models", inf.modelsHandler)
+	grp.GET("v1/models", inf.listModelsHandler)
+
+	// ----- state -----------------
+	grp.GET("health", func(c echo.Context) error { return nil })
+	grp.GET("logs/stream", inf.streamLogsHandler)
+	grp.GET("props", inf.proxyToFirstRunningProcess)
+	grp.GET("running", inf.listRunningProcessesHandler)
+	grp.GET("unload", inf.unloadAllModelsHandler)
 
 	// ----- /completion --------------
-	grp.POST("completion", inf.completionHandler) // legacy
-	grp.POST("completions", inf.completionHandler)
+	grp.POST("completion", inf.completionHandler)  // llama.cpp API (legacy)
+	grp.POST("completions", inf.completionHandler) // llama.cpp API
+	grp.POST("v1/audio/speech", inf.proxyOAIHandler)
+	grp.POST("v1/audio/transcriptions", inf.proxyOAIPostFormHandler)
 	grp.POST("v1/chat/completions", inf.chatCompletionsHandler) // OpenAI API
+	grp.POST("v1/completions", inf.proxyOAIHandler)
+
+	// ----- /rerank ------------------
+	grp.POST("rerank", inf.proxyOAIHandler)
+	grp.POST("reranking", inf.proxyOAIHandler)
+	grp.POST("v1/rerank", inf.proxyOAIHandler)
+	grp.POST("v1/reranking", inf.proxyOAIHandler)
+
+	// ----- /infill -----------------
+	grp.POST("infill", inf.proxyOAIHandler)
+	grp.POST("v1/embeddings", inf.proxyOAIHandler)
 
 	// ---- /abort --------------
-	grp.GET("abort", inf.abortHandler) // abort all running inferences
-
-	slog.Info("Listen", "GET", url(addr, "/models"))
-	slog.Info("Listen", "POST", url(addr, "/completion (legacy)"))
-	slog.Info("Listen", "POST", url(addr, "/completions"))
-	slog.Info("Listen", "POST", url(addr, "/v1/chat/completions (OpenAI API)"))
-	slog.Info("Listen", "GET", url(addr, "/abort (abort all running inferences)"))
+	grp.GET("abort", inf.abortHandler) // abort any running inference
 
 	return e
 }

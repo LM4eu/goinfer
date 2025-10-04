@@ -301,15 +301,22 @@ groups:
 
 Each service can be enabled/disabled in `goinfer.yml`.
 
-Path                  | Method | Description
-----------------------|--------|------------
-`/`                   |  GET   | llama.cpp Web UI
-`/ui`                 |  GET   | llama-swap Web UI
-`/models`             |  GET   | List available GGUF models
-`/completions`        |  POST  | Llama.cpp inference API
-`/v1/models`          |  GET   | List models from Swap config
-`/v1/chat/completions`|  POST  | OpenAI‑compatible chat endpoint
-`/v1/*`               |  POST  | Other OpenAI endpoints
+Method | Path                   | Description
+-------|------------------------|------------
+GET    | `/`                    | llama.cpp Web UI
+GET    | `/ui`                  | llama-swap Web UI
+GET    | `/models`              | List available GGUF models
+POST   | `/completions`         | Llama.cpp inference API
+GET    | `/v1/models`           | List models by llama-swap
+POST   | `/v1/chat/completions` | OpenAI‑compatible chat endpoint
+POST   | `/v1/*`                | Other OpenAI endpoints
+POST   | `/rerank` `/v1/rerank` | Reorder or answer questions about a document
+POST   | `/infill`              | Auto-complete source code (or other edition)
+GET    | `/logs` `/logs/stream` | Retrieve the llama-swap or llama.cpp logs
+GET    | `/props`               | Get the llama.cpp settings
+GET    | `/unload`              | Stop all inference engines
+GET    | `/running`             | List the running inference engines
+GET    | `/health`              | Check if everything is OK
 
 All endpoints require an `Authorization: Bearer $GI_API_KEY` header.
 

@@ -97,7 +97,7 @@ func (inf *Infer) completionHandler(c echo.Context) error {
 	ginCtx.Request.URL.Path = "/completions"
 
 	if inf.ProxyMan == nil {
-		return gie.New(gie.InferErr, "no proxy manager configured")
+		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
 	}
 	inf.ProxyMan.ProxyOAIHandler(ginCtx)
 	return nil
@@ -125,9 +125,65 @@ func (inf *Infer) chatCompletionsHandler(c echo.Context) error {
 	ginCtx.Request.URL.Path = "/v1/chat/completions"
 
 	if inf.ProxyMan == nil {
-		return gie.New(gie.InferErr, "no proxy manager configured")
+		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
 	}
 	inf.ProxyMan.ProxyOAIHandler(ginCtx)
+	return nil
+}
+
+func (inf *Infer) proxyOAIHandler(c echo.Context) error {
+	if inf.ProxyMan == nil {
+		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
+	}
+	inf.ProxyMan.ProxyOAIHandler(echo2gin(c))
+	return nil
+}
+
+func (inf *Infer) proxyOAIPostFormHandler(c echo.Context) error {
+	if inf.ProxyMan == nil {
+		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
+	}
+	inf.ProxyMan.ProxyOAIPostFormHandler(echo2gin(c))
+	return nil
+}
+
+func (inf *Infer) listModelsHandler(c echo.Context) error {
+	if inf.ProxyMan == nil {
+		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
+	}
+	inf.ProxyMan.ListModelsHandler(echo2gin(c))
+	return nil
+}
+
+func (inf *Infer) streamLogsHandler(c echo.Context) error {
+	if inf.ProxyMan == nil {
+		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
+	}
+	inf.ProxyMan.StreamLogsHandler(echo2gin(c))
+	return nil
+}
+
+func (inf *Infer) proxyToFirstRunningProcess(c echo.Context) error {
+	if inf.ProxyMan == nil {
+		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
+	}
+	inf.ProxyMan.ProxyToFirstRunningProcess(echo2gin(c))
+	return nil
+}
+
+func (inf *Infer) listRunningProcessesHandler(c echo.Context) error {
+	if inf.ProxyMan == nil {
+		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
+	}
+	inf.ProxyMan.ListRunningProcessesHandler(echo2gin(c))
+	return nil
+}
+
+func (inf *Infer) unloadAllModelsHandler(c echo.Context) error {
+	if inf.ProxyMan == nil {
+		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
+	}
+	inf.ProxyMan.UnloadAllModelsHandler(echo2gin(c))
 	return nil
 }
 
