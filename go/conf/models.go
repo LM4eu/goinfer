@@ -202,7 +202,7 @@ func addGUFF(info map[string]ModelInfo, root, path string) error {
 
 	flags = replaceDIR(path, flags)
 
-	mi := ModelInfo{nil, flags, path, "", size}
+	mi := ModelInfo{Template: nil, Flags: flags, Path: path, Error: "", Size: size}
 	if old, ok := info[name]; ok {
 		slog.Warn("Duplicated models", "dir", root, "name", name, "old", old, "new", mi)
 		mi.Error = "two files have same model name (must be unique)"
