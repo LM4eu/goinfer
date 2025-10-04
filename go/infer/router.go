@@ -29,6 +29,15 @@ type Infer struct {
 	mu            sync.Mutex
 }
 
+const faviconStr = `<svg fill="none" stroke="#37b" viewBox="0 0 164 200" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="82" cy="126" rx="35" ry="43" stroke-width="5"/>
+  <ellipse cx="82" cy="122" rx="45" ry="55" stroke-width="6"/>
+  <ellipse cx="82" cy="113" rx="59" ry="73" stroke-width="7"/>
+  <ellipse cx="82" cy="100" rx="78" ry="96" stroke-width="8"/>
+</svg>`
+
+var favicon = []byte(faviconStr)
+
 // NewEcho creates a new Echo server configured with Goinfer routes and middleware.
 func (inf *Infer) NewEcho() *echo.Echo {
 	e := echo.New()
