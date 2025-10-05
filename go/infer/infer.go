@@ -146,41 +146,26 @@ func (inf *Infer) proxyOAIPostFormHandler(c echo.Context) error {
 }
 
 func (inf *Infer) listModelsHandler(c echo.Context) error {
-	if inf.ProxyMan == nil {
-		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
-	}
 	inf.ProxyMan.ListModelsHandler(echo2gin(c))
 	return nil
 }
 
 func (inf *Infer) streamLogsHandler(c echo.Context) error {
-	if inf.ProxyMan == nil {
-		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
-	}
 	inf.ProxyMan.StreamLogsHandler(echo2gin(c))
 	return nil
 }
 
 func (inf *Infer) proxyToFirstRunningProcess(c echo.Context) error {
-	if inf.ProxyMan == nil {
-		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
-	}
 	inf.ProxyMan.ProxyToFirstRunningProcess(echo2gin(c))
 	return nil
 }
 
 func (inf *Infer) listRunningProcessesHandler(c echo.Context) error {
-	if inf.ProxyMan == nil {
-		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
-	}
 	inf.ProxyMan.ListRunningProcessesHandler(echo2gin(c))
 	return nil
 }
 
 func (inf *Infer) unloadAllModelsHandler(c echo.Context) error {
-	if inf.ProxyMan == nil {
-		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
-	}
 	inf.ProxyMan.UnloadAllModelsHandler(echo2gin(c))
 	return nil
 }
