@@ -6,14 +6,9 @@
 package infer
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
-	"io"
 	"log/slog"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -23,11 +18,12 @@ import (
 
 // Query represents an inference task request.
 type Query struct {
-	Template   string `json:"template,omitempty" yaml:"template,omitempty"`
-	Model      string `json:"model,omitempty"    yaml:"model,omitempty"`
-	Completion        //nolint:embeddedstructfieldcheck // moving Completion on top will increase the size struct from 200 to 376 bytes
-	Ctx        int    `json:"ctx,omitempty"     yaml:"ctx,omitempty"`
-	Timeout    int    `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	ModelField
+	Completion
+
+	Template string `json:"template,omitempty" yaml:"template,omitempty"`
+	Ctx      int    `json:"ctx,omitempty"      yaml:"ctx,omitempty"`
+	Timeout  int    `json:"timeout,omitempty"  yaml:"timeout,omitempty"`
 }
 
 var defaultQuery = Query{
@@ -43,62 +39,54 @@ var defaultQuery = Query{
 		RepeatPenalty:    1.0,
 		Stop:             []string{"</s>"},
 	},
-	Model: "default",
-	Ctx:   2048,
+	ModelField: ModelField{
+		Model: "default",
+	},
+	Ctx:     2048,
+	Timeout: 30, // 30 seconds
 }
 
-// completionHandler handles infer requests.
+// completionHandler handles llama.cpp /completions endpoint.
 func (inf *Infer) completionHandler(c echo.Context) error {
-	query := defaultQuery
-	err := json.NewDecoder(c.Request().Body).Decode(&query)
-	if errors.Is(err, io.EOF) {
-		return gie.New(gie.NotFound, "the infer request is empty")
-	} else if err != nil {
-		return gie.Wrap(err, gie.Invalid, "expect JSON format (see documentation)")
+	msg := defaultQuery
+	err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.DefaultModel)
+	if err != nil {
+		return err
 	}
 
 	// use the template from the query or from the config if any
 	// replace {prompt} by the prompt from the query
-	prompt, ok := query.Prompt.(string) // TODO support []string
-	if ok {
-		if query.Template != "" {
-			query.Template = inf.Cfg.Templates[query.Model]
-		}
-		if query.Template != "" {
-			query.Prompt = strings.ReplaceAll(query.Template, "{prompt}", prompt)
-			query.Template = "" // remove from JSON request
-		}
-		// prompt parameter is mandatory
-		if query.Prompt == "" {
-			return gie.New(gie.Invalid, "mandatory prompt is empty in the /completions request")
-		}
-	} else if query.Prompt == nil {
-		return gie.New(gie.Invalid, "mandatory prompt field is missing in the /completions request")
+	prompt, ok := msg.Prompt.(string) // TODO support []string
+	if !ok {
+		return gie.New(gie.Invalid, "only support string for prompt (TODO support []string)", "the issue is in this /completions request", msg)
 	}
 
-	ginCtx := echo2gin(c)
+	// prompt parameter is mandatory
+	if msg.Prompt == "" {
+		return gie.New(gie.Invalid, "mandatory prompt is empty", "the issue is in this /completions request", msg)
+	}
 
-	if query.Timeout > 0 {
-		ctx, cancel := context.WithTimeout(ginCtx.Request.Context(), time.Duration(query.Timeout)*time.Second)
+	// apply template if any
+	if msg.Template != "" {
+		msg.Template = inf.Cfg.Templates[msg.Model]
+	}
+	if msg.Template != "" {
+		msg.Prompt = strings.ReplaceAll(msg.Template, "{prompt}", prompt)
+		msg.Template = "" // remove from JSON request
+	}
+
+	ginCtx, err := getGinCtx(c, &msg)
+	if err != nil {
+		return err
+	}
+
+	if msg.Timeout > 0 {
+		ctx, cancel := context.WithTimeout(ginCtx.Request.Context(), time.Duration(msg.Timeout)*time.Second)
 		defer cancel()
 		ginCtx.Request = ginCtx.Request.WithContext(ctx)
-		query.Timeout = 0 // remove from JSON request
+		msg.Timeout = 0 // remove from JSON request
 	}
 
-	body, err := json.Marshal(query)
-	if err != nil {
-		return gie.Wrap(err, gie.ServerErr, "failed to marshal infer request")
-	}
-
-	slog.Debug("JSON", "query", query)
-	_, _ = os.Stdout.Write(body)
-
-	ginCtx.Request.Body = io.NopCloser(bytes.NewBuffer(body))
-	ginCtx.Request.URL.Path = "/completions"
-
-	if inf.ProxyMan == nil {
-		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
-	}
 	inf.ProxyMan.ProxyOAIHandler(ginCtx)
 	return nil
 }
@@ -106,44 +94,50 @@ func (inf *Infer) completionHandler(c echo.Context) error {
 // chatCompletionsHandler handles the requests to the
 // /v1/chat/completions endpoint (OpenAI-compatible API).
 func (inf *Infer) chatCompletionsHandler(c echo.Context) error {
-	var query OpenaiChatCompletions
-	err := json.NewDecoder(c.Request().Body).Decode(&query)
-	if errors.Is(err, io.EOF) {
-		return gie.New(gie.NotFound, "the OpenAI request is empty")
-	} else if err != nil {
-		return gie.Wrap(err, gie.Invalid, "the request format is not OpenaiChatCompletions")
-	}
-
-	ginCtx := echo2gin(c)
-
-	body, err := json.Marshal(query)
+	var msg OpenaiChatCompletions
+	err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.DefaultModel)
 	if err != nil {
-		return gie.Wrap(err, gie.ServerErr, "failed to marshal infer request")
+		return err
 	}
 
-	ginCtx.Request.Body = io.NopCloser(bytes.NewBuffer(body))
-	ginCtx.Request.URL.Path = "/v1/chat/completions"
-
-	if inf.ProxyMan == nil {
-		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
+	ginCtx, err := getGinCtx(c, &msg)
+	if err != nil {
+		return err
 	}
+
 	inf.ProxyMan.ProxyOAIHandler(ginCtx)
 	return nil
 }
 
 func (inf *Infer) proxyOAIHandler(c echo.Context) error {
-	if inf.ProxyMan == nil {
-		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
+	var msg AnyBody
+	err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.DefaultModel)
+	if err != nil {
+		return err
 	}
-	inf.ProxyMan.ProxyOAIHandler(echo2gin(c))
+
+	ginCtx, err := getGinCtx(c, &msg)
+	if err != nil {
+		return err
+	}
+
+	inf.ProxyMan.ProxyOAIHandler(ginCtx)
 	return nil
 }
 
 func (inf *Infer) proxyOAIPostFormHandler(c echo.Context) error {
-	if inf.ProxyMan == nil {
-		return gie.New(gie.InferErr, "no proxy manager (llama-swap)")
+	var msg AnyBody
+	err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.DefaultModel)
+	if err != nil {
+		return err
 	}
-	inf.ProxyMan.ProxyOAIPostFormHandler(echo2gin(c))
+
+	ginCtx, err := getGinCtx(c, &msg)
+	if err != nil {
+		return err
+	}
+
+	inf.ProxyMan.ProxyOAIHandler(ginCtx)
 	return nil
 }
 

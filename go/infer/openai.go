@@ -19,6 +19,9 @@ type (
 	// - `stop` could also be a string, but the llama-server converts the Stop string into an array.
 	// - `n` is not proposed because, only `"n": 1` is supported.
 	OpenaiChatCompletions struct {
+		ModelField
+
+		Messages         []MessageParam    `json:"messages,omitzero,omitempty"`        // Messages.Content+Role are the single mandatory fields
 		ToolChoice       any               `json:"tool_choice,omitzero,omitempty"`     // can be: string AllowedToolChoice NamedToolChoice NamedToolChoiceCustom
 		FunctionCall     any               `json:"function_call,omitzero,omitempty"`   // can be: string FunctionCallOption
 		ResponseFormat   any               `json:"response_format,omitzero,omitempty"` // can be string ResponseFormatJSONSchemaParam ResponseFormatJSONObjectParam
@@ -32,9 +35,7 @@ type (
 		PromptCacheKey   string            `json:"prompt_cache_key,omitzero,omitempty"`
 		SafetyIdentifier string            `json:"safety_identifier,omitzero,omitempty"`
 		User             string            `json:"user,omitzero,omitempty"`
-		Model            string            `json:"model,omitzero,omitempty"`
 		Stop             []string          `json:"stop,omitzero,omitempty"` // can be string or []string
-		Messages         []MessageParam    `json:"messages,omitzero,omitempty"`
 		Modalities       []string          `json:"modalities,omitzero,omitempty"`
 		Functions        []Function        `json:"functions,omitzero,omitempty"`
 		Tools            []any             `json:"tools,omitzero,omitempty"` // array of FunctionTool and CustomTool
