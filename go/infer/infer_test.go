@@ -35,6 +35,7 @@ func TestConcurrencyGuard(t *testing.T) {
 	inf.mu.Lock()
 	inf.isInferring = true
 	inf.mu.Unlock()
+	inf.Cfg = &conf.Cfg{}
 
 	// Minimal request body – any valid JSON works; the handler will early‑exit
 	// because IsInferring is already true.
