@@ -95,7 +95,7 @@ func (cfg *Cfg) refineModelInfo(info map[string]ModelInfo, name string) {
 }
 
 // search returns a slice of absolute file paths for all *.gguf model files
-// found under the directories listed in cfg.ModelsDir (colon-separated).
+// found under the directories listed in cfg.Main.ModelsDir (colon-separated).
 // It walks each directory recursively, aggregates matching files,
 // and returns any error encountered.
 func (cfg *Cfg) search() (map[string]ModelInfo, error) {
@@ -103,7 +103,7 @@ func (cfg *Cfg) search() (map[string]ModelInfo, error) {
 	templates := map[string]TemplateInfo{}
 
 	// 1. collect templates.yml and GUFF files
-	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
+	for root := range strings.SplitSeq(cfg.Main.ModelsDir, ":") {
 		err := add(info, templates, strings.TrimSpace(root))
 		if err != nil {
 			slog.Debug("Searching model files", "root", root)
@@ -405,7 +405,7 @@ func (cfg *Cfg) ValidateSwap() error {
 	if len(cfg.Swap.Models) == 0 {
 		n := cfg.countModels()
 		if n == 0 {
-			return gie.New(gie.ConfigErr, "No *.gguf files found", "dir", cfg.ModelsDir)
+			return gie.New(gie.ConfigErr, "No *.gguf files found", "dir", cfg.Main.ModelsDir)
 		}
 		slog.Warn("No model configured => Restart Goinfer to refresh llama-swap.yml", "models", n)
 		return nil

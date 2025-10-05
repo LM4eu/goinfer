@@ -19,6 +19,11 @@ import (
 
 type (
 	Cfg struct {
+		Main GoinferYML    `json:"main"          yaml:"main"`
+		Swap config.Config `json:"swap,omitzero" yaml:"swap,omitempty"`
+	}
+
+	GoinferYML struct {
 		Llama        Llama             `json:"llama"              yaml:"llama"`
 		Templates    map[string]string `json:"templates,omitzero" yaml:"templates,omitempty"`
 		Listen       map[string]string `json:"listen"             yaml:"listen"`
@@ -27,7 +32,6 @@ type (
 		APIKey       string            `json:"api_key"            yaml:"api_key"`
 		Host         string            `json:"host"               yaml:"host"`
 		Origins      string            `json:"origins"            yaml:"origins"`
-		Swap         config.Config     `json:"swap,omitzero"      yaml:"swap,omitempty"`
 	}
 
 	Llama struct {
@@ -48,7 +52,7 @@ const (
 )
 
 var (
-	DefaultCfg = Cfg{
+	DefaultMain = GoinferYML{
 		ModelsDir:    "/home/me/models",
 		DefaultModel: "ggml-org/Qwen2.5-Coder-1.5B-Q8_0-GGUF",
 		APIKey:       "",
@@ -129,13 +133,13 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 	}
 
 	// Check API key
-	if cfg.APIKey == "" || strings.Contains(cfg.APIKey, "Please") {
+	if cfg.Main.APIKey == "" || strings.Contains(cfg.Main.APIKey, "Please") {
 		return gie.New(gie.ConfigErr, "API key not set, please set your private API key")
 	}
-	if cfg.APIKey == debugAPIKey {
+	if cfg.Main.APIKey == debugAPIKey {
 		slog.Warn("API key is DEBUG => security threat")
-	} else if len(cfg.APIKey) < 64 {
-		slog.Warn("API key should be 64+ hex digits", "len", len(cfg.APIKey))
+	} else if len(cfg.Main.APIKey) < 64 {
+		slog.Warn("API key should be 64+ hex digits", "len", len(cfg.Main.APIKey))
 	}
 
 	return nil
@@ -146,7 +150,7 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 //
 //nolint:revive // for better readability => do not rewrite with `if !c { continue }`
 func (cfg *Cfg) validatePorts() error {
-	for hostPort := range cfg.Listen {
+	for hostPort := range cfg.Main.Listen {
 		_, port, err := net.SplitHostPort(hostPort)
 		if err != nil {
 			slog.Error("Cannot split", "hostPort", hostPort, "err", err)

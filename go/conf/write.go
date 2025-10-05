@@ -60,13 +60,13 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	cfg.Swap.HealthCheckTimeout = 120
 	cfg.Swap.MetricsMaxInMemory = 500
 
-	common, ok := cfg.Llama.Args["common"]
+	common, ok := cfg.Main.Llama.Args["common"]
 	if !ok {
 		common = argsCommon
 	}
 	common = " " + strings.TrimSpace(common)
 
-	infer, ok := cfg.Llama.Args["infer"]
+	infer, ok := cfg.Main.Llama.Args["infer"]
 	if !ok {
 		infer = argsInfer
 	}
@@ -78,9 +78,9 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	}
 
 	cfg.Swap.Macros = map[string]string{
-		"cmd-fim":    cfg.Llama.Exe + v + common,
-		"cmd-openai": cfg.Llama.Exe + v + common + " --port ${PORT}",
-		"cmd-infer":  cfg.Llama.Exe + v + common + " --port ${PORT}" + infer,
+		"cmd-fim":    cfg.Main.Llama.Exe + v + common,
+		"cmd-openai": cfg.Main.Llama.Exe + v + common + " --port ${PORT}",
+		"cmd-infer":  cfg.Main.Llama.Exe + v + common + " --port ${PORT}" + infer,
 	}
 
 	_, err := cfg.setSwapModels()
@@ -112,7 +112,7 @@ func (cfg *Cfg) setDefaultModel() {
 		return
 	}
 
-	_, ok := cfg.Swap.Models[cfg.DefaultModel]
+	_, ok := cfg.Swap.Models[cfg.Main.DefaultModel]
 	if ok {
 		return // DefaultModel is valid
 	}
@@ -125,19 +125,19 @@ func (cfg *Cfg) setDefaultModel() {
 			minName = model
 		}
 
-		if !strings.Contains(mi.Path, cfg.DefaultModel) {
+		if !strings.Contains(mi.Path, cfg.Main.DefaultModel) {
 			continue
 		}
 
-		slog.Info("overwrite default_model", "old", cfg.DefaultModel, "new", model)
-		cfg.DefaultModel = model
+		slog.Info("overwrite default_model", "old", cfg.Main.DefaultModel, "new", model)
+		cfg.Main.DefaultModel = model
 		return
 	}
 
-	if cfg.DefaultModel != "" {
-		slog.Info("overwrite default_model", "old", cfg.DefaultModel, "new", minName)
+	if cfg.Main.DefaultModel != "" {
+		slog.Info("overwrite default_model", "old", cfg.Main.DefaultModel, "new", minName)
 	}
-	cfg.DefaultModel = minName
+	cfg.Main.DefaultModel = minName
 }
 
 func (cfg *Cfg) setSwapModels() (map[string]ModelInfo, error) {
@@ -208,15 +208,15 @@ func (cfg *Cfg) addModelCfg(modelName, cmd string, mc *config.ModelConfig) {
 func (cfg *Cfg) setAPIKeys(debug, noAPIKey bool) {
 	switch {
 	case noAPIKey:
-		cfg.APIKey = unsetAPIKey
+		cfg.Main.APIKey = unsetAPIKey
 		slog.Info("Flag -no-api-key => Do not generate API key")
 
 	case debug:
-		cfg.APIKey = debugAPIKey
+		cfg.Main.APIKey = debugAPIKey
 		slog.Warn("API key is DEBUG => security threat")
 
 	default:
-		cfg.APIKey = gen64HexDigits()
+		cfg.Main.APIKey = gen64HexDigits()
 		slog.Info("Generated random secured API key")
 	}
 }

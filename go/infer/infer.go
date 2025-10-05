@@ -19,11 +19,11 @@ import (
 // Query represents an inference task request.
 type Query struct {
 	ModelField
-	Completion
 
 	Template string `json:"template,omitempty" yaml:"template,omitempty"`
-	Ctx      int    `json:"ctx,omitempty"      yaml:"ctx,omitempty"`
-	Timeout  int    `json:"timeout,omitempty"  yaml:"timeout,omitempty"`
+	Completion
+	Ctx     int `json:"ctx,omitempty"     yaml:"ctx,omitempty"`
+	Timeout int `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 var defaultQuery = Query{
@@ -49,7 +49,7 @@ var defaultQuery = Query{
 // completionHandler handles llama.cpp /completions endpoint.
 func (inf *Infer) completionHandler(c echo.Context) error {
 	msg := defaultQuery
-	err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.DefaultModel)
+	err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.Main.DefaultModel)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (inf *Infer) completionHandler(c echo.Context) error {
 
 	// apply template if any
 	if msg.Template != "" {
-		msg.Template = inf.Cfg.Templates[msg.Model]
+		msg.Template = inf.Cfg.Main.Templates[msg.Model]
 	}
 	if msg.Template != "" {
 		msg.Prompt = strings.ReplaceAll(msg.Template, "{prompt}", prompt)
@@ -95,7 +95,7 @@ func (inf *Infer) completionHandler(c echo.Context) error {
 // /v1/chat/completions endpoint (OpenAI-compatible API).
 func (inf *Infer) chatCompletionsHandler(c echo.Context) error {
 	var msg OpenaiChatCompletions
-	err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.DefaultModel)
+	err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.Main.DefaultModel)
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func (inf *Infer) chatCompletionsHandler(c echo.Context) error {
 
 func (inf *Infer) proxyOAIHandler(c echo.Context) error {
 	var msg AnyBody
-	err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.DefaultModel)
+	err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.Main.DefaultModel)
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (inf *Infer) proxyOAIHandler(c echo.Context) error {
 
 func (inf *Infer) proxyOAIPostFormHandler(c echo.Context) error {
 	var msg AnyBody
-	err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.DefaultModel)
+	err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.Main.DefaultModel)
 	if err != nil {
 		return err
 	}

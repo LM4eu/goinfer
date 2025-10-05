@@ -37,13 +37,14 @@ func TestUnderlineToSlash(t *testing.T) {
 		in, want string
 	}{
 		{"team-org_model_name", "team-org/model_name"},
-		{"modelname", "modelname"},
+		{"model_name", "model/name"},
+		{"model-name", "model-name"},
 		{"abcdefgh_fr_8", "abcdefgh/fr_8"},
 		{"abcdefghi_fr_9", "abcdefghi/fr_9"},
 		{"abcdefghij_fr_10", "abcdefghij_fr_10"},
 		{"abcdefghijk_fr_11", "abcdefghijk_fr_11"},
 		{"abcdefghijkl_fr_12", "abcdefghijkl_fr_12"},
-		{"UIWEB_name", "UIWEB_name"},
+		{"UI_WEB_name", "UI_WEB_name"},
 		{"model1_2", "model1_2"},
 		{"model-1-2", "model-1-2"},
 		{"1234567890", "1234567890"},
@@ -63,10 +64,10 @@ func TestUnderlineToSlash(t *testing.T) {
 		{"/home/me/models/group/abcd-fr_llama-1", "abcd-fr/llama-1"},
 		{"/home/me/models/group/abcd-f_llama-1", "group/abcd-f_llama-1"},
 		{"/home/me/models/30b/abcd-f_llama-1", "abcd-f_llama-1"},
-		{"/home/me/models/mistralai/abcd-f_llama-1", "mistralai/abcd-f_llama-1"},
-		{"/home/me/models/mistralai/mistralai_llama-1", "mistralai/llama-1"},
-		{"/home/me/models/sub/ollex/granite3.3_8b_Q4_K_M", "ollex/granite3.3_8b_Q4_K_M"},
-		{"/home/me/models/ollex/granite3.3_8b_Q4_K_M", "ollex/granite3.3_8b_Q4_K_M"},
+		{"/home/me/models/mistral-ai/abcd-f_llama-1", "mistral-ai/abcd-f_llama-1"},
+		{"/home/me/models/mistral-ai/mistral-ai_llama-1", "mistral-ai/llama-1"},
+		{"/home/me/models/sub/rolex/granite3.3_8b_Q4_K_M", "rolex/granite3.3_8b_Q4_K_M"},
+		{"/home/me/models/rolex/granite3.3_8b_Q4_K_M", "rolex/granite3.3_8b_Q4_K_M"},
 		{"/home/me/models/granite3.3_8b_Q4_K_M", "granite3.3_8b_Q4_K_M"},
 		{"/home/me/models/folder/example-com_granite3.3_8b_Q4_K_M", "example-com/granite3.3_8b_Q4_K_M"},
 		{"/home/me/models/folder/example-eu_granite3.3_8b_Q4_K_M", "example-eu/granite3.3_8b_Q4_K_M"},
@@ -120,10 +121,10 @@ func TestExtractFlags(t *testing.T) {
 	}
 
 	// No flags
-	modelPath3 := createGGUFFile(t, tmp, "plainmodel.gguf", 2048)
+	modelPath3 := createGGUFFile(t, tmp, "plain_model.gguf", 2048)
 	name3, flags3 := extractFlags(modelPath3)
-	if !strings.HasSuffix(name3, "plainmodel") {
-		t.Errorf("extractFlags name3 = %q, want suffix %q", name3, "plainmodel")
+	if !strings.HasSuffix(name3, "plain_model") {
+		t.Errorf("extractFlags name3 = %q, want suffix %q", name3, "plain_model")
 	}
 	if flags3 != "" {
 		t.Errorf("extractFlags flags3 = %q, want empty", flags3)
@@ -147,15 +148,15 @@ func TestListModels(t *testing.T) {
 	t.Parallel()
 	tmp := t.TempDir()
 	// model on disk
-	_ = createGGUFFile(t, tmp, "diskmodel.gguf", 2048)
+	_ = createGGUFFile(t, tmp, "disk-model.gguf", 2048)
 
 	cfg := &Cfg{
-		ModelsDir: tmp,
+		Main: GoinferYML{ModelsDir: tmp},
 		Swap: config.Config{
 			Models: map[string]config.ModelConfig{
-				"diskmodel": {Cmd: "llama-server -flag", Unlisted: false},
-				"missing":   {Cmd: "llama-server -flag -m missing.gguf", Unlisted: false},
-				"GI_hidden": {Cmd: "llama-server -flag -m mistral.gguf", Unlisted: true},
+				"disk-model": {Cmd: "llama-server -flag", Unlisted: false},
+				"missing":    {Cmd: "llama-server -flag -m missing.gguf", Unlisted: false},
+				"GI_hidden":  {Cmd: "llama-server -flag -m mistral.gguf", Unlisted: true},
 			},
 		},
 	}
@@ -163,8 +164,8 @@ func TestListModels(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListModels error: %v", err)
 	}
-	if info, ok := models["diskmodel"]; !ok || info.Error != "" {
-		t.Errorf("diskmodel missing or error: %v", info)
+	if info, ok := models["disk-model"]; !ok || info.Error != "" {
+		t.Errorf("disk-model missing or error: %v", info)
 	}
 	if info, ok := models["missing"]; !ok || !strings.Contains(info.Error, "file absent") {
 		t.Errorf("missing entry error not as expected: %v", info)
@@ -181,8 +182,8 @@ func TestCountModels(t *testing.T) {
 	createGGUFFile(t, tmp, "b.gguf", 2048)
 
 	cfg := &Cfg{
-		ModelsDir: tmp,
-		Swap:      config.Config{},
+		Main: GoinferYML{ModelsDir: tmp},
+		Swap: config.Config{},
 	}
 	if n := cfg.countModels(); n != 2 {
 		t.Errorf("countModels = %d, want 2", n)
@@ -229,8 +230,8 @@ func TestValidateModelFiles_NoSwapModels(t *testing.T) {
 	t.Parallel()
 	tmp := t.TempDir()
 	cfg := &Cfg{
-		ModelsDir: tmp,
-		Swap:      config.Config{},
+		Main: GoinferYML{ModelsDir: tmp},
+		Swap: config.Config{},
 	}
 	err := cfg.ValidateSwap()
 	if err == nil {
@@ -244,7 +245,7 @@ func TestValidateModelFiles_WithSwapModels(t *testing.T) {
 	modelPath := createGGUFFile(t, tmp, "ref.gguf", 2048)
 
 	cfg := &Cfg{
-		ModelsDir: tmp,
+		Main: GoinferYML{ModelsDir: tmp},
 		Swap: config.Config{
 			Models: map[string]config.ModelConfig{
 				"ref": {Cmd: "--model " + modelPath, Unlisted: false},

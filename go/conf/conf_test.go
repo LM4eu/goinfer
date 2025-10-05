@@ -36,11 +36,11 @@ func TestReadMainCfg(t *testing.T) {
 	// t.Parallel omitted because of t.Setenv usage.
 
 	// Minimal config.
-	cfg := DefaultCfg
-	cfg.ModelsDir = "/tmp/models"
+	cfg := Cfg{Main: DefaultMain}
+	cfg.Main.ModelsDir = "/tmp/models"
 
 	// Provide a dummy admin API key to satisfy validation.
-	cfg.APIKey = "dummy"
+	cfg.Main.APIKey = "dummy"
 
 	path := writeTempCfg(t, &cfg)
 
@@ -60,10 +60,10 @@ func TestReadMainCfg(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadMainCfg failed: %v", err)
 	}
-	if cfg.ModelsDir != dir {
+	if cfg.Main.ModelsDir != dir {
 		t.Errorf("ReadMainCfg did not apply GI_MODELS_DIR")
 	}
-	if cfg.Host != "127.0.0.1" {
+	if cfg.Main.Host != "127.0.0.1" {
 		t.Errorf("ReadMainCfg did not apply GI_HOST")
 	}
 }
@@ -108,7 +108,7 @@ func TestWriteSwapCfg(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot create model file: %v", err)
 	}
-	cfg.ModelsDir = modelsDir
+	cfg.Main.ModelsDir = modelsDir
 
 	tmp := t.TempDir()
 	swapPath := filepath.Join(tmp, "swap.yaml")
@@ -132,12 +132,8 @@ func TestListModelsIntegration(t *testing.T) {
 		t.Fatalf("cannot create model file: %v", err)
 	}
 	cfg := &Cfg{
-		ModelsDir: tmp,
-		Swap: config.Config{
-			Models: map[string]config.ModelConfig{
-				"model1": {Cmd: "", Unlisted: false},
-			},
-		},
+		Main: GoinferYML{ModelsDir: tmp},
+		Swap: config.Config{Models: map[string]config.ModelConfig{"model1": {Cmd: "", Unlisted: false}}},
 	}
 	models, err := cfg.ListModels()
 	if err != nil {
@@ -157,9 +153,9 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot create model file: %v", err)
 	}
-	cfg := DefaultCfg
-	cfg.ModelsDir = modelsDir
-	cfg.APIKey = "dummy"
+	cfg := Cfg{Main: DefaultMain}
+	cfg.Main.ModelsDir = modelsDir
+	cfg.Main.APIKey = "dummy"
 	err = cfg.validateMain(false)
 	if err != nil {
 		t.Fatalf("validation1 error: %v", err)
@@ -177,9 +173,9 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 		t.Fatalf("validation2 error: %v", err)
 	}
 	// Missing admin key should fail.
-	cfgMissing := DefaultCfg
-	cfgMissing.ModelsDir = modelsDir
-	cfgMissing.APIKey = ""
+	cfgMissing := Cfg{Main: DefaultMain}
+	cfgMissing.Main.ModelsDir = modelsDir
+	cfgMissing.Main.APIKey = ""
 	err = cfgMissing.validateMain(false)
 	if err == nil {
 		t.Fatalf("expected validation error for missing admin API key")
@@ -189,8 +185,8 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 // TestCfg_ConcurrentReadMainCfg runs ReadMainCfg concurrently.
 func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 	// t.Parallel omitted because of t.Setenv usage.
-	cfg := DefaultCfg
-	cfg.ModelsDir = t.TempDir()
+	cfg := Cfg{Main: DefaultMain}
+	cfg.Main.ModelsDir = t.TempDir()
 	yamlData, err := yaml.Marshal(cfg)
 	if err != nil {
 		t.Fatalf("yaml marshal error: %v", err)
@@ -220,11 +216,11 @@ func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 			if err != nil {
 				t.Errorf("#%d ReadMainCfg error: %v", i, err)
 			}
-			if cfg.ModelsDir != dir {
-				t.Errorf("#%d ModelsDir not overridden, got %q want %q", i, cfg.ModelsDir, dir)
+			if cfg.Main.ModelsDir != dir {
+				t.Errorf("#%d ModelsDir not overridden, got %q want %q", i, cfg.Main.ModelsDir, dir)
 			}
-			if cfg.Host != "127.0.0.1" {
-				t.Errorf("#%d Server.Host not overridden, got %q want 127.0.0.1", i, cfg.Host)
+			if cfg.Main.Host != "127.0.0.1" {
+				t.Errorf("#%d Server.Host not overridden, got %q want 127.0.0.1", i, cfg.Main.Host)
 			}
 		})
 	}

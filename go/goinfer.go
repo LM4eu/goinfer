@@ -79,7 +79,7 @@ func getCfg() *conf.Cfg {
 }
 
 func doGoinferYML(debug, gen, run, noAPIKey bool) *conf.Cfg {
-	cfg := conf.DefaultCfg
+	cfg := conf.Cfg{Main: conf.DefaultMain}
 
 	// read "goinfer.yml"
 	err := cfg.ReadMainCfg(goinferYML, noAPIKey)
@@ -117,7 +117,7 @@ func doGoinferYML(debug, gen, run, noAPIKey bool) *conf.Cfg {
 
 	// command line precedes config file
 	if noAPIKey {
-		cfg.APIKey = ""
+		cfg.Main.APIKey = ""
 	}
 
 	return &cfg
@@ -178,7 +178,7 @@ func startServers(cfg *conf.Cfg) {
 // startEchoServers starts all HTTP Echo servers configured in the config.
 func startEchoServers(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group, proxyMan *proxy.ProxyManager) {
 	inf := &infer.Infer{Cfg: cfg, ProxyMan: proxyMan}
-	for addr, services := range cfg.Listen {
+	for addr, services := range cfg.Main.Listen {
 		if !strings.Contains(services, "infer") {
 			continue
 		}
@@ -186,7 +186,7 @@ func startEchoServers(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group, p
 		e := inf.NewEcho()
 		infer.PrintRoutes(e, addr)
 		grp.Go(func() error {
-			slog.InfoContext(ctx, "start Echo", "url", url(addr), "origins", cfg.Origins)
+			slog.InfoContext(ctx, "start Echo", "url", url(addr), "origins", cfg.Main.Origins)
 			return startEcho(ctx, e, addr)
 		})
 	}
@@ -203,7 +203,7 @@ func url(addr string) string {
 func startSwapServer(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group) *proxy.ProxyManager {
 	var proxyMan *proxy.ProxyManager
 
-	for addr, services := range cfg.Listen {
+	for addr, services := range cfg.Main.Listen {
 		if !strings.Contains(services, "swap") {
 			continue
 		}

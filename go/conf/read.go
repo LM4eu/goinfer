@@ -25,14 +25,14 @@ func (cfg *Cfg) ReadMainCfg(mainCfg string, noAPIKey bool) error {
 	cfg.trimParamValues()
 
 	// Concatenate host and ports => addr = "host:port"
-	listen := make(map[string]string, len(cfg.Listen))
-	for addr, services := range cfg.Listen {
+	listen := make(map[string]string, len(cfg.Main.Listen))
+	for addr, services := range cfg.Main.Listen {
 		if addr == "" || addr[0] == ':' {
-			addr = cfg.Host + addr
+			addr = cfg.Main.Host + addr
 		}
 		listen[addr] = services
 	}
-	cfg.Listen = listen
+	cfg.Main.Listen = listen
 
 	// Validate configuration
 	return cfg.validateMain(noAPIKey)
@@ -67,45 +67,45 @@ func (cfg *Cfg) load(mainCfg string) error {
 // The environment variables precede the config file.
 func (cfg *Cfg) applyEnvVars() {
 	if dir := os.Getenv("GI_MODELS_DIR"); dir != "" {
-		cfg.ModelsDir = dir
+		cfg.Main.ModelsDir = dir
 		slog.Debug("use", "GI_MODELS_DIR", dir)
 	}
 
 	if def := os.Getenv("GI_DEFAULT_MODEL"); def != "" {
-		cfg.DefaultModel = def
+		cfg.Main.DefaultModel = def
 		slog.Debug("use", "GI_DEFAULT_MODEL", def)
 	}
 
 	if host := os.Getenv("GI_HOST"); host != "" {
-		cfg.Host = host
+		cfg.Main.Host = host
 		slog.Debug("use", "GI_HOST", host)
 	}
 
 	if origins := os.Getenv("GI_ORIGINS"); origins != "" {
-		cfg.Origins = origins
+		cfg.Main.Origins = origins
 		slog.Debug("use", "GI_ORIGINS", origins)
 	}
 
 	if key := os.Getenv("GI_API_KEY"); key != "" {
-		cfg.APIKey = key
+		cfg.Main.APIKey = key
 		slog.Debug("set api_key = GI_API_KEY")
 	}
 
 	if exe := os.Getenv("GI_LLAMA_EXE"); exe != "" {
-		cfg.Llama.Exe = exe
+		cfg.Main.Llama.Exe = exe
 		slog.Debug("use", "GI_LLAMA_EXE", exe)
 	}
 }
 
 // trimParamValues cleans each parameter.
 func (cfg *Cfg) trimParamValues() {
-	cfg.ModelsDir = strings.TrimSpace(cfg.ModelsDir)
-	cfg.ModelsDir = strings.Trim(cfg.ModelsDir, ":")
+	cfg.Main.ModelsDir = strings.TrimSpace(cfg.Main.ModelsDir)
+	cfg.Main.ModelsDir = strings.Trim(cfg.Main.ModelsDir, ":")
 
-	cfg.Host = strings.TrimSpace(cfg.Host)
+	cfg.Main.Host = strings.TrimSpace(cfg.Main.Host)
 
-	cfg.Origins = strings.TrimSpace(cfg.Origins)
-	cfg.Origins = strings.Trim(cfg.Origins, ",")
+	cfg.Main.Origins = strings.TrimSpace(cfg.Main.Origins)
+	cfg.Main.Origins = strings.Trim(cfg.Main.Origins, ",")
 
-	cfg.Llama.Exe = strings.TrimSpace(cfg.Llama.Exe)
+	cfg.Main.Llama.Exe = strings.TrimSpace(cfg.Main.Llama.Exe)
 }
