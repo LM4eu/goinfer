@@ -79,9 +79,12 @@ func setModelIfMissing[T ModelRequest](msg T, bodyReader io.ReadCloser, defaultM
 			"no model loaded and no default_model in goinfer.yml => specify the field model in the request")
 	}
 
-	// set model in the
+	// set the model in the JSON body
 	if debug {
-		// convert the JSON bytes into a Go struct
+		// The debug mode use a reliable conversion 
+		// from the JSON bytes into a Go struct.
+		// But this consumes more CPU and requires 
+		// to convert back the Go struct into aJSON bytes.
 		err = json.Unmarshal(body, &msg)
 		if err != nil {
 			return body, gie.Wrap(err, gie.Invalid, "invalid or malformed JSON", "received body", string(body))
