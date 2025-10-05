@@ -28,6 +28,7 @@ linters:
     - arangolint # arangoDB
     - depguard # list of acceptable packages, exclude other packages
     - dogsled # Checks assignments with too many blank identifiers (e.g. x, _, _, _, := f()).
+    - embeddedstructfieldcheck
     - err113 # do not define dynamic errors, use wrapped static errors instead
     - forbidigo
     - ginkgolinter
@@ -97,6 +98,7 @@ linters:
       exclude-functions:
         - (*os.File).Close
         - (*os.File).Write
+        - (io.Closer).Close
         - encoding/json.Marshal
         - encoding/json.MarshalIndent
         - fmt.Printf
