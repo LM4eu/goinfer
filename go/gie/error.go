@@ -21,9 +21,7 @@
 package gie
 
 import (
-	"errors"
 	"fmt"
-	"log/slog"
 	"runtime"
 	"strconv"
 	"time"
@@ -32,15 +30,17 @@ import (
 type (
 	// Error implements the error structure defined in JSON-RPC 2.0.
 	Error struct {
-		Message string `json:"msg,omitempty"`
 		Data    Data   `json:"data,omitempty"`
+		Message string `json:"msg,omitempty"`
 		Code    Code   `json:"code,omitempty"`
 	}
 
 	Data struct {
-		Cause  any          `                          json:"cause,omitempty"`
-		Source *slog.Source `                          json:"source,omitempty"`
-		Attrs  []slog.Attr  `attrs:"details,omitempty"`
+		Time     time.Time      `json:"time,omitempty"`
+		Cause    error          `json:"cause,omitempty"`
+		Params   map[string]any `json:"params,omitempty"`
+		Function string         `json:"function,omitempty"`
+		FileLine string         `json:"file_line,omitempty"`
 	}
 
 	// Code represents the type of error.
@@ -75,51 +75,72 @@ func Wrap(err error, code Code, msg string, args ...any) *Error {
 }
 
 //nolint:revive // wrap is the common function for New() and Wrap().
-func wrap(err error, code Code, msg string, args ...any) *Error {
-	var pcs [1]uintptr
-	runtime.Callers(3, pcs[:]) // skip 3 calls in the callstack: [runtime.Callers, wrap, New/Wrap]
-	record := slog.NewRecord(time.Now(), 0, "", pcs[0])
-	record.Add(args...)
-
-	attrs := make([]slog.Attr, 0, record.NumAttrs())
-	record.Attrs(func(a slog.Attr) bool { attrs = append(attrs, a); return true })
-
-	return &Error{
+func wrap(cause error, code Code, msg string, args ...any) *Error {
+	err := &Error{
 		Code:    code,
 		Message: msg,
 		Data: Data{
-			Attrs:  attrs,
-			Source: record.Source(),
-			Cause:  err,
+			Time:  time.Now(),
+			Cause: cause,
 		},
 	}
+
+	var pcs [1]uintptr
+	runtime.Callers(3, pcs[:]) // skip 3 calls in the callstack: [runtime.Callers, wrap, New/Wrap]
+	if pcs[0] != 0 {
+		fs := runtime.CallersFrames([]uintptr{pcs[0]})
+		f, _ := fs.Next()
+		err.Data.Function = f.Function
+		err.Data.FileLine = f.File
+		if f.Line != 0 {
+			err.Data.FileLine += ":" + strconv.Itoa(f.Line)
+		}
+	}
+
+	err.Data.Params = make(map[string]any, (len(args)+1)/2)
+	for len(args) > 0 {
+		var key string
+		var val any
+		key, val, args = getPairRest(args)
+		err.Data.Params[key] = val
+	}
+
+	return err
+}
+
+func getPairRest(args []any) (key string, val any, rest []any) {
+	if len(args) == 1 {
+		return "!BADKEY", args[0], nil
+	}
+	key, ok := args[0].(string)
+	if !ok {
+		key = fmt.Sprint(args[0])
+	}
+	return key, args[1], args[2:]
 }
 
 // Error implements the error interface.
 func (e *Error) Error() string {
 	str := e.Message + " (" + strconv.Itoa(int(e.Code)) + ")"
-	for _, a := range e.Data.Attrs {
-		str += " " + a.Key + "=" + a.Value.String()
+	for key, val := range e.Data.Params {
+		str += " " + key + "=" + fmt.Sprint(val)
 	}
 	if e.Data.Cause != nil {
-		str += " cause: " + fmt.Sprint(e.Data.Cause)
+		str += " cause: " + e.Data.Cause.Error()
 	}
-	if e.Data.Source != nil {
-		str += " in " + e.Data.Source.Function +
-			" " + e.Data.Source.File +
-			":" + strconv.Itoa(e.Data.Source.Line)
+	if e.Data.Function != "" {
+		str += " in " + e.Data.Function
+	}
+	if e.Data.FileLine != "" {
+		str += " " + e.Data.FileLine
+	}
+	if !e.Data.Time.IsZero() {
+		str += " " + e.Data.Time.Format("2006-01-02 15:04:05.999")
 	}
 	return str
 }
 
 // Unwrap returns the underlying error for error unwrapping.
 func (e *Error) Unwrap() error {
-	if e.Data.Cause == nil {
-		return nil
-	}
-	err, ok := e.Data.Cause.(error)
-	if ok {
-		return err
-	}
-	return errors.New(fmt.Sprint(e.Data.Cause))
+	return e.Data.Cause
 }
