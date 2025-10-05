@@ -81,7 +81,7 @@ func (inf *Infer) NewEcho() *echo.Echo {
 	grp.GET("v1/models", inf.listModelsHandler)
 
 	// ----- state -----------------
-	grp.GET("health", func(c echo.Context) error { return nil })
+	grp.GET("health", func(_ echo.Context) error { return nil })
 	grp.GET("logs/stream", inf.streamLogsHandler)
 	grp.GET("props", inf.proxyToFirstRunningProcess)
 	grp.GET("running", inf.listRunningProcessesHandler)
