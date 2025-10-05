@@ -41,36 +41,15 @@ func main() {
 // Depending on the flags, this function also creates config files and exits.
 func getCfg() *conf.Cfg {
 	quiet := flag.Bool("q", false, "quiet mode (disable verbose output)")
-	debug := flag.Bool("debug", false, "debug mode (set debug ABI keys with -gen)")
-	noAPIKey := flag.Bool("no-api-key", false, "disable API key check/generation (with -gen)")
-	genCfg := flag.Bool("gen", false, "generate "+mainCfg)
+	debug := flag.Bool("debug", false, "debug mode (with -gen: set debug ABI keys)")
+	gen := flag.Bool("gen", false, "generate "+goinferYML+" and "+templateJinja)
+	run := flag.Bool("run", false, "run the server, can be combined with -gen")
+	noAPIKey := flag.Bool("no-api-key", false, "disable API key check (with -gen: set a warning in place of the API key)")
 	vv.SetVersionFlag()
 	flag.Parse()
-
-	cfg := conf.DefaultCfg
-
-	cfg.SetLogLevel(!*quiet, *debug)
-
-	// generate "goinfer.yml"
-	if *genCfg {
-		err := cfg.WriteMainCfg(mainCfg, *debug, *noAPIKey)
-		if err != nil {
-			slog.Error("Cannot create main config", "file", mainCfg, "error", err)
-			os.Exit(1)
-		}
-	}
-
-	// verify "goinfer.yml" can be successfully loaded
-	err := cfg.ReadMainCfg(mainCfg, *noAPIKey)
-	if err != nil {
-		slog.Error("Cannot load main config", "file", mainCfg, "error", err)
-		os.Exit(1)
-	}
-
-	// successfully generated "goinfer.yml"
-	if *genCfg {
-		slog.Info("Generated main", "config", mainCfg)
-		if !*quiet {
+	// if -gen without -run => stop here, just successfully generated "goinfer.yml"
+	if *gen && !*run {
+		if verbose {
 			cfg.Print()
 		}
 		os.Exit(0)
