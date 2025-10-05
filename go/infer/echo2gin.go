@@ -25,15 +25,14 @@ type responseWriter struct {
 
 // inferHandler handles infer requests.
 func echo2gin(c echo.Context) *gin.Context {
-	ginWriter := responseWriter{
-		ResponseWriter: c.Response().Writer,
-		size:           -1,
-		status:         http.StatusOK,
+	return &gin.Context{
+		Writer: &responseWriter{
+			ResponseWriter: c.Response().Writer,
+			size:           -1,
+			status:         http.StatusOK,
+		},
+		Request: c.Request(),
 	}
-	ginCtx := gin.Context{}
-	ginCtx.Writer = &ginWriter
-	ginCtx.Request = c.Request()
-	return &ginCtx
 }
 
 func echo2ginWithBody(c echo.Context, body []byte) *gin.Context {
