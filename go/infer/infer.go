@@ -51,7 +51,7 @@ var defaultQuery = Query{
 // completionHandler handles llama.cpp /completions endpoint.
 func (inf *Infer) completionHandler(c echo.Context) error {
 	msg := defaultQuery
-	body, err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.Main.DefaultModel)
+	body, err := setModelIfMissing(inf, &msg, c.Request().Body)
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func (inf *Infer) completionHandler(c echo.Context) error {
 // /v1/chat/completions endpoint (OpenAI-compatible API).
 func (inf *Infer) chatCompletionsHandler(c echo.Context) error {
 	var msg OpenaiChatCompletions
-	body, err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.Main.DefaultModel)
+	body, err := setModelIfMissing(inf, &msg, c.Request().Body)
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (inf *Infer) chatCompletionsHandler(c echo.Context) error {
 
 func (inf *Infer) proxyOAIHandler(c echo.Context) error {
 	var msg AnyBody
-	body, err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.Main.DefaultModel)
+	body, err := setModelIfMissing(inf, &msg, c.Request().Body)
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func (inf *Infer) proxyOAIHandler(c echo.Context) error {
 
 func (inf *Infer) proxyOAIPostFormHandler(c echo.Context) error {
 	var msg AnyBody
-	body, err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.Main.DefaultModel)
+	body, err := setModelIfMissing(inf, &msg, c.Request().Body)
 	if err != nil {
 		return err
 	}

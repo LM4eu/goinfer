@@ -10,9 +10,11 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 
 	"github.com/LM4eu/goinfer/gie"
+	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
@@ -32,8 +34,13 @@ type (
 	AnyBody map[string]any
 )
 
-// debug=true enables json.Unmarshal/Marshal, more reliable than gjson.GetBytes/SetBytes, but consumes much more CPU.
-const debug = false
+const (
+	// Debug=true enables json.Unmarshal/Marshal, more reliable than gjson.GetBytes/SetBytes, but consumes much more CPU.
+	debug = false
+
+	// direct=true call directly proxy.ListRunningProcessesHandler(), faster than requesting http://localhost:5555/running
+	direct = true
+)
 
 func (m *ModelField) GetModel() string      { return m.Model }
 func (m *ModelField) SetModel(model string) { m.Model = model }
@@ -61,7 +68,7 @@ func (m *AnyBody) SetModel(model string) {
 	(*m)["model"] = model
 }
 
-func setModelIfMissing[T ModelRequest](msg T, bodyReader io.ReadCloser, defaultModel string) ([]byte, error) {
+func setModelIfMissing[T ModelRequest](inf *Infer, msg T, bodyReader io.ReadCloser) ([]byte, error) {
 	body, err := io.ReadAll(bodyReader)
 	if err != nil {
 		return nil, gie.Wrap(err, gie.Invalid, "cannot io.ReadAll(request body)")
@@ -73,7 +80,7 @@ func setModelIfMissing[T ModelRequest](msg T, bodyReader io.ReadCloser, defaultM
 		return body, nil
 	}
 
-	model = selectModel(defaultModel)
+	model = selectModel(inf)
 	if model == "" {
 		return body, gie.Wrap(err, gie.Invalid,
 			"no model loaded and no default_model in goinfer.yml => specify the field model in the request")
@@ -81,9 +88,9 @@ func setModelIfMissing[T ModelRequest](msg T, bodyReader io.ReadCloser, defaultM
 
 	// set the model in the JSON body
 	if debug {
-		// The debug mode use a reliable conversion 
+		// The debug mode use a reliable conversion
 		// from the JSON bytes into a Go struct.
-		// But this consumes more CPU and requires 
+		// But this consumes more CPU and requires
 		// to convert back the Go struct into aJSON bytes.
 		err = json.Unmarshal(body, &msg)
 		if err != nil {
@@ -105,17 +112,32 @@ func setModelIfMissing[T ModelRequest](msg T, bodyReader io.ReadCloser, defaultM
 	return body, nil
 }
 
-func selectModel(defaultModel string) string {
-	res, err := http.Get("http://localhost:5555/running")
-	if err != nil {
-		return defaultModel
-	}
-	defer res.Body.Close()
+//nolint:noctx // HTTP request to internal Gin server
+func selectModel(inf *Infer) string {
+	var body []byte
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		slog.Debug("cannot io.ReadAll(response body) from /running", "err", err)
-		return defaultModel
+	if direct {
+		req, err := http.NewRequest(http.MethodGet, "http://localhost:5555/running", http.NoBody)
+		if err != nil {
+			return inf.Cfg.Main.DefaultModel
+		}
+		w := httptest.NewRecorder()
+		inf.ProxyMan.ListRunningProcessesHandler(&gin.Context{
+			Writer:  &responseWriter{ResponseWriter: w, size: -1, status: http.StatusOK},
+			Request: req,
+		})
+		body = w.Body.Bytes()
+	} else {
+		res, err := http.Get("http://localhost:5555/running")
+		if err != nil {
+			return inf.Cfg.Main.DefaultModel
+		}
+		defer res.Body.Close()
+		body, err = io.ReadAll(res.Body)
+		if err != nil {
+			slog.Debug("cannot io.ReadAll(response body) from /running", "err", err)
+			return inf.Cfg.Main.DefaultModel
+		}
 	}
 
 	// Assuming the JSON structure has a "running" field
@@ -126,10 +148,10 @@ func selectModel(defaultModel string) string {
 		} `json:"running"` // Specify the actual JSON field name
 	}
 
-	err = json.Unmarshal(body, &response)
+	err := json.Unmarshal(body, &response)
 	if err != nil {
 		slog.Debug("invalid or malformed JSON", "received response body from /running", string(body), "err", err)
-		return defaultModel
+		return inf.Cfg.Main.DefaultModel
 	}
 
 	// Check for ready models first
@@ -146,5 +168,5 @@ func selectModel(defaultModel string) string {
 		}
 	}
 
-	return defaultModel
+	return inf.Cfg.Main.DefaultModel
 }
