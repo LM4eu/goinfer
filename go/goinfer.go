@@ -47,6 +47,20 @@ func getCfg() *conf.Cfg {
 	noAPIKey := flag.Bool("no-api-key", false, "disable API key check (with -gen: set a warning in place of the API key)")
 	vv.SetVersionFlag()
 	flag.Parse()
+	verbose := !*quiet
+
+	switch {
+	case *debug:
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+	case verbose:
+		slog.SetLogLoggerLevel(slog.LevelInfo)
+	default:
+		slog.SetLogLoggerLevel(slog.LevelWarn)
+	}
+	slog.Debug("debug mode")
+
+	cfg := doGoinferYML(*debug, *gen, *run, *noAPIKey)
+
 	// if -gen without -run => stop here, just successfully generated "goinfer.yml"
 	if *gen && !*run {
 		if verbose {
@@ -55,13 +69,61 @@ func getCfg() *conf.Cfg {
 		os.Exit(0)
 	}
 
-	// generate "template.jinja"
-	err = os.WriteFile("template.jinja", []byte("{{- messages[0].content -}}"), 0o600)
-	if err != nil {
-		slog.Error("Cannot write", "file", "template.jinja", "error", err)
-		os.Exit(1)
+	if *debug {
+		cfg.Print()
 	}
 
+	doLlamaSwapYML(cfg, verbose, *debug)
+
+	return cfg
+}
+
+func doGoinferYML(debug, gen, run, noAPIKey bool) *conf.Cfg {
+	cfg := conf.DefaultCfg
+
+	// read "goinfer.yml"
+	err := cfg.ReadMainCfg(goinferYML, noAPIKey)
+	if err != nil && !gen {
+		slog.Warn("Cannot load config => generate it", "file", goinferYML, "error", err)
+		if run {
+			slog.Warn("Cannot load config. Flag -run prevents to modify/generate it", "file", goinferYML, "error", err)
+			os.Exit(1)
+		}
+		slog.Warn("Cannot load config => generate it", "file", goinferYML, "error", err)
+	}
+
+	if gen {
+		// generate "template.jinja"
+		err = os.WriteFile(templateJinja, []byte("{{- messages[0].content -}}"), 0o600)
+		if err != nil {
+			slog.Error("Cannot write", "file", templateJinja, "error", err)
+			os.Exit(1)
+		}
+		// generate "goinfer.yml"
+		err := cfg.WriteMainCfg(goinferYML, debug, noAPIKey)
+		if err != nil {
+			slog.Error("Cannot create config", "file", goinferYML, "error", err)
+			os.Exit(1)
+		}
+		slog.Info("Generated", "config", goinferYML)
+
+		// verify "goinfer.yml" can be successfully loaded
+		err = cfg.ReadMainCfg(goinferYML, noAPIKey)
+		if err != nil && !gen {
+			slog.Error("Cannot load config", "file", goinferYML, "error", err)
+			os.Exit(1)
+		}
+	}
+
+	// command line precedes config file
+	if noAPIKey {
+		cfg.APIKey = ""
+	}
+
+	return &cfg
+}
+
+func doLlamaSwapYML(cfg *conf.Cfg, verbose, debug bool) {
 	// generate "llama-swap.yml"
 	err := cfg.WriteSwapCfg(llamaSwapYML, verbose, debug)
 	if err != nil {
@@ -81,18 +143,7 @@ func getCfg() *conf.Cfg {
 		os.Exit(1)
 	}
 
-	slog.Info("Generated Swap config", "file", swapCfg, "models", len(cfg.Swap.Models))
-
-	// command line precedes config file
-	if *noAPIKey {
-		cfg.APIKey = ""
-	}
-
-	if *debug {
-		cfg.Print()
-	}
-
-	return &cfg
+	slog.Info("Generated config", "file", llamaSwapYML, "models", len(cfg.Swap.Models))
 }
 
 // startServers creates and runs the HTTP servers.
