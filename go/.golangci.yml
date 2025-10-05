@@ -557,6 +557,7 @@ linters:
         - name: modifies-value-receiver
         # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#nested-structs
         - name: nested-structs
+          disabled: true
         # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#optimize-operands-order
         - name: optimize-operands-order
         # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#package-comments
