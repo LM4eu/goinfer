@@ -27,8 +27,9 @@ import (
 )
 
 const (
-	mainCfg = "goinfer.yml"
-	swapCfg = "llama-swap.yml"
+	goinferYML    = "goinfer.yml"
+	llamaSwapYML  = "llama-swap.yml"
+	templateJinja = "template.jinja"
 )
 
 func main() {
@@ -83,21 +84,21 @@ func getCfg() *conf.Cfg {
 	}
 
 	// generate "llama-swap.yml"
-	err = cfg.WriteSwapCfg(swapCfg, !*quiet, *debug)
+	err := cfg.WriteSwapCfg(llamaSwapYML, verbose, debug)
 	if err != nil {
-		slog.Error("Failed creating a valid Swap config", "file", swapCfg, "error", err)
+		slog.Error("Failed creating a valid llama-swap config", "file", llamaSwapYML, "error", err)
 		os.Exit(1)
 	}
 
 	// verify "llama-swap.yml" can be successfully loaded
-	cfg.Swap, err = config.LoadConfig(swapCfg)
+	cfg.Swap, err = config.LoadConfig(llamaSwapYML)
 	if err != nil {
-		slog.Error("Cannot load Swap config", "file", swapCfg, "error", err)
+		slog.Error("Cannot load llama-swap config", "file", llamaSwapYML, "error", err)
 		os.Exit(1)
 	}
 	err = cfg.ValidateSwap()
 	if err != nil {
-		slog.Error("Swap config ", "file", swapCfg, "error", err)
+		slog.Error("llama-swap config ", "file", llamaSwapYML, "error", err)
 		os.Exit(1)
 	}
 
@@ -127,7 +128,7 @@ func startServers(cfg *conf.Cfg) {
 	// Use errgroup to coordinate the servers shutdown
 	var grp errgroup.Group
 
-	// Start Swap (Gin) and Echo servers (if configured)
+	// Start llama-swap (Gin) and Echo servers (if configured)
 	proxyMan := startSwapServer(ctx, cfg, &grp)
 	startEchoServers(ctx, cfg, &grp, proxyMan)
 
@@ -184,7 +185,7 @@ func startSwapServer(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group) *p
 		}
 
 		grp.Go(func() error {
-			slog.DebugContext(ctx, "start Gin (llama-swap)", "url", url(swapServer.Addr))
+			slog.DebugContext(ctx, "start llama-swap (Gin)", "url", url(swapServer.Addr))
 			return startSwap(ctx, swapServer, proxyMan)
 		})
 	}
@@ -238,7 +239,7 @@ func stopEcho(ctx context.Context, e *echo.Echo, addr string) error {
 
 // stopSwap performs graceful shutdown of a llama-swap server.
 func stopSwap(ctx context.Context, swapServer *http.Server, swapHandler http.Handler) error {
-	slog.InfoContext(ctx, "Shutting down Swap (Gin)", "url", url(swapServer.Addr))
+	slog.InfoContext(ctx, "Shutting down llama-swap (Gin)", "url", url(swapServer.Addr))
 
 	// check if swapHandler has a Shutdown method
 	if shutdownHandler, ok := swapHandler.(interface{ Shutdown() }); ok {
@@ -247,11 +248,11 @@ func stopSwap(ctx context.Context, swapServer *http.Server, swapHandler http.Han
 
 	err := swapServer.Shutdown(ctx)
 	if err != nil {
-		slog.ErrorContext(ctx, "Swap shutdown", "error", err)
+		slog.ErrorContext(ctx, "llama-swap shutdown", "error", err)
 		return err
 	}
 
-	slog.InfoContext(ctx, "Swap stopped gracefully", "url", url(swapServer.Addr))
+	slog.InfoContext(ctx, "llama-swap stopped gracefully", "url", url(swapServer.Addr))
 	return nil
 }
 
