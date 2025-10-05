@@ -14,6 +14,8 @@ import (
 
 	"github.com/LM4eu/goinfer/gie"
 	"github.com/labstack/echo/v4"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 // Query represents an inference task request.
@@ -49,42 +51,56 @@ var defaultQuery = Query{
 // completionHandler handles llama.cpp /completions endpoint.
 func (inf *Infer) completionHandler(c echo.Context) error {
 	msg := defaultQuery
-	err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.Main.DefaultModel)
+	body, err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.Main.DefaultModel)
 	if err != nil {
 		return err
 	}
 
 	// use the template from the query or from the config if any
 	// replace {prompt} by the prompt from the query
-	prompt, ok := msg.Prompt.(string) // TODO support []string
-	if !ok {
+	prompt := gjson.GetBytes(body, "prompt")
+	if prompt.Type != gjson.String { // TODO support []string
 		return gie.New(gie.Invalid, "only support string for prompt (TODO support []string)", "the issue is in this /completions request", msg)
 	}
 
 	// prompt parameter is mandatory
-	if msg.Prompt == "" {
+	if prompt.Str == "" {
 		return gie.New(gie.Invalid, "mandatory prompt is empty", "the issue is in this /completions request", msg)
 	}
 
 	// apply template if any
-	if msg.Template != "" {
-		msg.Template = inf.Cfg.Main.Templates[msg.Model]
+	tpl := gjson.GetBytes(body, "template").String()
+	if tpl != "" {
+		tpl = inf.Cfg.Main.Templates[msg.Model]
 	}
-	if msg.Template != "" {
-		msg.Prompt = strings.ReplaceAll(msg.Template, "{prompt}", prompt)
-		msg.Template = "" // remove from JSON request
+	if tpl != "" {
+		newPrompt := strings.ReplaceAll(msg.Template, "{prompt}", prompt.Str)
+		body, err = sjson.SetBytes(body, "prompt", newPrompt)
+		if err != nil {
+			return gie.Wrap(err, gie.Invalid, "cannot update prompt in the JSON", "the issue is in this request body", body, "newPrompt", newPrompt)
+		}
+		body, err = sjson.DeleteBytes(body, "template")
+		if err != nil {
+			return gie.Wrap(err, gie.Invalid, "cannot delete the template field in the JSON", "the issue is in this request body", body)
+		}
 	}
 
-	ginCtx, err := getGinCtx(c, &msg)
-	if err != nil {
-		return err
+	var timeout int64
+	timeoutJSON := gjson.GetBytes(body, "timeout")
+	if timeoutJSON.Index != 0 {
+		timeout = timeoutJSON.Int()
+		body, err = sjson.DeleteBytes(body, "timeout")
+		if err != nil {
+			return gie.Wrap(err, gie.Invalid, "cannot delete the timeout field in the JSON", "the issue is in this request body", body)
+		}
 	}
 
-	if msg.Timeout > 0 {
-		ctx, cancel := context.WithTimeout(ginCtx.Request.Context(), time.Duration(msg.Timeout)*time.Second)
+	ginCtx := echo2ginWithBody(c, body)
+
+	if timeout > 0 {
+		ctx, cancel := context.WithTimeout(ginCtx.Request.Context(), time.Duration(timeout)*time.Second)
 		defer cancel()
 		ginCtx.Request = ginCtx.Request.WithContext(ctx)
-		msg.Timeout = 0 // remove from JSON request
 	}
 
 	inf.ProxyMan.ProxyOAIHandler(ginCtx)
@@ -95,48 +111,36 @@ func (inf *Infer) completionHandler(c echo.Context) error {
 // /v1/chat/completions endpoint (OpenAI-compatible API).
 func (inf *Infer) chatCompletionsHandler(c echo.Context) error {
 	var msg OpenaiChatCompletions
-	err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.Main.DefaultModel)
+	body, err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.Main.DefaultModel)
 	if err != nil {
 		return err
 	}
 
-	ginCtx, err := getGinCtx(c, &msg)
-	if err != nil {
-		return err
-	}
-
+	ginCtx := echo2ginWithBody(c, body)
 	inf.ProxyMan.ProxyOAIHandler(ginCtx)
 	return nil
 }
 
 func (inf *Infer) proxyOAIHandler(c echo.Context) error {
 	var msg AnyBody
-	err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.Main.DefaultModel)
+	body, err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.Main.DefaultModel)
 	if err != nil {
 		return err
 	}
 
-	ginCtx, err := getGinCtx(c, &msg)
-	if err != nil {
-		return err
-	}
-
+	ginCtx := echo2ginWithBody(c, body)
 	inf.ProxyMan.ProxyOAIHandler(ginCtx)
 	return nil
 }
 
 func (inf *Infer) proxyOAIPostFormHandler(c echo.Context) error {
 	var msg AnyBody
-	err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.Main.DefaultModel)
+	body, err := setModelIfMissing(&msg, c.Request().Body, inf.Cfg.Main.DefaultModel)
 	if err != nil {
 		return err
 	}
 
-	ginCtx, err := getGinCtx(c, &msg)
-	if err != nil {
-		return err
-	}
-
+	ginCtx := echo2ginWithBody(c, body)
 	inf.ProxyMan.ProxyOAIHandler(ginCtx)
 	return nil
 }

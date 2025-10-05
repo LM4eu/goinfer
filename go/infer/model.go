@@ -5,7 +5,6 @@
 package infer
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,8 +13,8 @@ import (
 	"strings"
 
 	"github.com/LM4eu/goinfer/gie"
-	"github.com/gin-gonic/gin"
-	"github.com/labstack/echo/v4"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 type (
@@ -32,6 +31,9 @@ type (
 
 	AnyBody map[string]any
 )
+
+// debug=true enables json.Unmarshal/Marshal, more reliable than gjson.GetBytes/SetBytes, but consumes much more CPU.
+const debug = false
 
 func (m *ModelField) GetModel() string      { return m.Model }
 func (m *ModelField) SetModel(model string) { m.Model = model }
@@ -59,43 +61,45 @@ func (m *AnyBody) SetModel(model string) {
 	(*m)["model"] = model
 }
 
-func setModelIfMissing[T ModelRequest](msg T, bodyReader io.ReadCloser, defaultModel string) error {
+func setModelIfMissing[T ModelRequest](msg T, bodyReader io.ReadCloser, defaultModel string) ([]byte, error) {
 	body, err := io.ReadAll(bodyReader)
 	if err != nil {
-		return gie.Wrap(err, gie.Invalid, "cannot io.ReadAll(request body)")
+		return nil, gie.Wrap(err, gie.Invalid, "cannot io.ReadAll(request body)")
 	}
 
-	err = json.Unmarshal(body, &msg)
-	if err != nil {
-		return gie.Wrap(err, gie.Invalid, "invalid or malformed JSON", "received_body", string(body))
-	}
-
-	model := msg.GetModel()
+	model := gjson.GetBytes(body, "model").String()
 	if model != "" && model != "default" {
-		// TODO: Does the model exist? How to verify?
-		return nil
+		// TODO: verify the model is known to work
+		return body, nil
 	}
 
-	okModel := selectModel(defaultModel)
-	if okModel == "" {
-		return gie.Wrap(err, gie.Invalid,
+	model = selectModel(defaultModel)
+	if model == "" {
+		return body, gie.Wrap(err, gie.Invalid,
 			"no model loaded and no default_model in goinfer.yml => specify the field model in the request")
 	}
 
-	msg.SetModel(okModel)
-	return nil
-}
+	// set model in the
+	if debug {
+		// convert the JSON bytes into a Go struct
+		err = json.Unmarshal(body, &msg)
+		if err != nil {
+			return body, gie.Wrap(err, gie.Invalid, "invalid or malformed JSON", "received body", string(body))
+		}
+		msg.SetModel(model)
 
-func getGinCtx[T ModelRequest](c echo.Context, msg T) (*gin.Context, error) {
-	body, err := json.Marshal(msg)
-	if err != nil {
-		return nil, gie.Wrap(err, gie.Invalid, "error json.Marshal back the body")
+		body, err = json.Marshal(msg)
+		if err != nil {
+			return body, gie.Wrap(err, gie.Invalid, "error json.Marshal back the body", "input msg", msg)
+		}
+	} else {
+		body, err = sjson.SetBytes(body, "model", model)
+		if err != nil {
+			return body, gie.Wrap(err, gie.Invalid, "cannot update model in JSON body", "body", body, "new model", model)
+		}
 	}
 
-	ginCtx := echo2gin(c)
-	ginCtx.Request.Body = io.NopCloser(bytes.NewBuffer(body))
-
-	return ginCtx, nil
+	return body, nil
 }
 
 func selectModel(defaultModel string) string {
