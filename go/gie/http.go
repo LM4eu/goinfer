@@ -17,32 +17,6 @@ func HandleErrorMiddleware(err error, c echo.Context) error {
 	c.Logger().Error(err)
 
 	// Return a standardized error response
-	return errorToEchoResponse(c, err)
-}
-
-// HandleValidationError handles validation errors with proper HTTP status.
-func HandleValidationError(c echo.Context, err error) error {
-	return handleError(c, err, Invalid, "validation failed")
-}
-
-// HandleInferenceError handles inference-related errors.
-func HandleInferenceError(c echo.Context, err error) error {
-	return handleError(c, err, InferErr, "inference failed")
-}
-
-// handleError centralizes error handling for HTTP responses.
-func handleError(c echo.Context, err error, wrapCode Code, wrapMsg string) error {
-	var giErr *Error
-	if errors.As(err, &giErr) {
-		return c.JSON(statusCode(giErr.Code), giErr)
-	}
-	// Not the expected type: wrap and forward
-	wrapped := Wrap(err, wrapCode, wrapMsg)
-	return errorToEchoResponse(c, wrapped)
-}
-
-// errorToEchoResponse converts an GoinferError to an Echo error response.
-func errorToEchoResponse(c echo.Context, err error) error {
 	var giErr *Error
 	if !errors.As(err, &giErr) {
 		// If not an GoinferError, wrap it and return internal server error
