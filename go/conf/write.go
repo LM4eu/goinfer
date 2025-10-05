@@ -77,7 +77,7 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 		v = " -v "
 	}
 
-	cfg.Swap.Macros = map[string]string{
+	cfg.Swap.Macros = config.MacroList{
 		"cmd-fim":    cfg.Main.Llama.Exe + v + common,
 		"cmd-openai": cfg.Main.Llama.Exe + v + common + " --port ${PORT}",
 		"cmd-infer":  cfg.Main.Llama.Exe + v + common + " --port ${PORT}" + infer,
