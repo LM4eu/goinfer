@@ -6,6 +6,7 @@ package infer
 
 import (
 	"bufio"
+	"bytes"
 	"io"
 	"net"
 	"net/http"
@@ -20,6 +21,25 @@ type responseWriter struct {
 
 	size   int
 	status int
+}
+
+// inferHandler handles infer requests.
+func echo2gin(c echo.Context) *gin.Context {
+	ginWriter := responseWriter{
+		ResponseWriter: c.Response().Writer,
+		size:           -1,
+		status:         http.StatusOK,
+	}
+	ginCtx := gin.Context{}
+	ginCtx.Writer = &ginWriter
+	ginCtx.Request = c.Request()
+	return &ginCtx
+}
+
+func echo2ginWithBody(c echo.Context, body []byte) *gin.Context {
+	ginCtx := echo2gin(c)
+	ginCtx.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+	return ginCtx
 }
 
 func (w *responseWriter) Unwrap() http.ResponseWriter {
@@ -106,17 +126,4 @@ func (w *responseWriter) Pusher() (pusher http.Pusher) {
 		return pusher
 	}
 	return nil
-}
-
-// inferHandler handles infer requests.
-func echo2gin(c echo.Context) *gin.Context {
-	ginWriter := responseWriter{
-		ResponseWriter: c.Response().Writer,
-		size:           -1,
-		status:         http.StatusOK,
-	}
-	ginCtx := gin.Context{}
-	ginCtx.Writer = &ginWriter
-	ginCtx.Request = c.Request()
-	return &ginCtx
 }
