@@ -8,8 +8,10 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"log/slog"
+	"math"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/LM4eu/goinfer/gie"
 	"github.com/LM4eu/llama-swap/proxy/config"
@@ -24,10 +26,16 @@ func (cfg *Cfg) WriteMainCfg(mainCfg string, debug, noAPIKey bool) error {
 	cfg.setDefaultModel()
 	cfg.trimParamValues()
 
+	// keep goinfer.yml clean, without llama-swap config
+	var swap config.Config
+	swap, cfg.Swap = cfg.Swap, swap
+
 	yml, err := yaml.Marshal(&cfg)
 	if err != nil {
 		return gie.Wrap(err, gie.ConfigErr, "failed to yaml.Marshal")
 	}
+
+	cfg.Swap = swap
 
 	err = cfg.validateMain(noAPIKey)
 	if err != nil {
