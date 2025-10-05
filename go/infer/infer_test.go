@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/LM4eu/goinfer/conf"
+	"github.com/LM4eu/llama-swap/proxy"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
 )
@@ -36,6 +37,7 @@ func TestConcurrencyGuard(t *testing.T) {
 	inf.isInferring = true
 	inf.mu.Unlock()
 	inf.Cfg = &conf.Cfg{}
+	inf.ProxyMan = &proxy.ProxyManager{}
 
 	// Minimal request body – any valid JSON works; the handler will early‑exit
 	// because IsInferring is already true.
