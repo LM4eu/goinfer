@@ -20,7 +20,7 @@ func HandleErrorMiddleware(err error, c echo.Context) error {
 	var giErr *Error
 	if !errors.As(err, &giErr) {
 		// If not an GoinferError, wrap it and return internal server error
-		giErr = Wrap(err, ServerErr, "internal server error")
+		giErr = wrap(err, ServerErr, "internal server error")
 	}
 	return c.JSON(statusCode(giErr.Code), giErr)
 }
