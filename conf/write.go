@@ -23,7 +23,7 @@ import (
 func (cfg *Cfg) WriteMainCfg(mainCfg string, debug, noAPIKey bool) error {
 	cfg.setAPIKeys(debug, noAPIKey)
 	cfg.applyEnvVars()
-	cfg.setDefaultModel()
+	cfg.checkDefaultModel()
 	cfg.trimParamValues()
 
 	// keep goinfer.yml clean, without llama-swap config
@@ -99,7 +99,7 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	return nil
 }
 
-func (cfg *Cfg) setDefaultModel() {
+func (cfg *Cfg) checkDefaultModel() {
 	info, err := cfg.setSwapModels()
 	if err != nil {
 		return
@@ -107,7 +107,7 @@ func (cfg *Cfg) setDefaultModel() {
 
 	_, ok := cfg.Swap.Models[cfg.Main.DefaultModel]
 	if ok {
-		return // DefaultModel is valid
+		return // DefaultModel is a valid model name
 	}
 
 	minSize := int64(math.MaxInt64)
@@ -122,13 +122,14 @@ func (cfg *Cfg) setDefaultModel() {
 			continue
 		}
 
-		slog.Info("overwrite default_model", "old", cfg.Main.DefaultModel, "new", model)
+		// replace pathname (or filename) by its model name
+		slog.Info("default_model: replace (pathname or filename) by valid model name", "old", cfg.Main.DefaultModel, "new", model)
 		cfg.Main.DefaultModel = model
 		return
 	}
 
 	if cfg.Main.DefaultModel != "" {
-		slog.Info("overwrite default_model", "old", cfg.Main.DefaultModel, "new", minName)
+		slog.Warn("default_model is not a known model, replace it by the smallest model", "old", cfg.Main.DefaultModel, "new", minName)
 	}
 	cfg.Main.DefaultModel = minName
 }
