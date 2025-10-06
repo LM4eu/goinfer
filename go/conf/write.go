@@ -73,8 +73,11 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	infer = " " + strings.TrimSpace(infer)
 
 	v := ""
+	if verbose {
+		v = " --verbose-prompt "
+	}
 	if debug {
-		v = " -v "
+		v += " --verbosity 2 "
 	}
 
 	cfg.Swap.Macros = config.MacroList{
