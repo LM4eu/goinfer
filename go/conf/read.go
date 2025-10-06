@@ -95,6 +95,9 @@ func (cfg *Cfg) applyEnvVars() {
 		cfg.Main.Llama.Exe = exe
 		slog.Debug("use", "GI_LLAMA_EXE", exe)
 	}
+
+	// TODO add GI_LLAMA_ARGS_xxxxxx
+	// TODO verify GI_MODELS_DIR exit
 }
 
 // trimParamValues cleans each parameter.
