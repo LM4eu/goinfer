@@ -101,9 +101,9 @@ func (cfg *Cfg) Print() {
 
 	slog.Info("-----------------------------")
 
-	yml, err := yaml.Marshal(&cfg)
+	yml, err := yaml.Marshal(&cfg.Main)
 	if err != nil {
-		slog.Error("Failed to yaml.Marshal", "error", err.Error())
+		slog.Error("Failed yaml.Marshal", "error", err.Error(), "input struct", &cfg.Main)
 		return
 	}
 
