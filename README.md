@@ -128,7 +128,14 @@ Run Goinfer in local without the API key:
 `./clone-pull-build-run.sh -no-api-key`
 
 Full example:  
-`GI_LLAMA_EXE=/home/me/bin/llama-server GI_MODELS_DIR=/home/me/models ./clone-pull-build-run.sh -no-api-key`
+
+```sh
+git -C path/repo/goinfer pull --ff-only
+export GI_MODELS_DIR=/home/me/models
+export GI_DEFAULT_MODEL=my-favorite-model.gguf
+export GI_LLAMA_EXE=/home/me/bin/llama-server
+path/repo/goinfer/scripts/clone-pull-build-run.sh -no-api-key
+```
 
 Use the flag `--help` or the usage within the [script](./scripts/clone-pull-build-run.sh).
 
