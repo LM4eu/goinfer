@@ -204,6 +204,13 @@ do_llamaSwap(){
   )
 }
 
+# if GI_MODELS_DIR is unset => discover the parent folders of the GUFF files:
+#   - find the files *.gguf in $HOME and /mnt directories
+#   - -printf their folders (%h) separated by nul character `\0`
+#     (support folder names containing newline characters)
+#   - sort them, -u to keep a unique copy of each folder (`z` = input is `\0` separated)
+#   - while read xxx; do xxx; done  =>  keep the parent folders
+#   - echo $d: prints each parent folder separated by : (`-n` no newline)
 GI_MODELS_DIR="${GI_MODELS_DIR:-$(log "search for *.gguf in $HOME and /mnt"; 
 p=; { find "$HOME" /mnt -type f -name '*.gguf' -printf '%h\0' || : ; } | sort -zu |
 while IFS= read -rd '' d;do [[ $p && $d == "$p"/* ]] && continue;echo -n "$d:";p=$d;done)}"

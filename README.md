@@ -52,8 +52,12 @@ git clone https://github.com/LM4eu/goinfer
 cd goinfer/go
 
 # discover the parent directories of your GUFF files
+#   - find the files *.gguf 
+#   - -printf their folders (%h)
+#   - sort them, -u to keep a unique copy of each folder
+#   - while read xxx; do xxx; done  =>  print the parent folders separated by ":"
 export GI_MODELS_DIR="$(find ~ /mnt -name '*.gguf' -printf '%h\0' | sort -zu |
-while read -d '' d; do [[ $p && $d == $p/* ]] && continue; echo -n $d: ; p=$d; done)"
+while IFS= read -rd '' d; do [[ $p && $d == "$p"/* ]] && continue; echo -n "$d:"; p=$d; done)"
 
 # set the path of your inference engine (llama.cpp/ik_llama.cpp/...)
 export GI_LLAMA_EXE=/home/me/bin/llama-server
@@ -132,7 +136,13 @@ Use the flag `--help` or the usage within the [script](./scripts/clone-pull-buil
 
 ### environment variables
 
-Discover the parent directories of your GUFF models:
+Discover the parent folders of your GUFF models:
+
+- `find` the files `*.gguf` in `$HOME` and `/mnt`
+- `-printf` their folders `%h` separated by nul character `\0` (support folder names containing newline characters)
+- `sort` them, `-u` to keep a *unique* copy of each folder (`z` = input is `\0` separated)
+- `while read xxx; do xxx; done` to keep the parent folders
+- `echo $d:` prints each parent folder separated by `:` (`-n` no newline)
 
 ```bash
 export GI_MODELS_DIR="$(find "$HOME" /mnt -type f -name '*.gguf' -printf '%h\0' | sort -zu |
