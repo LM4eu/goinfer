@@ -83,17 +83,20 @@ func doGoinferYML(debug, gen, run, noAPIKey bool) *conf.Cfg {
 
 	// read "goinfer.yml"
 	err := cfg.ReadMainCfg(goinferYML, noAPIKey)
-	if err != nil && !gen {
-		slog.Warn("Cannot load config => generate it", "file", goinferYML, "error", err)
-		if run {
-			slog.Warn("Cannot load config. Flag -run prevents to modify/generate it", "file", goinferYML, "error", err)
+	if err != nil {
+		if gen {
+			slog.Info("Write a fresh new config file, may contain issues.", "file", goinferYML, "error", err)
+		} else if run {
+			slog.Info("Cannot load config. Flag -run prevents to modify/generate it", "file", goinferYML, "error", err)
 			os.Exit(1)
+		} else {
+			slog.Warn("Cannot load config => Write a new one, may contain issues.", "file", goinferYML, "error", err)
 		}
-		slog.Warn("Cannot load config => generate it", "file", goinferYML, "error", err)
+		gen = true
 	}
 
 	if gen {
-		// generate "template.jinja"
+		// generate "template.jinja" // TODO pass current working dir to llama-server
 		err = os.WriteFile(templateJinja, []byte("{{- messages[0].content -}}"), 0o600)
 		if err != nil {
 			slog.Error("Cannot write", "file", templateJinja, "error", err)

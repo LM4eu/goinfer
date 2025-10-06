@@ -17,10 +17,6 @@ import (
 // ReadMainCfg the configuration file, then apply the env vars and finally verify the settings.
 func (cfg *Cfg) ReadMainCfg(mainCfg string, noAPIKey bool) error {
 	err := cfg.load(mainCfg)
-	if err != nil {
-		return err
-	}
-
 	cfg.applyEnvVars()
 	cfg.trimParamValues()
 
@@ -34,6 +30,11 @@ func (cfg *Cfg) ReadMainCfg(mainCfg string, noAPIKey bool) error {
 	}
 	cfg.Main.Listen = listen
 
+	// error from cfg.load(mainCfg)
+	if err != nil {
+		return err
+	}
+
 	// Validate configuration
 	return cfg.validateMain(noAPIKey)
 }
@@ -46,8 +47,7 @@ func (cfg *Cfg) load(mainCfg string) error {
 
 	yml, err := os.ReadFile(filepath.Clean(mainCfg))
 	if err != nil {
-		slog.Error("Failed to read", "file", mainCfg)
-		return gie.Wrap(err, gie.ConfigErr, "os.ReadFile", "file", mainCfg)
+		return gie.Wrap(err, gie.ConfigErr, "Cannot read", "file", mainCfg)
 	}
 
 	if len(yml) == 0 {
@@ -56,8 +56,7 @@ func (cfg *Cfg) load(mainCfg string) error {
 
 	err = yaml.Unmarshal(yml, &cfg)
 	if err != nil {
-		slog.Error("Failed to yaml.Unmarshal", "100FirsBytes", string(yml[:100]))
-		return gie.Wrap(err, gie.ConfigErr, "yaml.Unmarshal")
+		return gie.Wrap(err, gie.ConfigErr, "Failed to yaml.Unmarshal", "invalid YAML", yml)
 	}
 
 	return nil
