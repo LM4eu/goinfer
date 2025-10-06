@@ -61,16 +61,13 @@ func getCfg() *conf.Cfg {
 
 	cfg := doGoinferYML(*debug, *gen, *run, *noAPIKey)
 
-	// if -gen without -run => stop here, just successfully generated "goinfer.yml"
-	if *gen && !*run {
-		if verbose {
-			cfg.Print()
-		}
-		os.Exit(0)
+	if *gen || verbose {
+		cfg.Print()
 	}
 
-	if *debug {
-		cfg.Print()
+	// if -gen without -run => stop here, just successfully generated "goinfer.yml"
+	if *gen && !*run {
+		os.Exit(0)
 	}
 
 	doLlamaSwapYML(cfg, verbose, *debug)
