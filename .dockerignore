@@ -1,12 +1,7 @@
 *
 !conf
-!files
+!gie
 !go.mod
 !go.sum
 !goinfer.go
-!llama
-!lm
-!server
-!state
-!template.jinja
-!types
+!infer
