@@ -56,9 +56,9 @@ set -E
 trap 'set +x; s=$?; err "status=$? at ${BASH_SOURCE[0]}:$LINENO" >&2; exit $s' ERR
 
 # Git repositories
-goinfer_dir="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd)"
-root_dir="$(cd "${goinfer_dir}/.." && pwd)"
-llamaCpp_dir="$(cd "${root_dir}/llama.cpp" && pwd)"
+goinfer_dir="$(  cd "${BASH_SOURCE[0]%/*}/.."  &&  pwd)"
+root_dir="$(     cd "${goinfer_dir}/.."        &&  pwd)"
+llamaCpp_dir="$( cd "${root_dir}/llama.cpp"    &&  pwd)"
 
 build_swap=0
 
@@ -100,9 +100,9 @@ clone_checkout_pull() {
   local tag=$3
   build_reason=clone
   [ -d "${repo#*/}" ] && build_reason= || 
-    ( log "repo $repo - clone"; set -x; pwd; git clone https://github.com/"$repo" )
+    ( log "repo $repo - clone"; pwd; set -x; git clone https://github.com/"$repo" )
   cd "${repo#*/}"
-  ( log "repo $repo - fetch"; set -x; pwd; git fetch --prune --tags --all )
+  ( log "repo $repo - fetch"; pwd; set -x; git fetch --prune --tags --all )
   if [[ -n "$tag" ]]
   then
     build_reason="tag: $tag"
@@ -140,8 +140,8 @@ do_llamaCpp() {
     GGML_AVX512_VNNI=$([[ "$flags" == *" avx512_vnni "* ]] && echo ON || echo OFF)
     GGML_BMI2=$(       [[ "$flags" == *" bmi2 "*        ]] && echo ON || echo OFF)
     GGML_SSE42=$(      [[ "$flags" == *" sse4_2 "*      ]] && echo ON || echo OFF)
-    set -
     pwd
+    set -x
     # generate the Ninja files (faster than Makefile)
     cmake -B build/ -G Ninja                                                                  \
       -D BUILD_SHARED_LIBS=${BUILD_SHARED_LIBS:-OFF}                                          \
@@ -186,9 +186,9 @@ do_llamaSwap(){
   [[ -z "$build_reason" ]] || (
     log "build llama-swap because $build_reason"
     # we may: rm proxy/ui_dist/
-    set -x
     cd ui
     pwd
+    set -x
     npm ci --prefer-offline --no-audit --no-fund # --omit=dev (--omit=dev prevents the installation of tsc)
     npm run build # requires "tsc"
   )
