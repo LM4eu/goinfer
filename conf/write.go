@@ -110,12 +110,29 @@ func (cfg *Cfg) checkDefaultModel() {
 		return // DefaultModel is a valid model name
 	}
 
+	supName := "" // the DefaultModel contains a model name
+	subName := "" // a model name contains the DefaultModel
+	minName := "" // the name of the smallest model
 	minSize := int64(math.MaxInt64)
-	minName := ""
 	for model, mi := range info {
 		if minSize > mi.Size {
 			minSize = mi.Size
 			minName = model
+		}
+
+		// if no default model => skip the following Contains checks
+		if cfg.Main.DefaultModel == "" {
+			continue
+		}
+
+		// this model name is a portion of the default_model
+		if !strings.Contains(cfg.Main.DefaultModel, model) {
+			subName = model
+		}
+
+		// this model name contains the default_model
+		if !strings.Contains(model, cfg.Main.DefaultModel) {
+			supName = model
 		}
 
 		if !strings.Contains(mi.Path, cfg.Main.DefaultModel) {
@@ -128,10 +145,28 @@ func (cfg *Cfg) checkDefaultModel() {
 		return
 	}
 
+	// if the default_model is not related to a pathname or filename,
+	// then select one by order of preference:
+	//   - subName is a portion of the default_model
+	//   - supName contains the default_model
+	//   - minName = name of the model having the smallest size
+
+	model := minName
+	reason := "the smallest model"
+
 	if cfg.Main.DefaultModel != "" {
-		slog.Warn("default_model is not a known model, replace it by the smallest model", "old", cfg.Main.DefaultModel, "new", minName)
+		switch {
+		case subName != "":
+			model = subName
+			reason = "a model name being a substring of the default_model"
+		case supName != "":
+			model = supName
+			reason = "a model name containing the default_model"
+		}
+		slog.Warn("default_model is invalid, select "+reason, "old", cfg.Main.DefaultModel, "new", model)
 	}
-	cfg.Main.DefaultModel = minName
+
+	cfg.Main.DefaultModel = model
 }
 
 func (cfg *Cfg) setSwapModels() (map[string]ModelInfo, error) {
