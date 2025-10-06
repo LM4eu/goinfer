@@ -151,11 +151,19 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 	modelPath := filepath.Join(modelsDir, "model.gguf")
 	err := os.WriteFile(modelPath, make([]byte, 2048), 0o600)
 	if err != nil {
-		t.Fatalf("cannot create model file: %v", err)
+		t.Fatalf("cannot create dummy model file: %v", err)
 	}
+	llamaExe := filepath.Join(modelsDir, "llama-server")
+	err = os.WriteFile(llamaExe, make([]byte, 2048), 0o600)
+	if err != nil {
+		t.Fatalf("cannot create dummy llama-sever file: %v", err)
+	}
+
 	cfg := Cfg{Main: DefaultMain}
 	cfg.Main.ModelsDir = modelsDir
 	cfg.Main.APIKey = "dummy"
+	cfg.Main.Llama.Exe = llamaExe
+
 	err = cfg.validateMain(false)
 	if err != nil {
 		t.Fatalf("validation1 error: %v", err)
@@ -207,6 +215,8 @@ func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot create model file: %v", err)
 	}
+
+	t.Setenv("GI_LLAMA_EXE", modelPath) // dummy llama-server
 
 	var grp sync.WaitGroup
 	for i := range 10 {

@@ -147,6 +147,14 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 		slog.Warn("API key should be 64+ hex digits", "len", len(cfg.Main.APIKey))
 	}
 
+	info, err := os.Stat(cfg.Main.Llama.Exe)
+	if os.IsNotExist(err) {
+		return gie.New(gie.ConfigErr, "GI_LLAMA_EXE or 'exe' parameter in goinfer.yml: file does not exist", "path", cfg.Main.Llama.Exe)
+	}
+	if info.IsDir() {
+		return gie.New(gie.ConfigErr, "GI_LLAMA_EXE or 'exe' parameter in goinfer.yml:  not a directory", "path", cfg.Main.Llama.Exe)
+	}
+
 	return nil
 }
 
