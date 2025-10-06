@@ -179,7 +179,7 @@ func startServers(cfg *conf.Cfg) {
 func startEchoServers(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group, proxyMan *proxy.ProxyManager) {
 	inf := &infer.Infer{Cfg: cfg, ProxyMan: proxyMan}
 	for addr, services := range cfg.Main.Listen {
-		if !strings.Contains(services, "infer") {
+		if !strings.Contains(services, "goinfer") {
 			continue
 		}
 

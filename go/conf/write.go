@@ -60,30 +60,19 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	cfg.Swap.HealthCheckTimeout = 120
 	cfg.Swap.MetricsMaxInMemory = 500
 
-	common, ok := cfg.Main.Llama.Args["common"]
-	if !ok {
-		common = argsCommon
-	}
-	common = " " + strings.TrimSpace(common)
-
-	infer, ok := cfg.Main.Llama.Args["infer"]
-	if !ok {
-		infer = argsInfer
-	}
-	infer = " " + strings.TrimSpace(infer)
-
-	v := ""
+	common := " " + cfg.Main.Llama.Args.Common
+	goinfer := " " + cfg.Main.Llama.Args.Goinfer
 	if verbose {
-		v = " --verbose-prompt "
+		common += " " + cfg.Main.Llama.Args.Verbose
 	}
 	if debug {
-		v += " --verbosity 2 "
+		common += " " + cfg.Main.Llama.Args.Debug
 	}
 
 	cfg.Swap.Macros = config.MacroList{
-		"cmd-fim":    cfg.Main.Llama.Exe + v + common,
-		"cmd-openai": cfg.Main.Llama.Exe + v + common + " --port ${PORT}",
-		"cmd-infer":  cfg.Main.Llama.Exe + v + common + " --port ${PORT}" + infer,
+		"cmd-fim":     cfg.Main.Llama.Exe + common,
+		"cmd-common":  cfg.Main.Llama.Exe + common + " --port ${PORT}",
+		"cmd-goinfer": cfg.Main.Llama.Exe + common + " --port ${PORT}" + goinfer,
 	}
 
 	_, err := cfg.setSwapModels()
@@ -101,7 +90,8 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 		return gie.Wrap(er, gie.ConfigErr, "failed to marshal the llama-swap config")
 	}
 
-	err = writeWithHeader(swapCfg, "# Doc: https://github.com/mostlygeek/llama-swap/wiki/Configuration", yml)
+	err = writeWithHeader(swapCfg, `# DO NOT EDIT - This file is generated when Goinfer starts.
+# Doc: https://github.com/mostlygeek/llama-swap/wiki/Configuration`, yml)
 	if err != nil {
 		return err
 	}
@@ -170,9 +160,9 @@ func (cfg *Cfg) setSwapModels() (map[string]ModelInfo, error) {
 	//  --fim-qwen-7b-spec           Qwen 2.5 Coder 7B + 0.5B draft for speculative decoding
 	//  --fim-qwen-14b-spec          Qwen 2.5 Coder 14B + 0.5B draft for speculative decoding
 	//  --fim-qwen-30b-default       Qwen 3 Coder 30B A3B Instruct
-	cfg.addModelCfg("ggml-org/bge-small-en-v1.5-Q8_0-GGUF", "${cmd-openai} --embd-bge-small-en-default", openaiCfg)
-	cfg.addModelCfg("ggml-org/e5-small-v2-Q8_0-GGUF", "${cmd-openai} --embd-e5-small-en-default", openaiCfg)
-	cfg.addModelCfg("ggml-org/gte-small-Q8_0-GGUF", "${cmd-openai} --embd-gte-small-default", openaiCfg)
+	cfg.addModelCfg("ggml-org/bge-small-en-v1.5-Q8_0-GGUF", "${cmd-common} --embd-bge-small-en-default", openaiCfg)
+	cfg.addModelCfg("ggml-org/e5-small-v2-Q8_0-GGUF", "${cmd-common} --embd-e5-small-en-default", openaiCfg)
+	cfg.addModelCfg("ggml-org/gte-small-Q8_0-GGUF", "${cmd-common} --embd-gte-small-default", openaiCfg)
 	cfg.addModelCfg("ggml-org/Qwen2.5-Coder-1.5B-Q8_0-GGUF", "${cmd-fim} --fim-qwen-1.5b-default", fimCfg)
 	cfg.addModelCfg("ggml-org/Qwen2.5-Coder-3B-Q8_0-GGUF", "${cmd-fim} --fim-qwen-3b-default", fimCfg)
 	cfg.addModelCfg("ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF", "${cmd-fim} --fim-qwen-7b-default", fimCfg)
@@ -186,8 +176,8 @@ func (cfg *Cfg) setSwapModels() (map[string]ModelInfo, error) {
 	for name, mi := range info {
 		goinferCfg.UseModelName = name // overrides the model name that is sent to /upstream server
 		args := " " + mi.Flags + " -m " + mi.Path
-		cfg.addModelCfg(name, "${cmd-openai}"+args, openaiCfg)       // API=OpenAI
-		cfg.addModelCfg("GI_"+name, "${cmd-infer}"+args, goinferCfg) //
+		cfg.addModelCfg(name, "${cmd-common}"+args, openaiCfg)         // API=OpenAI
+		cfg.addModelCfg("GI_"+name, "${cmd-goinfer}"+args, goinferCfg) //
 	}
 
 	return info, nil

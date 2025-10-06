@@ -35,8 +35,15 @@ type (
 	}
 
 	Llama struct {
-		Args map[string]string `json:"args" yaml:"args"`
-		Exe  string            `json:"exe"  yaml:"exe"`
+		Args Args   `json:"args" yaml:"args"`
+		Exe  string `json:"exe"  yaml:"exe"`
+	}
+
+	Args struct {
+		Verbose string `json:"verbose" yaml:"verbose"`
+		Debug   string `json:"debug"   yaml:"debug"`
+		Common  string `json:"common"  yaml:"common"`
+		Goinfer string `json:"goinfer" yaml:"goinfer"`
 	}
 )
 
@@ -45,10 +52,6 @@ const (
 	// Hex code: C0ffee 15 C001, 50 C0ffee 15 900d. Bad C0de 15 Dead, 101. Cafe 91f7, 90 Cafe, 7e57 C0de.
 	debugAPIKey = "C0ffee15C00150C0ffee15900dBadC0de15Dead101Cafe91f790Cafe7e57C0de"
 	unsetAPIKey = "Please ⚠️ Set your private 64-hex-digit API key (32 bytes)"
-
-	// Arguments for llama-server command line.
-	argsCommon = "--props --no-warmup --mlock --no-mmap"
-	argsInfer  = "--jinja --chat-template-file template.jinja"
 )
 
 var (
@@ -58,15 +61,17 @@ var (
 		APIKey:       "",
 		Host:         "",
 		Listen: map[string]string{
-			":4444": "infer",
+			":4444": "goinfer",
 			":5555": "llama-swap",
 		},
 		Origins: "localhost",
 		Llama: Llama{
 			Exe: "/home/me/llama.cpp/build/bin/llama-server",
-			Args: map[string]string{
-				"common": argsCommon,
-				"infer":  argsInfer,
+			Args: Args{
+				Verbose: "--verbose-prompt",
+				Debug:   "--verbosity 2",
+				Common:  "--props --no-warmup --mlock --no-mmap",
+				Goinfer: "--jinja --chat-template-file template.jinja",
 			},
 		},
 	}

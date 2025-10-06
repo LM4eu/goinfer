@@ -210,16 +210,20 @@ origins:   # CORS whitelist
 listen:
   # format:  <address>: <list of enabled services>
   # <address> can be <ip|host>:<port> or simply :<port> when <host> is localhost
-  ":4444": infer        # historical goinfer endpoints
+  ":4444": goinfer     # /completions endpoint letting tools like Agent-Smith doing the templating
   ":5555": llama-swap  # OpenAI‑compatible API by llama‑swap
 
 llama:
   exe: /home/me/llama.cpp/build/bin/llama-server
   args:
     # common args used for every model
-    common: "--props --no-warmup"
-    # extra args for the completion endpoint (Jinja templating)
-    infer: "--jinja --chat-template-file template.jinja"
+    common: --props --no-warmup --mlock --no-mmap
+    # extra args to let tools like Agent-Smith doing the templating (/completions endpoint)
+    goinfer: --jinja --chat-template-file template.jinja
+    # extra llama-server flag when ./goinfer is used without the -q flag
+    verbose: --verbose-prompt
+    # extra llama-server flag for ./goinfer -debug
+    debug: --verbosity 2
 ```
 
 - **API key** – Never commit them. Use env. var. `GI_API_KEY` or a secrets manager in production.
@@ -241,27 +245,45 @@ metricsMaxInMemory: 1000  # maximum number of metrics to keep in memory
 startPort: 6000           # first ${PORT} incremented for each model
 
 macros:  # macros to reduce common conf settings
-  "cmd-openai": "./llama-server --port ${PORT} --props --no-webui --no-warmup"
-  "cmd-infer": "./llama-server --port ${PORT} --props --no-webui --no-warmup --jinja --chat-template-file template.jinja"
+    cmd-common: /home/me/llama.cpp/build/bin/llama-server --props --no-warmup --mlock --no-mmap --verbose-prompt --port ${PORT}
+    cmd-fim: /home/me/llama.cpp/build/bin/llama-server --props --no-warmup --mlock --no-mmap --verbose-prompt
+    cmd-goinfer: /home/me/llama.cpp/build/bin/llama-server --props --no-warmup --mlock --no-mmap --verbose-prompt --port ${PORT} --jinja --chat-template-file template.jinja
 
 models:
-  "Qwen2.5-1.5B-Instruct-Q4_K_M":  # model names used in API requests
-    aliases:                       # alternative model names (unique globally)
-      - "Qwen2.5-1.5B-Instruct"    #     for impersonating a specific model
-      - "Qwen2.5-1.5B"
-    unlisted: false                # hide model name in /v1/models and /upstream API response
-    name: "Qwen2.5 1.5B"           # name for human in /v1/models API response
-    useModelName: "qwen:qwq"       # overrides the model name that is sent to /upstream server
+
+  # model name used in API requests
+  ggml-org/Qwen2.5-Coder-0.5B-Q8_0-GGUF_qwen2.5-coder-0.5b-q8_0:
     description: "Small but capable model for quick testing"
+    name: Qwen2.5-Coder-0.5B-Q8_0-GGUF  # for /v1/models response
+    useModelName: "Qwen2.5-Coder"       # overrides the model name for /upstream (used by llama-swap web UI)
+    aliases:
+      - "Qwen2.5-Coder-0.5B-Q8_0"       # alternative names (unique globally)
+      - "Qwen2.5-Coder-0.5B"
     env: []
-    cmd: ${cmd-openai} --model /path/to/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf
-    proxy: http://localhost:${PORT}  # default: http://localhost:${PORT}
-    checkEndpoint: /health           # default: /health
-    ttl: 3600                        # stop the cmd after 1 hour of inactivity
+    cmd: ${cmd-common}  -m /home/c/.cache/llama.cpp/ggml-org_Qwen2.5-Coder-0.5B-Q8_0-GGUF_qwen2.5-coder-0.5b-q8_0.gguf
+    proxy: http://localhost:${PORT}     # default: http://localhost:${PORT}
+    checkEndpoint: /health              # default: /health endpoint
+    unlisted: false                     # unlisted=false => list model in /v1/models and /upstream responses
+    ttl: 3600                           # stop the cmd after 1 hour of inactivity
     filters:
       # inference params to remove from the request, default: ""
       # useful for preventing overriding of default server params by requests
       strip_params: "temperature,top_p,top_k"
+
+  # GI_ prefix for goinfer /completions endpoint
+  GI_ggml-org/Qwen2.5-Coder-0.5B-Q8_0-GGUF_qwen2.5-coder-0.5b-q8_0:
+      cmd: ${cmd-goinfer}  -m /home/c/.cache/llama.cpp/ggml-org_Qwen2.5-Coder-0.5B-Q8_0-GGUF_qwen2.5-coder-0.5b-q8_0.gguf
+      proxy: http://localhost:${PORT}
+      checkEndpoint: /health
+      unlisted: true   # hide model name in /v1/models and /upstream responses
+      useModelName: ggml-org/Qwen2.5-Coder-0.5B-Q8_0-GGUF # for /upstream (used by llama-swap web UI)
+
+  # selected models by llama.cpp are also available with their specific port
+  ggml-org/Qwen2.5-Coder-1.5B-Q8_0-GGUF:
+      cmd: ${cmd-fim} --fim-qwen-1.5b-default
+      proxy: http://localhost:8012
+      checkEndpoint: /health
+      unlisted: false
 
 # preload some models on startup 
 hooks:

@@ -108,4 +108,8 @@ func (cfg *Cfg) trimParamValues() {
 	cfg.Main.Origins = strings.Trim(cfg.Main.Origins, ",")
 
 	cfg.Main.Llama.Exe = strings.TrimSpace(cfg.Main.Llama.Exe)
+	cfg.Main.Llama.Args.Verbose = strings.TrimSpace(cfg.Main.Llama.Args.Verbose)
+	cfg.Main.Llama.Args.Debug = strings.TrimSpace(cfg.Main.Llama.Args.Debug)
+	cfg.Main.Llama.Args.Common = strings.TrimSpace(cfg.Main.Llama.Args.Common)
+	cfg.Main.Llama.Args.Goinfer = strings.TrimSpace(cfg.Main.Llama.Args.Goinfer)
 }
