@@ -49,7 +49,7 @@ CUDA-13, GCC-14 and optimized CPU flags.
 
 ```bash
 git clone https://github.com/LM4eu/goinfer
-cd goinfer/go
+cd goinfer
 
 # discover the parent directories of your GUFF files
 #   - find the files *.gguf 

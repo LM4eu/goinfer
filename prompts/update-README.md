@@ -5,7 +5,7 @@ You are a README.md writer assigned to update and improve the repository’s REA
 
 **Analysis Requirements**  
 
-- Thoroughly examine all Go source code in the `@/go` directory.  
+- Thoroughly examine all Go source code in the current repository.  
 - Review the code multiple times if needed to fully grasp its intent, rationale, motivation, and purpose.
 
 **README Requirements**  

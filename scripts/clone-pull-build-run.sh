@@ -75,7 +75,7 @@ case "${1:-}" in
 esac
 
 # if go.work present and uses llama-swap => enable llama-swap build
-work_file="$goinfer_dir/go/go.work"
+work_file="$goinfer_dir/go.work"
 
 swap_in_work_file() {
   sed 's|//.*||' "$work_file" 2>/dev/null | grep -sqw '../llama-swap' && 
@@ -197,9 +197,9 @@ do_llamaSwap(){
   (
     log "set up $work_file"
     set -x
-    cd "$goinfer_dir/go"
+    cd "$goinfer_dir"
     go work init || :
-    go work use . ../../llama-swap
+    go work use . ../llama-swap
     go work sync
   )
 }
@@ -222,7 +222,7 @@ export GI_LLAMA_EXE="${GI_LLAMA_EXE:-"$(do_llamaCpp >&2 && \ls -1 "$llamaCpp_dir
 
 (( ! build_swap )) || do_llamaSwap
 
- cd "$goinfer_dir/go"
+ cd "$goinfer_dir"
 
 (
   log build goinfer with CPU-optimizations
@@ -237,14 +237,8 @@ export GI_LLAMA_EXE="${GI_LLAMA_EXE:-"$(do_llamaCpp >&2 && \ls -1 "$llamaCpp_dir
 )
 
 (
-  log generate config
-  set -x
-  ./goinfer -gen "$@"
-)
-
-(
-  log run goinfer
+  log generate config and run Goinfer
   set -x
   export GIN_MODE="${GIN_MODE:-release}"
-  ./goinfer "$@"
+  ./goinfer -gen -run "$@"
 )

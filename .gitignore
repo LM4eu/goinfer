@@ -5,10 +5,11 @@
 /.old-code/
 /.roo/
 /docsite/dist/
-/go/go.work*
-/go/goinfer
-/go/goinfer.yml
-/go/infer/dist/
-/go/llama-swap.yml
-/go/template.jinja
+/go.work*
+/goinfer
+/goinfer.yml
+/infer/dist/
+/llama-server.exe
+/llama-swap.yml
+/template.jinja
 llama.log

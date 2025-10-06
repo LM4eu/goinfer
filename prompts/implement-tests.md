@@ -93,7 +93,7 @@ To prevent tool calls failing with "Current ask promise was ignored" you may use
 <tool_name>read_text_file</tool_name>
 <arguments>
 {
-"path": "/home/user/goinfer/go/infer/infer_test.go"
+"path": "/home/user/goinfer/infer/infer_test.go"
 }
 </arguments>
 </use_mcp_tool>
