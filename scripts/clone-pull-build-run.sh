@@ -189,8 +189,8 @@ do_llamaSwap(){
     set -x
     cd ui
     pwd
-    npm ci --prefer-offline --no-audit --no-fund --omit=dev
-    npm run build
+    npm ci --prefer-offline --no-audit --no-fund # --omit=dev (--omit=dev prevents the installation of tsc)
+    npm run build # requires "tsc"
   )
 
   swap_in_work_file || 
