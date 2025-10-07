@@ -70,9 +70,9 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	}
 
 	cfg.Swap.Macros = config.MacroList{
-		"cmd-fim":     cfg.Main.Llama.Exe + common,
-		"cmd-common":  cfg.Main.Llama.Exe + common + " --port ${PORT}",
-		"cmd-goinfer": cfg.Main.Llama.Exe + common + " --port ${PORT}" + goinfer,
+		{Name: "cmd-fim", Value: cfg.Main.Llama.Exe + common},
+		{Name: "cmd-common", Value: cfg.Main.Llama.Exe + common + " --port ${PORT}"},
+		{Name: "cmd-goinfer", Value: cfg.Main.Llama.Exe + common + " --port ${PORT}" + goinfer},
 	}
 
 	_, err := cfg.setSwapModels()
