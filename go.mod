@@ -1,6 +1,6 @@
 // to set the latest version of llama-swap:
 //
-//    go get github.com/LM4eu/llama-swap@main
+//    go get github.com/LM4eu/llama-swap@lm4
 
 module github.com/LM4eu/goinfer
 
@@ -8,7 +8,7 @@ go 1.25.1
 
 require (
 	github.com/LM4eu/garcon v0.40.0
-	github.com/LM4eu/llama-swap v0.163.0
+	github.com/LM4eu/llama-swap v0.164.0
 	github.com/gin-gonic/gin v1.11.0
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/labstack/gommon v0.4.2
@@ -34,7 +34,7 @@ require (
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.27.0 // indirect
+	github.com/go-playground/validator/v10 v10.28.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
