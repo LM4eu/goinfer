@@ -38,10 +38,12 @@ func TestReadMainCfg(t *testing.T) {
 	// Minimal config.
 	cfg := Cfg{Main: DefaultMain}
 	cfg.Main.ModelsDir = "/tmp/models"
-
-	// Provide a dummy admin API key to satisfy validation.
-	cfg.Main.APIKey = "dummy"
-
+	cfg.Main.Llama.Exe = filepath.Join(filepath.Dir(t.TempDir()), "llama-server")
+	err := os.WriteFile(cfg.Main.Llama.Exe, make([]byte, 2048), 0o600)
+	if err != nil {
+		t.Fatalf("cannot create dummy llama-sever file: %v", err)
+	}
+	cfg.Main.APIKey = "dummy" // dummy admin API key to satisfy validation.
 	path := writeTempCfg(t, &cfg)
 
 	// Override via env.
@@ -50,8 +52,8 @@ func TestReadMainCfg(t *testing.T) {
 	t.Setenv("GI_HOST", "127.0.0.1")
 
 	// Create a dummy model file.
-	modelPath := filepath.Join(dir, "model.gguf")
-	err := os.WriteFile(modelPath, make([]byte, 2048), 0o600)
+	modelDir := filepath.Join(dir, "model.gguf")
+	err = os.WriteFile(modelDir, make([]byte, 2048), 0o600)
 	if err != nil {
 		t.Fatalf("cannot create model file: %v", err)
 	}
@@ -79,7 +81,14 @@ func TestWriteMainCfg(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot create model file: %v", err)
 	}
+	llamaExe := filepath.Join(filepath.Dir(t.TempDir()), "llama-server")
+	err = os.WriteFile(llamaExe, make([]byte, 2048), 0o600)
+	if err != nil {
+		t.Fatalf("cannot create dummy llama-sever file: %v", err)
+	}
+
 	t.Setenv("GI_MODELS_DIR", modelsDir)
+	t.Setenv("GI_LLAMA_EXE", llamaExe)
 
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "out.yaml")

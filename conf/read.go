@@ -96,7 +96,6 @@ func (cfg *Cfg) applyEnvVars() {
 	}
 
 	// TODO add GI_LLAMA_ARGS_xxxxxx
-	// TODO verify GI_MODELS_DIR exit
 }
 
 // trimParamValues cleans each parameter.
