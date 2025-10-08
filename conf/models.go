@@ -214,7 +214,7 @@ func addGUFF(info map[string]ModelInfo, root, path string) error {
 
 // replaceDIR in flags by the current dir of he file.
 // When using models like GPT OSS, we need to provide a grammar file.
-// github.com/ggml-org/llama.cpp/discussions/15396#discussioncomment-14145537
+// See: github.com/ggml-org/llama.cpp/discussions/15396#discussioncomment-14145537
 // We want the possibility to keep both model and grammar files in the same folder.
 // But we also want to be free to move that folder
 // without having to update the path within tho command line arguments.
