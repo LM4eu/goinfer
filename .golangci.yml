@@ -664,8 +664,8 @@ linters:
         - name: var-declaration
         # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#var-naming
         - name: var-naming # warns when initialism, variable or package naming conventions are not followed
-          # arguments:                       # relax the rules
-          #   - ["ID"] # AllowList
+          arguments:                       # relax the rules
+            - ["model_flags"] # AllowList
           #   - ["VM"] # DenyList
           #   - - skip-initialism-name-checks: true
           #       upper-case-const: true

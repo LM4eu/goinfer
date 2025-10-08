@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/LM4eu/goinfer/gie"
 	"go.yaml.in/yaml/v4"
@@ -73,6 +74,30 @@ func (cfg *Cfg) applyEnvVars() {
 	if def := os.Getenv("GI_DEFAULT_MODEL"); def != "" {
 		cfg.Main.DefaultModel = def
 		slog.Debug("use", "GI_DEFAULT_MODEL", def)
+	}
+
+	if extra, ok := syscall.Getenv("GI_EXTRA_MODELS"); ok {
+		extra = strings.TrimSpace(extra)
+		slog.Debug("use", "GI_EXTRA_MODELS", extra)
+		// empty GI_EXTRA_MODELS => reset goinfer.yml/extra_models
+		if extra == "" {
+			cfg.Main.ExtraModels = nil
+		} else if extra[0] == '=' { // starts with "="
+			cfg.Main.ExtraModels = nil // => replace goinfer.yml/extra_models
+			extra = extra[1:]
+		}
+		for pair := range strings.SplitSeq(extra, "|") {
+			model_flags := strings.SplitN(pair, ":", 2)
+			model := strings.TrimSpace(model_flags[0])
+			cfg.Main.ExtraModels[model] = ""
+			if len(model_flags) > 1 {
+				cfg.Main.ExtraModels[model] = strings.TrimSpace(model_flags[1])
+			}
+			// if DefaultModel unset => use the first ExtraModels
+			if cfg.Main.DefaultModel == "" {
+				cfg.Main.DefaultModel = model
+			}
+		}
 	}
 
 	if host := os.Getenv("GI_HOST"); host != "" {

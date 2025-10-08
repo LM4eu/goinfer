@@ -179,41 +179,36 @@ func (cfg *Cfg) setSwapModels() (map[string]ModelInfo, error) {
 		cfg.Swap.Models = make(map[string]config.ModelConfig, 2*len(info)+9)
 	}
 
-	openaiCfg := &config.ModelConfig{Proxy: "http://localhost:${PORT}"}
-	fimCfg := &config.ModelConfig{Proxy: "http://localhost:8012"} // the flag --fim-qwen-xxxx sets port=8012
-	goinferCfg := &config.ModelConfig{
+	commonMC := &config.ModelConfig{Proxy: "http://localhost:${PORT}"}
+	fimMC := &config.ModelConfig{Proxy: "http://localhost:8012"} // the flag --fim-qwen-xxxx sets port=8012
+	goinferMC := &config.ModelConfig{
 		Proxy:    "http://localhost:${PORT}",
 		Unlisted: true, // hide model in /v1/models and /upstream responses
 	}
 
-	// Output of `llama-server -h` contains:
-	//  --embd-bge-small-en-default  bge-small-en-v1.5
-	//  --embd-e5-small-en-default   e5-small-v2
-	//  --embd-gte-small-default     gte-small
-	//  --fim-qwen-1.5b-default      Qwen 2.5 Coder 1.5B
-	//  --fim-qwen-3b-default        Qwen 2.5 Coder 3B
-	//  --fim-qwen-7b-default        Qwen 2.5 Coder 7B
-	//  --fim-qwen-7b-spec           Qwen 2.5 Coder 7B + 0.5B draft for speculative decoding
-	//  --fim-qwen-14b-spec          Qwen 2.5 Coder 14B + 0.5B draft for speculative decoding
-	//  --fim-qwen-30b-default       Qwen 3 Coder 30B A3B Instruct
-	cfg.addModelCfg("ggml-org/bge-small-en-v1.5-Q8_0-GGUF", "${cmd-common} --embd-bge-small-en-default", openaiCfg)
-	cfg.addModelCfg("ggml-org/e5-small-v2-Q8_0-GGUF", "${cmd-common} --embd-e5-small-en-default", openaiCfg)
-	cfg.addModelCfg("ggml-org/gte-small-Q8_0-GGUF", "${cmd-common} --embd-gte-small-default", openaiCfg)
-	cfg.addModelCfg("ggml-org/Qwen2.5-Coder-1.5B-Q8_0-GGUF", "${cmd-fim} --fim-qwen-1.5b-default", fimCfg)
-	cfg.addModelCfg("ggml-org/Qwen2.5-Coder-3B-Q8_0-GGUF", "${cmd-fim} --fim-qwen-3b-default", fimCfg)
-	cfg.addModelCfg("ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF", "${cmd-fim} --fim-qwen-7b-default", fimCfg)
-	cfg.addModelCfg("ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF", "${cmd-fim} --fim-qwen-7b-spec", fimCfg)
-	cfg.addModelCfg("ggml-org/Qwen2.5-Coder-14B-Q8_0-GGUF", "${cmd-fim} --fim-qwen-14b-spec", fimCfg)
-	cfg.addModelCfg("ggml-org/Qwen3-Coder-30B-A3B-Instruct-Q8_0-GGUF", "${cmd-fim} --fim-qwen-30b-default", fimCfg)
+	for model, flags := range cfg.Main.ExtraModels {
+		switch {
+		case flags == "":
+			cfg.addModelCfg(model, "${cmd-common} -hf "+model, commonMC)
+			cfg.addModelCfg("GI_"+model, "${cmd-goinfer} -hf "+model, goinferMC)
+		case strings.HasPrefix(flags, "--embd-"):
+			cfg.addModelCfg(model, "${cmd-common} "+flags, commonMC)
+		case strings.HasPrefix(flags, "--fim-"):
+			cfg.addModelCfg(model, "${cmd-common} "+flags, fimMC)
+		default:
+			cfg.addModelCfg(model, "${cmd-common} "+flags, commonMC)
+			cfg.addModelCfg("GI_"+model, "${cmd-goinfer} "+flags, goinferMC)
+		}
+	}
 
 	// For each model, set two model settings:
 	// 1. for the OpenAI endpoints
 	// 2. for the /completion endpoint (prefix with GI_ and hide the model)
 	for name, mi := range info {
-		goinferCfg.UseModelName = name // overrides the model name that is sent to /upstream server
+		goinferMC.UseModelName = name // overrides the model name that is sent to /upstream server
 		args := " " + mi.Flags + " -m " + mi.Path
-		cfg.addModelCfg(name, "${cmd-common}"+args, openaiCfg)         // API=OpenAI
-		cfg.addModelCfg("GI_"+name, "${cmd-goinfer}"+args, goinferCfg) //
+		cfg.addModelCfg(name, "${cmd-common}"+args, commonMC)         // API for Cline, RooCode, RolePlay...
+		cfg.addModelCfg("GI_"+name, "${cmd-goinfer}"+args, goinferMC) // API for Agent-Smith...
 	}
 
 	return info, nil
