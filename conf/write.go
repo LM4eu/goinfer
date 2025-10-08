@@ -162,6 +162,7 @@ func (cfg *Cfg) checkDefaultModel() {
 		case supName != "":
 			model = supName
 			reason = "a model name containing the default_model"
+		default:
 		}
 		slog.Warn("default_model is invalid, select "+reason, "old", cfg.Main.DefaultModel, "new", model)
 	}

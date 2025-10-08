@@ -81,12 +81,13 @@ func doGoinferYML(debug, gen, run, noAPIKey bool) *conf.Cfg {
 	// read "goinfer.yml"
 	err := cfg.ReadMainCfg(goinferYML, noAPIKey)
 	if err != nil {
-		if gen {
+		switch {
+		case gen:
 			slog.Info("Write a fresh new config file, may contain issues.", "file", goinferYML, "error", err)
-		} else if run {
+		case run:
 			slog.Info("Cannot load config. Flag -run prevents to modify/generate it", "file", goinferYML, "error", err)
 			os.Exit(1)
-		} else {
+		default:
 			slog.Warn("Cannot load config => Write a new one, may contain issues.", "file", goinferYML, "error", err)
 		}
 		gen = true

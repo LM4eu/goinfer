@@ -148,15 +148,14 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 		return err
 	}
 
-
 	// GI_MODELS_DIR
 	for dir := range strings.SplitSeq(cfg.Main.ModelsDir, ":") {
-		info, err := os.Stat(dir)
-		if errors.Is(err, fs.ErrNotExist) {
+		info, er := os.Stat(dir)
+		if errors.Is(er, fs.ErrNotExist) {
 			return gie.New(gie.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.yml: does not exist", "dir", dir)
 		}
-		if err != nil {
-			return gie.Wrap(err, gie.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.yml", "dir", dir)
+		if er != nil {
+			return gie.Wrap(er, gie.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.yml", "dir", dir)
 		}
 		if !info.IsDir() {
 			return gie.New(gie.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.yml: must be a file, not a directory", "path", cfg.Main.Llama.Exe)
@@ -174,7 +173,6 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 	if info.IsDir() {
 		return gie.New(gie.ConfigErr, "GI_LLAMA_EXE or 'exe' in goinfer.yml: must be a file, not a directory", "exe", cfg.Main.Llama.Exe)
 	}
-
 
 	// API key
 	if noAPIKey {
