@@ -214,11 +214,11 @@ func addGUFF(info map[string]ModelInfo, root, path string) error {
 
 // replaceDIR in flags by the current dir of he file.
 // When using models like GPT OSS, we need to provide a grammar file.
-// see: https://github.com/ggml-org/llama.cpp/discussions/15396#discussioncomment-14145537
-// We want to have the possibility to keep the model and grammar files within the same directory.
-// But we also want to be free to move that directory
+// github.com/ggml-org/llama.cpp/discussions/15396#discussioncomment-14145537
+// We want the possibility to keep both model and grammar files in the same folder.
+// But we also want to be free to move that folder
 // without having to update the path within tho command line arguments.
-// Thus, we use $DIR as a placeholder for the directory.
+// Thus, we use $DIR as a placeholder for the folder.
 func replaceDIR(path, flags string) string {
 	return strings.ReplaceAll(flags, "$DIR", filepath.Dir(path))
 }
