@@ -122,7 +122,7 @@ func (cfg *Cfg) parseExtraModels(extra string) {
 	}
 
 	for pair := range strings.SplitSeq(extra, "|") {
-		model_flags := strings.SplitN(pair, ":", 2)
+		model_flags := strings.SplitN(pair, "=", 2)
 		model := strings.TrimSpace(model_flags[0])
 		cfg.Main.ExtraModels[model] = ""
 		if len(model_flags) > 1 {
