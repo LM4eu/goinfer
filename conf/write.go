@@ -80,6 +80,11 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 		return err
 	}
 
+	// when Goinfer starts, llama-server is started with the DefaultModel
+	if cfg.Main.DefaultModel != "" {
+		cfg.Swap.Hooks.OnStartup.Preload = []string{cfg.Main.DefaultModel}
+	}
+
 	err = cfg.ValidateSwap()
 	if err != nil {
 		return err
