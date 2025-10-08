@@ -19,7 +19,7 @@ This script can be used:
 For better reproducibility, you can specify the tag or branch:
 
   llamaCpp_tag=b6666 llamaSwap_tag=v0.0.166 ./clone-pull-build-run.sh`
-  llamaCpp_branch=master llamaSwap_branch=main ./clone-pull-build-run.sh`
+  llamaCpp_branch=master llamaSwap_branch=lm4 ./clone-pull-build-run.sh`
 
 If you have already your `llama-server` (or compatible fork),
 set `export GI_LLAMA_EXE=/home/me/path/llama-server`.
@@ -181,7 +181,7 @@ do_llamaCpp() {
 
 do_llamaSwap(){
   cd "$root_dir"
-  clone_checkout_pull LM4eu/llama-swap "${llamaSwap_branch:-main}" "${llamaSwap_tag:-}"
+  clone_checkout_pull LM4eu/llama-swap "${llamaSwap_branch:-lm4}" "${llamaSwap_tag:-}"
   [[ -n "$build_reason" ]] || { [[ -f proxy/ui_dist/index.html ]] || build_reason="missing proxy/ui_dist/index.html" ; }
   [[ -z "$build_reason" ]] || (
     log "build llama-swap because $build_reason"
@@ -232,13 +232,14 @@ export GI_LLAMA_EXE="${GI_LLAMA_EXE:-"$(do_llamaCpp >&2 && \ls -1 "$llamaCpp_dir
       *" sse2 "*)     export GOAMD64=v2;;
   esac
   pwd
+  rm -f ./goinfer
   set -x
   go build .
 )
 
 (
-  log generate config and run Goinfer
+  log generate config (if missing) and run Goinfer
   set -x
   export GIN_MODE="${GIN_MODE:-release}"
-  ./goinfer -gen -run "$@"
+  ./goinfer "$@"
 )
