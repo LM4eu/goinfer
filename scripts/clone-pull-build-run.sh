@@ -238,7 +238,7 @@ export GI_LLAMA_EXE="${GI_LLAMA_EXE:-"$(do_llamaCpp >&2 && \ls -1 "$llamaCpp_dir
 )
 
 (
-  log generate config (if missing) and run Goinfer
+  log "generate config (if missing) and run Goinfer"
   set -x
   export GIN_MODE="${GIN_MODE:-release}"
   ./goinfer "$@"
