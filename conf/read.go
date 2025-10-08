@@ -79,25 +79,7 @@ func (cfg *Cfg) applyEnvVars() {
 	if extra, ok := syscall.Getenv("GI_EXTRA_MODELS"); ok {
 		extra = strings.TrimSpace(extra)
 		slog.Debug("use", "GI_EXTRA_MODELS", extra)
-		// empty GI_EXTRA_MODELS => reset goinfer.yml/extra_models
-		if extra == "" {
-			cfg.Main.ExtraModels = nil
-		} else if extra[0] == '=' { // starts with "="
-			cfg.Main.ExtraModels = nil // => replace goinfer.yml/extra_models
-			extra = extra[1:]
-		}
-		for pair := range strings.SplitSeq(extra, "|") {
-			model_flags := strings.SplitN(pair, ":", 2)
-			model := strings.TrimSpace(model_flags[0])
-			cfg.Main.ExtraModels[model] = ""
-			if len(model_flags) > 1 {
-				cfg.Main.ExtraModels[model] = strings.TrimSpace(model_flags[1])
-			}
-			// if DefaultModel unset => use the first ExtraModels
-			if cfg.Main.DefaultModel == "" {
-				cfg.Main.DefaultModel = model
-			}
-		}
+		cfg.parseExtraModels(extra)
 	}
 
 	if host := os.Getenv("GI_HOST"); host != "" {
@@ -121,6 +103,29 @@ func (cfg *Cfg) applyEnvVars() {
 	}
 
 	// TODO add GI_LLAMA_ARGS_xxxxxx
+}
+
+func (cfg *Cfg) parseExtraModels(extra string) {
+	// empty => disable goinfer.yml/extra_models
+	if extra == "" {
+		cfg.Main.ExtraModels = nil
+	} else if extra[0] == '=' { // starts with "=" => replace goinfer.yml/extra_models
+		cfg.Main.ExtraModels = nil
+		extra = extra[1:] // skip first "="
+	}
+
+	for pair := range strings.SplitSeq(extra, "|") {
+		model_flags := strings.SplitN(pair, ":", 2)
+		model := strings.TrimSpace(model_flags[0])
+		cfg.Main.ExtraModels[model] = ""
+		if len(model_flags) > 1 {
+			cfg.Main.ExtraModels[model] = strings.TrimSpace(model_flags[1])
+		}
+		// if DefaultModel unset => use the first ExtraModels
+		if cfg.Main.DefaultModel == "" {
+			cfg.Main.DefaultModel = model
+		}
+	}
 }
 
 // trimParamValues cleans each parameter.
