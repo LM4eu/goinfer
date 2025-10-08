@@ -85,13 +85,19 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 		return err
 	}
 
+	// start the llama-swap.yml with these comment lines:
+	header := `# DO NOT EDIT - This file is generated at Goinfer start time.
+# Doc:
+# - https://github.com/LM4eu/goinfer/?tab=readme-ov-file#llamaswapyml
+# - https://github.com/mostlygeek/llama-swap/wiki/Configuration
+`
+
 	yml, er := yaml.Marshal(&cfg.Swap)
 	if er != nil {
 		return gie.Wrap(er, gie.ConfigErr, "failed to marshal the llama-swap config")
 	}
 
-	err = writeWithHeader(swapCfg, `# DO NOT EDIT - This file is generated when Goinfer starts.
-# Doc: https://github.com/mostlygeek/llama-swap/wiki/Configuration`, yml)
+	err = writeWithHeader(swapCfg, header, yml)
 	if err != nil {
 		return err
 	}
