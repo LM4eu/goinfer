@@ -48,8 +48,8 @@ set -o noclobber         # prevent accidental file overwriting with > redirectio
 shopt -s inherit_errexit # apply these restrictions to $(command substitution)
 
 # Color logs
-log() { echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[32m" "$@" "\033[m"; }
-err() { echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[31m" "$@" "\033[m"; }
+log() { set +x; echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[32m" "$@" "\033[m"; }
+err() { set +x; echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[31m" "$@" "\033[m"; }
 
 # print the script line number if something goes wrong
 set -E
