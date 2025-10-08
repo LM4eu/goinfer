@@ -16,12 +16,19 @@ import (
 )
 
 // ReadMainCfg the configuration file, then apply the env vars and finally verify the settings.
-func (cfg *Cfg) ReadMainCfg(mainCfg string, noAPIKey bool) error {
+func (cfg *Cfg) ReadMainCfg(mainCfg string, noAPIKey bool, extra string) error {
 	err := cfg.load(mainCfg)
 	cfg.applyEnvVars()
+
+	if extra != "" {
+		// force DefaultModel to be the first of the ExtraModels
+		cfg.Main.DefaultModel = ""
+		cfg.parseExtraModels(extra)
+	}
+
 	cfg.trimParamValues()
 
-	// Concatenate host and ports => addr = "host:port"
+	// concatenate host and ports => addr = "host:port"
 	listen := make(map[string]string, len(cfg.Main.Listen))
 	for addr, services := range cfg.Main.Listen {
 		if addr == "" || addr[0] == ':' {

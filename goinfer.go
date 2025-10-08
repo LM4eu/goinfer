@@ -44,6 +44,7 @@ func getCfg() *conf.Cfg {
 	debug := flag.Bool("debug", false, "debug mode (with -gen: set debug ABI keys)")
 	gen := flag.Bool("gen", false, "generate "+goinferYML+" and "+templateJinja)
 	run := flag.Bool("run", false, "run the server, can be combined with -gen")
+	extra := flag.String("hf", "", "extra_models, start llama-server with the first one")
 	noAPIKey := flag.Bool("no-api-key", false, "disable API key check (with -gen: set a warning in place of the API key)")
 	vv.SetVersionFlag()
 	flag.Parse()
@@ -59,7 +60,7 @@ func getCfg() *conf.Cfg {
 	}
 	slog.Debug("debug mode")
 
-	cfg := doGoinferYML(*debug, *gen, *run, *noAPIKey)
+	cfg := doGoinferYML(*debug, *gen, *run, *noAPIKey, *extra)
 
 	if *gen || verbose {
 		cfg.Print()
@@ -75,11 +76,11 @@ func getCfg() *conf.Cfg {
 	return cfg
 }
 
-func doGoinferYML(debug, gen, run, noAPIKey bool) *conf.Cfg {
+func doGoinferYML(debug, gen, run, noAPIKey bool, extra string) *conf.Cfg {
 	cfg := conf.Cfg{Main: conf.DefaultMain}
 
 	// read "goinfer.yml"
-	err := cfg.ReadMainCfg(goinferYML, noAPIKey)
+	err := cfg.ReadMainCfg(goinferYML, noAPIKey, extra)
 	if err != nil {
 		switch {
 		case gen:
@@ -109,7 +110,7 @@ func doGoinferYML(debug, gen, run, noAPIKey bool) *conf.Cfg {
 		slog.Info("Generated", "config", goinferYML)
 
 		// verify "goinfer.yml" can be successfully loaded
-		err = cfg.ReadMainCfg(goinferYML, noAPIKey)
+		err = cfg.ReadMainCfg(goinferYML, noAPIKey, extra)
 		if err != nil && !gen {
 			slog.Error("Cannot load config", "file", goinferYML, "error", err)
 			os.Exit(1)
