@@ -60,19 +60,19 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	cfg.Swap.HealthCheckTimeout = 120
 	cfg.Swap.MetricsMaxInMemory = 500
 
-	common := " " + cfg.Main.Llama.Args.Common
-	goinfer := " " + cfg.Main.Llama.Args.Goinfer
+	commonArgs := " " + cfg.Main.Llama.Args.Common
+	goinferArgs := " " + cfg.Main.Llama.Args.Goinfer
 	if verbose {
-		common += " " + cfg.Main.Llama.Args.Verbose
+		commonArgs += " " + cfg.Main.Llama.Args.Verbose
 	}
 	if debug {
-		common += " " + cfg.Main.Llama.Args.Debug
+		commonArgs += " " + cfg.Main.Llama.Args.Debug
 	}
 
 	cfg.Swap.Macros = config.MacroList{
-		{Name: "cmd-fim", Value: cfg.Main.Llama.Exe + common},
-		{Name: "cmd-common", Value: cfg.Main.Llama.Exe + common + " --port ${PORT}"},
-		{Name: "cmd-goinfer", Value: cfg.Main.Llama.Exe + common + " --port ${PORT}" + goinfer},
+		{Name: "cmd-fim", Value: cfg.Main.Llama.Exe + commonArgs},
+		{Name: "cmd-common", Value: cfg.Main.Llama.Exe + commonArgs + " --port ${PORT}"},
+		{Name: "cmd-goinfer", Value: cfg.Main.Llama.Exe + commonArgs + " --port ${PORT}" + goinferArgs},
 	}
 
 	_, err := cfg.setSwapModels()
