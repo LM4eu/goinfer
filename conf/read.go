@@ -55,7 +55,7 @@ func (cfg *Cfg) load(mainCfg string) error {
 		return gie.Wrap(err, gie.ConfigErr, "empty", "file", mainCfg)
 	}
 
-	err = yaml.Unmarshal(yml, &cfg)
+	err = yaml.Unmarshal(yml, &cfg.Main)
 	if err != nil {
 		return gie.Wrap(err, gie.ConfigErr, "Failed to yaml.Unmarshal", "invalid YAML", yml)
 	}

@@ -30,7 +30,7 @@ func (cfg *Cfg) WriteMainCfg(mainCfg string, debug, noAPIKey bool) error {
 	var swap config.Config
 	swap, cfg.Swap = cfg.Swap, swap
 
-	yml, err := yaml.Marshal(&cfg)
+	yml, err := yaml.Marshal(&cfg.Main)
 	if err != nil {
 		return gie.Wrap(err, gie.ConfigErr, "failed to yaml.Marshal")
 	}
