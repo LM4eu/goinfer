@@ -16,7 +16,7 @@ import (
 )
 
 // ReadMainCfg the configuration file, then apply the env vars and finally verify the settings.
-func (cfg *Cfg) ReadMainCfg(mainCfg string, noAPIKey bool, extra string) error {
+func (cfg *Cfg) ReadMainCfg(mainCfg string, noAPIKey bool, extra, start string) error {
 	err := cfg.load(mainCfg)
 	cfg.applyEnvVars()
 
@@ -24,6 +24,10 @@ func (cfg *Cfg) ReadMainCfg(mainCfg string, noAPIKey bool, extra string) error {
 		// force DefaultModel to be the first of the ExtraModels
 		cfg.Main.DefaultModel = ""
 		cfg.parseExtraModels(extra)
+	}
+
+	if start != "" {
+		cfg.Main.DefaultModel = start
 	}
 
 	cfg.trimParamValues()
@@ -135,10 +139,12 @@ func (cfg *Cfg) parseExtraModels(extra string) {
 	}
 }
 
-// trimParamValues cleans each parameter.
+// trimParamValues cleans settings values.
 func (cfg *Cfg) trimParamValues() {
 	cfg.Main.ModelsDir = strings.TrimSpace(cfg.Main.ModelsDir)
 	cfg.Main.ModelsDir = strings.Trim(cfg.Main.ModelsDir, ":")
+
+	cfg.Main.DefaultModel = strings.TrimSpace(cfg.Main.DefaultModel)
 
 	cfg.Main.Host = strings.TrimSpace(cfg.Main.Host)
 

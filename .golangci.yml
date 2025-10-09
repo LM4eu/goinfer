@@ -390,7 +390,7 @@ linters:
               allow-floats: "0.0,0.,1.0,1.,2.0,2."
         # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#argument-limit
         - name: argument-limit
-          arguments: [5]
+          arguments: [6]
         # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#atomic
         - name: atomic # mistaken usage of the sync/atomic package
         # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#banned-characters

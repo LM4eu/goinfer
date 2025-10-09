@@ -58,7 +58,7 @@ func TestReadMainCfg(t *testing.T) {
 		t.Fatalf("cannot create model file: %v", err)
 	}
 
-	err = cfg.ReadMainCfg(path, true, "")
+	err = cfg.ReadMainCfg(path, true, "", "")
 	if err != nil {
 		t.Fatalf("ReadMainCfg failed: %v", err)
 	}
@@ -231,7 +231,7 @@ func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 	for i := range 10 {
 		grp.Go(func() {
 			var cfg Cfg
-			err = cfg.ReadMainCfg(tmpFile, i&1 == 0, "")
+			err = cfg.ReadMainCfg(tmpFile, i&1 == 0, "", "")
 			if err != nil {
 				t.Errorf("#%d ReadMainCfg error: %v", i, err)
 			}
