@@ -224,7 +224,7 @@ llama:
   exe: /home/me/llama.cpp/build/bin/llama-server
   args:
     # common args used for every model
-    common: --props --no-warmup --mlock --no-mmap
+    common: --props --no-warmup --no-mmap
     # extra args to let tools like Agent-Smith doing the templating (/completions endpoint)
     goinfer: --jinja --chat-template-file template.jinja
     # extra llama-server flag when ./goinfer is used without the -q flag
@@ -252,9 +252,9 @@ metricsMaxInMemory: 1000  # maximum number of metrics to keep in memory
 startPort: 6000           # first ${PORT} incremented for each model
 
 macros:  # macros to reduce common conf settings
-    cmd-common: /home/me/llama.cpp/build/bin/llama-server --props --no-warmup --mlock --no-mmap --verbose-prompt --port ${PORT}
-    cmd-fim: /home/me/llama.cpp/build/bin/llama-server --props --no-warmup --mlock --no-mmap --verbose-prompt
-    cmd-goinfer: /home/me/llama.cpp/build/bin/llama-server --props --no-warmup --mlock --no-mmap --verbose-prompt --port ${PORT} --jinja --chat-template-file template.jinja
+    cmd-common: /home/me/llama.cpp/build/bin/llama-server --props --no-warmup --no-mmap --verbose-prompt --port ${PORT}
+    cmd-fim: /home/me/llama.cpp/build/bin/llama-server --props --no-warmup --no-mmap --verbose-prompt
+    cmd-goinfer: /home/me/llama.cpp/build/bin/llama-server --props --no-warmup --no-mmap --verbose-prompt --port ${PORT} --jinja --chat-template-file template.jinja
 
 models:
 

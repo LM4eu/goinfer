@@ -73,7 +73,7 @@ var (
 			Args: Args{
 				Verbose: "--verbose-prompt",
 				Debug:   "--verbosity 2",
-				Common:  "--props --no-warmup --mlock --no-mmap",
+				Common:  "--props --no-warmup --no-mmap",
 				Goinfer: "--jinja --chat-template-file template.jinja",
 			},
 		},
