@@ -230,7 +230,7 @@ llama:
     # extra llama-server flag when ./goinfer is used without the -q flag
     verbose: --verbose-prompt
     # extra llama-server flag for ./goinfer -debug
-    debug: --verbosity 2
+    debug: --verbosity 3
 ```
 
 - **API key** – Never commit them. Use env. var. `GI_API_KEY` or a secrets manager in production.

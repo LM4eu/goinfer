@@ -74,7 +74,7 @@ var (
 			Exe: "/home/me/llama.cpp/build/bin/llama-server",
 			Args: Args{
 				Verbose: "--verbose-prompt",
-				Debug:   "--verbosity 2",
+				Debug:   "--verbosity 3",
 				Common:  "--props --no-warmup --no-mmap",
 				Goinfer: "--jinja --chat-template-file template.jinja",
 			},
