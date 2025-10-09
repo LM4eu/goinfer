@@ -49,7 +49,12 @@ func getCfg() *conf.Cfg {
 	noAPIKey := flag.Bool("no-api-key", false, "disable API key check (with -gen: set a warning in place of the API key)")
 	vv.SetVersionFlag()
 	flag.Parse()
+
 	verbose := !*quiet
+
+	if *start != "" { // -start implies -run
+		*run = true
+	}
 
 	switch {
 	case *debug:
