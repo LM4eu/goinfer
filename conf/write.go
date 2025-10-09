@@ -57,7 +57,7 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	}
 
 	cfg.Swap.StartPort = 5800
-	cfg.Swap.HealthCheckTimeout = 120
+	cfg.Swap.HealthCheckTimeout = 120 // 2 minutes: Goinfer cannot run first "llama-server -hf model-name" TODO
 	cfg.Swap.MetricsMaxInMemory = 500
 
 	commonArgs := " " + cfg.Main.Llama.Args.Common
