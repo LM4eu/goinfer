@@ -56,9 +56,13 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 		cfg.Swap.LogLevel = "warn"
 	}
 
-	cfg.Swap.StartPort = 5800
-	cfg.Swap.HealthCheckTimeout = 120 // 2 minutes: Goinfer cannot run first "llama-server -hf model-name" TODO
+	// HealthCheckTimeout has some limitations:
+	// - "llama-server -hf model-name" is nice to ease deployment, but may take one or two hours for very large models (200GB+)
+	// - very large models (480B) need minutes to initialize their tensors
+	// - startup time is different from runtime health check (TODO: different check during startup)
+	cfg.Swap.HealthCheckTimeout = 300 // 5 minutes to initialize 480B model
 	cfg.Swap.MetricsMaxInMemory = 500
+	cfg.Swap.StartPort = 5800
 
 	commonArgs := " " + cfg.Main.Llama.Args.Common
 	goinferArgs := " " + cfg.Main.Llama.Args.Goinfer
