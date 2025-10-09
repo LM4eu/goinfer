@@ -1,4 +1,6 @@
-# flags in `/proc/cpuinfo`
+# CPU flags
+
+The `/proc/cpuinfo` lists the CPU capabilities using the following terms:
 
 Flag        | Description
 ------------|------------
