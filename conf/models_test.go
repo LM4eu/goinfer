@@ -151,7 +151,7 @@ func TestListModels(t *testing.T) {
 	_ = createGGUFFile(t, tmp, "disk-model.gguf", 2048)
 
 	cfg := &Cfg{
-		Main: GoinferYML{ModelsDir: tmp},
+		Main: Main{ModelsDir: tmp},
 		Swap: config.Config{
 			Models: map[string]config.ModelConfig{
 				"disk-model": {Cmd: "llama-server -flag", Unlisted: false},
@@ -182,7 +182,7 @@ func TestCountModels(t *testing.T) {
 	createGGUFFile(t, tmp, "b.gguf", 2048)
 
 	cfg := &Cfg{
-		Main: GoinferYML{ModelsDir: tmp},
+		Main: Main{ModelsDir: tmp},
 		Swap: config.Config{},
 	}
 	if n := cfg.countModels(); n != 2 {
@@ -230,7 +230,7 @@ func TestValidateModelFiles_NoSwapModels(t *testing.T) {
 	t.Parallel()
 	tmp := t.TempDir()
 	cfg := &Cfg{
-		Main: GoinferYML{ModelsDir: tmp},
+		Main: Main{ModelsDir: tmp},
 		Swap: config.Config{},
 	}
 	err := cfg.ValidateSwap()
@@ -245,7 +245,7 @@ func TestValidateModelFiles_WithSwapModels(t *testing.T) {
 	modelPath := createGGUFFile(t, tmp, "ref.gguf", 2048)
 
 	cfg := &Cfg{
-		Main: GoinferYML{ModelsDir: tmp},
+		Main: Main{ModelsDir: tmp},
 		Swap: config.Config{
 			Models: map[string]config.ModelConfig{
 				"ref": {Cmd: "--model " + modelPath, Unlisted: false},

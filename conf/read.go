@@ -42,7 +42,7 @@ func (cfg *Cfg) ReadMainCfg(mainCfg string, noAPIKey bool, extra, start string) 
 	}
 	cfg.Main.Listen = listen
 
-	// error from cfg.load(mainCfg)
+	// error from cfg.load()
 	if err != nil {
 		return err
 	}

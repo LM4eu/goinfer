@@ -70,7 +70,7 @@ func TestConcurrencyGuard(t *testing.T) {
 // Test configureAPIKeyAuth when no API key is configured – the middleware should be a no‑op.
 func TestConfigureAPIKeyAuth_NoKey(t *testing.T) {
 	t.Parallel()
-	cfg := &conf.Cfg{Main: conf.GoinferYML{APIKey: ""}} // no API key
+	cfg := &conf.Cfg{Main: conf.Main{APIKey: ""}} // no API key
 	e := echo.New()
 	grp := e.Group("/test")
 	// Apply the auth configuration.
@@ -95,7 +95,7 @@ func TestConfigureAPIKeyAuth_NoKey(t *testing.T) {
 func TestConfigureAPIKeyAuth_WithKey(t *testing.T) {
 	t.Parallel()
 	const apiKey = "secret-key"
-	cfg := &conf.Cfg{Main: conf.GoinferYML{APIKey: apiKey}}
+	cfg := &conf.Cfg{Main: conf.Main{APIKey: apiKey}}
 	e := echo.New()
 	grp := e.Group("/secure")
 	inf := &Infer{Cfg: cfg}
@@ -124,7 +124,7 @@ func TestConfigureAPIKeyAuth_WithKey(t *testing.T) {
 // Test modelsHandler returns an empty model list when the configuration has none.
 func TestModelsHandler_Empty(t *testing.T) {
 	t.Parallel()
-	inf := &Infer{Cfg: &conf.Cfg{Main: conf.GoinferYML{ModelsDir: t.TempDir()}}}
+	inf := &Infer{Cfg: &conf.Cfg{Main: conf.Main{ModelsDir: t.TempDir()}}}
 	req := httptest.NewRequest(http.MethodGet, "/models", http.NoBody)
 	rec := httptest.NewRecorder()
 	c := echo.New().NewContext(req, rec)

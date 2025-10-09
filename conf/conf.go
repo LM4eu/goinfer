@@ -21,11 +21,13 @@ import (
 
 type (
 	Cfg struct {
-		Main GoinferYML    `json:"main"          yaml:"main"`
+		Main Main          `json:"main"          yaml:"main"`
 		Swap config.Config `json:"swap,omitzero" yaml:"swap,omitempty"`
+		// Swap is stored in llama-swap.yml
 	}
 
-	GoinferYML struct {
+	// Main is stored in goinfer.yml.
+	Main struct {
 		Llama        Llama             `json:"llama"              yaml:"llama"`
 		Templates    map[string]string `json:"templates,omitzero" yaml:"templates,omitempty"`
 		Listen       map[string]string `json:"listen"             yaml:"listen"`
@@ -58,7 +60,7 @@ const (
 )
 
 var (
-	DefaultMain = GoinferYML{
+	DefaultMain = Main{
 		ModelsDir:    "/home/me/models",
 		DefaultModel: "ggml-org/Qwen2.5-Coder-1.5B-Q8_0-GGUF",
 		APIKey:       "",

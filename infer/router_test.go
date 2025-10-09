@@ -14,7 +14,7 @@ import (
 func TestNewEcho(t *testing.T) {
 	t.Parallel()
 	// Minimal configuration required by NewEcho.
-	cfg := &conf.Cfg{Main: conf.GoinferYML{
+	cfg := &conf.Cfg{Main: conf.Main{
 		Origins: "http://localhost",
 		APIKey:  "test/key",
 	}}

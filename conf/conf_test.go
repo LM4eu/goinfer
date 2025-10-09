@@ -141,7 +141,7 @@ func TestListModelsIntegration(t *testing.T) {
 		t.Fatalf("cannot create model file: %v", err)
 	}
 	cfg := &Cfg{
-		Main: GoinferYML{ModelsDir: tmp},
+		Main: Main{ModelsDir: tmp},
 		Swap: config.Config{Models: map[string]config.ModelConfig{"model1": {Cmd: "", Unlisted: false}}},
 	}
 	models, err := cfg.ListModels()
