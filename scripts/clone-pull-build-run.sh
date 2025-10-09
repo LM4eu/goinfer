@@ -175,7 +175,7 @@ do_llamaCpp() {
       -D LLAMA_CURL=${LLAMA_CURL:-ON}                                                         \
       -D LLAMA_LLGUIDANCE=${LLAMA_LLGUIDANCE:-OFF}                                            \
       .
-    cmake --build build/ --config Release --clean-first --target llama-server # llama-gguf
+    cmake --build build/ --config Release --clean-first --target llama-server llama-gguf
   )
 }
 
