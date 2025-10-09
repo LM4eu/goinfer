@@ -52,7 +52,7 @@ func getCfg() *conf.Cfg {
 
 	verbose := !*quiet
 
-	if *start != "" { // -start implies -run
+	if *extra != "" || *start != "" { // -hf and -start implies -run
 		*run = true
 	}
 
