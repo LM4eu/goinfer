@@ -79,7 +79,7 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 		{Name: "cmd-goinfer", Value: cfg.Main.Llama.Exe + commonArgs + " --port ${PORT}" + goinferArgs},
 	}
 
-	_, err := cfg.setSwapModels()
+	err := cfg.setSwapModels()
 	if err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 }
 
 func (cfg *Cfg) fixDefaultModel() {
-	info, err := cfg.setSwapModels()
+	err := cfg.setSwapModels()
 	if err != nil {
 		return
 	}
@@ -132,7 +132,7 @@ func (cfg *Cfg) fixDefaultModel() {
 	subname := "" // same as subName but with a lowercase comparison
 	defaultmodel := strings.ToLower(cfg.Main.DefaultModel)
 	minSize := int64(math.MaxInt64)
-	for model, mi := range info {
+	for model, mi := range cfg.Info {
 		if minSize > mi.Size {
 			minSize = mi.Size
 			minName = model
@@ -204,14 +204,14 @@ func (cfg *Cfg) fixDefaultModel() {
 	cfg.Main.DefaultModel = model
 }
 
-func (cfg *Cfg) setSwapModels() (map[string]ModelInfo, error) {
-	info, err := cfg.search()
+func (cfg *Cfg) setSwapModels() error {
+	err := cfg.updateInfo()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if cfg.Swap.Models == nil {
-		cfg.Swap.Models = make(map[string]config.ModelConfig, 2*len(info)+9)
+		cfg.Swap.Models = make(map[string]config.ModelConfig, 2*len(cfg.Info)+9)
 	}
 
 	commonMC := &config.ModelConfig{Proxy: "http://localhost:${PORT}"}
@@ -239,14 +239,14 @@ func (cfg *Cfg) setSwapModels() (map[string]ModelInfo, error) {
 	// For each model, set two model settings:
 	// 1. for the OpenAI endpoints
 	// 2. for the /completion endpoint (prefix with GI_ and hide the model)
-	for name, mi := range info {
+	for name, mi := range cfg.Info {
 		goinferMC.UseModelName = name // overrides the model name that is sent to /upstream server
 		args := " " + mi.Flags + " -m " + mi.Path
 		cfg.addModelCfg(name, "${cmd-common}"+args, commonMC)         // API for Cline, RooCode, RolePlay...
 		cfg.addModelCfg("GI_"+name, "${cmd-goinfer}"+args, goinferMC) // API for Agent-Smith...
 	}
 
-	return info, nil
+	return nil
 }
 
 // Add the model settings within the llama-swap configuration.

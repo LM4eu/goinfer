@@ -21,8 +21,9 @@ import (
 
 type (
 	Cfg struct {
-		Main Main          `json:"main"          yaml:"main"`
-		Swap config.Config `json:"swap,omitzero" yaml:"swap,omitempty"`
+		Main Main                 `json:"main" yaml:"main"`
+		Info map[string]ModelInfo `json:"info" yaml:"info"` // = make(map[string]ModelInfo, len(cfg.Swap.Models)/2)
+		Swap config.Config        `json:"swap" yaml:"swap"`
 		// Swap is stored in llama-swap.yml
 	}
 

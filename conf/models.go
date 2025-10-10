@@ -41,15 +41,19 @@ const notConfigured = "file present but not configured in llama-swap.yml"
 
 // ListModels returns the model names from the config and from the models_dir.
 func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
-	info, err := cfg.search()
+	if len(cfg.Info) > 0 {
+		return cfg.Info, nil
+	}
+
+	err := cfg.updateInfo()
 	if err != nil {
 		slog.Debug("Search models", "err", err)
 	}
 
-	for name, mi := range info {
-		if info[name].Error == "" {
+	for name, mi := range cfg.Info {
+		if cfg.Info[name].Error == "" {
 			mi.Error = notConfigured
-			info[name] = mi
+			cfg.Info[name] = mi
 		}
 	}
 
@@ -57,19 +61,19 @@ func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
 		if len(name) > 3 && name[:3] == "GI_" && cfg.Swap.Models[name].Unlisted {
 			continue // do not report models for /completion endpoint
 		}
-		cfg.refineModelInfo(info, name)
+		cfg.refineModelInfo(name)
 	}
 
-	return info, err
+	return cfg.Info, err
 }
 
-func (cfg *Cfg) refineModelInfo(info map[string]ModelInfo, name string) {
-	mi, ok := info[name]
+func (cfg *Cfg) refineModelInfo(name string) {
+	mi, ok := cfg.Info[name]
 	if ok {
 		if mi.Error == notConfigured {
 			mi.Error = "" // OK: model is both present in FS and configured in llama-swap.yml
 		}
-		info[name] = mi
+		cfg.Info[name] = mi
 		return
 	}
 
@@ -91,74 +95,68 @@ func (cfg *Cfg) refineModelInfo(info map[string]ModelInfo, name string) {
 		slog.Warn("missing space characters", "cmd", cfg.Swap.Models[name].Cmd)
 		mi.Error = "missing space characters in cmd=" + cfg.Swap.Models[name].Cmd
 	}
-	info[name] = mi
+	cfg.Info[name] = mi
 }
 
-// search returns a slice of absolute file paths for all *.gguf model files
-// found under the directories listed in cfg.Main.ModelsDir (colon-separated).
-// It walks each directory recursively, aggregates matching files,
-// and returns any error encountered.
-func (cfg *Cfg) search() (map[string]ModelInfo, error) {
-	info := make(map[string]ModelInfo, len(cfg.Swap.Models)/2)
+// updateInfo search template.yml and *.gguf model files recursively
+// in the directories listed in cfg.Main.ModelsDir (colon-separated).
+// It aggregates matching files, updates cfg.Info and returns any error encountered.
+func (cfg *Cfg) updateInfo() error {
 	templates := map[string]TemplateInfo{}
+	if cfg.Info == nil {
+		cfg.Info = make(map[string]ModelInfo, 16)
+	} else {
+		clear(cfg.Info)
+	}
 
-	// 1. collect templates.yml and GUFF files
+	// collect templates.yml and GUFF files
 	for root := range strings.SplitSeq(cfg.Main.ModelsDir, ":") {
-		err := add(info, templates, strings.TrimSpace(root))
+		err := cfg.search(templates, strings.TrimSpace(root))
 		if err != nil {
-			slog.Debug("Searching model files", "root", root)
-			return nil, err
+			slog.Warn("cannot search files in", "root", root, "err", err)
 		}
 	}
 
-	// 2. Fill the TemplateInfo in the right ModelInfo
+	// Put the TemplateInfo in the corresponding ModelInfo
 	for name, ti := range templates {
-		mi := info[name]
+		mi := cfg.Info[name]
 		mi.Template = &ti
 		if mi.Flags != "" {
 			mi.Flags = ti.Flags
 			ti.Flags = ""
 		}
-		info[name] = mi
+		cfg.Info[name] = mi
 	}
 
-	return info, nil
+	return nil
 }
 
-// add walks the given root directory and appends any valid *.gguf model file paths to the
-// provided slice. It validates each file using validateFile and logs debug information.
-func add(info map[string]ModelInfo, templates map[string]TemplateInfo, root string) error {
+// search walks the given root directory and appends any valid *.gguf model file to
+// cfg.Info. It validates each file using validateFile and warns about errors (logs).
+func (cfg *Cfg) search(templates map[string]TemplateInfo, root string) error {
 	return filepath.WalkDir(root, func(path string, dir fs.DirEntry, err error) error {
-		if err != nil {
+		switch {
+		case err != nil:
 			if dir == nil {
 				return gie.Wrap(err, gie.NotFound, "filepath.WalkDir")
 			}
-			return gie.Wrap(err, gie.NotFound, "filepath.WalkDir path="+dir.Name())
-		}
-
-		if dir.IsDir() {
-			return nil // => step into this directory
-		}
-
-		if filepath.Base(path) == "templates.yml" {
-			err = addTemplates(templates, root, path)
+			return gie.Wrap(err, gie.NotFound, "filepath.WalkDir", "dir", dir.Name())
+		case dir.IsDir():
+			// => step into this directory
+		case filepath.Base(path) == "templates.yml":
+			err = keepTemplates(templates, root, path)
 			if err != nil {
-				return err
+				slog.Warn("skip template file", "path", path, "err", err)
 			}
+		case strings.HasSuffix(path, ".gguf"):
+			cfg.keepGUFF(root, path)
+		default:
 		}
-
-		if strings.HasSuffix(path, ".gguf") {
-			err = addGUFF(info, root, path)
-			if err != nil {
-				return err
-			}
-		}
-
 		return nil
 	})
 }
 
-func addTemplates(templates map[string]TemplateInfo, root, path string) error {
+func keepTemplates(templates map[string]TemplateInfo, root, path string) error {
 	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return gie.Wrap(err, gie.ConfigErr, "os.ReadFile", "file", path)
@@ -189,11 +187,11 @@ func addTemplates(templates map[string]TemplateInfo, root, path string) error {
 	return nil
 }
 
-func addGUFF(info map[string]ModelInfo, root, path string) error {
+func (cfg *Cfg) keepGUFF(root, path string) {
 	size, err := verify(path)
 	if err != nil {
-		slog.Debug("Skip", "model", path)
-		return nil //nolint:nilerr // "return nil" to skip this file
+		slog.Warn("skip GGUF file", "path", path, "err", err)
+		return
 	}
 
 	slog.Debug("Found", "model", path)
@@ -203,13 +201,11 @@ func addGUFF(info map[string]ModelInfo, root, path string) error {
 	flags = replaceDIR(path, flags)
 
 	mi := ModelInfo{Template: nil, Flags: flags, Path: path, Error: "", Size: size}
-	if old, ok := info[name]; ok {
+	if old, ok := cfg.Info[name]; ok {
 		slog.Warn("Duplicated models", "dir", root, "name", name, "old", old, "new", mi)
 		mi.Error = "two files have same model name (must be unique)"
 	}
-	info[name] = mi
-
-	return nil
+	cfg.Info[name] = mi
 }
 
 // replaceDIR in flags by the current dir of he file.
@@ -391,11 +387,10 @@ func oneLine(input []byte) string {
 
 // countModels returns the number of models that are currently present on file system.
 func (cfg *Cfg) countModels() int {
-	modelFiles, err := cfg.search()
-	if err != nil {
-		return 0
+	if len(cfg.Info) == 0 {
+		_ = cfg.updateInfo()
 	}
-	return len(modelFiles)
+	return len(cfg.Info)
 }
 
 // ValidateSwap checks that the configuration contains at least one model file and
