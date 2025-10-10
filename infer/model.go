@@ -37,9 +37,6 @@ type (
 const (
 	// Debug=true enables json.Unmarshal/Marshal, more reliable than gjson.GetBytes/SetBytes, but consumes much more CPU.
 	debug = false
-
-	// direct=true call directly proxy.ListRunningProcessesHandler(), faster than requesting http://localhost:5555/running
-	direct = true
 )
 
 func (m *ModelField) GetModel() string      { return m.Model }
@@ -117,33 +114,21 @@ func setModelIfMissing[T ModelRequest](inf *Infer, msg T, bodyReader io.ReadClos
 	return body, nil
 }
 
-//nolint:noctx // HTTP request to internal Gin server
 func selectModel(inf *Infer) (string, error) {
 	var body []byte
 
-	if direct {
-		// TODO: use simple variables: `req := Request{...} `and `writer := GoinferMinimalistWriter`
-		req, err := http.NewRequest(http.MethodGet, "http://localhost:5555/running", http.NoBody)
-		if err != nil {
-			return inf.Cfg.Main.DefaultModel, gie.Wrap(err, gie.InferErr, "NewRequest localhost:5555/running")
-		}
-		w := httptest.NewRecorder()
-		inf.ProxyMan.ListRunningProcessesHandler(&gin.Context{
-			Writer:  &responseWriter{ResponseWriter: w, size: -1, status: http.StatusOK},
-			Request: req,
-		})
-		body = w.Body.Bytes()
-	} else {
-		res, err := http.Get("http://localhost:5555/running")
-		if err != nil {
-			return inf.Cfg.Main.DefaultModel, gie.Wrap(err, gie.InferErr, "GET localhost:5555/running")
-		}
-		defer res.Body.Close()
-		body, err = io.ReadAll(res.Body)
-		if err != nil {
-			return inf.Cfg.Main.DefaultModel, gie.Wrap(err, gie.InferErr, "cannot io.ReadAll(response body) from /running")
-		}
+	// TODO: use simple variables: `req := Request{...} `and `writer := GoinferMinimalistWriter`
+	//nolint:noctx // internal function call
+	req, err := http.NewRequest(http.MethodGet, "http://localhost:5555/running", http.NoBody)
+	if err != nil {
+		return inf.Cfg.Main.DefaultModel, gie.Wrap(err, gie.InferErr, "NewRequest localhost:5555/running")
 	}
+	w := httptest.NewRecorder()
+	inf.ProxyMan.ListRunningProcessesHandler(&gin.Context{
+		Writer:  &responseWriter{ResponseWriter: w, size: -1, status: http.StatusOK},
+		Request: req,
+	})
+	body = w.Body.Bytes()
 
 	// Assuming the JSON structure has a "running" field
 	var response struct {
@@ -153,7 +138,7 @@ func selectModel(inf *Infer) (string, error) {
 		} `json:"running"` // Specify the actual JSON field name
 	}
 
-	err := json.Unmarshal(body, &response)
+	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return inf.Cfg.Main.DefaultModel, gie.Wrap(err, gie.InferErr, "invalid or malformed JSON", "received response body from /running", string(body))
 	}
