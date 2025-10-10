@@ -73,8 +73,10 @@ func setModelIfMissing[T ModelRequest](inf *Infer, msg T, bodyReader io.ReadClos
 
 	model := gjson.GetBytes(body, "model").String()
 	if model != "" && model != "default" {
-		// TODO: verify the model is known to work
-		return body, nil
+		fixed := inf.Cfg.FixModelName(model, false)
+		if model == fixed {
+			return body, nil
+		}
 	}
 
 	if model == "" {
