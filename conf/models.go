@@ -190,7 +190,7 @@ func keepTemplates(templates map[string]TemplateInfo, root, path string) error {
 func (cfg *Cfg) keepGUFF(root, path string) {
 	size, err := verify(path)
 	if err != nil {
-		slog.Warn("skip GGUF file", "path", path, "err", err)
+		slog.Debug("skip GGUF", "path", path, "err", err)
 		return
 	}
 
