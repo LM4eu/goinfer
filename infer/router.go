@@ -172,7 +172,9 @@ func (inf *Infer) modelsHandler(c echo.Context) error {
 		response["error"] = err.Error()
 	}
 
-	response["models"] = models
+	if len(models) > 0 {
+		response["models"] = models
+	}
 
 	return c.JSON(http.StatusOK, response)
 }
