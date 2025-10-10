@@ -117,18 +117,13 @@ func setModelIfMissing[T ModelRequest](inf *Infer, msg T, bodyReader io.ReadClos
 func selectModel(inf *Infer) (string, error) {
 	var body []byte
 
-	// TODO: use simple variables: `req := Request{...} `and `writer := GoinferMinimalistWriter`
-	//nolint:noctx // internal function call
-	req, err := http.NewRequest(http.MethodGet, "http://localhost:5555/running", http.NoBody)
-	if err != nil {
-		return inf.Cfg.Main.DefaultModel, gie.Wrap(err, gie.InferErr, "NewRequest localhost:5555/running")
-	}
-	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/running", http.NoBody)
+	rec := httptest.NewRecorder()
 	inf.ProxyMan.ListRunningProcessesHandler(&gin.Context{
-		Writer:  &responseWriter{ResponseWriter: w, size: -1, status: http.StatusOK},
+		Writer:  &responseWriter{ResponseWriter: rec, size: -1, status: http.StatusOK},
 		Request: req,
 	})
-	body = w.Body.Bytes()
+	body = rec.Body.Bytes()
 
 	// Assuming the JSON structure has a "running" field
 	var response struct {
@@ -138,7 +133,7 @@ func selectModel(inf *Infer) (string, error) {
 		} `json:"running"` // Specify the actual JSON field name
 	}
 
-	err = json.Unmarshal(body, &response)
+	err := json.Unmarshal(body, &response)
 	if err != nil {
 		return inf.Cfg.Main.DefaultModel, gie.Wrap(err, gie.InferErr, "invalid or malformed JSON", "received response body from /running", string(body))
 	}
