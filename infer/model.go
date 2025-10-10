@@ -80,9 +80,14 @@ func setModelIfMissing[T ModelRequest](inf *Infer, msg T, bodyReader io.ReadClos
 		return body, nil
 	}
 
-	model = selectModel(inf)
 	if model == "" {
-		return body, gie.Wrap(err, gie.Invalid,
+		model, err = selectModel(inf)
+		if err != nil {
+			slog.Warn("Cannot prob /running", "err", err)
+		}
+	}
+	if model == "" {
+		return nil, gie.Wrap(err, gie.Invalid,
 			"no model loaded and no default_model in goinfer.yml => specify the field model in the request")
 	}
 
@@ -94,18 +99,18 @@ func setModelIfMissing[T ModelRequest](inf *Infer, msg T, bodyReader io.ReadClos
 		// to convert back the Go struct into aJSON bytes.
 		err = json.Unmarshal(body, &msg)
 		if err != nil {
-			return body, gie.Wrap(err, gie.Invalid, "invalid or malformed JSON", "received body", string(body))
+			return nil, gie.Wrap(err, gie.Invalid, "invalid or malformed JSON", "received body", string(body))
 		}
 		msg.SetModel(model)
 
 		body, err = json.Marshal(msg)
 		if err != nil {
-			return body, gie.Wrap(err, gie.Invalid, "error json.Marshal back the body", "input msg", msg)
+			return nil, gie.Wrap(err, gie.Invalid, "error json.Marshal back the body", "input msg", msg)
 		}
 	} else {
 		body, err = sjson.SetBytes(body, "model", model)
 		if err != nil {
-			return body, gie.Wrap(err, gie.Invalid, "cannot update model in JSON body", "body", body, "new model", model)
+			return nil, gie.Wrap(err, gie.Invalid, "cannot update model in JSON body", "body", body, "new model", model)
 		}
 	}
 
@@ -113,13 +118,14 @@ func setModelIfMissing[T ModelRequest](inf *Infer, msg T, bodyReader io.ReadClos
 }
 
 //nolint:noctx // HTTP request to internal Gin server
-func selectModel(inf *Infer) string {
+func selectModel(inf *Infer) (string, error) {
 	var body []byte
 
 	if direct {
+		// TODO: use simple variables: `req := Request{...} `and `writer := GoinferMinimalistWriter`
 		req, err := http.NewRequest(http.MethodGet, "http://localhost:5555/running", http.NoBody)
 		if err != nil {
-			return inf.Cfg.Main.DefaultModel
+			return inf.Cfg.Main.DefaultModel, gie.Wrap(err, gie.InferErr, "NewRequest localhost:5555/running")
 		}
 		w := httptest.NewRecorder()
 		inf.ProxyMan.ListRunningProcessesHandler(&gin.Context{
@@ -130,13 +136,12 @@ func selectModel(inf *Infer) string {
 	} else {
 		res, err := http.Get("http://localhost:5555/running")
 		if err != nil {
-			return inf.Cfg.Main.DefaultModel
+			return inf.Cfg.Main.DefaultModel, gie.Wrap(err, gie.InferErr, "GET localhost:5555/running")
 		}
 		defer res.Body.Close()
 		body, err = io.ReadAll(res.Body)
 		if err != nil {
-			slog.Debug("cannot io.ReadAll(response body) from /running", "err", err)
-			return inf.Cfg.Main.DefaultModel
+			return inf.Cfg.Main.DefaultModel, gie.Wrap(err, gie.InferErr, "cannot io.ReadAll(response body) from /running")
 		}
 	}
 
@@ -150,23 +155,23 @@ func selectModel(inf *Infer) string {
 
 	err := json.Unmarshal(body, &response)
 	if err != nil {
-		slog.Debug("invalid or malformed JSON", "received response body from /running", string(body), "err", err)
-		return inf.Cfg.Main.DefaultModel
+		return inf.Cfg.Main.DefaultModel, gie.Wrap(err, gie.InferErr, "invalid or malformed JSON", "received response body from /running", string(body))
 	}
 
 	// Check for ready models first
 	for _, m := range response.Running {
 		if m.State == "ready" {
-			return m.Model
+			return m.Model, nil
 		}
 	}
 
 	// Check for starting models
 	for _, m := range response.Running {
 		if m.State == "starting" {
-			return m.Model
+			return m.Model, nil
 		}
 	}
 
-	return inf.Cfg.Main.DefaultModel
+	// no ready / starting model => use DefaultModel
+	return inf.Cfg.Main.DefaultModel, nil
 }
