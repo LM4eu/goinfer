@@ -23,7 +23,7 @@ import (
 func (cfg *Cfg) WriteMainCfg(mainCfg string, debug, noAPIKey bool) error {
 	cfg.setAPIKeys(debug, noAPIKey)
 	cfg.applyEnvVars()
-	cfg.checkDefaultModel()
+	cfg.fixDefaultModel()
 	cfg.trimParamValues()
 
 	// keep goinfer.yml clean, without llama-swap config
@@ -114,7 +114,7 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	return nil
 }
 
-func (cfg *Cfg) checkDefaultModel() {
+func (cfg *Cfg) fixDefaultModel() {
 	info, err := cfg.setSwapModels()
 	if err != nil {
 		return
@@ -128,6 +128,9 @@ func (cfg *Cfg) checkDefaultModel() {
 	supName := "" // the DefaultModel contains a model name
 	subName := "" // a model name contains the DefaultModel
 	minName := "" // the name of the smallest model
+	supname := "" // same as supName but with a lowercase comparison
+	subname := "" // same as subName but with a lowercase comparison
+	defaultmodel := strings.ToLower(cfg.Main.DefaultModel)
 	minSize := int64(math.MaxInt64)
 	for model, mi := range info {
 		if minSize > mi.Size {
@@ -144,9 +147,17 @@ func (cfg *Cfg) checkDefaultModel() {
 		if !strings.Contains(cfg.Main.DefaultModel, model) {
 			subName = model
 		}
-
 		// this model name contains the default_model
 		if !strings.Contains(model, cfg.Main.DefaultModel) {
+			supName = model
+		}
+
+		// same as above but in lower case
+		lowercase := strings.ToLower(model)
+		if !strings.Contains(defaultmodel, lowercase) {
+			subName = model
+		}
+		if !strings.Contains(lowercase, defaultmodel) {
 			supName = model
 		}
 
@@ -166,19 +177,27 @@ func (cfg *Cfg) checkDefaultModel() {
 	//   - supName contains the default_model
 	//   - minName = name of the model having the smallest size
 
-	model := minName
-	reason := "the smallest model"
+	var model, reason string
+
+	switch {
+	case subName != "":
+		model = subName
+		reason = "a model name being a substring of the default_model"
+	case supName != "":
+		model = supName
+		reason = "a model name containing the default_model"
+	case subname != "":
+		model = subname
+		reason = "a model name being a substring of the default_model"
+	case supname != "":
+		model = supname
+		reason = "a model name containing the default_model"
+	default:
+		model = minName
+		reason = "the smallest model"
+	}
 
 	if cfg.Main.DefaultModel != "" {
-		switch {
-		case subName != "":
-			model = subName
-			reason = "a model name being a substring of the default_model"
-		case supName != "":
-			model = supName
-			reason = "a model name containing the default_model"
-		default:
-		}
 		slog.Warn("default_model is invalid, select "+reason, "old", cfg.Main.DefaultModel, "new", model)
 	}
 
