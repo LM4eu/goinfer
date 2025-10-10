@@ -62,8 +62,8 @@ while IFS= read -rd '' d; do [[ $p && $d == "$p"/* ]] && continue; echo -n "$d:"
 # set the path of your inference engine (llama.cpp/ik_llama.cpp/...)
 export GI_LLAMA_EXE=/home/me/bin/llama-server
 
-# generates the config (you may want to edit it)
-go run . -gen
+# generates the config
+go run . -write
 
 # voilà, it's running
 go run . -no-api-key
@@ -185,7 +185,7 @@ export GIN_MODE=release
 
 ### API key
 
-The flag `-gen` also generates a random API key in `goinfer.yml`.
+The flag `-write` also generates a random API key in `goinfer.yml`.
 This flag can be combined with:
 
 - `-debug` sets the debug API key (only during the dev cycle)
@@ -209,7 +209,7 @@ curl -X POST https://localhost:4444/completions  \
 models_dir: /home/me/models 
 
 # ⚠️ Set your API key, can be 64‑hex‑digit (32‑byte) 🚨
-# Generate these random API key with: ./goinfer -gen
+# Generate these random API key with: ./goinfer -write
 api_key: "PLEASE SET USER API KEY"
 origins:   # CORS whitelist
   - "https://my‑frontend.example.com"

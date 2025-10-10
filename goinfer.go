@@ -41,12 +41,12 @@ func main() {
 // Depending on the flags, this function also creates config files and exits.
 func getCfg() *conf.Cfg {
 	quiet := flag.Bool("q", false, "quiet mode (disable verbose output)")
-	debug := flag.Bool("debug", false, "debug mode (with -gen: set debug ABI keys)")
-	gen := flag.Bool("gen", false, "generate "+goinferYML+" and "+templateJinja)
-	run := flag.Bool("run", false, "run the server, can be combined with -gen")
+	debug := flag.Bool("debug", false, "debug mode (with -write: set debug ABI keys)")
+	write := flag.Bool("write", false, "write "+goinferYML+" and "+templateJinja)
+	run := flag.Bool("run", false, "run the server, can be combined with -write")
 	extra := flag.String("hf", "", "configure the given extra_models and load the first one (start llama-server)")
 	start := flag.String("start", "", "set the default_model and load it (start llama-server)")
-	noAPIKey := flag.Bool("no-api-key", false, "disable API key check (with -gen: set a warning in place of the API key)")
+	noAPIKey := flag.Bool("no-api-key", false, "disable API key check (with -write: set a warning in place of the API key)")
 	vv.SetVersionFlag()
 	flag.Parse()
 
@@ -66,14 +66,14 @@ func getCfg() *conf.Cfg {
 	}
 	slog.Debug("debug mode")
 
-	cfg := doGoinferYML(*debug, *gen, *run, *noAPIKey, *extra, *start)
+	cfg := doGoinferYML(*debug, *write, *run, *noAPIKey, *extra, *start)
 
-	if *gen || verbose {
+	if *write || verbose {
 		cfg.Print()
 	}
 
-	// if -gen without -run => stop here, just successfully generated "goinfer.yml"
-	if *gen && !*run {
+	// if -write without -run => stop here, just successfully generated "goinfer.yml"
+	if *write && !*run {
 		os.Exit(0)
 	}
 
@@ -82,14 +82,14 @@ func getCfg() *conf.Cfg {
 	return cfg
 }
 
-func doGoinferYML(debug, gen, run, noAPIKey bool, extra, start string) *conf.Cfg {
+func doGoinferYML(debug, write, run, noAPIKey bool, extra, start string) *conf.Cfg {
 	cfg := conf.Cfg{Main: conf.DefaultMain}
 
 	// read "goinfer.yml"
 	err := cfg.ReadMainCfg(goinferYML, noAPIKey, extra, start)
 	if err != nil {
 		switch {
-		case gen:
+		case write:
 			slog.Info("Write a fresh new config file, may contain issues.", "file", goinferYML, "error", err)
 		case run:
 			slog.Info("Cannot load config. Flag -run prevents to modify/generate it", "file", goinferYML, "error", err)
@@ -97,10 +97,10 @@ func doGoinferYML(debug, gen, run, noAPIKey bool, extra, start string) *conf.Cfg
 		default:
 			slog.Warn("Cannot load config => Write a new one, may contain issues.", "file", goinferYML, "error", err)
 		}
-		gen = true
+		write = true
 	}
 
-	if gen {
+	if write {
 		// generate "template.jinja" // TODO pass current working dir to llama-server
 		err = os.WriteFile(templateJinja, []byte("{{- messages[0].content -}}"), 0o600)
 		if err != nil {
@@ -117,7 +117,7 @@ func doGoinferYML(debug, gen, run, noAPIKey bool, extra, start string) *conf.Cfg
 
 		// verify "goinfer.yml" can be successfully loaded
 		err = cfg.ReadMainCfg(goinferYML, noAPIKey, extra, start)
-		if err != nil && !gen {
+		if err != nil && !write {
 			slog.Error("Cannot load config", "file", goinferYML, "error", err)
 			os.Exit(1)
 		}

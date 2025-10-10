@@ -14,7 +14,7 @@ The following command generates
 the `goinfer.yml` config file.
 
 ```bash
-GI_MODELS_DIR=/path/to/my/models ./goinfer -gen -debug
+GI_MODELS_DIR=/path/to/my/models ./goinfer -write -debug
 ```
 
 Use `GI_MODELS_DIR` to provide the path to your models directory
@@ -29,7 +29,7 @@ GI_MODELS_DIR=/path1:/path2:/path3
 `goinfer` will search the model files within the sub-folders,
 so you can keep organizing your models within a folders tree.
 
-Note: the `-gen` flag also generates your random API key in the config file.
+Note: the `-write` flag also generates your random API key in the config file.
 
 Once you have your `goinfer.yml` file, run the server:
 
