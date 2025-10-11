@@ -31,7 +31,7 @@ func (cfg *Cfg) WriteGoinferYML(debug, noAPIKey bool) error {
 // WriteBytes populates the configuration with defaults, applies environment variables,
 // and writes the resulting configuration to a buffer.
 func (cfg *Cfg) WriteBytes(debug, noAPIKey bool) ([]byte, error) {
-	cfg.setAPIKeys(debug, noAPIKey)
+	cfg.setAPIKey(debug, noAPIKey)
 	cfg.applyEnvVars()
 	cfg.fixDefaultModel()
 	cfg.trimParamValues()
@@ -261,7 +261,7 @@ func (cfg *Cfg) addModelCfg(modelName, cmd string, mc *config.ModelConfig) {
 	cfg.Swap.Models[modelName] = mCfg
 }
 
-func (cfg *Cfg) setAPIKeys(debug, noAPIKey bool) {
+func (cfg *Cfg) setAPIKey(debug, noAPIKey bool) {
 	switch {
 	case noAPIKey:
 		cfg.APIKey = unsetAPIKey
