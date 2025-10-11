@@ -11,7 +11,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 
 	"github.com/LM4eu/goinfer/gie"
 	"github.com/gin-gonic/gin"
@@ -42,6 +41,8 @@ const (
 func (m *ModelField) GetModel() string      { return m.Model }
 func (m *ModelField) SetModel(model string) { m.Model = model }
 
+// GetModel uses map["model"] to get the model name.
+// A model name containing '"' could be a symptom of a malformed JSON.
 func (m *AnyBody) GetModel() string {
 	modelAny, ok := (*m)["model"]
 	if !ok {
@@ -54,11 +55,7 @@ func (m *AnyBody) GetModel() string {
 	if ok {
 		return model
 	}
-	model = fmt.Sprint(modelAny)
-	if strings.ContainsAny(model, "{[':,") {
-		return ""
-	}
-	return model
+	return fmt.Sprint(modelAny)
 }
 
 func (m *AnyBody) SetModel(model string) {
@@ -137,7 +134,7 @@ func selectModel(inf *Infer) (string, error) {
 
 	err := json.Unmarshal(body, &response)
 	if err != nil {
-		return inf.Cfg.Main.DefaultModel, gie.Wrap(err, gie.InferErr, "invalid or malformed JSON", "received response body from /running", string(body))
+		return inf.Cfg.DefaultModel, gie.Wrap(err, gie.InferErr, "invalid or malformed JSON", "received response body from /running", string(body))
 	}
 
 	// Check for ready models first
@@ -155,5 +152,5 @@ func selectModel(inf *Infer) (string, error) {
 	}
 
 	// no ready / starting model => use DefaultModel
-	return inf.Cfg.Main.DefaultModel, nil
+	return inf.Cfg.DefaultModel, nil
 }

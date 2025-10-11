@@ -21,23 +21,18 @@ import (
 
 type (
 	Cfg struct {
-		Main Main                 `json:"main" yaml:"main"`
-		Info map[string]ModelInfo `json:"info" yaml:"info"` // = make(map[string]ModelInfo, len(cfg.Swap.Models)/2)
-		Swap config.Config        `json:"swap" yaml:"swap"`
+		Llama        Llama                `json:"llama"         yaml:"llama"`
+		Templates    map[string]string    `json:"templates"     yaml:"templates,omitempty"`
+		Listen       map[string]string    `json:"listen"        yaml:"listen"`
+		ModelsDir    string               `json:"models_dir"    yaml:"models_dir"`
+		ExtraModels  map[string]string    `json:"extra_models"  yaml:"extra_models"`
+		DefaultModel string               `json:"default_model" yaml:"default_model"`
+		APIKey       string               `json:"api_key"       yaml:"api_key"`
+		Host         string               `json:"host"          yaml:"host"`
+		Origins      string               `json:"origins"       yaml:"origins"`
+		Info         map[string]ModelInfo `json:"info"          yaml:"-"`
+		Swap         config.Config        `json:"swap"          yaml:"-"`
 		// Swap is stored in llama-swap.yml
-	}
-
-	// Main is stored in goinfer.yml.
-	Main struct {
-		Llama        Llama             `json:"llama"              yaml:"llama"`
-		Templates    map[string]string `json:"templates,omitzero" yaml:"templates,omitempty"`
-		Listen       map[string]string `json:"listen"             yaml:"listen"`
-		ModelsDir    string            `json:"models_dir"         yaml:"models_dir"`
-		ExtraModels  map[string]string `json:"extra_models"       yaml:"extra_models"`
-		DefaultModel string            `json:"default_model"      yaml:"default_model"`
-		APIKey       string            `json:"api_key"            yaml:"api_key"`
-		Host         string            `json:"host"               yaml:"host"`
-		Origins      string            `json:"origins"            yaml:"origins"`
 	}
 
 	Llama struct {
@@ -61,7 +56,7 @@ const (
 )
 
 var (
-	DefaultMain = Main{
+	DefaultCfg = Cfg{
 		ModelsDir:    "/home/me/models",
 		DefaultModel: "ggml-org/Qwen2.5-Coder-1.5B-Q8_0-GGUF",
 		APIKey:       "",
@@ -120,9 +115,9 @@ func (cfg *Cfg) Print() {
 
 	slog.Info("-----------------------------")
 
-	yml, err := yaml.Marshal(&cfg.Main)
+	yml, err := yaml.Marshal(&cfg)
 	if err != nil {
-		slog.Error("Failed yaml.Marshal", "error", err.Error(), "input struct", &cfg.Main)
+		slog.Error("Failed yaml.Marshal", "error", err.Error(), "input struct", &cfg)
 		return
 	}
 
@@ -145,14 +140,14 @@ func printEnvVar(key string, confidential bool) {
 	}
 }
 
-func (cfg *Cfg) validateMain(noAPIKey bool) error {
+func (cfg *Cfg) validate(noAPIKey bool) error {
 	err := cfg.validatePorts()
 	if err != nil {
 		return err
 	}
 
 	// GI_MODELS_DIR
-	for dir := range strings.SplitSeq(cfg.Main.ModelsDir, ":") {
+	for dir := range strings.SplitSeq(cfg.ModelsDir, ":") {
 		info, er := os.Stat(dir)
 		if errors.Is(er, fs.ErrNotExist) {
 			return gie.New(gie.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.yml: does not exist", "dir", dir)
@@ -161,20 +156,20 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 			return gie.Wrap(er, gie.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.yml", "dir", dir)
 		}
 		if !info.IsDir() {
-			return gie.New(gie.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.yml: must be a file, not a directory", "path", cfg.Main.Llama.Exe)
+			return gie.New(gie.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.yml: must be a file, not a directory", "path", cfg.Llama.Exe)
 		}
 	}
 
 	// GI_LLAMA_EXE
-	info, err := os.Stat(cfg.Main.Llama.Exe)
+	info, err := os.Stat(cfg.Llama.Exe)
 	if errors.Is(err, fs.ErrNotExist) {
-		return gie.New(gie.ConfigErr, "GI_LLAMA_EXE or 'exe' in goinfer.yml: file does not exist", "exe", cfg.Main.Llama.Exe)
+		return gie.New(gie.ConfigErr, "GI_LLAMA_EXE or 'exe' in goinfer.yml: file does not exist", "exe", cfg.Llama.Exe)
 	}
 	if err != nil {
-		return gie.Wrap(err, gie.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.yml", "exe", cfg.Main.Llama.Exe)
+		return gie.Wrap(err, gie.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.yml", "exe", cfg.Llama.Exe)
 	}
 	if info.IsDir() {
-		return gie.New(gie.ConfigErr, "GI_LLAMA_EXE or 'exe' in goinfer.yml: must be a file, not a directory", "exe", cfg.Main.Llama.Exe)
+		return gie.New(gie.ConfigErr, "GI_LLAMA_EXE or 'exe' in goinfer.yml: must be a file, not a directory", "exe", cfg.Llama.Exe)
 	}
 
 	// API key
@@ -182,13 +177,13 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 		slog.Info("Flag -no-api-key => Do not verify API key.")
 		return nil
 	}
-	if cfg.Main.APIKey == "" || strings.Contains(cfg.Main.APIKey, "Please") {
+	if cfg.APIKey == "" || strings.Contains(cfg.APIKey, "Please") {
 		return gie.New(gie.ConfigErr, "API key not set, please set your private API key")
 	}
-	if cfg.Main.APIKey == debugAPIKey {
+	if cfg.APIKey == debugAPIKey {
 		slog.Warn("API key is DEBUG => security threat")
-	} else if len(cfg.Main.APIKey) < 64 {
-		slog.Warn("API key should be 64+ hex digits", "len", len(cfg.Main.APIKey))
+	} else if len(cfg.APIKey) < 64 {
+		slog.Warn("API key should be 64+ hex digits", "len", len(cfg.APIKey))
 	}
 	return nil
 }
@@ -198,7 +193,7 @@ func (cfg *Cfg) validateMain(noAPIKey bool) error {
 //
 //nolint:revive // for better readability => do not rewrite with `if !c { continue }`
 func (cfg *Cfg) validatePorts() error {
-	for hostPort := range cfg.Main.Listen {
+	for hostPort := range cfg.Listen {
 		_, port, err := net.SplitHostPort(hostPort)
 		if err != nil {
 			slog.Error("Cannot split", "hostPort", hostPort, "err", err)

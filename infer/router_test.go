@@ -14,10 +14,10 @@ import (
 func TestNewEcho(t *testing.T) {
 	t.Parallel()
 	// Minimal configuration required by NewEcho.
-	cfg := &conf.Cfg{Main: conf.Main{
+	cfg := &conf.Cfg{
 		Origins: "http://localhost",
 		APIKey:  "test/key",
-	}}
+	}
 
 	inf := &Infer{Cfg: cfg}
 	e := inf.NewEcho()

@@ -15,32 +15,32 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
-// ReadMainCfg the configuration file, then apply the env vars and finally verify the settings.
-func (cfg *Cfg) ReadMainCfg(mainCfg string, noAPIKey bool, extra, start string) error {
+// ReadMain the configuration file, then apply the env vars and finally verify the settings.
+func (cfg *Cfg) ReadMain(mainCfg string, noAPIKey bool, extra, start string) error {
 	err := cfg.load(mainCfg)
 	cfg.applyEnvVars()
 
 	if extra != "" {
 		// force DefaultModel to be the first of the ExtraModels
-		cfg.Main.DefaultModel = ""
+		cfg.DefaultModel = ""
 		cfg.parseExtraModels(extra)
 	}
 
 	if start != "" {
-		cfg.Main.DefaultModel = start
+		cfg.DefaultModel = start
 	}
 
 	cfg.trimParamValues()
 
 	// concatenate host and ports => addr = "host:port"
-	listen := make(map[string]string, len(cfg.Main.Listen))
-	for addr, services := range cfg.Main.Listen {
+	listen := make(map[string]string, len(cfg.Listen))
+	for addr, services := range cfg.Listen {
 		if addr == "" || addr[0] == ':' {
-			addr = cfg.Main.Host + addr
+			addr = cfg.Host + addr
 		}
 		listen[addr] = services
 	}
-	cfg.Main.Listen = listen
+	cfg.Listen = listen
 
 	// error from cfg.load()
 	if err != nil {
@@ -48,7 +48,7 @@ func (cfg *Cfg) ReadMainCfg(mainCfg string, noAPIKey bool, extra, start string) 
 	}
 
 	// Validate configuration
-	return cfg.validateMain(noAPIKey)
+	return cfg.validate(noAPIKey)
 }
 
 // load the configuration file (if filename not empty).
@@ -66,7 +66,7 @@ func (cfg *Cfg) load(mainCfg string) error {
 		return gie.Wrap(err, gie.ConfigErr, "empty", "file", mainCfg)
 	}
 
-	err = yaml.Unmarshal(yml, &cfg.Main)
+	err = yaml.Unmarshal(yml, &cfg)
 	if err != nil {
 		return gie.Wrap(err, gie.ConfigErr, "Failed to yaml.Unmarshal", "invalid YAML", yml)
 	}
@@ -78,12 +78,12 @@ func (cfg *Cfg) load(mainCfg string) error {
 // The environment variables precede the config file.
 func (cfg *Cfg) applyEnvVars() {
 	if dir := os.Getenv("GI_MODELS_DIR"); dir != "" {
-		cfg.Main.ModelsDir = dir
+		cfg.ModelsDir = dir
 		slog.Debug("use", "GI_MODELS_DIR", dir)
 	}
 
 	if def := os.Getenv("GI_DEFAULT_MODEL"); def != "" {
-		cfg.Main.DefaultModel = def
+		cfg.DefaultModel = def
 		slog.Debug("use", "GI_DEFAULT_MODEL", def)
 	}
 
@@ -94,22 +94,22 @@ func (cfg *Cfg) applyEnvVars() {
 	}
 
 	if host := os.Getenv("GI_HOST"); host != "" {
-		cfg.Main.Host = host
+		cfg.Host = host
 		slog.Debug("use", "GI_HOST", host)
 	}
 
 	if origins := os.Getenv("GI_ORIGINS"); origins != "" {
-		cfg.Main.Origins = origins
+		cfg.Origins = origins
 		slog.Debug("use", "GI_ORIGINS", origins)
 	}
 
 	if key := os.Getenv("GI_API_KEY"); key != "" {
-		cfg.Main.APIKey = key
+		cfg.APIKey = key
 		slog.Debug("set api_key = GI_API_KEY")
 	}
 
 	if exe := os.Getenv("GI_LLAMA_EXE"); exe != "" {
-		cfg.Main.Llama.Exe = exe
+		cfg.Llama.Exe = exe
 		slog.Debug("use", "GI_LLAMA_EXE", exe)
 	}
 
@@ -119,41 +119,41 @@ func (cfg *Cfg) applyEnvVars() {
 func (cfg *Cfg) parseExtraModels(extra string) {
 	// empty => disable goinfer.yml/extra_models
 	if extra == "" {
-		cfg.Main.ExtraModels = nil
+		cfg.ExtraModels = nil
 	} else if extra[0] == '=' { // starts with "=" => replace goinfer.yml/extra_models
-		cfg.Main.ExtraModels = nil
+		cfg.ExtraModels = nil
 		extra = extra[1:] // skip first "="
 	}
 
 	for pair := range strings.SplitSeq(extra, "|||") {
 		model_flags := strings.SplitN(pair, "=", 2)
 		model := strings.TrimSpace(model_flags[0])
-		cfg.Main.ExtraModels[model] = ""
+		cfg.ExtraModels[model] = ""
 		if len(model_flags) > 1 {
-			cfg.Main.ExtraModels[model] = strings.TrimSpace(model_flags[1])
+			cfg.ExtraModels[model] = strings.TrimSpace(model_flags[1])
 		}
 		// if DefaultModel unset => use the first ExtraModels
-		if cfg.Main.DefaultModel == "" {
-			cfg.Main.DefaultModel = model
+		if cfg.DefaultModel == "" {
+			cfg.DefaultModel = model
 		}
 	}
 }
 
 // trimParamValues cleans settings values.
 func (cfg *Cfg) trimParamValues() {
-	cfg.Main.ModelsDir = strings.TrimSpace(cfg.Main.ModelsDir)
-	cfg.Main.ModelsDir = strings.Trim(cfg.Main.ModelsDir, ":")
+	cfg.ModelsDir = strings.TrimSpace(cfg.ModelsDir)
+	cfg.ModelsDir = strings.Trim(cfg.ModelsDir, ":")
 
-	cfg.Main.DefaultModel = strings.TrimSpace(cfg.Main.DefaultModel)
+	cfg.DefaultModel = strings.TrimSpace(cfg.DefaultModel)
 
-	cfg.Main.Host = strings.TrimSpace(cfg.Main.Host)
+	cfg.Host = strings.TrimSpace(cfg.Host)
 
-	cfg.Main.Origins = strings.TrimSpace(cfg.Main.Origins)
-	cfg.Main.Origins = strings.Trim(cfg.Main.Origins, ",")
+	cfg.Origins = strings.TrimSpace(cfg.Origins)
+	cfg.Origins = strings.Trim(cfg.Origins, ",")
 
-	cfg.Main.Llama.Exe = strings.TrimSpace(cfg.Main.Llama.Exe)
-	cfg.Main.Llama.Args.Verbose = strings.TrimSpace(cfg.Main.Llama.Args.Verbose)
-	cfg.Main.Llama.Args.Debug = strings.TrimSpace(cfg.Main.Llama.Args.Debug)
-	cfg.Main.Llama.Args.Common = strings.TrimSpace(cfg.Main.Llama.Args.Common)
-	cfg.Main.Llama.Args.Goinfer = strings.TrimSpace(cfg.Main.Llama.Args.Goinfer)
+	cfg.Llama.Exe = strings.TrimSpace(cfg.Llama.Exe)
+	cfg.Llama.Args.Verbose = strings.TrimSpace(cfg.Llama.Args.Verbose)
+	cfg.Llama.Args.Debug = strings.TrimSpace(cfg.Llama.Args.Debug)
+	cfg.Llama.Args.Common = strings.TrimSpace(cfg.Llama.Args.Common)
+	cfg.Llama.Args.Goinfer = strings.TrimSpace(cfg.Llama.Args.Goinfer)
 }

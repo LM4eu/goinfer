@@ -18,9 +18,9 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
-// WriteMainCfg populates the configuration with defaults, applies environment variables,
+// WriteMain populates the configuration with defaults, applies environment variables,
 // writes the resulting configuration to the given file, and mutates the receiver.
-func (cfg *Cfg) WriteMainCfg(mainCfg string, debug, noAPIKey bool) error {
+func (cfg *Cfg) WriteMain(mainCfg string, debug, noAPIKey bool) error {
 	cfg.setAPIKeys(debug, noAPIKey)
 	cfg.applyEnvVars()
 	cfg.fixDefaultModel()
@@ -30,14 +30,14 @@ func (cfg *Cfg) WriteMainCfg(mainCfg string, debug, noAPIKey bool) error {
 	var swap config.Config
 	swap, cfg.Swap = cfg.Swap, swap
 
-	yml, err := yaml.Marshal(&cfg.Main)
+	yml, err := yaml.Marshal(&cfg)
 	if err != nil {
 		return gie.Wrap(err, gie.ConfigErr, "failed to yaml.Marshal")
 	}
 
 	cfg.Swap = swap
 
-	err = cfg.validateMain(noAPIKey)
+	err = cfg.validate(noAPIKey)
 	if err != nil {
 		return err
 	}
@@ -45,8 +45,8 @@ func (cfg *Cfg) WriteMainCfg(mainCfg string, debug, noAPIKey bool) error {
 	return writeWithHeader(mainCfg, "# Configuration of https://github.com/LM4eu/goinfer", yml)
 }
 
-// WriteSwapCfg generates the llama-swap configuration.
-func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
+// WriteSwap generates the llama-swap configuration.
+func (cfg *Cfg) WriteSwap(swapCfg string, verbose, debug bool) error {
 	switch {
 	case debug:
 		cfg.Swap.LogLevel = "debug"
@@ -64,19 +64,19 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	cfg.Swap.MetricsMaxInMemory = 500
 	cfg.Swap.StartPort = 5800
 
-	commonArgs := " " + cfg.Main.Llama.Args.Common
-	goinferArgs := " " + cfg.Main.Llama.Args.Goinfer
+	commonArgs := " " + cfg.Llama.Args.Common
+	goinferArgs := " " + cfg.Llama.Args.Goinfer
 	if verbose {
-		commonArgs += " " + cfg.Main.Llama.Args.Verbose
+		commonArgs += " " + cfg.Llama.Args.Verbose
 	}
 	if debug {
-		commonArgs += " " + cfg.Main.Llama.Args.Debug
+		commonArgs += " " + cfg.Llama.Args.Debug
 	}
 
 	cfg.Swap.Macros = config.MacroList{
-		{Name: "cmd-fim", Value: cfg.Main.Llama.Exe + commonArgs},
-		{Name: "cmd-common", Value: cfg.Main.Llama.Exe + commonArgs + " --port ${PORT}"},
-		{Name: "cmd-goinfer", Value: cfg.Main.Llama.Exe + commonArgs + " --port ${PORT}" + goinferArgs},
+		{Name: "cmd-fim", Value: cfg.Llama.Exe + commonArgs},
+		{Name: "cmd-common", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT}"},
+		{Name: "cmd-goinfer", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT}" + goinferArgs},
 	}
 
 	err := cfg.setSwapModels()
@@ -85,8 +85,8 @@ func (cfg *Cfg) WriteSwapCfg(swapCfg string, verbose, debug bool) error {
 	}
 
 	// when Goinfer starts, llama-server is started with the DefaultModel
-	if cfg.Main.DefaultModel != "" {
-		cfg.Swap.Hooks.OnStartup.Preload = []string{cfg.Main.DefaultModel}
+	if cfg.DefaultModel != "" {
+		cfg.Swap.Hooks.OnStartup.Preload = []string{cfg.DefaultModel}
 	}
 
 	err = cfg.ValidateSwap()
@@ -120,7 +120,7 @@ func (cfg *Cfg) fixDefaultModel() {
 		return
 	}
 
-	cfg.Main.DefaultModel = cfg.FixModelName(cfg.Main.DefaultModel, true)
+	cfg.DefaultModel = cfg.FixModelName(cfg.DefaultModel, true)
 }
 
 func (cfg *Cfg) FixModelName(model string, useSmallest bool) string {
@@ -215,7 +215,7 @@ func (cfg *Cfg) setSwapModels() error {
 		Unlisted: true, // hide model in /v1/models and /upstream responses
 	}
 
-	for model, flags := range cfg.Main.ExtraModels {
+	for model, flags := range cfg.ExtraModels {
 		switch {
 		case flags == "":
 			cfg.addModelCfg(model, "${cmd-common} -hf "+model, commonMC)
@@ -261,15 +261,15 @@ func (cfg *Cfg) addModelCfg(modelName, cmd string, mc *config.ModelConfig) {
 func (cfg *Cfg) setAPIKeys(debug, noAPIKey bool) {
 	switch {
 	case noAPIKey:
-		cfg.Main.APIKey = unsetAPIKey
+		cfg.APIKey = unsetAPIKey
 		slog.Info("Flag -no-api-key => Do not generate API key")
 
 	case debug:
-		cfg.Main.APIKey = debugAPIKey
+		cfg.APIKey = debugAPIKey
 		slog.Warn("API key is DEBUG => security threat")
 
 	default:
-		cfg.Main.APIKey = gen64HexDigits()
+		cfg.APIKey = gen64HexDigits()
 		slog.Info("Generated random secured API key")
 	}
 }

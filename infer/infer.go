@@ -71,7 +71,7 @@ func (inf *Infer) completionHandler(c echo.Context) error {
 	// apply template if any
 	tpl := gjson.GetBytes(body, "template").String()
 	if tpl != "" {
-		tpl = inf.Cfg.Main.Templates[msg.Model]
+		tpl = inf.Cfg.Templates[msg.Model]
 	}
 	if tpl != "" {
 		newPrompt := strings.ReplaceAll(msg.Template, "{prompt}", prompt.Str)

@@ -83,10 +83,10 @@ func getCfg() *conf.Cfg {
 }
 
 func doGoinferYML(debug, write, run, noAPIKey bool, extra, start string) *conf.Cfg {
-	cfg := conf.Cfg{Main: conf.DefaultMain}
+	cfg := conf.DefaultCfg
 
 	// read "goinfer.yml"
-	err := cfg.ReadMainCfg(goinferYML, noAPIKey, extra, start)
+	err := cfg.ReadMain(goinferYML, noAPIKey, extra, start)
 	if err != nil {
 		switch {
 		case write:
@@ -108,7 +108,7 @@ func doGoinferYML(debug, write, run, noAPIKey bool, extra, start string) *conf.C
 			os.Exit(1)
 		}
 		// generate "goinfer.yml"
-		err := cfg.WriteMainCfg(goinferYML, debug, noAPIKey)
+		err := cfg.WriteMain(goinferYML, debug, noAPIKey)
 		if err != nil {
 			slog.Error("Cannot create config", "file", goinferYML, "error", err)
 			os.Exit(1)
@@ -116,7 +116,7 @@ func doGoinferYML(debug, write, run, noAPIKey bool, extra, start string) *conf.C
 		slog.Info("Generated", "config", goinferYML)
 
 		// verify "goinfer.yml" can be successfully loaded
-		err = cfg.ReadMainCfg(goinferYML, noAPIKey, extra, start)
+		err = cfg.ReadMain(goinferYML, noAPIKey, extra, start)
 		if err != nil && !write {
 			slog.Error("Cannot load config", "file", goinferYML, "error", err)
 			os.Exit(1)
@@ -125,7 +125,7 @@ func doGoinferYML(debug, write, run, noAPIKey bool, extra, start string) *conf.C
 
 	// command line precedes config file
 	if noAPIKey {
-		cfg.Main.APIKey = ""
+		cfg.APIKey = ""
 	}
 
 	return &cfg
@@ -133,7 +133,7 @@ func doGoinferYML(debug, write, run, noAPIKey bool, extra, start string) *conf.C
 
 func doLlamaSwapYML(cfg *conf.Cfg, verbose, debug bool) {
 	// generate "llama-swap.yml"
-	err := cfg.WriteSwapCfg(llamaSwapYML, verbose, debug)
+	err := cfg.WriteSwap(llamaSwapYML, verbose, debug)
 	if err != nil {
 		slog.Error("Failed creating a valid llama-swap config", "file", llamaSwapYML, "error", err)
 		os.Exit(1)
@@ -186,7 +186,7 @@ func startServers(cfg *conf.Cfg) {
 // startEchoServers starts all HTTP Echo servers configured in the config.
 func startEchoServers(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group, proxyMan *proxy.ProxyManager) {
 	inf := &infer.Infer{Cfg: cfg, ProxyMan: proxyMan}
-	for addr, services := range cfg.Main.Listen {
+	for addr, services := range cfg.Listen {
 		if !strings.Contains(services, "goinfer") {
 			continue
 		}
@@ -194,7 +194,7 @@ func startEchoServers(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group, p
 		e := inf.NewEcho()
 		infer.PrintRoutes(e, addr)
 		grp.Go(func() error {
-			slog.InfoContext(ctx, "start Echo", "url", url(addr), "origins", cfg.Main.Origins)
+			slog.InfoContext(ctx, "start Echo", "url", url(addr), "origins", cfg.Origins)
 			return startEcho(ctx, e, addr)
 		})
 	}
@@ -211,7 +211,7 @@ func url(addr string) string {
 func startSwapServer(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group) *proxy.ProxyManager {
 	var proxyMan *proxy.ProxyManager
 
-	for addr, services := range cfg.Main.Listen {
+	for addr, services := range cfg.Listen {
 		if !strings.Contains(services, "swap") {
 			continue
 		}
