@@ -151,11 +151,13 @@ func (cfg *Cfg) parseExtraModels(extra string) {
 	}
 
 	for pair := range strings.SplitSeq(extra, "|||") {
-		model_flags := strings.SplitN(pair, "=", 2)
-		model := strings.TrimSpace(model_flags[0])
+		// split model=flags
+		mf := strings.SplitN(pair, "=", 2)
+		model := strings.TrimSpace(mf[0])
 		cfg.ExtraModels[model] = ""
-		if len(model_flags) > 1 {
-			cfg.ExtraModels[model] = strings.TrimSpace(model_flags[1])
+		if len(mf) > 1 {
+			flags := strings.TrimSpace(mf[1])
+			cfg.ExtraModels[model] = flags
 		}
 		// if DefaultModel unset => use the first ExtraModels
 		if cfg.DefaultModel == "" {
