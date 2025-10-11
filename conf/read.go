@@ -55,7 +55,7 @@ func ReadYAMLData(yml []byte, noAPIKey bool, extra, start string) (*Cfg, error) 
 
 	// error from cfg.parse()
 	if err != nil {
-		return nil, err
+		return &cfg, err // return a valid Cfg, because the error can be ignored
 	}
 
 	return &cfg, cfg.validate(noAPIKey)
