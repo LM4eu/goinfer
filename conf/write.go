@@ -123,31 +123,53 @@ func (cfg *Cfg) fixDefaultModel() {
 		return
 	}
 
-	cfg.DefaultModel = cfg.FixModelName(cfg.DefaultModel, true)
-}
-
-func (cfg *Cfg) FixModelName(model string, useSmallest bool) string {
-	_, ok := cfg.Swap.Models[model]
+	_, ok := cfg.Swap.Models[cfg.DefaultModel]
 	if ok {
-		return model // valid model name
+		return // valid
 	}
 
-	supName := "" // the DefaultModel contains a model name
-	subName := "" // a model name contains the DefaultModel
-	minName := "" // the name of the smallest model
-	supname := "" // same as supName but with a lowercase comparison
-	subname := "" // same as subName but with a lowercase comparison
+	betterName, reason := cfg.selectModelName(cfg.DefaultModel, true)
+
+	if cfg.DefaultModel != "" && cfg.DefaultModel != betterName {
+		slog.Warn("change invalid default_model", "old", cfg.DefaultModel, "new", betterName, "reason", reason+" default_model")
+	}
+
+	cfg.DefaultModel = betterName
+}
+
+func (cfg *Cfg) FixModelName(modelName string) string {
+	_, ok := cfg.Swap.Models[modelName]
+	if ok {
+		return modelName // valid
+	}
+
+	betterName, reason := cfg.selectModelName(modelName, false)
+
+	if modelName != "" && modelName != betterName {
+		slog.Info("change requested model (invalid)", "old", modelName, "new", betterName, "reason", reason+" the requested model")
+	}
+
+	return betterName
+}
+
+func (cfg *Cfg) selectModelName(model string, useSmallest bool) (betterName, reason string) {
 	lowModel := strings.ToLower(model)
+	lowPath := ""
+	supName := ""    // the DefaultModel contains a model name
+	subName := ""    // a model name contains the DefaultModel
+	supname := ""    // same as supName but with a lowercase comparison
+	subname := ""    // same as subName but with a lowercase comparison
+	minName := model // the name of the smallest model
 	minSize := int64(math.MaxInt64)
 	for name, mi := range cfg.Info {
 		lowName := strings.ToLower(name)
-
 		switch {
-		case model == "":
-			// skip the following strings.Contains checks
+		case model == "": // skip the following strings.Contains checks
 		case strings.Contains(mi.Path, model):
 			slog.Info("replace path or filename by valid model name", "old", model, "new", name)
-			return name
+			return name, "use a model having a path/file containing the"
+		case strings.Contains(strings.ToLower(mi.Path), lowModel):
+			lowPath = name
 		case strings.Contains(model, name): // this model name is a portion of the default_model
 			subName = name
 		case strings.Contains(name, model): // this model name contains the default_model
@@ -158,47 +180,27 @@ func (cfg *Cfg) FixModelName(model string, useSmallest bool) string {
 			supname = name
 		default:
 		}
-
-		if minSize > mi.Size {
+		if useSmallest && mi.Size < minSize {
 			minSize = mi.Size
 			minName = name
 		}
 	}
-
-	// if the default_model is not related to a pathname or filename,
+	// if the given model name is not related to a pathname or filename,
 	// then select one by order of preference:
-	//   - subName is a portion of the default_model
-	//   - supName contains the default_model
-	//   - minName = name of the model having the smallest size
-
-	var reason string
-	newModel := model
-
 	switch {
+	case lowPath != "":
+		return lowPath, "use a model having a path/file insensitively containing the"
 	case subName != "":
-		newModel = subName
-		reason = "a model name being a substring of the default_model"
+		return subName, "use a full model name containing the"
 	case supName != "":
-		newModel = supName
-		reason = "a model name containing the default_model"
+		return supName, "use a model name being a substring of"
 	case subname != "":
-		newModel = subname
-		reason = "a model name being a substring of the default_model"
+		return subname, "use a full model name insensitively containing the"
 	case supname != "":
-		newModel = supname
-		reason = "a model name containing the default_model"
+		return supname, "use a model name being a insensitive substring of"
 	default:
-		if useSmallest {
-			newModel = minName
-			reason = "the smallest model"
-		}
+		return minName, "use the smallest model because no model related to"
 	}
-
-	if model != "" {
-		slog.Info("default_model is invalid, select "+reason, "old", newModel, "new", model)
-	}
-
-	return newModel
 }
 
 func (cfg *Cfg) setSwapModels() error {
