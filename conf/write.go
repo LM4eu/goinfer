@@ -18,6 +18,16 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
+// WriteGoinferYML populates the configuration with defaults, applies environment variables,
+// writes the resulting configuration to the given file.
+func (cfg *Cfg) WriteGoinferYML(debug, noAPIKey bool) error {
+	yml, err := cfg.WriteBytes(debug, noAPIKey)
+	if err != nil {
+		return err
+	}
+	return writeWithHeader(GoinferYML, "# Configuration of https://github.com/LM4eu/goinfer", yml)
+}
+
 // WriteBytes populates the configuration with defaults, applies environment variables,
 // and writes the resulting configuration to a buffer.
 func (cfg *Cfg) WriteBytes(debug, noAPIKey bool) ([]byte, error) {
@@ -39,18 +49,19 @@ func (cfg *Cfg) WriteBytes(debug, noAPIKey bool) ([]byte, error) {
 	return yml, nil
 }
 
-// WriteGoinferYML populates the configuration with defaults, applies environment variables,
-// writes the resulting configuration to the given file, and mutates the receiver.
-func (cfg *Cfg) WriteGoinferYML(debug, noAPIKey bool) error {
-	yml, err := cfg.WriteBytes(debug, noAPIKey)
-	if err != nil {
-		return err
-	}
-	return writeWithHeader(GoinferYML, "# Configuration of https://github.com/LM4eu/goinfer", yml)
+// WriteLlamaSwapYML generates the llama-swap configuration.
+func WriteLlamaSwapYML(yml []byte) error {
+	// start the llama-swap.yml with these comment lines:
+	header := `# DO NOT EDIT - This file is generated at Goinfer start time.
+# Doc:
+# - https://github.com/LM4eu/goinfer/?tab=readme-ov-file#llamaswapyml
+# - https://github.com/mostlygeek/llama-swap/wiki/Configuration
+`
+	return writeWithHeader(LlamaSwapYML, header, yml)
 }
 
-// WriteLlamaSwapYML generates the llama-swap configuration.
-func (cfg *Cfg) WriteLlamaSwapYML(swapCfg string, verbose, debug bool) error {
+// GenSwapYAMLData generates the llama-swap configuration.
+func (cfg *Cfg) GenSwapYAMLData(verbose, debug bool) ([]byte, error) {
 	switch {
 	case debug:
 		cfg.Swap.LogLevel = "debug"
@@ -85,7 +96,7 @@ func (cfg *Cfg) WriteLlamaSwapYML(swapCfg string, verbose, debug bool) error {
 
 	err := cfg.setSwapModels()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// when Goinfer starts, llama-server is started with the DefaultModel
@@ -95,27 +106,15 @@ func (cfg *Cfg) WriteLlamaSwapYML(swapCfg string, verbose, debug bool) error {
 
 	err = cfg.ValidateSwap()
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	// start the llama-swap.yml with these comment lines:
-	header := `# DO NOT EDIT - This file is generated at Goinfer start time.
-# Doc:
-# - https://github.com/LM4eu/goinfer/?tab=readme-ov-file#llamaswapyml
-# - https://github.com/mostlygeek/llama-swap/wiki/Configuration
-`
 
 	yml, er := yaml.Marshal(&cfg.Swap)
 	if er != nil {
-		return gie.Wrap(er, gie.ConfigErr, "failed to marshal the llama-swap config")
+		return nil, gie.Wrap(er, gie.ConfigErr, "failed to marshal the llama-swap config")
 	}
 
-	err = writeWithHeader(swapCfg, header, yml)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return yml, nil
 }
 
 func (cfg *Cfg) fixDefaultModel() {

@@ -5,12 +5,14 @@
 package conf
 
 import (
+	"io"
 	"log/slog"
 	"os"
 	"strings"
 	"syscall"
 
 	"github.com/LM4eu/goinfer/gie"
+	"github.com/LM4eu/llama-swap/proxy/config"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -20,11 +22,11 @@ func ReadGoinferYML(noAPIKey bool, extra, start string) (*Cfg, error) {
 	if err != nil {
 		return nil, gie.Wrap(err, gie.ConfigErr, "Cannot read", "file", GoinferYML)
 	}
-	return ReadBytes(yml, noAPIKey, extra, start)
+	return ReadYAMLData(yml, noAPIKey, extra, start)
 }
 
-// ReadBytes unmarshals the YAML bytes, applies the env vars and verifies the settings.
-func ReadBytes(yml []byte, noAPIKey bool, extra, start string) (*Cfg, error) {
+// ReadYAMLData unmarshals the YAML bytes, applies the env vars and verifies the settings.
+func ReadYAMLData(yml []byte, noAPIKey bool, extra, start string) (*Cfg, error) {
 	cfg := defaultCfg
 	err := cfg.parse(yml)
 	cfg.applyEnvVars()
@@ -57,6 +59,17 @@ func ReadBytes(yml []byte, noAPIKey bool, extra, start string) (*Cfg, error) {
 	}
 
 	return &cfg, cfg.validate(noAPIKey)
+}
+
+// ReadSwapFromReader uses the LoadConfigFromReader() from llama-swap project.
+func (cfg *Cfg) ReadSwapFromReader(r io.Reader) error {
+	var err error
+	cfg.Swap, err = config.LoadConfigFromReader(r)
+	if err != nil {
+		slog.Error("Cannot load llama-swap config", "file", LlamaSwapYML, "error", err)
+		os.Exit(1)
+	}
+	return cfg.ValidateSwap()
 }
 
 // load the configuration file (if filename not empty).

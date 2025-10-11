@@ -26,11 +26,7 @@ import (
 	"github.com/LM4eu/goinfer/infer"
 )
 
-const (
-	goinferYML    = "goinfer.yml"
-	llamaSwapYML  = "llama-swap.yml"
-	templateJinja = "template.jinja"
-)
+const templateJinja = "template.jinja"
 
 func main() {
 	cfg := getCfg()
@@ -42,7 +38,7 @@ func main() {
 func getCfg() *conf.Cfg {
 	quiet := flag.Bool("q", false, "quiet mode (disable verbose output)")
 	debug := flag.Bool("debug", false, "debug mode (with -write: set debug ABI keys)")
-	write := flag.Bool("write", false, "write "+goinferYML+" and "+templateJinja)
+	write := flag.Bool("write", false, "write "+conf.GoinferYML+" and "+templateJinja)
 	run := flag.Bool("run", false, "run the server, can be combined with -write")
 	extra := flag.String("hf", "", "configure the given extra_models and load the first one (start llama-server)")
 	start := flag.String("start", "", "set the default_model and load it (start llama-server)")
@@ -110,7 +106,7 @@ func doGoinferYML(debug, write, run, noAPIKey bool, extra, start string) *conf.C
 			slog.Error("Cannot create config", "file", conf.GoinferYML, "error", err)
 			os.Exit(1)
 		}
-		slog.Info("Generated", "config", goinferYML)
+		slog.Info("Generated", "config", conf.GoinferYML)
 
 		// verify "goinfer.yml" can be successfully loaded
 		cfg, err = conf.ReadGoinferYML(noAPIKey, extra, start)

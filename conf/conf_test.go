@@ -52,7 +52,7 @@ func TestReadMainCfg(t *testing.T) {
 		t.Fatalf("cannot create model file: %v", err)
 	}
 
-	cfg2, err := ReadBytes(yml, true, "", "")
+	cfg2, err := ReadYAMLData(yml, true, "", "")
 	if err != nil {
 		t.Fatalf("ReadMainCfg failed: %v", err)
 	}
@@ -107,15 +107,20 @@ func TestWriteSwapCfg(t *testing.T) {
 	}
 	cfg.ModelsDir = modelsDir
 
-	tmp := t.TempDir()
-	swapPath := filepath.Join(tmp, "swap.yaml")
-	err = cfg.WriteLlamaSwapYML(swapPath, false, false)
+	ymlData, err := cfg.GenSwapYAMLData(false, false)
 	if err != nil {
-		t.Fatalf("WriteSwapCfg failed: %v", err)
+		t.Fatalf("WriteSwapCfg failed: %v ymlData=%s", err, string(ymlData))
 	}
-	_, err = os.Stat(swapPath)
+
+	err = yaml.Unmarshal(ymlData, &cfg.Swap)
 	if err != nil {
-		t.Fatalf("swap config not created: %v", err)
+		t.Logf("ymlData:\n---\n%s\n---\n", string(ymlData))
+		t.Fatal(err.Error())
+	}
+
+	err = cfg.ValidateSwap()
+	if err != nil {
+		t.Fatalf("cfg.ValidateSwap error: %v", err)
 	}
 }
 
@@ -213,7 +218,7 @@ func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 	var grp sync.WaitGroup
 	for i := range 10 {
 		grp.Go(func() {
-			cfg, err := ReadBytes(yamlData, i&1 == 0, "", "")
+			cfg, err := ReadYAMLData(yamlData, i&1 == 0, "", "")
 			if err != nil {
 				t.Errorf("#%d ReadMainCfg error: %v", i, err)
 			}
