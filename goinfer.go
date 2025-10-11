@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"log/slog"
@@ -19,7 +20,6 @@ import (
 
 	"github.com/LM4eu/garcon/vv"
 	"github.com/LM4eu/llama-swap/proxy"
-	"github.com/LM4eu/llama-swap/proxy/config"
 	"github.com/labstack/echo/v4"
 
 	"github.com/LM4eu/goinfer/conf"
@@ -73,7 +73,7 @@ func getCfg() *conf.Cfg {
 		os.Exit(0)
 	}
 
-	doLlamaSwapYML(cfg, verbose, *debug)
+	doLlamaSwapYML(cfg, *write, verbose, *debug)
 
 	return cfg
 }
@@ -124,27 +124,27 @@ func doGoinferYML(debug, write, run, noAPIKey bool, extra, start string) *conf.C
 	return cfg
 }
 
-func doLlamaSwapYML(cfg *conf.Cfg, verbose, debug bool) {
-	// generate "llama-swap.yml"
-	err := cfg.WriteLlamaSwapYML(llamaSwapYML, verbose, debug)
+func doLlamaSwapYML(cfg *conf.Cfg, write, verbose, debug bool) {
+	yml, err := cfg.GenSwapYAMLData(verbose, debug)
 	if err != nil {
-		slog.Error("Failed creating a valid llama-swap config", "file", llamaSwapYML, "error", err)
+		slog.Error("Failed creating a valid llama-swap config", "file", conf.LlamaSwapYML, "error", err)
 		os.Exit(1)
 	}
 
-	// verify "llama-swap.yml" can be successfully loaded
-	cfg.Swap, err = config.LoadConfig(llamaSwapYML)
-	if err != nil {
-		slog.Error("Cannot load llama-swap config", "file", llamaSwapYML, "error", err)
-		os.Exit(1)
-	}
-	err = cfg.ValidateSwap()
-	if err != nil {
-		slog.Error("llama-swap config ", "file", llamaSwapYML, "error", err)
-		os.Exit(1)
+	if write {
+		err = conf.WriteLlamaSwapYML(yml)
+		if err != nil {
+			slog.Warn("Failed writing the llama-swap config", "file", conf.LlamaSwapYML, "error", err)
+		}
+		slog.Info("Generated llama-swap config", "file", conf.LlamaSwapYML, "models", len(cfg.Swap.Models))
 	}
 
-	slog.Info("Generated config", "file", llamaSwapYML, "models", len(cfg.Swap.Models))
+	reader := bytes.NewReader(yml)
+	err = cfg.ReadSwapFromReader(reader)
+	if err != nil {
+		slog.Error("Invalid llama-swap config (use flag -write to check "+conf.LlamaSwapYML+")", "error", err)
+		os.Exit(1)
+	}
 }
 
 // startServers creates and runs the HTTP servers.
