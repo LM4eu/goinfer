@@ -83,19 +83,16 @@ func getCfg() *conf.Cfg {
 }
 
 func doGoinferYML(debug, write, run, noAPIKey bool, extra, start string) *conf.Cfg {
-	cfg := conf.DefaultCfg
-
-	// read "goinfer.yml"
-	err := cfg.ReadMain(goinferYML, noAPIKey, extra, start)
+	cfg, err := conf.ReadGoinferYML(noAPIKey, extra, start)
 	if err != nil {
 		switch {
 		case write:
-			slog.Info("Write a fresh new config file, may contain issues.", "file", goinferYML, "error", err)
+			slog.Info("Write a fresh new config file, may contain issues.", "file", conf.GoinferYML, "error", err)
 		case run:
-			slog.Info("Cannot load config. Flag -run prevents to modify/generate it", "file", goinferYML, "error", err)
+			slog.Info("Cannot load config. Flag -run prevents to modify/generate it", "file", conf.GoinferYML, "error", err)
 			os.Exit(1)
 		default:
-			slog.Warn("Cannot load config => Write a new one, may contain issues.", "file", goinferYML, "error", err)
+			slog.Warn("Cannot load config => Write a new one, may contain issues.", "file", conf.GoinferYML, "error", err)
 		}
 		write = true
 	}
@@ -108,17 +105,17 @@ func doGoinferYML(debug, write, run, noAPIKey bool, extra, start string) *conf.C
 			os.Exit(1)
 		}
 		// generate "goinfer.yml"
-		err := cfg.WriteMain(goinferYML, debug, noAPIKey)
+		err := cfg.WriteGoinferYML(debug, noAPIKey)
 		if err != nil {
-			slog.Error("Cannot create config", "file", goinferYML, "error", err)
+			slog.Error("Cannot create config", "file", conf.GoinferYML, "error", err)
 			os.Exit(1)
 		}
 		slog.Info("Generated", "config", goinferYML)
 
 		// verify "goinfer.yml" can be successfully loaded
-		err = cfg.ReadMain(goinferYML, noAPIKey, extra, start)
+		cfg, err = conf.ReadGoinferYML(noAPIKey, extra, start)
 		if err != nil && !write {
-			slog.Error("Cannot load config", "file", goinferYML, "error", err)
+			slog.Error("Cannot load config", "file", conf.GoinferYML, "error", err)
 			os.Exit(1)
 		}
 	}
@@ -128,12 +125,12 @@ func doGoinferYML(debug, write, run, noAPIKey bool, extra, start string) *conf.C
 		cfg.APIKey = ""
 	}
 
-	return &cfg
+	return cfg
 }
 
 func doLlamaSwapYML(cfg *conf.Cfg, verbose, debug bool) {
 	// generate "llama-swap.yml"
-	err := cfg.WriteSwap(llamaSwapYML, verbose, debug)
+	err := cfg.WriteLlamaSwapYML(llamaSwapYML, verbose, debug)
 	if err != nil {
 		slog.Error("Failed creating a valid llama-swap config", "file", llamaSwapYML, "error", err)
 		os.Exit(1)

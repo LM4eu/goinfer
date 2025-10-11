@@ -7,7 +7,6 @@ package conf
 import (
 	"log/slog"
 	"os"
-	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -15,18 +14,28 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
-// ReadMain the configuration file, then apply the env vars and finally verify the settings.
-func (cfg *Cfg) ReadMain(mainCfg string, noAPIKey bool, extra, start string) error {
-	err := cfg.load(mainCfg)
+// ReadGoinferYML loads the configuration file, reads the env vars and verifies the settings.
+func ReadGoinferYML(noAPIKey bool, extra, start string) (*Cfg, error) {
+	yml, err := os.ReadFile(GoinferYML)
+	if err != nil {
+		return nil, gie.Wrap(err, gie.ConfigErr, "Cannot read", "file", GoinferYML)
+	}
+	return ReadBytes(yml, noAPIKey, extra, start)
+}
+
+// ReadBytes unmarshals the YAML bytes, applies the env vars and verifies the settings.
+func ReadBytes(yml []byte, noAPIKey bool, extra, start string) (*Cfg, error) {
+	cfg := defaultCfg
+	err := cfg.parse(yml)
 	cfg.applyEnvVars()
 
 	if extra != "" {
-		// force DefaultModel to be the first of the ExtraModels
-		cfg.DefaultModel = ""
+		cfg.DefaultModel = "" // this forces DefaultModel to be the first of the ExtraModels
 		cfg.parseExtraModels(extra)
 	}
 
 	if start != "" {
+		// start Goinfer using the "start" model
 		cfg.DefaultModel = start
 	}
 
@@ -42,31 +51,21 @@ func (cfg *Cfg) ReadMain(mainCfg string, noAPIKey bool, extra, start string) err
 	}
 	cfg.Listen = listen
 
-	// error from cfg.load()
+	// error from cfg.parse()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// Validate configuration
-	return cfg.validate(noAPIKey)
+	return &cfg, cfg.validate(noAPIKey)
 }
 
 // load the configuration file (if filename not empty).
-func (cfg *Cfg) load(mainCfg string) error {
-	if mainCfg == "" {
-		return nil
-	}
-
-	yml, err := os.ReadFile(filepath.Clean(mainCfg))
-	if err != nil {
-		return gie.Wrap(err, gie.ConfigErr, "Cannot read", "file", mainCfg)
-	}
-
+func (cfg *Cfg) parse(yml []byte) error {
 	if len(yml) == 0 {
-		return gie.Wrap(err, gie.ConfigErr, "empty", "file", mainCfg)
+		return gie.New(gie.ConfigErr, "empty", "file", GoinferYML)
 	}
 
-	err = yaml.Unmarshal(yml, &cfg)
+	err := yaml.Unmarshal(yml, &cfg)
 	if err != nil {
 		return gie.Wrap(err, gie.ConfigErr, "Failed to yaml.Unmarshal", "invalid YAML", yml)
 	}

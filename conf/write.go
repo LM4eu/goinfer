@@ -18,35 +18,39 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
-// WriteMain populates the configuration with defaults, applies environment variables,
-// writes the resulting configuration to the given file, and mutates the receiver.
-func (cfg *Cfg) WriteMain(mainCfg string, debug, noAPIKey bool) error {
+// WriteBytes populates the configuration with defaults, applies environment variables,
+// and writes the resulting configuration to a buffer.
+func (cfg *Cfg) WriteBytes(debug, noAPIKey bool) ([]byte, error) {
 	cfg.setAPIKeys(debug, noAPIKey)
 	cfg.applyEnvVars()
 	cfg.fixDefaultModel()
 	cfg.trimParamValues()
 
-	// keep goinfer.yml clean, without llama-swap config
-	var swap config.Config
-	swap, cfg.Swap = cfg.Swap, swap
+	err := cfg.validate(noAPIKey)
+	if err != nil {
+		return nil, err
+	}
 
 	yml, err := yaml.Marshal(&cfg)
 	if err != nil {
-		return gie.Wrap(err, gie.ConfigErr, "failed to yaml.Marshal")
+		return nil, gie.Wrap(err, gie.ConfigErr, "failed to yaml.Marshal", "cfg", cfg)
 	}
 
-	cfg.Swap = swap
+	return yml, nil
+}
 
-	err = cfg.validate(noAPIKey)
+// WriteGoinferYML populates the configuration with defaults, applies environment variables,
+// writes the resulting configuration to the given file, and mutates the receiver.
+func (cfg *Cfg) WriteGoinferYML(debug, noAPIKey bool) error {
+	yml, err := cfg.WriteBytes(debug, noAPIKey)
 	if err != nil {
 		return err
 	}
-
-	return writeWithHeader(mainCfg, "# Configuration of https://github.com/LM4eu/goinfer", yml)
+	return writeWithHeader(GoinferYML, "# Configuration of https://github.com/LM4eu/goinfer", yml)
 }
 
-// WriteSwap generates the llama-swap configuration.
-func (cfg *Cfg) WriteSwap(swapCfg string, verbose, debug bool) error {
+// WriteLlamaSwapYML generates the llama-swap configuration.
+func (cfg *Cfg) WriteLlamaSwapYML(swapCfg string, verbose, debug bool) error {
 	switch {
 	case debug:
 		cfg.Swap.LogLevel = "debug"

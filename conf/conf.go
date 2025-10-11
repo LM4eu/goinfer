@@ -53,10 +53,13 @@ const (
 	// Hex code: C0ffee 15 C001, 50 C0ffee 15 900d. Bad C0de 15 Dead, 101. Cafe 91f7, 90 Cafe, 7e57 C0de.
 	debugAPIKey = "C0ffee15C00150C0ffee15900dBadC0de15Dead101Cafe91f790Cafe7e57C0de"
 	unsetAPIKey = "Please ⚠️ Set your private 64-hex-digit API key (32 bytes)"
+
+	GoinferYML   = "goinfer.yml"
+	LlamaSwapYML = "llama-swap.yml"
 )
 
 var (
-	DefaultCfg = Cfg{
+	defaultCfg = Cfg{
 		ModelsDir:    "/home/me/models",
 		DefaultModel: "ggml-org/Qwen2.5-Coder-1.5B-Q8_0-GGUF",
 		APIKey:       "",

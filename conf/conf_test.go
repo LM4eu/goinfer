@@ -16,19 +16,13 @@ import (
 )
 
 // Helper to create a temporary configuration file.
-func writeTempCfg(t *testing.T, cfg *Cfg) string {
+func createCfgBytes(t *testing.T, cfg *Cfg) []byte {
 	t.Helper()
-	tmp := t.TempDir()
-	path := filepath.Join(tmp, "config.yaml")
-	data, err := yaml.Marshal(cfg)
+	yml, err := yaml.Marshal(cfg)
 	if err != nil {
 		t.Fatalf("marshal config: %v", err)
 	}
-	err = os.WriteFile(path, data, 0o600)
-	if err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-	return path
+	return yml
 }
 
 // TestReadMainCfg loads a config file, applies env vars, and validates.
@@ -36,18 +30,18 @@ func TestReadMainCfg(t *testing.T) {
 	// t.Parallel omitted because of t.Setenv usage.
 
 	// Minimal config.
-	cfg := DefaultCfg
+	cfg := defaultCfg
 	cfg.ModelsDir = "/tmp/models"
-	cfg.Llama.Exe = filepath.Join(filepath.Dir(t.TempDir()), "llama-server")
+	cfg.Llama.Exe = filepath.Join(t.TempDir(), "llama-server")
 	err := os.WriteFile(cfg.Llama.Exe, make([]byte, 2048), 0o600)
 	if err != nil {
 		t.Fatalf("cannot create dummy llama-sever file: %v", err)
 	}
 	cfg.APIKey = "dummy" // dummy admin API key to satisfy validation.
-	path := writeTempCfg(t, &cfg)
+	yml := createCfgBytes(t, &cfg)
 
 	// Override via env.
-	dir := filepath.Dir(path)
+	dir := t.TempDir()
 	t.Setenv("GI_MODELS_DIR", dir)
 	t.Setenv("GI_HOST", "127.0.0.1")
 
@@ -58,14 +52,14 @@ func TestReadMainCfg(t *testing.T) {
 		t.Fatalf("cannot create model file: %v", err)
 	}
 
-	err = cfg.ReadMain(path, true, "", "")
+	cfg2, err := ReadBytes(yml, true, "", "")
 	if err != nil {
 		t.Fatalf("ReadMainCfg failed: %v", err)
 	}
-	if cfg.ModelsDir != dir {
+	if cfg2.ModelsDir != dir {
 		t.Errorf("ReadMainCfg did not apply GI_MODELS_DIR")
 	}
-	if cfg.Host != "127.0.0.1" {
+	if cfg2.Host != "127.0.0.1" {
 		t.Errorf("ReadMainCfg did not apply GI_HOST")
 	}
 }
@@ -81,7 +75,7 @@ func TestWriteMainCfg(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot create model file: %v", err)
 	}
-	llamaExe := filepath.Join(filepath.Dir(t.TempDir()), "llama-server")
+	llamaExe := filepath.Join(t.TempDir(), "llama-server")
 	err = os.WriteFile(llamaExe, make([]byte, 2048), 0o600)
 	if err != nil {
 		t.Fatalf("cannot create dummy llama-sever file: %v", err)
@@ -90,18 +84,12 @@ func TestWriteMainCfg(t *testing.T) {
 	t.Setenv("GI_MODELS_DIR", modelsDir)
 	t.Setenv("GI_LLAMA_EXE", llamaExe)
 
-	tmp := t.TempDir()
-	path := filepath.Join(tmp, "out.yaml")
-	err = cfg.WriteMain(path, false, true)
+	yml, err := cfg.WriteBytes(false, true)
 	if err != nil {
 		t.Fatalf("WriteMainCfg failed: %v", err)
 	}
-	data, err := os.ReadFile(filepath.Clean(path))
-	if err != nil {
-		t.Fatalf("cannot read written config: %v", err)
-	}
 	var loaded Cfg
-	err = yaml.Unmarshal(data, &loaded)
+	err = yaml.Unmarshal(yml, &loaded)
 	if err != nil {
 		t.Fatalf("written config is not valid YAML: %v", err)
 	}
@@ -121,7 +109,7 @@ func TestWriteSwapCfg(t *testing.T) {
 
 	tmp := t.TempDir()
 	swapPath := filepath.Join(tmp, "swap.yaml")
-	err = cfg.WriteSwap(swapPath, false, false)
+	err = cfg.WriteLlamaSwapYML(swapPath, false, false)
 	if err != nil {
 		t.Fatalf("WriteSwapCfg failed: %v", err)
 	}
@@ -168,7 +156,7 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 		t.Fatalf("cannot create dummy llama-sever file: %v", err)
 	}
 
-	cfg := DefaultCfg
+	cfg := defaultCfg
 	cfg.ModelsDir = modelsDir
 	cfg.APIKey = "dummy"
 	cfg.Llama.Exe = llamaExe
@@ -190,7 +178,7 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 		t.Fatalf("validation2 error: %v", err)
 	}
 	// Missing admin key should fail.
-	cfgMissing := DefaultCfg
+	cfgMissing := defaultCfg
 	cfgMissing.ModelsDir = modelsDir
 	cfgMissing.APIKey = ""
 	err = cfgMissing.validate(false)
@@ -202,18 +190,13 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 // TestCfg_ConcurrentReadMainCfg runs ReadMainCfg concurrently.
 func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 	// t.Parallel omitted because of t.Setenv usage.
-	cfg := DefaultCfg
+	cfg := defaultCfg
 	cfg.ModelsDir = t.TempDir()
 	yamlData, err := yaml.Marshal(cfg)
 	if err != nil {
 		t.Fatalf("yaml marshal error: %v", err)
 	}
-	tmpFile := filepath.Join(t.TempDir(), "config.yaml")
-	err = os.WriteFile(tmpFile, yamlData, 0o600)
-	if err != nil {
-		t.Fatalf("write config error: %v", err)
-	}
-	dir := filepath.Dir(tmpFile)
+	dir := t.TempDir()
 	t.Setenv("GI_MODELS_DIR", dir)
 	t.Setenv("GI_HOST", "127.0.0.1")
 	// Set admin API key to satisfy validation.
@@ -230,8 +213,7 @@ func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 	var grp sync.WaitGroup
 	for i := range 10 {
 		grp.Go(func() {
-			var cfg Cfg
-			err = cfg.ReadMain(tmpFile, i&1 == 0, "", "")
+			cfg, err := ReadBytes(yamlData, i&1 == 0, "", "")
 			if err != nil {
 				t.Errorf("#%d ReadMainCfg error: %v", i, err)
 			}
