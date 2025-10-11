@@ -106,7 +106,8 @@ func doGoinferYML(debug, write, run, noAPIKey bool, extra, start string) *conf.C
 		}
 
 		// read "goinfer.yml" to verify it can be successfully loaded
-		cfg, er = conf.ReadGoinferYML(noAPIKey, extra, start)
+		// Pass empty extra and start to keep the eventual fixes.
+		cfg, er = conf.ReadGoinferYML(noAPIKey, "", "")
 		if er != nil {
 			slog.Warn("Please review", "config", conf.GoinferYML, "error", er)
 			os.Exit(1)
