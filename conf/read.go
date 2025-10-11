@@ -5,6 +5,7 @@
 package conf
 
 import (
+	"errors"
 	"io"
 	"log/slog"
 	"os"
@@ -17,15 +18,26 @@ import (
 )
 
 // ReadGoinferYML loads the configuration file, reads the env vars and verifies the settings.
+// Always return a valid configuration, because the receiver may want to write a valid config.
 func ReadGoinferYML(noAPIKey bool, extra, start string) (*Cfg, error) {
 	yml, err := os.ReadFile(GoinferYML)
 	if err != nil {
-		return nil, gie.Wrap(err, gie.ConfigErr, "Cannot read", "file", GoinferYML)
+		err = gie.Wrap(err, gie.ConfigErr, "Cannot read", "file", GoinferYML)
+		slog.Warn("Cannot read " + GoinferYML + " => Use default config and env. vars")
 	}
-	return ReadYAMLData(yml, noAPIKey, extra, start)
+
+	cfg, er := ReadYAMLData(yml, noAPIKey, extra, start)
+	if er != nil {
+		if err != nil {
+			return cfg, errors.Join(err, er)
+		}
+		return cfg, er
+	}
+	return cfg, err
 }
 
 // ReadYAMLData unmarshals the YAML bytes, applies the env vars and verifies the settings.
+// Always return a valid configuration, because the receiver may want to write a valid config.
 func ReadYAMLData(yml []byte, noAPIKey bool, extra, start string) (*Cfg, error) {
 	cfg := defaultCfg
 	err := cfg.parse(yml)
@@ -53,12 +65,14 @@ func ReadYAMLData(yml []byte, noAPIKey bool, extra, start string) (*Cfg, error) 
 	}
 	cfg.Listen = listen
 
-	// error from cfg.parse()
-	if err != nil {
-		return &cfg, err // return a valid Cfg, because the error can be ignored
+	er := cfg.validate(noAPIKey)
+	if er != nil {
+		if err != nil {
+			return &cfg, errors.Join(err, er)
+		}
+		return &cfg, er
 	}
-
-	return &cfg, cfg.validate(noAPIKey)
+	return &cfg, err
 }
 
 // ReadSwapFromReader uses the LoadConfigFromReader() from llama-swap project.
