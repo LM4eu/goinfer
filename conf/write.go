@@ -225,9 +225,12 @@ func (cfg *Cfg) setSwapModels() {
 			cfg.addModelCfg(model, "${cmd-common} "+flags, commonMC)
 		case strings.HasPrefix(flags, "--fim-"):
 			cfg.addModelCfg(model, "${cmd-common} "+flags, fimMC)
-		default:
+		case strings.Contains(flags, "-m "), strings.Contains(flags, "-hf "):
 			cfg.addModelCfg(model, "${cmd-common} "+flags, commonMC)
 			cfg.addModelCfg("GI_"+model, "${cmd-goinfer} "+flags, goinferMC)
+		default:
+			cfg.addModelCfg(model, "${cmd-common} -hf "+model+" "+flags, commonMC)
+			cfg.addModelCfg("GI_"+model, "${cmd-goinfer} -hf "+model+" "+flags, goinferMC)
 		}
 	}
 
