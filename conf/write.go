@@ -7,6 +7,7 @@ package conf
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"log/slog"
 	"math"
 	"os"
@@ -22,10 +23,14 @@ import (
 // writes the resulting configuration to the given file.
 func (cfg *Cfg) WriteGoinferYML(debug, noAPIKey bool) error {
 	yml, err := cfg.WriteBytes(debug, noAPIKey)
-	if err != nil {
-		return err
+	er := writeWithHeader(GoinferYML, "# Configuration of https://github.com/LM4eu/goinfer", yml)
+	if er != nil {
+		if err != nil {
+			return errors.Join(err, er)
+		}
+		return er
 	}
-	return writeWithHeader(GoinferYML, "# Configuration of https://github.com/LM4eu/goinfer", yml)
+	return err
 }
 
 // WriteBytes populates the configuration with defaults, applies environment variables,
@@ -37,16 +42,16 @@ func (cfg *Cfg) WriteBytes(debug, noAPIKey bool) ([]byte, error) {
 	cfg.trimParamValues()
 
 	err := cfg.validate(noAPIKey)
-	if err != nil {
-		return nil, err
-	}
 
-	yml, err := yaml.Marshal(&cfg)
-	if err != nil {
-		return nil, gie.Wrap(err, gie.ConfigErr, "failed to yaml.Marshal", "cfg", cfg)
+	yml, er := yaml.Marshal(&cfg)
+	if er != nil {
+		er = gie.Wrap(err, gie.ConfigErr, "failed to yaml.Marshal", "cfg", cfg)
+		if err != nil {
+			return yml, errors.Join(err, er)
+		}
+		return yml, er
 	}
-
-	return yml, nil
+	return yml, err
 }
 
 // WriteLlamaSwapYML generates the llama-swap configuration.
@@ -94,17 +99,14 @@ func (cfg *Cfg) GenSwapYAMLData(verbose, debug bool) ([]byte, error) {
 		{Name: "cmd-goinfer", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT}" + goinferArgs},
 	}
 
-	err := cfg.setSwapModels()
-	if err != nil {
-		return nil, err
-	}
+	cfg.setSwapModels()
 
 	// when Goinfer starts, llama-server is started with the DefaultModel
 	if cfg.DefaultModel != "" {
 		cfg.Swap.Hooks.OnStartup.Preload = []string{cfg.DefaultModel}
 	}
 
-	err = cfg.ValidateSwap()
+	err := cfg.ValidateSwap()
 	if err != nil {
 		return nil, err
 	}
@@ -118,10 +120,7 @@ func (cfg *Cfg) GenSwapYAMLData(verbose, debug bool) ([]byte, error) {
 }
 
 func (cfg *Cfg) fixDefaultModel() {
-	err := cfg.setSwapModels()
-	if err != nil {
-		return
-	}
+	cfg.setSwapModels()
 
 	_, ok := cfg.Swap.Models[cfg.DefaultModel]
 	if ok {
@@ -203,11 +202,8 @@ func (cfg *Cfg) selectModelName(model string, useSmallest bool) (betterName, rea
 	}
 }
 
-func (cfg *Cfg) setSwapModels() error {
-	err := cfg.updateInfo()
-	if err != nil {
-		return err
-	}
+func (cfg *Cfg) setSwapModels() {
+	cfg.updateInfo()
 
 	if cfg.Swap.Models == nil {
 		cfg.Swap.Models = make(map[string]config.ModelConfig, 2*len(cfg.Info)+9)
@@ -244,8 +240,6 @@ func (cfg *Cfg) setSwapModels() error {
 		cfg.addModelCfg(name, "${cmd-common}"+args, commonMC)         // API for Cline, RooCode, RolePlay...
 		cfg.addModelCfg("GI_"+name, "${cmd-goinfer}"+args, goinferMC) // API for Agent-Smith...
 	}
-
-	return nil
 }
 
 // Add the model settings within the llama-swap configuration.
@@ -275,7 +269,7 @@ func (cfg *Cfg) setAPIKey(debug, noAPIKey bool) {
 
 	default:
 		cfg.APIKey = gen64HexDigits()
-		slog.Info("Generated random secured API key")
+		slog.Info("Generated random API key")
 	}
 }
 
