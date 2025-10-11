@@ -23,15 +23,14 @@ func ReadGoinferYML(noAPIKey bool, extra, start string) (*Cfg, error) {
 	yml, err := os.ReadFile(GoinferYML)
 	if err != nil {
 		err = gie.Wrap(err, gie.ConfigErr, "Cannot read", "file", GoinferYML)
-		slog.Warn("Cannot read " + GoinferYML + " => Use default config and env. vars")
+		slog.Warn("Skip " + GoinferYML + " => Use default settings and env. vars")
 	}
 
 	cfg, er := ReadYAMLData(yml, noAPIKey, extra, start)
 	if er != nil {
-		if err != nil {
-			return cfg, errors.Join(err, er)
+		if err == nil {
+			err = er
 		}
-		return cfg, er
 	}
 	return cfg, err
 }
