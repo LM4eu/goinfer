@@ -162,19 +162,11 @@ func (inf *Infer) configureAPIKeyAuth(grp *echo.Group) {
 
 // modelsHandler returns the state of models.
 func (inf *Infer) modelsHandler(c echo.Context) error {
-	models, err := inf.Cfg.ListModels()
+	models := inf.Cfg.ListModels()
 
-	response := map[string]any{
-		"count": len(models),
+	if len(models) == 0 {
+		return c.String(http.StatusNoContent, `{"count":0, "models":[]}`)
 	}
 
-	if err != nil {
-		response["error"] = err.Error()
-	}
-
-	if len(models) > 0 {
-		response["models"] = models
-	}
-
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(http.StatusOK, map[string]any{"count": len(models), "models": models})
 }

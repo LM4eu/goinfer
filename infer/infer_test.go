@@ -133,8 +133,8 @@ func TestModelsHandler_Empty(t *testing.T) {
 	require.NoError(t, err)
 
 	// The response should be JSON with count 0 and an empty models map.
-	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, http.StatusNoContent, rec.Code)
 	body := rec.Body.Bytes()
 	require.Contains(t, string(body), `"count":0`)
-	require.NotContains(t, string(body), `"models"`)
+	require.Contains(t, string(body), `"models"`)
 }
