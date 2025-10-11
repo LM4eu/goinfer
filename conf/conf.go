@@ -60,8 +60,8 @@ const (
 
 var (
 	defaultCfg = Cfg{
-		ModelsDir:    "/home/me/models",
-		DefaultModel: "ggml-org/Qwen2.5-Coder-1.5B-Q8_0-GGUF",
+		ModelsDir:    "/home/me/path/to/models",
+		DefaultModel: "",
 		APIKey:       "",
 		Host:         "",
 		Listen: map[string]string{
