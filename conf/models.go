@@ -40,16 +40,12 @@ type (
 const notConfigured = "file present but not configured in llama-swap.yml"
 
 // ListModels returns the model names from the config and from the models_dir.
-func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
+func (cfg *Cfg) ListModels() map[string]ModelInfo {
 	if len(cfg.Info) > 0 {
-		return cfg.Info, nil
+		return cfg.Info
 	}
 
-	err := cfg.updateInfo()
-	if err != nil {
-		slog.Debug("Search models", "err", err)
-	}
-
+	cfg.updateInfo()
 	for name, mi := range cfg.Info {
 		if cfg.Info[name].Error == "" {
 			mi.Error = notConfigured
@@ -64,7 +60,7 @@ func (cfg *Cfg) ListModels() (map[string]ModelInfo, error) {
 		cfg.refineModelInfo(name)
 	}
 
-	return cfg.Info, err
+	return cfg.Info
 }
 
 func (cfg *Cfg) refineModelInfo(name string) {
@@ -100,8 +96,8 @@ func (cfg *Cfg) refineModelInfo(name string) {
 
 // updateInfo search template.yml and *.gguf model files recursively
 // in the directories listed in cfg.ModelsDir (colon-separated).
-// It aggregates matching files, updates cfg.Info and returns any error encountered.
-func (cfg *Cfg) updateInfo() error {
+// It aggregates matching files, and updates cfg.Info.
+func (cfg *Cfg) updateInfo() {
 	templates := map[string]TemplateInfo{}
 	if cfg.Info == nil {
 		cfg.Info = make(map[string]ModelInfo, 16)
@@ -127,8 +123,6 @@ func (cfg *Cfg) updateInfo() error {
 		}
 		cfg.Info[name] = mi
 	}
-
-	return nil
 }
 
 // search walks the given root directory and appends any valid *.gguf model file to
@@ -388,7 +382,7 @@ func oneLine(input []byte) string {
 // countModels returns the number of models that are currently present on file system.
 func (cfg *Cfg) countModels() int {
 	if len(cfg.Info) == 0 {
-		_ = cfg.updateInfo()
+		cfg.updateInfo()
 	}
 	return len(cfg.Info)
 }

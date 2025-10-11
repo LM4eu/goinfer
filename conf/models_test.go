@@ -160,10 +160,7 @@ func TestListModels(t *testing.T) {
 			},
 		},
 	}
-	models, err := cfg.ListModels()
-	if err != nil {
-		t.Fatalf("ListModels error: %v", err)
-	}
+	models := cfg.ListModels()
 	if info, ok := models["disk-model"]; !ok || info.Error != "" {
 		t.Errorf("disk-model missing or error: %v", info)
 	}
