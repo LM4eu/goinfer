@@ -85,35 +85,40 @@ func doGoinferYML(debug, write, run, noAPIKey bool, extra, start string) *conf.C
 		case write:
 			slog.Info("Write a fresh new config file, may contain issues.", "file", conf.GoinferYML, "error", err)
 		case run:
-			slog.Info("Cannot load config. Flag -run prevents to modify/generate it", "file", conf.GoinferYML, "error", err)
+			slog.Error("Cannot load config. Flag -run prevents to modify/generate it", "file", conf.GoinferYML, "error", err)
 			os.Exit(1)
 		default:
-			slog.Warn("Cannot load config => Write a new one, may contain issues.", "file", conf.GoinferYML, "error", err)
+			slog.Info("Cannot load config => Write a new one, may contain issues.", "file", conf.GoinferYML, "error", err)
 		}
 		write = true
 	}
 
 	if write {
-		// generate "template.jinja" // TODO pass current working dir to llama-server
 		err = os.WriteFile(templateJinja, []byte("{{- messages[0].content -}}"), 0o600)
 		if err != nil {
 			slog.Error("Cannot write", "file", templateJinja, "error", err)
-			os.Exit(1)
 		}
-		// generate "goinfer.yml"
-		err := cfg.WriteGoinferYML(debug, noAPIKey)
-		if err != nil {
-			slog.Error("Cannot create config", "file", conf.GoinferYML, "error", err)
-			os.Exit(1)
-		}
-		slog.Info("Generated", "config", conf.GoinferYML)
 
-		// verify "goinfer.yml" can be successfully loaded
-		cfg, err = conf.ReadGoinferYML(noAPIKey, extra, start)
-		if err != nil && !write {
-			slog.Error("Cannot load config", "file", conf.GoinferYML, "error", err)
+		er := cfg.WriteGoinferYML(debug, noAPIKey)
+		if er != nil {
+			slog.Info(er.Error())
+			err = er
+		}
+
+		// read "goinfer.yml" to verify it can be successfully loaded
+		cfg, er = conf.ReadGoinferYML(noAPIKey, extra, start)
+		if er != nil {
+			slog.Warn("Please review", "config", conf.GoinferYML, "error", er)
 			os.Exit(1)
 		}
+
+		// stop if any error from WriteFile(templateJinja) or WriteGoinferYML
+		if err != nil {
+			slog.Info("Please review the env. vars and", "config", conf.GoinferYML)
+			os.Exit(1)
+		}
+
+		slog.Info("Successfully wrote", "config", conf.GoinferYML)
 	}
 
 	// command line precedes config file
