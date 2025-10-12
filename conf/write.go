@@ -38,8 +38,8 @@ func (cfg *Cfg) WriteGoinferYML(debug, noAPIKey bool) error {
 func (cfg *Cfg) WriteBytes(debug, noAPIKey bool) ([]byte, error) {
 	cfg.setAPIKey(debug, noAPIKey)
 	cfg.applyEnvVars()
-	cfg.fixDefaultModel()
 	cfg.trimParamValues()
+	cfg.fixDefaultModel()
 
 	err := cfg.validate(noAPIKey)
 

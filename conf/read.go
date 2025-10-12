@@ -53,6 +53,7 @@ func ReadYAMLData(yml []byte, noAPIKey bool, extra, start string) (*Cfg, error) 
 	}
 
 	cfg.trimParamValues()
+	cfg.fixDefaultModel()
 
 	// concatenate host and ports => addr = "host:port"
 	listen := make(map[string]string, len(cfg.Listen))
