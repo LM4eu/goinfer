@@ -30,7 +30,7 @@ func TestReadMainCfg(t *testing.T) {
 	// t.Parallel omitted because of t.Setenv usage.
 
 	// Minimal config.
-	cfg := defaultCfg
+	cfg := defaultCfg()
 	cfg.ModelsDir = "/tmp/models"
 	cfg.Llama.Exe = filepath.Join(t.TempDir(), "llama-server")
 	err := os.WriteFile(cfg.Llama.Exe, make([]byte, 2048), 0o600)
@@ -38,7 +38,7 @@ func TestReadMainCfg(t *testing.T) {
 		t.Fatalf("cannot create dummy llama-sever file: %v", err)
 	}
 	cfg.APIKey = "dummy" // dummy admin API key to satisfy validation.
-	yml := createCfgBytes(t, &cfg)
+	yml := createCfgBytes(t, cfg)
 
 	// Override via env.
 	dir := t.TempDir()
@@ -158,7 +158,7 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 		t.Fatalf("cannot create dummy llama-sever file: %v", err)
 	}
 
-	cfg := defaultCfg
+	cfg := defaultCfg()
 	cfg.ModelsDir = modelsDir
 	cfg.APIKey = "dummy"
 	cfg.Llama.Exe = llamaExe
@@ -180,7 +180,7 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 		t.Fatalf("validation2 error: %v", err)
 	}
 	// Missing admin key should fail.
-	cfgMissing := defaultCfg
+	cfgMissing := defaultCfg()
 	cfgMissing.ModelsDir = modelsDir
 	cfgMissing.APIKey = ""
 	err = cfgMissing.validate(false)
@@ -192,7 +192,7 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 // TestCfg_ConcurrentReadMainCfg runs ReadMainCfg concurrently.
 func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 	// t.Parallel omitted because of t.Setenv usage.
-	cfg := defaultCfg
+	cfg := defaultCfg()
 	cfg.ModelsDir = t.TempDir()
 	yamlData, err := yaml.Marshal(cfg)
 	if err != nil {

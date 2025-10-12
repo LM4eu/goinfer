@@ -38,7 +38,7 @@ func ReadGoinferYML(noAPIKey bool, extra, start string) (*Cfg, error) {
 // ReadYAMLData unmarshals the YAML bytes, applies the env vars and verifies the settings.
 // Always return a valid configuration, because the receiver may want to write a valid config.
 func ReadYAMLData(yml []byte, noAPIKey bool, extra, start string) (*Cfg, error) {
-	cfg := defaultCfg
+	cfg := defaultCfg()
 	err := cfg.parse(yml)
 	cfg.applyEnvVars()
 
@@ -68,11 +68,11 @@ func ReadYAMLData(yml []byte, noAPIKey bool, extra, start string) (*Cfg, error) 
 	er := cfg.validate(noAPIKey)
 	if er != nil {
 		if err != nil {
-			return &cfg, errors.Join(err, er)
+			return cfg, errors.Join(err, er)
 		}
-		return &cfg, er
+		return cfg, er
 	}
-	return &cfg, err
+	return cfg, err
 }
 
 // ReadSwapFromReader uses the LoadConfigFromReader() from llama-swap project.
