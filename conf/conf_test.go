@@ -213,7 +213,7 @@ func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 	t.Setenv("GI_LLAMA_EXE", modelPath) // dummy llama-server
 
 	var grp sync.WaitGroup
-	for i := range 10 {
+	for i := range 30 {
 		grp.Go(func() {
 			cfg, err := ReadYAMLData(yamlData, i&1 == 0, "", "")
 			if err != nil {
