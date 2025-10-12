@@ -165,7 +165,7 @@ export GI_MODELS_DIR=/path1:/path2:/path3
 ```
 
 `GI_MODELS_DIR` is the root path where your models are stored.
-`goinfer` will search `*.gguf` files within all `GI_MODELS_DIR` sub-folders.
+`goinfer will search `*.gguf` files within all `GI_MODELS_DIR` sub-folders.
 So you can organize your models within a folders tree.
 
 The other environment variables are:
@@ -243,7 +243,7 @@ At startup, Goinfer verifies the available GUFF files
 and generates the `llama‑swap.yml` file.
 
 Official documentation:
-[github.com/mostlygeek/llama-swap/wiki/Configuration](https://github.com/mostlygeek/llama-swap/wiki/Configuration)
+[github/mostlygeek/llama-swap/wiki/Configuration](https://github.com/mostlygeek/llama-swap/wiki/Configuration)
 
 ```yaml
 logLevel: info            # debug, info, warn, error
@@ -453,9 +453,9 @@ Goinfer has been initiated for two needs:
 2. to infer pre-configured templated prompts
 
 This second point has been moved to the project
-[github.com/synw/agent-smith](https://github.com/synw/agent-smith)
+[github/synw/agent-smith](https://github.com/synw/agent-smith)
 with more templated prompts in
-[github.com/synw/agent-smith-plugins](https://github.com/synw/agent-smith-plugins).
+[github/synw/agent-smith-plugins](https://github.com/synw/agent-smith-plugins).
 
 ### August 2025
 
@@ -478,36 +478,41 @@ Client   | Server       | Constraint
 Frontend | OpenRouter   | Intermediate proxy required to manage the OpenRouter key without exposing it on the frontend
 Any      | Home GPU rig | Access to another home GPU rig that forbids external TCP connections
 
-### High Priority (✅ in progress)
+### next implementation
+
+Integrate a Web UI with model selection.
+
+### high priority
+
+Two Goinfer instances (client / server mode):
+
+- a Goinfer on a GPU machine that runs in client mode  
+- a Goinfer on a machine in a data‑center (static IP) that runs in server mode  
+- the client Goinfer connects to the server Goinfer (here, the server is the backend of a web app)  
+- the user sends their inference request to the backend (data‑center) which forwards it to the client Goinfer  
+- we could imagine installing a client Goinfer on every computer with a good GPU, and the server Goinfer that forwards inference requests to the connected client Goinfer according to the requested model
+
+### medium priority
 
 Manage the OpenRouter API key of a AI-powered frontend.
 
-### Medium Priority
-
-Two `goinfer` instances (client / server mode):
-
-- a `goinfer` on a GPU machine that runs in client mode  
-- a `goinfer` on a machine in a data‑center (static IP) that runs in server mode  
-- the client `goinfer` connects to the server `goinfer` (here, the server is the backend of a web app)  
-- the user sends their inference request to the backend (data‑center) which forwards it to the client `goinfer`  
-- we could imagine installing a client `goinfer` on every computer with a good GPU, and the server `goinfer` that forwards inference requests to the connected client `goinfer` according to the requested model
-
-### Low Priority
+### low priority
 
 - Comprehensive **web admin** (monitoring, download/delete `.gguf`, edit config, restart, `git pull` + rebuild `llama.cpp`, remote shell, upgrade Linux, reboot the machine, and other SysAdmin tasks)
 
-> **Contribute** – If you’re interested in any of the above, open an issue or submit a PR :)
+> **contribute** – If you’re interested in any of the above, open an issue or submit a PR :)
 
-### Nice to have
+### nice to have
 
 Some inspiration to extend the Goinfer stack:
 
-- [`compose.yml`](./compose.yml) with something like [github.com/j4ys0n/local-ai-stack](https://github.com/j4ys0n/local-ai-stack) and [github.com/LLemonStack/llemonstack](https://github.com/LLemonStack/llemonstack)
-- Multi-step AI agents like [github.com/synw/agent-smith](https://github.com/synw/agent-smith), [n8n](https://n8n.io/), [flowiseai](https://flowiseai.com/), tools from [github.com/HKUDS](https://github.com/HKUDS)
-- WebUI [github.com/oobabooga/text-generation-webui](https://github.com/oobabooga/text-generation-webui), [github.com/danny-avila/LibreChat](https://github.com/danny-avila/LibreChat), [github.com/JShollaj/Awesome-LLM-Web-UI](https://github.com/JShollaj/Awesome-LLM-Web-UI)
-- Vector Database and Vector Search Engine [github.com/qdrant/qdrant](https://github.com/qdrant/qdrant)
-- Convert an webpage (URL) into clean markdown or structured data [github.com/firecrawl/firecrawl](https://github.com/firecrawl/firecrawl) [github.com/unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) [github.com/browser-use/browser-use](https://github.com/browser-use/browser-use)
-- [github.com/BerriAI/litellm](https://github.com/BerriAI/litellm) + [github.com/langfuse/langfuse](https://github.com/langfuse/langfuse)
+- [`compose.yml`](./compose.yml) with something like [github/j4ys0n/local-ai-stack](https://github.com/j4ys0n/local-ai-stack) and [github/LLemonStack/llemonstack](https://github.com/LLemonStack/llemonstack)
+- Multi-step AI agents like [github/synw/agent-smith](https://github.com/synw/agent-smith), [n8n](https://n8n.io/), [flowiseai](https://flowiseai.com/), tools from [github/HKUDS](https://github.com/HKUDS)
+- WebUI [github/oobabooga/text-generation-webui](https://github.com/oobabooga/text-generation-webui), [github/danny-avila/LibreChat](https://github.com/danny-avila/LibreChat), [github/JShollaj/Awesome-LLM-Web-UI](https://github.com/JShollaj/Awesome-LLM-Web-UI)
+- Vector Database and Vector Search Engine [github/qdrant/qdrant](https://github.com/qdrant/qdrant)
+- Convert an webpage (URL) into clean markdown or structured data [github/firecrawl/firecrawl](https://github.com/firecrawl/firecrawl) [github/unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) [github/browser-use/browser-use](https://github.com/browser-use/browser-use)
+- [github/BerriAI/litellm](https://github.com/BerriAI/litellm) + [github/langfuse/langfuse](https://github.com/langfuse/langfuse)
+- [github/claraverse-space/ClaraCore](https://github.com/claraverse-space/ClaraCore) automatizes installation & configuration of llama-swap
 
 ## Contributing
 
@@ -526,28 +531,29 @@ Feel free to open discussions for design ideas/decisions.
   - [llama.cpp](https://github.com/ggml-org/llama.cpp) – Apache‑2.0
   - [llama‑swap](https://github.com/LM4eu/llama-swap) – MIT
 
-## Acknowledgements
+## Merci
 
 Special thanks to:
 
 - [Georgi Gerganov](https://github.com/ggerganov) for releasing and improving [llama.cpp](https://en.wikipedia.org/wiki/Llama.cpp) in 2023 so we could freely play with Local LLM.
+- All other contributors of [llama.cpp](https://en.wikipedia.org/wiki/Llama.cpp).
 - [Benson Wong](https://github.com/mostlygeek) for maintaining [llama‑swap](https://github.com/mostlygeek/llama-swap) with clean and well‑documented code.
-- the open‑source community that makes GPU‑based LLM inference possible on commodity hardware.
+- The open‑source community that makes GPU‑based LLM inference possible on commodity hardware. :heart:
 
 ## See also
 
-Some other active local-LLM proxies:
+Some active local-LLM proxies:
 
-- [github/mostlygeek/llama-swap](https://github.com/mostlygeek/llama-swap)
-- [github/inference-gateway/inference-gateway](https://github.com/inference-gateway/inference-gateway)
-- [github/thushan/olla](https://github.com/thushan/olla)
-- [github/lordmathis/llamactl](https://github.com/lordmathis/llamactl)
-- [github/mostlygeek/llama‑swap](https://github.com/mostlygeek/llama-swap)
-- [github/thushan/olla](https://github.com/thushan/olla)
-- [github/x5iu/llm-proxy](https://github.com/x5iu/llm-proxy) (rust)
-- [github/llm-proxy/llm-proxy](https://github.com/llm-proxy/llm-proxy) (python, inactive)
-- [github/bluewave-labs/langroute](https://github.com/bluewave-labs/langroute)
-- [github/codelion/optillm](https://github.com/codelion/optillm)
+Language   | Repository
+-----------|---------------
+Go         | [github/inference-gateway/inference-gateway](https://github.com/inference-gateway/inference-gateway)
+Go         | [github/lordmathis/llamactl](https://github.com/lordmathis/llamactl)
+Go         | [github/mostlygeek/llama‑swap](https://github.com/mostlygeek/llama-swap)
+Go         | [github/thushan/olla](https://github.com/thushan/olla)
+Python     | [github/codelion/optillm](https://github.com/codelion/optillm)
+Python     | [github/llm-proxy/llm-proxy](https://github.com/llm-proxy/llm-proxy) (inactive?)
+Rust       | [github/x5iu/llm-proxy](https://github.com/x5iu/llm-proxy)
+TypeScript | [github/bluewave-labs/langroute](https://github.com/bluewave-labs/langroute)
 
 Compared to alternatives, we like [llama-swap](https://github.com/mostlygeek/llama-swap) for its readable source code and because its author contributes regularly. So we integrated it into Goinfer to handle communication with `llama-server` (or other compatible forks as [ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp/)). We also like [llamactl](https://github.com/lordmathis/llamactl) ;-)
 
