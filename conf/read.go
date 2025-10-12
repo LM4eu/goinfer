@@ -56,14 +56,16 @@ func ReadYAMLData(yml []byte, noAPIKey bool, extra, start string) (*Cfg, error) 
 	cfg.fixDefaultModel()
 
 	// concatenate host and ports => addr = "host:port"
-	listen := make(map[string]string, len(cfg.Listen))
-	for addr, services := range cfg.Listen {
-		if addr == "" || addr[0] == ':' {
+	if cfg.Host != "" {
+		for addr, service := range cfg.Listen {
+			if addr != "" && addr[0] != ':' {
+				continue
+			}
+			delete(cfg.Listen, addr)
 			addr = cfg.Host + addr
+			cfg.Listen[addr] = service
 		}
-		listen[addr] = services
 	}
-	cfg.Listen = listen
 
 	er := cfg.validate(noAPIKey)
 	if er != nil {
