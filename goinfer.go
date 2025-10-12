@@ -83,13 +83,15 @@ func doGoinferYML(debug, write, run, noAPIKey bool, extra, start string) *conf.C
 	if err != nil {
 		switch {
 		case write:
-			slog.Info("Write a fresh new config file, may contain issues.", "file", conf.GoinferYML, "error", err)
+			slog.Info("Write a fresh new config file, may contain issues: "+
+				"please verify the config.", "file", conf.GoinferYML, "error", err)
 		case run:
-			slog.Error("Cannot load config. Flags -run -start prevent to modify/generate it. "+
-				"Use flag -write to write the configuration", "file", conf.GoinferYML, "error", err)
+			slog.Error("Error config. Flags -run -start -hf without -write prevent to write it. "+
+				"Add flag -write to write the config", "file", conf.GoinferYML, "error", err)
 			os.Exit(1)
 		default:
-			slog.Info("Cannot load config => Write a new one, may contain issues.", "file", conf.GoinferYML, "error", err)
+			slog.Info("Error config => Write a new one using default values, env vars and flags. "+
+				"May contain issues: please verify the config.", "file", conf.GoinferYML, "error", err)
 		}
 		write = true
 	}
