@@ -29,33 +29,26 @@ func newEchoCtx(req *http.Request) (echo.Context, *httptest.ResponseRecorder) {
 
 func TestConcurrencyGuard(t *testing.T) {
 	t.Parallel()
-	// Build a dummy Infer instance – we can keep Cfg nil because the handler
-	// never dereferences it before the mutex check.
-	var inf Infer
-	// Simulate an ongoing inference by setting the flag under lock.
-	inf.mu.Lock()
-	inf.isInferring = true
-	inf.mu.Unlock()
-	inf.Cfg = &conf.Cfg{}
-	inf.ProxyMan = &proxy.ProxyManager{}
 
-	// Minimal request body – any valid JSON works; the handler will early‑exit
-	// because IsInferring is already true.
+	// dummy Infer instance
+	inf := Infer{Cfg: &conf.Cfg{}, ProxyMan: &proxy.ProxyManager{}}
+	// minimalist request
 	body := `{"prompt":"test"}`
-	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/completion", strings.NewReader(body))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
-	// Run two concurrent calls to inferHandler.
+	// Run some concurrent calls to inferHandler.
+	results := make([]int, 20)
+
 	var grp sync.WaitGroup
-	results := make([]int, 2)
+	for i := range results {
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/completion", strings.NewReader(body))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
-	for i := range 2 {
 		grp.Add(1)
 		go func(ii int) {
-			defer grp.Done()
 			c, rec := newEchoCtx(req)
 			_ = inf.completionHandler(c) // ignore returned error; handler writes status
 			results[ii] = rec.Code
+			grp.Done()
 		}(i)
 	}
 	grp.Wait()
