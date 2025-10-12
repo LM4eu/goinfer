@@ -22,11 +22,11 @@ type (
 	// - command‑line flags found of file system
 	// - eventual error (if the model is missing or misconfigured).
 	ModelInfo struct {
-		Template *TemplateInfo `json:"template,omitempty" yaml:"template,omitempty"`
-		Flags    string        `json:"cmd,omitempty"      yaml:"cmd,omitempty"`
-		Path     string        `json:"path,omitempty"     yaml:"path,omitempty"`
-		Error    string        `json:"error,omitempty"    yaml:"error,omitempty"`
-		Size     int64         `json:"size,omitempty"     yaml:"size,omitempty"`
+		Template *TemplateInfo `json:"template,omitempty,omitzero" yaml:"template,omitempty"`
+		Flags    string        `json:"cmd,omitempty"               yaml:"cmd,omitempty"`
+		Path     string        `json:"path,omitempty"              yaml:"path,omitempty"`
+		Error    string        `json:"error,omitempty"             yaml:"error,omitempty"`
+		Size     int64         `json:"size,omitempty"              yaml:"size,omitempty"`
 	}
 
 	TemplateInfo struct {
