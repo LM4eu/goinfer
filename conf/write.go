@@ -84,19 +84,18 @@ func (cfg *Cfg) GenSwapYAMLData(verbose, debug bool) ([]byte, error) {
 	cfg.Swap.MetricsMaxInMemory = 500
 	cfg.Swap.StartPort = 5800
 
+	// set the macros
 	commonArgs := " " + cfg.Llama.Args.Common
-	goinferArgs := " " + cfg.Llama.Args.Goinfer
 	if verbose {
 		commonArgs += " " + cfg.Llama.Args.Verbose
 	}
 	if debug {
 		commonArgs += " " + cfg.Llama.Args.Debug
 	}
-
 	cfg.Swap.Macros = config.MacroList{
 		{Name: "cmd-fim", Value: cfg.Llama.Exe + commonArgs},
 		{Name: "cmd-common", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT}"},
-		{Name: "cmd-goinfer", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT}" + goinferArgs},
+		{Name: "cmd-goinfer", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT} " + cfg.Llama.Args.Goinfer},
 	}
 
 	cfg.setSwapModels()
@@ -249,7 +248,14 @@ func (cfg *Cfg) setSwapModels() {
 func (cfg *Cfg) addModelCfg(modelName, cmd string, mc *config.ModelConfig) {
 	mCfg := *mc // copy
 	mCfg.Cmd = cmd
+
 	mCfg.CheckEndpoint = "/health"
+	if strings.Contains(cmd, " -hf ") {
+		// -hf may download a model for a while
+		// but /health check will stop it,
+		// so better to disable /health check
+		mCfg.CheckEndpoint = "none"
+	}
 
 	old, ok := cfg.Swap.Models[modelName]
 	if ok {
