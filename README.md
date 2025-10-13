@@ -1,14 +1,14 @@
 # Goinfer
 
-**Inference proxy for local LLMs** – run multiple `*.gguf` models on any machine, expose them through a secure HTTP‑API and optionally forward requests from a data‑center to idle GPUs in your home.
-
-Built on top of **[llama.cpp](https://github.com/ggml-org/llama.cpp)** and **[llama‑swap](https://github.com/mostlygeek/llama-swap)**.
+**Inference proxy** – swap between multiple `*.gguf` models on remote machines and expose them through HTTPS‑API with credentials. So you can a securely connect from any device to your home GPU computers, or to let employees to connect to idle GPUs within the company office.
 
 **TL;DR** – Deploy a **client** on a GPU‑rich desktop, a **server** on a machine with a static IP (or DNS), and let the server forward inference requests to the client. No VPN, no port‑forwarding, end‑to‑end encryption.
 
-## problem: Remote access to home-hosted LLM
+Built on top of [llama.cpp](https://github.com/ggml-org/llama.cpp) and [llama‑swap](https://github.com/mostlygeek/llama-swap), Goinfer is designed to be DevOps-friendly, easily deployable/monitored on remote computers with the minimum manual operations (inspired by [llamactl](https://github.com/lordmathis/llamactl)), and meaningful logs.
 
-⚠️ **Not yet implemented** ⚠️
+## Problem: remote access to office/home-hosted LLM
+
+⚠️ **Not yet implemented. Please contribute. Contact us team@LM4.eu** ⚠️
 
 Local‑LLM enthusiasts often hit a wall when they try to expose a model to the Internet:
 
@@ -20,7 +20,7 @@ Existing tools ([llamactl](https://github.com/lordmathis/llamactl), [llama‑swa
 
 **Goinfer** solves these issues by flipping the connection direction: the GPU‑rich **client** (home) *initiates* a secure outbound connection to a **server** with a static IP. The server then acts as a public façade, forwarding inference requests back to the client (home-hosted LLM).
 
-## key features
+## Key features
 
 Category            | Feature
 --------------------|----------
@@ -31,21 +31,21 @@ Category            | Feature
 **Admin control**   | Remote monitoring, delete/upload new GGUF files, reload config, `git pull llama.cpp`, re‑compile
 **Home-hosted LLM** | Run Goinfer on your GPU desktop and another Goinfer in a data‑center (static IP/DNS)
 
-## build
+## Build
 
 - [Go](https://gist.github.com/MichaelCurrin/ca6b3b955172ff993184d39807dd68d4) (any version, `go` will automatically use Go-1.25 to build Goinfer)
 - GCC/LLVM if you want to build [llama.cpp](https://github.com/ggml-org/llama.cpp) or [ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp/) or …
 - NodeJS (optional, llama.cpp frontend is already built)
 - One or more `*.gguf` model files
 
-### container
+### Container
 
 See the [Containerfile](./Containerfile)
 to build a Docker/Podman image
 with official Nvidia images,
 CUDA-13, GCC-14 and optimized CPU flags.
 
-### first run
+### First run
 
 ```bash
 git clone https://github.com/LM4eu/goinfer
@@ -94,7 +94,7 @@ curl -X POST localhost:5555/v1/chat/completions \
       }'
 ```
 
-### all-in-one script
+### All-in-one script
 
 Build all dependencies and run Goinfer with the bash script
 [`clone-pull-build-run.sh`](./scripts/clone-pull-build-run.sh)
@@ -139,9 +139,9 @@ path/repo/goinfer/scripts/clone-pull-build-run.sh -no-api-key
 
 Use the flag `--help` or the usage within the [script](./scripts/clone-pull-build-run.sh).
 
-## configuration
+## Configuration
 
-### environment variables
+### Environment variables
 
 Discover the parent folders of your GUFF models:
 
@@ -239,8 +239,8 @@ llama:
 
 ### `llama‑swap.yml`
 
-At startup, Goinfer verifies the available GUFF files
-and generates the `llama‑swap.yml` file.
+At startup, Goinfer verifies the available GUFF files.
+The flag `-write` allow Goinfer to write the `llama‑swap.yml` file.
 
 Official documentation:
 [github/mostlygeek/llama-swap/wiki/Configuration](https://github.com/mostlygeek/llama-swap/wiki/Configuration)
@@ -328,7 +328,7 @@ groups:
       - "forever-modelC"
 ```
 
-## developer info
+## Developer info
 
 - flags override environment variables that override YAML config: `Cfg` defined in [`conf.go`](go/conf/conf.go)
 - GUFF files discovery: `Search()` in [`models.go`](go/conf/models.go)
@@ -370,11 +370,11 @@ The second one is a specific use case for tools like
 [`agent-smith`](https://github.com/synw/agent-smith)
 requiring full inference control (e.g. no default Jinja template).
 
-## server/client mode
+## Server/Client mode
 
-⚠️ **Not yet implemented** ⚠️
+⚠️ **Not yet implemented. Please contribute. Contact us team@LM4.eu** ⚠️
 
-### design
+### Design
 
     ╭──────────────────┐  1 ──>  ╭───────────────────┐         ╭──────────────┐
     │ GPU‑rich desktop │         │ host static IP/DNS│  <── 2  │ end‑user app │
@@ -465,10 +465,6 @@ As we do not use Ollama/KoboldCpp any more,
 we integrated [llama-swap](https://github.com/mostlygeek/llama-swap)
 into Goinfer to handle communication with `llama-server`.
 
-### October 2025
-
-Restored `/completions` endpoint for full inference parameters control.
-
 ### New needs
 
 Today the needs have evolved. We need most right now is a proxy that can act as a secure intermediary between a **client (frontend/CLI)** and **a inference engine (local/cloud)** with these these constrains:
@@ -478,11 +474,32 @@ Client   | Server       | Constraint
 Frontend | OpenRouter   | Intermediate proxy required to manage the OpenRouter key without exposing it on the frontend
 Any      | Home GPU rig | Access to another home GPU rig that forbids external TCP connections
 
-### next implementation
+### Next implementation
 
-Integrate a Web UI with model selection.
+Integrate a Web UI to select the model(s) to enable.
 
-### high priority
+Optimizer of the [`llama-server` command line](https://github.com/ggml-org/llama.cpp/tree/master/tools/server#usage): finding the best `--gpu-layers --override-tensor --n-cpu-moe --ctx-size ...` by iterating of GPU allocation error and benching. Timeline of llama.cpp optimization:
+- Apr 2024 llama.cpp [PR `-ngl auto`](https://github.com/ggml-org/llama.cpp/pull/6502) (Draft)
+- Jan 2025 [study](https://github.com/robbiemu/llama-gguf-optimize
+- Mar 2025 [Python script determining `-ngl`](https://github.com/fredlas/optimize_llamacpp_ngl)
+- Jun 2025 llama.cpp [another PR](https://github.com/ggml-org/llama.cpp/pull/14067) (Draft) based on these [ideas](https://github.com/ggml-org/llama.cpp/issues/13860)
+- Jun 2025 [Python script running `llama-bench` for best `-b -ub -fa -t -ngl -ot`](https://github.com/BrunoArsioli/llama-optimus) ([maybe integrated in llamap.cpp](https://github.com/ggml-org/llama.cpp/discussions/14191)) 
+
+This last Python script `llama-optimus` is nice and could also be used for `ik_llama.cpp`. Its [README](https://github.com/BrunoArsioli/llama-optimus?tab=readme-ov-file#coments-about-other-llamacpp-flags) explains:
+
+Flag | Why it matters | Suggested search values | Notes
+---- |---- |---- |----
+**`--mmap / --no-mmap`** (memory-map model vs. fully load) | • On fast NVMe & Apple SSD, `--mmap 1` (default) is fine.<br>• On slower HDD/remote disks, disabling mmap (`--no-mmap` or `--mmap 0`) and loading the whole model into RAM often gives **10-20 % faster generation** (no page-fault stalls).   | `[0, 1]` (boolean)  | Keep default `1`; let Optuna see if `0` wins on a given box.
+**`--cache-type-k / --cache-type-v`** | Setting key/value cache to **`f16` vs `q4`** or **`i8`** trades RAM vs speed.  Most Apple-Metal & CUDA users stick with `f16` (fast, larger).  For low-RAM CPUs increasing speed is impossible if it swaps; `q4` can shrink cache 2-3× at \~3-5 % speed cost. | `["f16","q4"]` for both k & v (skip i8 unless you target very tiny devices). | Only worth searching when the user is on **CPU-only** or small-VRAM GPU. You can gate this by detecting “CUDA not found” or VRAM < 8 GB.
+**`--main-gpu`** / **`--gpu-split`** (or `--tensor-split`) | Relevant only for multi-GPU rigs (NVIDIA).  Picking the right primary or a tensor split can cut VRAM fragmentation and enable higher `-ngl`. | If multi-GPU detected, expose `[0,1]` for `main-gpu` **and** a handful of tensor-split presets (`0,1`, `0,0.5,0.5`, etc.). | Keep disabled on single-GPU/Apple Silicon to avoid wasted trials.
+**[Preliminary] `--flash-attn-type 0/1/2`** (v0.2+ of llama.cpp)         | Metal + CUDA now have two flash-attention kernels (`0` ≈ old GEMM, `1` = FMHA, `2` = in-place FMHA). **!!Note!!:** Not yet merged to llama.cpp main.  Some M-series Macs get +5-8 % with type 2 vs 1. | `[0,1,2]` —but **only if llama.cpp commit ≥ May 2025**.  | Add a version guard: skip the flag on older builds.
+
+When the VRAM is not enouth or when the user needs to increase the context size,
+Goinfer needs to offload some layers to CPU.
+The idea is to identify the least used tensors and to offload them in priority.
+The command `llama-gguf` lists the tensors (experts are usually suffixed with `_exps`).
+
+### Other priority task
 
 Two Goinfer instances (client / server mode):
 
@@ -492,17 +509,17 @@ Two Goinfer instances (client / server mode):
 - the user sends their inference request to the backend (data‑center) which forwards it to the client Goinfer  
 - we could imagine installing a client Goinfer on every computer with a good GPU, and the server Goinfer that forwards inference requests to the connected client Goinfer according to the requested model
 
-### medium priority
+### Medium priority
 
 Manage the OpenRouter API key of a AI-powered frontend.
 
-### low priority
+### Low priority
 
 - Comprehensive **web admin** (monitoring, download/delete `.gguf`, edit config, restart, `git pull` + rebuild `llama.cpp`, remote shell, upgrade Linux, reboot the machine, and other SysAdmin tasks)
 
 > **contribute** – If you’re interested in any of the above, open an issue or submit a PR :)
 
-### nice to have
+### Nice to have
 
 Some inspiration to extend the Goinfer stack:
 
