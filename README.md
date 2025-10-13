@@ -252,9 +252,9 @@ metricsMaxInMemory: 1000  # maximum number of metrics to keep in memory
 startPort: 6000           # first ${PORT} incremented for each model
 
 macros:  # macros to reduce common conf settings
-    cmd-common: /home/me/llama.cpp/build/bin/llama-server --props --no-warmup --no-mmap --verbose-prompt --port ${PORT}
-    cmd-fim: /home/me/llama.cpp/build/bin/llama-server --props --no-warmup --no-mmap --verbose-prompt
-    cmd-goinfer: /home/me/llama.cpp/build/bin/llama-server --props --no-warmup --no-mmap --verbose-prompt --port ${PORT} --jinja --chat-template-file template.jinja
+    cmd-fim: /home/me/llama.cpp/build/bin/llama-server --props --no-warmup --no-mmap --verbose-prompt --jinja
+    cmd-common: ${cmd-fim} --port ${PORT}
+    cmd-goinfer: ${cmd-common} --chat-template-file template.jinja
 
 models:
 

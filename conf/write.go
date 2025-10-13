@@ -94,8 +94,8 @@ func (cfg *Cfg) GenSwapYAMLData(verbose, debug bool) ([]byte, error) {
 	}
 	cfg.Swap.Macros = config.MacroList{
 		{Name: "cmd-fim", Value: cfg.Llama.Exe + commonArgs},
-		{Name: "cmd-common", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT}"},
-		{Name: "cmd-goinfer", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT} " + cfg.Llama.Args.Goinfer},
+		{Name: "cmd-common", Value: "${cmd-fim} --port ${PORT}"},
+		{Name: "cmd-goinfer", Value: "${cmd-common} " + cfg.Llama.Args.Goinfer},
 	}
 
 	cfg.setSwapModels()
