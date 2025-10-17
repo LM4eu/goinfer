@@ -193,8 +193,7 @@ do_llamaSwap(){
     npm ci --prefer-offline --no-audit --no-fund # --omit=dev (--omit=dev prevents the installation of tsc)
     npm run build # requires "tsc"
   )
-
-  swap_in_work_file || 
+  # always do `work use` especially on new Go version
   (
     log "set up $work_file"
     set -x
