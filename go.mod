@@ -4,11 +4,11 @@
 
 module github.com/LM4eu/goinfer
 
-go 1.25.1
+go 1.25.2
 
 require (
 	github.com/LM4eu/garcon v0.40.0
-	github.com/LM4eu/llama-swap v0.164.4
+	github.com/LM4eu/llama-swap v0.166.0
 	github.com/gin-gonic/gin v1.11.0
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/labstack/gommon v0.4.2
@@ -51,7 +51,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.55.0 // indirect
-	github.com/rogpeppe/go-internal v1.10.0 // indirect
+	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
