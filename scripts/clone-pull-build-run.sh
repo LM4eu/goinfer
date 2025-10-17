@@ -103,12 +103,13 @@ clone_checkout_pull() {
     ( log "repo $repo - clone"; pwd; set -x; git clone https://github.com/"$repo" )
   cd "${repo#*/}"
   ( log "repo $repo - fetch"; pwd; set -x; git fetch --prune --tags --all )
+  ( log "repo $repo - discard local changes"; set -x; git reset --hard )
   if [[ -n "$tag" ]]
   then
     build_reason="tag: $tag"
     ( log "repo $repo - checkout $tag"; set -x; git checkout "$tag" )
   else
-    ( log "repo $repo - switch $branch"; set -x; git switch "$branch" )
+    ( log "repo $repo - switch $branch"; set -x; git switch -C "$branch" origin/"$branch" )
     local remote="$(git rev-parse "@{upstream}")"
     local local="$( git rev-parse HEAD)"
     if [[ "$remote" != "$local" ]]
