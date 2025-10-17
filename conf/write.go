@@ -93,9 +93,12 @@ func (cfg *Cfg) GenSwapYAMLData(verbose, debug bool) ([]byte, error) {
 		commonArgs += " " + cfg.Llama.Args.Debug
 	}
 	cfg.Swap.Macros = config.MacroList{
+		// we cannot reuse a macro in another macro,
+		// because the MacroList order is not guaranteed by the YAML marshaling
+		// (the method MacroList.MarshalYAML writes a map)
 		{Name: "cmd-fim", Value: cfg.Llama.Exe + commonArgs},
-		{Name: "cmd-common", Value: "${cmd-fim} --port ${PORT}"},
-		{Name: "cmd-goinfer", Value: "${cmd-common} " + cfg.Llama.Args.Goinfer},
+		{Name: "cmd-common", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT}"},
+		{Name: "cmd-goinfer", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT} " + cfg.Llama.Args.Goinfer},
 	}
 
 	cfg.setSwapModels()
