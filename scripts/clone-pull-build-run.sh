@@ -93,33 +93,41 @@ command -v cmake  >/dev/null || { echo REQUIRED: install cmake  && exit 1; }
 command -v ninja  >/dev/null || { echo REQUIRED: install ninja  && exit 1; }
 command -v ccache >/dev/null || { echo REQUIRED: install ccache && exit 1; }
 
+logx() { log "repo ${repo:-none} - $@"; set -x; }
+
 # clone_checkout_pull sets the variable build_reason=... to trigger the build
 clone_checkout_pull() {
-  local repo=$1
-  local branch=$2
-  local tag=$3
+  repo=$1
+  branch=$2
+  tag=$3
+
   build_reason=clone
   [ -d "${repo#*/}" ] && build_reason= || 
-    ( log "repo $repo - clone"; pwd; set -x; git clone https://github.com/"$repo" )
+    ( pwd; logx clone; git clone https://github.com/"$repo" )
+  
   cd "${repo#*/}"
-  ( log "repo $repo - fetch"; pwd; set -x; git fetch --prune --tags --all )
-  ( log "repo $repo - discard local changes"; set -x; git reset --hard )
+  pwd
+
+  ( logx fetch; git fetch --all --prune --tags )
+
   if [[ -n "$tag" ]]
   then
     build_reason="tag: $tag"
-    ( log "repo $repo - checkout $tag"; set -x; git checkout "$tag" )
+    ( logx "checkout $tag"; git checkout "$tag" )
   else
-    ( log "repo $repo - switch $branch"; set -x; git switch -C "$branch" origin/"$branch" )
-    local remote="$(git rev-parse "@{upstream}")"
-    local local="$( git rev-parse HEAD)"
-    if [[ "$remote" != "$local" ]]
+    ( logx "switch $branch"; git switch -C "$branch" origin/"$branch" )
+
+    local="$( git rev-parse HEAD)"
+    remote="$(git rev-parse "@{upstream}")"
+    if [[ "$local" != "$remote" ]]
     then
       build_reason="new commit: $(git log -1 --pretty=format:%f)"
-      log "repo $repo - $build_reason";
-      ( set -x ; git pull --ff-only )
+      ( logx "$build_reason"; git pull --ff-only ) || 
+      ( logx "discard local changes"; git reset --hard )
     fi
   fi
-  ( set -x ; git status --short )
+
+  ( set -x; git status --short )
 }
 
 # CPU flags used to build llama.cpp and goinfer
