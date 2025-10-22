@@ -19,7 +19,7 @@ import (
 
 type (
 	// ModelInfo is used for the response of the /models endpoint, including:
-	// - command‑line flags found of file system
+	// - command-line flags found of file system
 	// - eventual error (if the model is missing or misconfigured).
 	ModelInfo struct {
 		Template *TemplateInfo `json:"template,omitempty,omitzero" yaml:"template,omitempty"`
@@ -314,7 +314,7 @@ func nameWithDir(root, truncated, name string) string {
 // extractFlags returns the truncated path and the llama-server flags from a file path.
 // It first checks for a companion ".args" file; if present, its contents are used as flags.
 // Otherwise, it parses flags encoded in the filename after an '&' delimiter.
-// Returns the truncated path (without extension) and a space‑separated flag string.
+// Returns the truncated path (without extension) and a space-separated flag string.
 //
 //nolint:gocritic,revive // return the truncated model filename and the llama-server flags.
 func extractFlags(path string) (string, string) {
@@ -355,7 +355,7 @@ func extractFlags(path string) (string, string) {
 	return truncated[:pos], strings.Join(flags, " ")
 }
 
-// oneLine converts the `.args` file into a single space‑separated string,
+// oneLine converts the `.args` file into a single space-separated string,
 // removing trailing backslashes, trimming whitespace, ignoring empty lines or comments.
 func oneLine(input []byte) string {
 	keep := make([]byte, 0, len(input))

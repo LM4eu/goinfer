@@ -2,11 +2,11 @@
 
 ## Goal  
 
-Re‑organize the diff in the repository into a series of logically independent commits. Each commit may span multiple files but must be safe to reorder or cherry‑pick without further manual adjustments. The entire process must run autonomously, ending with a clean working tree and a series of well‑documented commits.
+Re-organize the diff in the repository into a series of logically independent commits. Each commit may span multiple files but must be safe to reorder or cherry-pick without further manual adjustments. The entire process must run autonomously, ending with a clean working tree and a series of well-documented commits.
 
 ## Overview  
 
-The workflow is a loop that repeatedly examines the current diff, isolate the smallest conceptual change, stage only the hunks belonging to that change, create a commit with a descriptive Gitmoji‑style message, and then repeat until `git status --porcelain` reports no remaining modifications. No interactive prompts are allowed; all staging and committing must be performed non‑interactively.
+The workflow is a loop that repeatedly examines the current diff, isolate the smallest conceptual change, stage only the hunks belonging to that change, create a commit with a descriptive Gitmoji-style message, and then repeat until `git status --porcelain` reports no remaining modifications. No interactive prompts are allowed; all staging and committing must be performed non-interactively.
 
 ## Detailed Workflow  
 
@@ -26,14 +26,14 @@ Process every file listed by the diff.
 Restore the file temporarily with `git restore -- "$file"`. Edit the restored file to remove only the lines that belong to the Current Change, stage the edited file using `git add -- "$file"`, then delete the file with `rm -- "$file"`.
 
 *For existing files*:  
-Generate a zero‑context diff with `git diff -U0 -- "$file"`. Examine each hunk and decide whether it belongs to the Current Change. Build a newline‑separated string where each line is `y` for a hunk to stage and `n` for a hunk to ignore. Feed this string to `git add -p` non‑interactively with `printf "%s\n" "$answers" | git add -p -- "$file"`. Only hunks that correspond to the Current Change will be staged; all other modifications remain unstaged.
+Generate a zero-context diff with `git diff -U0 -- "$file"`. Examine each hunk and decide whether it belongs to the Current Change. Build a newline-separated string where each line is `y` for a hunk to stage and `n` for a hunk to ignore. Feed this string to `git add -p` non-interactively with `printf "%s\n" "$answers" | git add -p -- "$file"`. Only hunks that correspond to the Current Change will be staged; all other modifications remain unstaged.
 
 ### Step 4 – Compose the commit message  
 
 Carefully examine the staged diff with `git diff --staged`. Write a commit message that follows the **Gitmoji** convention:
 
 * Title: start with an appropriate emoji and succinctly state the intent.  
-* Body: list atomic aspects in order of importance, and cover intent, purpose, motivation, rationale, benefits, trade‑offs, testing considerations, and the affected symbols (packages, files, classes, functions, variables).
+* Body: list atomic aspects in order of importance, and cover intent, purpose, motivation, rationale, benefits, trade-offs, testing considerations, and the affected symbols (packages, files, classes, functions, variables).
 
 Ensure the message is clear enough for future maintainers to understand the “why” without consulting the diff.
 
@@ -53,4 +53,4 @@ Run `git status --porcelain` to check for any remaining modifications. If the co
 
 ## Final Summary  
 
-When the loop terminates, output a concise list of all newly created commits. For each commit, display the commit message. This summary provides a quick verification that the diff has been successfully split into independent, well‑documented commits.
+When the loop terminates, output a concise list of all newly created commits. For each commit, display the commit message. This summary provides a quick verification that the diff has been successfully split into independent, well-documented commits.

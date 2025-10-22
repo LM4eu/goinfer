@@ -144,7 +144,7 @@ func PrintRoutes(e *echo.Echo, addr string) {
 	slog.Info("routes:\n" + sb.String())
 }
 
-// configureAPIKeyAuth sets up API‑key authentication for a grp.
+// configureAPIKeyAuth sets up API-key authentication for a grp.
 func (inf *Infer) configureAPIKeyAuth(grp *echo.Group) {
 	if inf.Cfg.APIKey == "" {
 		slog.Warn("Empty API key => disable API key security")

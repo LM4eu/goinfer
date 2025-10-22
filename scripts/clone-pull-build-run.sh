@@ -86,12 +86,12 @@ swap_in_work_file() {
 
 # check the required external tools
 (( ! build_swap )) ||
-command -v npm    >/dev/null || { echo REQUIRED: install npm    && exit 1; }
-command -v git    >/dev/null || { echo REQUIRED: install git    && exit 1; }
-command -v go     >/dev/null || { echo REQUIRED: install go     && exit 1; }
-command -v cmake  >/dev/null || { echo REQUIRED: install cmake  && exit 1; }
-command -v ninja  >/dev/null || { echo REQUIRED: install ninja  && exit 1; }
-command -v ccache >/dev/null || { echo REQUIRED: install ccache && exit 1; }
+command -v npm    >/dev/null || { err REQUIRED: install npm    && exit 1; }
+command -v git    >/dev/null || { err REQUIRED: install git    && exit 1; }
+command -v go     >/dev/null || { err REQUIRED: install go     && exit 1; }
+command -v cmake  >/dev/null || { err REQUIRED: install cmake  && exit 1; }
+command -v ninja  >/dev/null || { err REQUIRED: install ninja  && exit 1; }
+command -v ccache >/dev/null || { err REQUIRED: install ccache && exit 1; }
 
 logx() { log "repo ${repo:-none} - $@"; set -x; }
 

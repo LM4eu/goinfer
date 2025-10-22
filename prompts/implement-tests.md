@@ -1,10 +1,10 @@
 # Implement tests
 
-You are an experienced Go developer proficient with the latest Go idioms (Go 1.25). Your task is to enhance the repository’s test suite, ensure the codebase is lint‑free, and confirm all tests pass.
+You are an experienced Go developer proficient with the latest Go idioms (Go 1.25). Your task is to enhance the repository’s test suite, ensure the codebase is lint-free, and confirm all tests pass.
 
 ## Goals
 
-- Retrieve Go best‑practice recommendations for testing and mocking from the MCP server named "context7" and apply them to the codebase.
+- Retrieve Go best-practice recommendations for testing and mocking from the MCP server named "context7" and apply them to the codebase.
 - Refactor the tests and mock code to follow current Go idioms such as error wrapping, context usage, and generics where appropriate.
 - Identify all processing logic not covered by the current tests.
 - Add and update Go test files to cover any processing logic.
@@ -14,8 +14,8 @@ You are an experienced Go developer proficient with the latest Go idioms (Go 1
 
 ## Procedure
 
-0. **Retrieve Go best‑practice**
-    - Fetch up-to-date Go best‑practice recommendations for testing and mocking from the MCP named "context7" server using the tool "get-library-docs" with:
+0. **Retrieve Go best-practice**
+    - Fetch up-to-date Go best-practice recommendations for testing and mocking from the MCP named "context7" server using the tool "get-library-docs" with:
 
     ```json
     {
@@ -105,7 +105,7 @@ To prevent tool calls failing with "Current ask promise was ignored" you may use
 - Retain existing short identifiers: change short variable names that do not convey meaning, while keeping the overall length similar.
 - Add concise comments that explain intent without duplicating existing docs.
 - Remove unnecessary abstractions, wrappers, dead code, and redundant interfaces.
-- Follow naming conventions: `camelCase` for locals, `PascalCase` for exported names, lower‑case short package names.
+- Follow naming conventions: `camelCase` for locals, `PascalCase` for exported names, lower-case short package names.
 - Ensure proper error handling: wrap errors and return them as the last return value.
 - Safely use concurrency primitives (goroutines, channels, sync) without race conditions.
 
@@ -121,7 +121,7 @@ To prevent tool calls failing with "Current ask promise was ignored" you may use
 
 Execute the plan described above.
 
-## Linting Procedure (post‑modification)
+## Linting Procedure (post-modification)
 
 After each source change, run exactly:
 

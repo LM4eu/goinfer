@@ -38,11 +38,11 @@ Read the ‘provided prompt’ carefully, and, if necessary, read it repeatedly 
 
 Correct any spelling, punctuation, or grammatical errors within the ‘provided prompt’. The result is named the ‘corrected draft’.
 
-If any part of the ‘corrected draft’ still lacks clear meaning, print within a code-bock that ‘corrected draft’ with the ambiguous segment enclosed in double‑angle brackets. Then add a section that describes each ambiguity in detail and suggests at least two alternative phrasings to resolve each ambiguity, and stop.
+If any part of the ‘corrected draft’ still lacks clear meaning, print within a code-bock that ‘corrected draft’ with the ambiguous segment enclosed in double-angle brackets. Then add a section that describes each ambiguity in detail and suggests at least two alternative phrasings to resolve each ambiguity, and stop.
 
 Using the ‘corrected draft’, create a new refactored prompt that an AI assistant can understand and execute, applying the following guidelines:
 
-- For each existing bullet‑point block, reorder, arrange, split, or combine the bullet points to improve clarity.
+- For each existing bullet-point block, reorder, arrange, split, or combine the bullet points to improve clarity.
 - Create sections whenever a new idea, step, or argument begins, ensuring each section has a clear purpose.
 - Reorder whole paragraphs for logical flow and rephrase any unclear sentences.
 - Combine short, related sentences into a single sentence when this improves brevity without sacrificing meaning.
@@ -53,7 +53,7 @@ Using the ‘corrected draft’, create a new refactored prompt that an AI assis
 - Reorder the sections to follow a natural progression (e.g., from background to conclusion).
 - Merge overlapping sections to eliminate redundancy.
 
-Perform a cyclical process consisting of reviewing, identifying, analyzing, and rewriting the prompt: a thorough, line‑by‑line review of the latest version of the prompt you have produced within the current iteration of this cyclical process, identifying any ambiguities, and resolving each ambiguity by applying a structured, step‑by‑step methodology (e.g., identify → analyze → rewrite).
+Perform a cyclical process consisting of reviewing, identifying, analyzing, and rewriting the prompt: a thorough, line-by-line review of the latest version of the prompt you have produced within the current iteration of this cyclical process, identifying any ambiguities, and resolving each ambiguity by applying a structured, step-by-step methodology (e.g., identify → analyze → rewrite).
 
 Repeat this cyclical process until no ambiguities remain, preserving the intent, purpose, and rationale of the ‘provided prompt’, and balancing brevity with completeness while minimizing token count and preserving full clarity for AI execution.
 
@@ -69,14 +69,14 @@ Output the ‘provided prompt’, followed by a line containing three hyphens (-
 
 **Step 1 – Proofread**
 
-1. Read the provided prompt carefully, re‑reading if necessary to grasp its intent, purpose, and rationale.
+1. Read the provided prompt carefully, re-reading if necessary to grasp its intent, purpose, and rationale.
 2. Correct any spelling, punctuation, or grammatical errors.
 3. Save the result as the *corrected draft*.
 
 **Step 2 – Ambiguity Check**
 
 - If any portion of the corrected draft remains unclear:
-  1. Output the corrected draft inside a code block, enclosing each ambiguous segment in double‑angle brackets (<<…>>).
+  1. Output the corrected draft inside a code block, enclosing each ambiguous segment in double-angle brackets (<<…>>).
   2. Immediately follow with a section that:
      - Describes each ambiguity in detail.
      - Offers at least two alternative phrasings to resolve it.
@@ -85,7 +85,7 @@ Output the ‘provided prompt’, followed by a line containing three hyphens (-
 **Step 3 – Refactor (when no ambiguities remain)**
 Using the corrected draft, rewrite the prompt so an AI assistant can understand and execute it. Apply all of the following guidelines:
 
-- Reorder, split, combine, or otherwise arrange bullet‑point blocks for clarity.
+- Reorder, split, combine, or otherwise arrange bullet-point blocks for clarity.
 - Introduce sections with headings whenever a new idea, step, or argument begins; ensure each section has a clear purpose.
 - Reorder whole paragraphs for logical flow; rephrase any unclear sentences.
 - Merge short, related sentences into a single concise sentence where possible.
@@ -98,7 +98,7 @@ Using the corrected draft, rewrite the prompt so an AI assistant can understand 
 
 **Cyclical Review Process**
 
-- Conduct a line‑by‑line review of the latest version.
+- Conduct a line-by-line review of the latest version.
 - Identify any remaining ambiguities.
 - Analyze each ambiguity, then rewrite to resolve it.
 - Repeat until no ambiguities remain, preserving the original intent while minimizing token count.
@@ -142,7 +142,7 @@ Using the Corrected Draft, rewrite the prompt so an AI assistant can understand 
 
 ### Refactoring Guidelines
 
-- **Structure**: Reorder, split, combine, or otherwise arrange bullet‑point blocks for clarity.  
+- **Structure**: Reorder, split, combine, or otherwise arrange bullet-point blocks for clarity.  
 - **Headings**: Introduce headings whenever a new idea, step, or argument begins; ensure each section has a clear purpose.  
 - **Paragraph Flow**: Reorder whole paragraphs for logical progression; rephrase any unclear sentences.  
 - **Sentence Conciseness**: Merge short, related sentences into a single concise sentence where possible.  
@@ -155,7 +155,7 @@ Using the Corrected Draft, rewrite the prompt so an AI assistant can understand 
 
 ## Cyclical Review Process
 
-1. Conduct a line‑by‑line review of the latest version.  
+1. Conduct a line-by-line review of the latest version.  
 2. Identify any remaining ambiguities.  
 3. Analyze each ambiguity and rewrite to resolve it.  
 4. Repeat until no ambiguities remain, preserving the original intent while minimizing token count.
@@ -197,7 +197,7 @@ Using the Corrected Draft, rewrite it so an AI can execute it, applying the **Re
 
 #### Refactoring Guidelines
 
-- **Structure**: Rearrange, split, combine, or reorder bullet‑point blocks for clarity.  
+- **Structure**: Rearrange, split, combine, or reorder bullet-point blocks for clarity.  
 - **Headings**: Add headings whenever a new idea, step, or argument begins; each heading must have a clear purpose.  
 - **Paragraph Flow**: Order paragraphs logically; rephrase unclear sentences.  
 - **Sentence Conciseness**: Merge short, related sentences into concise statements.  
@@ -210,7 +210,7 @@ Using the Corrected Draft, rewrite it so an AI can execute it, applying the **Re
 
 ### Cyclical Review
 
-1. Review line‑by‑line, identify any remaining ambiguities, and rewrite to resolve them.  
+1. Review line-by-line, identify any remaining ambiguities, and rewrite to resolve them.  
 2. Repeat until the prompt is unambiguous, preserves the original intent, and uses the fewest tokens possible.
 
 ### Final Output
@@ -252,7 +252,7 @@ Using the Corrected Draft, rewrite it so an AI can execute it, applying the **Re
 
 #### Refactoring Guidelines
 
-- **Structure**: Rearrange, split, combine, or reorder bullet‑point blocks for clarity.  
+- **Structure**: Rearrange, split, combine, or reorder bullet-point blocks for clarity.  
 - **Headings**: Add headings whenever a new idea, step, or argument begins; each heading must have a clear purpose.  
 - **Paragraph Flow**: Order paragraphs logically; rephrase unclear sentences.  
 - **Sentence Conciseness**: Merge short, related sentences into concise statements.  
@@ -265,7 +265,7 @@ Using the Corrected Draft, rewrite it so an AI can execute it, applying the **Re
 
 ### Cyclical Review
 
-1. Review line‑by‑line, identify any remaining ambiguities, and rewrite to resolve them.  
+1. Review line-by-line, identify any remaining ambiguities, and rewrite to resolve them.  
 2. Repeat until the prompt is unambiguous, preserves the original intent, and uses the fewest tokens possible.
 
 ### Final Output

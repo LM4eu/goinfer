@@ -60,7 +60,7 @@ func TestConcurrencyGuard(t *testing.T) {
 	}
 }
 
-// Test configureAPIKeyAuth when no API key is configured – the middleware should be a no‑op.
+// Test configureAPIKeyAuth when no API key is configured – the middleware should be a no-op.
 func TestConfigureAPIKeyAuth_NoKey(t *testing.T) {
 	t.Parallel()
 	cfg := &conf.Cfg{APIKey: ""} // no API key

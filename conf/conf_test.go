@@ -168,7 +168,7 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 		t.Fatalf("validation1 error: %v", err)
 	}
 
-	// JSON round‑trip.
+	// JSON round-trip.
 	data, _ := json.Marshal(cfg) //nolint:errchkjson // this is a test
 	var cfg2 Cfg
 	err = json.Unmarshal(data, &cfg2)
