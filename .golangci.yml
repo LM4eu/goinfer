@@ -41,6 +41,7 @@ linters:
     - nlreturn
     - nonamedreturns
     - staticcheck
+    - tagliatelle # disable because is moves the 'comment' tag in the beginning
     - testpackage
     - wrapcheck
     - wsl
@@ -336,7 +337,7 @@ linters:
           pkg: context
 
     lll:
-      line-length: 160
+      line-length: 222
 
     loggercheck:
       klog: true
@@ -510,7 +511,7 @@ linters:
         - name: flag-parameter # control-coupled = a function controls the flow of another by passing it information on what to do
           disabled: true
         # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#function-result-limit
-#       - name: forbidden-call-in-wg-go # Since Go 1.25, it is possible to create goroutines with the method waitgroup.Go
+        - name: forbidden-call-in-wg-go # Since Go 1.25, it is possible to create goroutines with the method waitgroup.Go
         # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#function-length
         - name: function-length # Functions returning too many results can be hard to understand/use
           arguments: [100, 0]
@@ -698,8 +699,6 @@ linters:
     tagliatelle:
       case:
         rules:
-          json: snake
-          yaml: snake
           whatever: snake
 
     # https://github.com/butuzov/ireturn
