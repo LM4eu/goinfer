@@ -84,7 +84,7 @@ func setModelIfMissing[T ModelRequest](inf *Infer, msg T, bodyReader io.ReadClos
 	}
 	if model == "" {
 		return nil, gie.Wrap(err, gie.Invalid,
-			"no model loaded and no default_model in goinfer.yml => specify the field model in the request")
+			"no model loaded and no default_model in goinfer.ini => specify the field model in the request")
 	}
 
 	// set the model in the JSON body

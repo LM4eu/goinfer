@@ -14,19 +14,19 @@ import (
 
 	"github.com/LM4eu/goinfer/gie"
 	"github.com/LM4eu/llama-swap/proxy/config"
-	"go.yaml.in/yaml/v4"
+	"github.com/pelletier/go-toml/v2"
 )
 
-// ReadGoinferYML loads the configuration file, reads the env vars and verifies the settings.
+// ReadGoinferINI loads the configuration file, reads the env vars and verifies the settings.
 // Always return a valid configuration, because the receiver may want to write a valid config.
-func ReadGoinferYML(noAPIKey bool, extra, start string) (*Cfg, error) {
-	yml, err := os.ReadFile(GoinferYML)
+func ReadGoinferINI(noAPIKey bool, extra, start string) (*Cfg, error) {
+	data, err := os.ReadFile(GoinferINI)
 	if err != nil {
-		err = gie.Wrap(err, gie.ConfigErr, "Cannot read", "file", GoinferYML)
-		slog.Warn("Skip " + GoinferYML + " => Use default settings and env. vars")
+		err = gie.Wrap(err, gie.ConfigErr, "Cannot read", "file", GoinferINI)
+		slog.Warn("Skip " + GoinferINI + " => Use default settings and env. vars")
 	}
 
-	cfg, er := ReadYAMLData(yml, noAPIKey, extra, start)
+	cfg, er := ReadFileData(data, noAPIKey, extra, start)
 	if er != nil {
 		if err == nil {
 			err = er
@@ -35,11 +35,11 @@ func ReadGoinferYML(noAPIKey bool, extra, start string) (*Cfg, error) {
 	return cfg, err
 }
 
-// ReadYAMLData unmarshals the YAML bytes, applies the env vars and verifies the settings.
+// ReadFileData unmarshals the TOML bytes, applies the env vars and verifies the settings.
 // Always return a valid configuration, because the receiver may want to write a valid config.
-func ReadYAMLData(yml []byte, noAPIKey bool, extra, start string) (*Cfg, error) {
+func ReadFileData(data []byte, noAPIKey bool, extra, start string) (*Cfg, error) {
 	cfg := defaultCfg()
-	err := cfg.parse(yml)
+	err := cfg.parse(data)
 	cfg.applyEnvVars()
 
 	if extra != "" {
@@ -91,10 +91,10 @@ func (cfg *Cfg) ReadSwapFromReader(r io.Reader) error {
 // load the configuration file (if filename not empty).
 func (cfg *Cfg) parse(yml []byte) error {
 	if len(yml) == 0 {
-		return gie.New(gie.ConfigErr, "empty", "file", GoinferYML)
+		return gie.New(gie.ConfigErr, "empty", "file", GoinferINI)
 	}
 
-	err := yaml.Unmarshal(yml, &cfg)
+	err := toml.Unmarshal(yml, &cfg)
 	if err != nil {
 		return gie.Wrap(err, gie.ConfigErr, "Failed to yaml.Unmarshal", "invalid YAML", yml)
 	}
@@ -145,10 +145,10 @@ func (cfg *Cfg) applyEnvVars() {
 }
 
 func (cfg *Cfg) parseExtraModels(extra string) {
-	// empty => disable goinfer.yml/extra_models
+	// empty => disable extra_models (goinfer.ini)
 	if extra == "" {
 		cfg.ExtraModels = nil
-	} else if extra[0] == '=' { // starts with "=" => replace goinfer.yml/extra_models
+	} else if extra[0] == '=' { // starts with "=" => replace extra_models (goinfer.ini)
 		cfg.ExtraModels = nil
 		extra = extra[1:] // skip first "="
 	}
@@ -182,8 +182,8 @@ func (cfg *Cfg) trimParamValues() {
 	cfg.Origins = strings.Trim(cfg.Origins, ",")
 
 	cfg.Llama.Exe = strings.TrimSpace(cfg.Llama.Exe)
-	cfg.Llama.Args.Verbose = strings.TrimSpace(cfg.Llama.Args.Verbose)
-	cfg.Llama.Args.Debug = strings.TrimSpace(cfg.Llama.Args.Debug)
-	cfg.Llama.Args.Common = strings.TrimSpace(cfg.Llama.Args.Common)
-	cfg.Llama.Args.Goinfer = strings.TrimSpace(cfg.Llama.Args.Goinfer)
+	cfg.Llama.Verbose = strings.TrimSpace(cfg.Llama.Verbose)
+	cfg.Llama.Debug = strings.TrimSpace(cfg.Llama.Debug)
+	cfg.Llama.Common = strings.TrimSpace(cfg.Llama.Common)
+	cfg.Llama.Goinfer = strings.TrimSpace(cfg.Llama.Goinfer)
 }

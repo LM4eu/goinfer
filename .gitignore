@@ -7,7 +7,7 @@
 /docsite/dist/
 /go.work*
 /goinfer
-/goinfer.yml
+/goinfer.ini
 /infer/dist/
 /llama-server.exe
 /llama-swap.yml

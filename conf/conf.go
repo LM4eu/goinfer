@@ -21,30 +21,26 @@ import (
 
 type (
 	Cfg struct {
-		Llama        Llama                `json:"llama"         yaml:"llama"`
-		Templates    map[string]string    `json:"templates"     yaml:"templates,omitempty"`
-		Listen       map[string]string    `json:"listen"        yaml:"listen"`
-		ModelsDir    string               `json:"models_dir"    yaml:"models_dir"`
-		ExtraModels  map[string]string    `json:"extra_models"  yaml:"extra_models"`
-		DefaultModel string               `json:"default_model" yaml:"default_model"`
-		APIKey       string               `json:"api_key"       yaml:"api_key"`
-		Host         string               `json:"host"          yaml:"host"`
-		Origins      string               `json:"origins"       yaml:"origins"`
-		Info         map[string]ModelInfo `json:"info"          yaml:"-"`
-		Swap         config.Config        `json:"swap"          yaml:"-"`
+		APIKey       string               `toml:"api_key"             comment:"⚠️ Set your API key, can be 64-hex-digit (32-byte) 🚨\nGoinfer sets a random API key with: ./goinfer -write"`
+		Host         string               `toml:"host,omitempty"      comment:"\nHost to listen (env. var: GI_HOST)"`
+		Origins      string               `toml:"origins"             comment:"\nCORS whitelist (env. var: GI_ORIGINS)"`
+		ModelsDir    string               `toml:"models_dir"          comment:"\nGoinfer recursively searches GGUF files in one or multiple folders separated by ':'\nList your GGUF dirs with: locate .gguf | sed -e 's,/[^/]*$,,' | uniq\nenv. var: GI_MODELS_DIR"`
+		DefaultModel string               `toml:"default_model"       comment:"\nThe default model name to load at startup\nCan also be set with: ./goinfer -start <model-name>"`
+		ExtraModels  map[string]string    `toml:"extra_models"        comment:"List model names and their llama-server flags"`
+		Llama        Llama                `toml:"llama"`
+		Listen       map[string]string    `toml:"listen"              comment:"Addresses (ports) to listen\nAddress can be <ip|host>:<port> or simply :<port> when <host> is localhost"`
+		Templates    map[string]string    `toml:"templates,omitempty" comment:"Provide a template file for each model (not yet fully implemented)"`
+		Info         map[string]ModelInfo `toml:"-"                                                                                                                                                                 `
+		Swap         config.Config        `toml:"-"                                                                                                                                                                 `
 		// Swap is stored in llama-swap.yml
 	}
 
 	Llama struct {
-		Args Args   `json:"args" yaml:"args"`
-		Exe  string `json:"exe"  yaml:"exe"`
-	}
-
-	Args struct {
-		Verbose string `json:"verbose" yaml:"verbose"`
-		Debug   string `json:"debug"   yaml:"debug"`
-		Common  string `json:"common"  yaml:"common"`
-		Goinfer string `json:"goinfer" yaml:"goinfer"`
+		Exe     string `toml:"exe"     comment:"path of llama-server"`
+		Common  string `toml:"common"  comment:"common args used for every model"`
+		Goinfer string `toml:"goinfer" comment:"extra args to let tools like Agent-Smith doing the templating (/completions endpoint)"`
+		Verbose string `toml:"verbose" comment:"extra llama-server flag when ./goinfer is used without the -q flag"`
+		Debug   string `toml:"debug"   comment:"extra llama-server flag for ./goinfer -debug"`
 	}
 )
 
@@ -54,7 +50,7 @@ const (
 	debugAPIKey = "C0ffee15C00150C0ffee15900dBadC0de15Dead101Cafe91f790Cafe7e57C0de"
 	unsetAPIKey = "Please ⚠️ Set your private 64-hex-digit API key (32 bytes)"
 
-	GoinferYML   = "goinfer.yml"
+	GoinferINI   = "goinfer.ini"
 	LlamaSwapYML = "llama-swap.yml"
 )
 
@@ -83,13 +79,11 @@ func defaultCfg() *Cfg {
 			":5555": "llama-swap",
 		},
 		Llama: Llama{
-			Exe: "/home/me/llama.cpp/build/bin/llama-server",
-			Args: Args{
-				Verbose: "--verbose-prompt",
-				Debug:   "--verbosity 3",
-				Common:  "--props --no-warmup --no-mmap",
-				Goinfer: "--jinja --chat-template-file template.jinja",
-			},
+			Exe:     "/home/me/llama.cpp/build/bin/llama-server",
+			Verbose: "--verbose-prompt",
+			Debug:   "--verbosity 3",
+			Common:  "--props --no-warmup --no-mmap",
+			Goinfer: "--jinja --chat-template-file template.jinja",
 		},
 		ExtraModels: map[string]string{ // Output of `llama-server -h` contains:
 			// github.com/ggml-org/llama.cpp/blob/master/common/arg.cpp#L3857
@@ -155,26 +149,26 @@ func (cfg *Cfg) validate(noAPIKey bool) error {
 	for dir := range strings.SplitSeq(cfg.ModelsDir, ":") {
 		info, er := os.Stat(dir)
 		if errors.Is(er, fs.ErrNotExist) {
-			return gie.New(gie.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.yml: does not exist", "dir", dir)
+			return gie.New(gie.ConfigErr, "Verify GI_MODELS_DIR or 'models_dir' in "+GoinferINI, "does not exist", dir)
 		}
 		if er != nil {
-			return gie.Wrap(er, gie.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.yml", "dir", dir)
+			return gie.Wrap(er, gie.ConfigErr, "Verify GI_MODELS_DIR or 'models_dir' in "+GoinferINI, "problem with", dir)
 		}
 		if !info.IsDir() {
-			return gie.New(gie.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.yml: must be a file, not a directory", "path", cfg.Llama.Exe)
+			return gie.New(gie.ConfigErr, "Verify GI_MODELS_DIR or 'models_dir' in "+GoinferINI, "must be a directory", dir)
 		}
 	}
 
 	// GI_LLAMA_EXE
 	info, err := os.Stat(cfg.Llama.Exe)
 	if errors.Is(err, fs.ErrNotExist) {
-		return gie.New(gie.ConfigErr, "GI_LLAMA_EXE or 'exe' in goinfer.yml: file does not exist", "exe", cfg.Llama.Exe)
+		return gie.New(gie.ConfigErr, "GI_LLAMA_EXE or 'exe' in goinfer.ini: file does not exist", "exe", cfg.Llama.Exe)
 	}
 	if err != nil {
-		return gie.Wrap(err, gie.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.yml", "exe", cfg.Llama.Exe)
+		return gie.Wrap(err, gie.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.ini", "exe", cfg.Llama.Exe)
 	}
 	if info.IsDir() {
-		return gie.New(gie.ConfigErr, "GI_LLAMA_EXE or 'exe' in goinfer.yml: must be a file, not a directory", "exe", cfg.Llama.Exe)
+		return gie.New(gie.ConfigErr, "GI_LLAMA_EXE or 'exe' in goinfer.ini: must be a file, not a directory", "exe", cfg.Llama.Exe)
 	}
 
 	// API key

@@ -69,7 +69,7 @@ go run . -write
 go run . -no-api-key
 ```
 
-Goinfer listens on the ports defined in `goinfer.yml`.
+Goinfer listens on the ports defined in `goinfer.ini`.
 Default ports:
 
 - `:4444` for extra-featured endpoints `/models`, `/completions`, `/v1/chat/completions`
@@ -172,8 +172,8 @@ The other environment variables are:
 
 ```sh
 export GI_LLAMA_EXE=/path/to/my/llama-server
-export GI_HOST=0.0.0.0  # exposing llama-server is risky
-export GI_ORIGINS=      # disabling CORS is risky
+export GI_HOST=0.0.0.0  # expose Goinfer on your LAN
+export GI_ORIGINS=      # disable CORS whitelist
 export GI_API_KEY="PLEASE SET SECURE API KEY"
 ```
 
@@ -185,7 +185,7 @@ export GIN_MODE=release
 
 ### API key
 
-The flag `-write` also generates a random API key in `goinfer.yml`.
+The flag `-write` also generates a random API key in `goinfer.ini`.
 This flag can be combined with:
 
 - `-debug` sets the debug API key (only during the dev cycle)
@@ -201,36 +201,54 @@ curl -X POST https://localhost:4444/completions  \
   -d '{ "prompt": "Say hello in French" }'
 ```
 
-### `goinfer.yml`
+### `goinfer.ini`
 
-```yaml
-# Goinfer recursively search GGUF files in one or multiple folders separated by ':'
-# List your GGUF dirs with `locate .gguf | sed -e 's,/[^/]*$,,' | uniq`
-models_dir: /home/me/models 
-
+```ini
 # ⚠️ Set your API key, can be 64-hex-digit (32-byte) 🚨
-# Generate these random API key with: ./goinfer -write
-api_key: "PLEASE SET USER API KEY"
-origins:   # CORS whitelist
-  - "https://my-frontend.example.com"
-  - "http://localhost"
-listen:
-  # format:  <address>: <list of enabled services>
-  # <address> can be <ip|host>:<port> or simply :<port> when <host> is localhost
-  ":4444": goinfer     # /completions endpoint letting tools like Agent-Smith doing the templating
-  ":5555": llama-swap  # OpenAI-compatible API by llama-swap
+# Goinfer sets a random API key: ./goinfer -write
+api_key = '0787066b85d2b186ffd826c7c083d8a5037e33a8aa2040ee6c330be01b540cbd'
 
-llama:
-  exe: /home/me/llama.cpp/build/bin/llama-server
-  args:
-    # common args used for every model
-    common: --props --no-warmup --no-mmap
-    # extra args to let tools like Agent-Smith doing the templating (/completions endpoint)
-    goinfer: --jinja --chat-template-file template.jinja
-    # extra llama-server flag when ./goinfer is used without the -q flag
-    verbose: --verbose-prompt
-    # extra llama-server flag for ./goinfer -debug
-    debug: --verbosity 3
+# CORS whitelist (env. var: GI_ORIGINS)
+origins = 'localhost'
+
+# Goinfer recursively searches GGUF files in one or multiple folders separated by ':'
+# List your GGUF dirs with: locate .gguf | sed -e 's,/[^/]*$,,' | uniq
+# env. var: GI_MODELS_DIR
+models_dir = '/home/me/path/to/models'
+
+# The default model name to load at startup
+# Can also be set with: ./goinfer -start <model-name>
+default_model = ''
+
+# List model names and their llama-server flags
+[extra_models]
+'ggml-org/Qwen2.5-Coder-1.5B-Q8_0-GGUF' = '--fim-qwen-1.5b-default'
+'ggml-org/Qwen2.5-Coder-14B-Q8_0-GGUF+0.5B-draft' = '--fim-qwen-14b-spec'
+'ggml-org/Qwen2.5-Coder-3B-Q8_0-GGUF' = '--fim-qwen-3b-default'
+'ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF' = '--fim-qwen-7b-default'
+'ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF+0.5B-draft' = '--fim-qwen-7b-spec'
+'ggml-org/Qwen3-Coder-30B-A3B-Instruct-Q8_0-GGUF' = '--fim-qwen-30b-default'
+'ggml-org/bge-small-en-v1.5-Q8_0-GGUF' = '--embd-bge-small-en-default'
+'ggml-org/e5-small-v2-Q8_0-GGUF' = '--embd-e5-small-en-default'
+'ggml-org/gte-small-Q8_0-GGUF' = '--embd-gte-small-default'
+
+[llama]
+# path of llama-server
+exe = '/home/me/llama.cpp/build/bin/llama-server'
+# common args used for every model
+common = '--props --no-warmup --no-mmap'
+# extra args to let tools like Agent-Smith doing the templating (/completions endpoint)
+goinfer = '--jinja --chat-template-file template.jinja'
+# extra llama-server flag when ./goinfer is used without the -q flag
+verbose = '--verbose-prompt'
+# extra llama-server flag for ./goinfer -debug
+debug = '--verbosity 3'
+
+# Addresses (ports) to listen
+# Address can be <ip|host>:<port> or simply :<port> when <host> is localhost
+[listen]
+':4444' = 'goinfer'    # /completions endpoint letting tools like Agent-Smith doing the templating
+':5555' = 'llama-swap' # OpenAI-compatible API by llama-swap
 ```
 
 - **API key** – Never commit them. Use env. var. `GI_API_KEY` or a secrets manager in production.
@@ -338,8 +356,6 @@ groups:
 
 ## API endpoints
 
-Each service can be enabled/disabled in `goinfer.yml`.
-
 Method | Path                   | Description
 -------|------------------------|------------
 GET    | `/`                    | llama.cpp Web UI
@@ -357,7 +373,7 @@ GET    | `/unload`              | Stop all inference engines
 GET    | `/running`             | List the running inference engines
 GET    | `/health`              | Check if everything is OK
 
-All endpoints require an `Authorization: Bearer $GI_API_KEY` header.
+Goinfer endpoints require an `Authorization: Bearer $GI_API_KEY` header (disabled by `-no-api-key` flag).
 
 llama-swap starts `llama-server` using the command lines configured in `llama-swap.yml`.
 Goinfer generates that `llama-swap.yml` file setting two different command lines for each model:

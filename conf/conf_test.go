@@ -5,13 +5,13 @@
 package conf
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
 
 	"github.com/LM4eu/llama-swap/proxy/config"
+	"github.com/pelletier/go-toml/v2"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -52,7 +52,7 @@ func TestReadMainCfg(t *testing.T) {
 		t.Fatalf("cannot create model file: %v", err)
 	}
 
-	cfg2, err := ReadYAMLData(yml, true, "", "")
+	cfg2, err := ReadFileData(yml, true, "", "")
 	if err != nil {
 		t.Fatalf("ReadMainCfg failed: %v", err)
 	}
@@ -84,7 +84,7 @@ func TestWriteMainCfg(t *testing.T) {
 	t.Setenv("GI_MODELS_DIR", modelsDir)
 	t.Setenv("GI_LLAMA_EXE", llamaExe)
 
-	yml, err := cfg.WriteBytes(false, true)
+	yml, err := cfg.GenFileData(false, true)
 	if err != nil {
 		t.Fatalf("WriteMainCfg failed: %v", err)
 	}
@@ -169,9 +169,9 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 	}
 
 	// JSON round-trip.
-	data, _ := json.Marshal(cfg) //nolint:errchkjson // this is a test
+	data, _ := toml.Marshal(cfg) //nolint:errchkjson // this is a test
 	var cfg2 Cfg
-	err = json.Unmarshal(data, &cfg2)
+	err = toml.Unmarshal(data, &cfg2)
 	if err != nil {
 		t.Fatalf("json unmarshal error: %v", err)
 	}
@@ -215,7 +215,7 @@ func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 	var grp sync.WaitGroup
 	for i := range 30 {
 		grp.Go(func() {
-			cfg, err := ReadYAMLData(yamlData, i&1 == 0, "", "")
+			cfg, err := ReadFileData(yamlData, i&1 == 0, "", "")
 			if err != nil {
 				t.Errorf("#%d ReadMainCfg error: %v", i, err)
 			}

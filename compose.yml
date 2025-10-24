@@ -1,4 +1,4 @@
-# - Requirement:  local file ./goinfer.yml
+# - Requirement:  local file ./goinfer.ini
 # - Build:        DOCKER_BUILDKIT=1 docker compose build
 # - Run:          docker compose up
 # - Stop:         CTRL + C
@@ -25,7 +25,7 @@ services:
       - ${GI_MODELS_DIR:-./models}:/models
       - ${CCACHE_DIR:-./.ccache}:/root/.ccache
       - ${GO_CACHE_DIR:-./.go}:/root/go
-      - ./goinfer.yml:/app/goinfer.yml
+      - ./goinfer.ini:/app/goinfer.ini
     environment:
       - TZ=UTC0 # time.Unix() uses UTC instead of local time zone
     # restart: unless-stopped

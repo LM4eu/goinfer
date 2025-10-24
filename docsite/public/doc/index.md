@@ -11,7 +11,7 @@ Goinfer is based on [llama.cpp](https://github.com/ggml-org/llama.cpp) and [llam
 Download a binary from the releases section (Linux only)
 
 The following command generates
-the `goinfer.yml` config file.
+the `goinfer.ini` config file.
 
 ```bash
 GI_MODELS_DIR=/path/to/my/models ./goinfer -write -debug
@@ -31,7 +31,7 @@ so you can keep organizing your models within a folders tree.
 
 Note: the `-write` flag also generates your random API key in the config file.
 
-Once you have your `goinfer.yml` file, run the server:
+Once you have your `goinfer.ini` file, run the server:
 
 ```bash
 ./goinfer

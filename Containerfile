@@ -10,8 +10,8 @@
 #
 # Run:
 #
-#    docker run --rm -p 4444:4444 -v $PWD/goinfer.yml:/app/goinfer.yml goinfer-llama
-#    podman run --rm -p 4444:4444 -v $PWD/goinfer.yml:/app/goinfer.yml goinfer-llama
+#    docker run --rm -p 4444:4444 -v $PWD/goinfer.ini:/app/goinfer.ini goinfer-llama
+#    podman run --rm -p 4444:4444 -v $PWD/goinfer.ini:/app/goinfer.ini goinfer-llama
 
 
 # Arguments:

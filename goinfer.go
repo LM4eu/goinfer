@@ -38,7 +38,7 @@ func main() {
 func getCfg() *conf.Cfg {
 	quiet := flag.Bool("q", false, "quiet mode (disable verbose output)")
 	debug := flag.Bool("debug", false, "debug mode (with -write: set debug ABI keys)")
-	write := flag.Bool("write", false, "write "+conf.GoinferYML+" and "+templateJinja)
+	write := flag.Bool("write", false, "write config files: "+conf.GoinferINI+" "+templateJinja+" "+conf.LlamaSwapYML)
 	run := flag.Bool("run", false, "run the server, can be combined with -write")
 	extra := flag.String("hf", "", "configure the given extra_models and load the first one (start llama-server)")
 	start := flag.String("start", "", "set the default_model and load it (start llama-server)")
@@ -62,13 +62,13 @@ func getCfg() *conf.Cfg {
 	}
 	slog.Debug("debug mode")
 
-	cfg := doGoinferYML(*debug, *write, *run, *noAPIKey, *extra, *start)
+	cfg := doGoinferINI(*debug, *write, *run, *noAPIKey, *extra, *start)
 
 	if *write || verbose {
 		cfg.Print()
 	}
 
-	// if -write without -run => stop here, just successfully generated "goinfer.yml"
+	// if -write without -run => stop here, just successfully generated "goinfer.ini"
 	if *write && !*run {
 		os.Exit(0)
 	}
@@ -78,20 +78,20 @@ func getCfg() *conf.Cfg {
 	return cfg
 }
 
-func doGoinferYML(debug, write, run, noAPIKey bool, extra, start string) *conf.Cfg {
-	cfg, err := conf.ReadGoinferYML(noAPIKey, extra, start)
+func doGoinferINI(debug, write, run, noAPIKey bool, extra, start string) *conf.Cfg {
+	cfg, err := conf.ReadGoinferINI(noAPIKey, extra, start)
 	if err != nil {
 		switch {
 		case write:
 			slog.Info("Write a fresh new config file, may contain issues: "+
-				"please verify the config.", "file", conf.GoinferYML, "error", err)
+				"please verify the config.", "file", conf.GoinferINI, "error", err)
 		case run:
 			slog.Error("Error config. Flags -run -start -hf without -write prevent to write it. "+
-				"Add flag -write to write the config", "file", conf.GoinferYML, "error", err)
+				"Add flag -write to write the config", "file", conf.GoinferINI, "error", err)
 			os.Exit(1)
 		default:
 			slog.Info("Error config => Write a new one using default values, env vars and flags. "+
-				"May contain issues: please verify the config.", "file", conf.GoinferYML, "error", err)
+				"May contain issues: please verify the config.", "file", conf.GoinferINI, "error", err)
 		}
 		write = true
 	}
@@ -102,27 +102,27 @@ func doGoinferYML(debug, write, run, noAPIKey bool, extra, start string) *conf.C
 			slog.Error("Cannot write", "file", templateJinja, "error", err)
 		}
 
-		er := cfg.WriteGoinferYML(debug, noAPIKey)
+		er := cfg.WriteGoinferINI(debug, noAPIKey)
 		if er != nil {
 			slog.Info(er.Error())
 			err = er
 		}
 
-		// read "goinfer.yml" to verify it can be successfully loaded
+		// read "goinfer.ini" to verify it can be successfully loaded
 		// Pass empty extra and start to keep the eventual fixes.
-		cfg, er = conf.ReadGoinferYML(noAPIKey, "", "")
+		cfg, er = conf.ReadGoinferINI(noAPIKey, "", "")
 		if er != nil {
-			slog.Warn("Please review", "config", conf.GoinferYML, "error", er)
+			slog.Warn("Please review "+conf.GoinferINI, "error", er)
 			os.Exit(1)
 		}
 
-		// stop if any error from WriteFile(templateJinja) or WriteGoinferYML
+		// stop if any error from WriteFile(templateJinja) or WriteGoinferINI
 		if err != nil {
-			slog.Info("Please review the env. vars and", "config", conf.GoinferYML)
+			slog.Info("Please review the env. vars and " + conf.GoinferINI)
 			os.Exit(1)
 		}
 
-		slog.Info("Successfully wrote", "config", conf.GoinferYML)
+		slog.Info("Successfully wrote " + conf.GoinferINI)
 	}
 
 	// command line precedes config file
