@@ -89,14 +89,14 @@ func (cfg *Cfg) ReadSwapFromReader(r io.Reader) error {
 }
 
 // load the configuration file (if filename not empty).
-func (cfg *Cfg) parse(yml []byte) error {
-	if len(yml) == 0 {
+func (cfg *Cfg) parse(fileData []byte) error {
+	if len(fileData) == 0 {
 		return gie.New(gie.ConfigErr, "empty", "file", GoinferINI)
 	}
 
-	err := toml.Unmarshal(yml, &cfg)
+	err := toml.Unmarshal(fileData, &cfg)
 	if err != nil {
-		return gie.Wrap(err, gie.ConfigErr, "Failed to yaml.Unmarshal", "invalid YAML", yml)
+		return gie.Wrap(err, gie.ConfigErr, "Failed to yaml.Unmarshal", "invalid TOML", string(fileData))
 	}
 
 	return nil

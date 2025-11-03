@@ -194,7 +194,7 @@ func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 	// t.Parallel omitted because of t.Setenv usage.
 	cfg := defaultCfg()
 	cfg.ModelsDir = t.TempDir()
-	yamlData, err := yaml.Marshal(cfg)
+	data, err := toml.Marshal(cfg)
 	if err != nil {
 		t.Fatalf("yaml marshal error: %v", err)
 	}
@@ -215,7 +215,7 @@ func TestCfg_ConcurrentReadMainCfg(t *testing.T) {
 	var grp sync.WaitGroup
 	for i := range 30 {
 		grp.Go(func() {
-			cfg, err := ReadFileData(yamlData, i&1 == 0, "", "")
+			cfg, err := ReadFileData(data, i&1 == 0, "", "")
 			if err != nil {
 				t.Errorf("#%d ReadMainCfg error: %v", i, err)
 			}
