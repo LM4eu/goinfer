@@ -86,11 +86,11 @@ type (
 		Type string `json:"type,omitzero,omitempty"`
 	}
 	CustomTool struct {
-		Custom CustomToolCustom `json:"custom,omitzero,omitempty"`
+		Custom CustomToolCustom `json:"custom,omitzero"`
 		Type   string           `json:"type,omitzero,omitempty"`
 	}
 	CustomToolCustom struct {
-		Format      CustomToolCustomFormat `json:"format,omitzero,omitempty"`
+		Format      CustomToolCustomFormat `json:"format,omitzero"`
 		Name        string                 `json:"name,omitzero,omitempty"`
 		Description string                 `json:"description,omitzero,omitempty"`
 	}

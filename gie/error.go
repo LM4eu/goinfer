@@ -30,13 +30,13 @@ import (
 type (
 	// Error implements the error structure defined in JSON-RPC 2.0.
 	Error struct {
-		Data    Data   `json:"data,omitempty"`
+		Data    Data   `json:"data,omitzero"`
 		Message string `json:"msg,omitempty"`
 		Code    Code   `json:"code,omitempty"`
 	}
 
 	Data struct {
-		Time     time.Time      `json:"time,omitempty"`
+		Time     time.Time      `json:"time,omitzero"`
 		Cause    error          `json:"cause,omitempty"`
 		Params   map[string]any `json:"params,omitempty"`
 		Function string         `json:"function,omitempty"`
