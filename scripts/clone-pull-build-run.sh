@@ -115,7 +115,8 @@ clone_checkout_pull() {
     build_reason="tag: $tag"
     ( logx "checkout $tag"; git checkout "$tag" )
   else
-    ( logx "switch $branch"; git switch -C "$branch" origin/"$branch" )
+    # logx "switch $branch"; git switch -C "$branch" origin/"$branch" )
+    ( logx "switch $branch"; git switch "$branch" )
 
     local="$( git rev-parse HEAD)"
     remote="$(git rev-parse "@{upstream}")"
