@@ -37,6 +37,7 @@ linters:
     - gomoddirectives # directives 'replace', 'retract' and 'excludes' in go.mod
     - gomodguard # another Go module dependencies blocker, more featured than depguard
     - ireturn
+    - lll
     - mnd # Magic number
     - nlreturn
     - nonamedreturns
