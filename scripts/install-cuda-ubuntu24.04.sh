@@ -14,15 +14,12 @@ set -xe
 # - recent Nvidia CUDA libs & tool that officially support Ubuntu-24.04
 
 # If you are already root, unset this sudo variable
-sudo=sudo
+sudo=${sudo:-sudo}
 
 $sudo apt-get update
 $sudo apt-get dist-upgrade --yes
 
 $sudo apt-get install ubuntu-server --yes
-
-apt-get update
-apt-get install  -y
 
 $sudo apt-get install --yes \
    autoconf \
@@ -140,6 +137,12 @@ export LD_LIBRARY_PATH=$CUDA_HOME/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
 ' >> ~/.profile
 
 echo "
-Now the computer needs to reboot, do:
-$sudo reboot
+Verify the file ~/.profile 
+You can:
+
+    vim ~/.profile
+
+When you are ready, you can reboot:
+
+    $sudo reboot
 "
