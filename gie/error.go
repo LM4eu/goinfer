@@ -74,7 +74,6 @@ func Wrap(err error, code Code, msg string, args ...any) *Error {
 	return wrap(err, code, msg, args...)
 }
 
-//nolint:revive // wrap is the common function for New() and Wrap().
 func wrap(cause error, code Code, msg string, args ...any) *Error {
 	err := &Error{
 		Code:    code,
@@ -121,23 +120,40 @@ func getPairRest(args []any) (key string, val any, rest []any) {
 
 // Error implements the error interface.
 func (e *Error) Error() string {
-	str := e.Message + " (" + strconv.Itoa(int(e.Code)) + ")"
+	begin := []byte(" ())))))))))))))))))))))))))))))))))")
+	begin = strconv.AppendInt(begin[:2], int64(e.Code), 10)
+
+	var builder strings.Builder
+	builder.Write(begin[:len(begin)+1])
+
 	for key, val := range e.Data.Params {
-		str += " " + key + "=" + fmt.Sprint(val)
+		builder.WriteByte(byte(' '))
+		builder.WriteString(key)
+		builder.WriteByte(byte('='))
+		builder.WriteString(fmt.Sprint(val))
 	}
+
 	if e.Data.Cause != nil {
-		str += " cause: " + e.Data.Cause.Error()
+		builder.WriteString(" cause: ")
+		builder.WriteString(e.Data.Cause.Error())
 	}
+
 	if e.Data.Function != "" {
-		str += " in " + e.Data.Function
+		builder.WriteString(" in ")
+		builder.WriteString(e.Data.Function)
 	}
+
 	if e.Data.FileLine != "" {
-		str += " " + e.Data.FileLine
+		builder.WriteByte(byte(':'))
+		builder.WriteString(e.Data.FileLine)
 	}
+
 	if !e.Data.Time.IsZero() {
-		str += " " + e.Data.Time.Format("2006-01-02 15:04:05.999")
+		builder.WriteByte(byte(' '))
+		builder.WriteString(e.Data.Time.Format("2006-01-02 15:04:05.999"))
 	}
-	return str
+
+	return builder.String()
 }
 
 // Unwrap returns the underlying error for error unwrapping.

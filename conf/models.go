@@ -213,7 +213,7 @@ func replaceDIR(path, flags string) string {
 	return strings.ReplaceAll(flags, "$DIR", filepath.Dir(path))
 }
 
-//nolint:gocritic,revive // return model name and llama-server flags
+//nolint:gocritic // return model name and llama-server flags
 func getNameAndFlags(root, path string) (string, string) {
 	truncated, flags := extractFlags(path)
 	name := nameWithSlash(root, truncated)
@@ -223,7 +223,7 @@ func getNameAndFlags(root, path string) (string, string) {
 // nameWithSlash converts the first underscore in a model name to a slash.
 // If there is a dash, only top domain names between the dash and the slash.
 //
-//nolint:revive // will refactor/split to reduce cognitive complexity (31).
+
 func nameWithSlash(root, truncated string) string {
 	name := filepath.Base(truncated)
 
@@ -316,7 +316,7 @@ func nameWithDir(root, truncated, name string) string {
 // Otherwise, it parses flags encoded in the filename after an '&' delimiter.
 // Returns the truncated path (without extension) and a space-separated flag string.
 //
-//nolint:gocritic,revive // return the truncated model filename and the llama-server flags.
+//nolint:gocritic // return the truncated model filename and the llama-server flags.
 func extractFlags(path string) (string, string) {
 	truncated := strings.TrimSuffix(path, ".gguf")
 

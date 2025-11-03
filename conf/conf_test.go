@@ -169,7 +169,7 @@ func TestCfg_UnmarshalAndValidate(t *testing.T) {
 	}
 
 	// JSON round-trip.
-	data, _ := toml.Marshal(cfg) //nolint:errchkjson // this is a test
+	data, _ := toml.Marshal(cfg)
 	var cfg2 Cfg
 	err = toml.Unmarshal(data, &cfg2)
 	if err != nil {
