@@ -16,13 +16,13 @@ import (
 )
 
 // Helper to create a temporary configuration file.
-func createCfgBytes(t *testing.T, cfg *Cfg) []byte {
+func createCfgData(t *testing.T, cfg *Cfg) []byte {
 	t.Helper()
-	yml, err := yaml.Marshal(cfg)
+	data, err := toml.Marshal(cfg)
 	if err != nil {
 		t.Fatalf("marshal config: %v", err)
 	}
-	return yml
+	return data
 }
 
 // TestReadMainCfg loads a config file, applies env vars, and validates.
@@ -38,7 +38,7 @@ func TestReadMainCfg(t *testing.T) {
 		t.Fatalf("cannot create dummy llama-sever file: %v", err)
 	}
 	cfg.APIKey = "dummy" // dummy admin API key to satisfy validation.
-	yml := createCfgBytes(t, cfg)
+	data := createCfgData(t, cfg)
 
 	// Override via env.
 	dir := t.TempDir()
@@ -52,7 +52,7 @@ func TestReadMainCfg(t *testing.T) {
 		t.Fatalf("cannot create model file: %v", err)
 	}
 
-	cfg2, err := ReadFileData(yml, true, "", "")
+	cfg2, err := ReadFileData(data, true, "", "")
 	if err != nil {
 		t.Fatalf("ReadMainCfg failed: %v", err)
 	}
@@ -84,14 +84,14 @@ func TestWriteMainCfg(t *testing.T) {
 	t.Setenv("GI_MODELS_DIR", modelsDir)
 	t.Setenv("GI_LLAMA_EXE", llamaExe)
 
-	yml, err := cfg.GenFileData(false, true)
+	data, err := cfg.GenFileData(false, true)
 	if err != nil {
 		t.Fatalf("WriteMainCfg failed: %v", err)
 	}
 	var loaded Cfg
-	err = yaml.Unmarshal(yml, &loaded)
+	err = toml.Unmarshal(data, &loaded)
 	if err != nil {
-		t.Fatalf("written config is not valid YAML: %v", err)
+		t.Fatalf("written config is not valid TOML: %v", err)
 	}
 }
 
