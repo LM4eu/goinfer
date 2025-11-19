@@ -30,7 +30,7 @@ type (
 		Model string `json:"model,omitempty" yaml:"model,omitempty"`
 	}
 
-	AnyBody map[string]any
+	anyBody map[string]any
 )
 
 const (
@@ -38,12 +38,15 @@ const (
 	debug = false
 )
 
-func (m *ModelField) GetModel() string      { return m.Model }
+// GetModel implements ModelRequest interface.
+func (m *ModelField) GetModel() string { return m.Model }
+
+// SetModel implements ModelRequest interface.
 func (m *ModelField) SetModel(model string) { m.Model = model }
 
 // GetModel uses map["model"] to get the model name.
 // A model name containing '"' could be a symptom of a malformed JSON.
-func (m *AnyBody) GetModel() string {
+func (m *anyBody) GetModel() string {
 	modelAny, ok := (*m)["model"]
 	if !ok {
 		return ""
@@ -58,7 +61,8 @@ func (m *AnyBody) GetModel() string {
 	return fmt.Sprint(modelAny)
 }
 
-func (m *AnyBody) SetModel(model string) {
+// SetModel implements ModelRequest interface.
+func (m *anyBody) SetModel(model string) {
 	(*m)["model"] = model
 }
 

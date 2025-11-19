@@ -122,7 +122,7 @@ func (inf *Infer) chatCompletionsHandler(c echo.Context) error {
 }
 
 func (inf *Infer) proxyOAIHandler(c echo.Context) error {
-	var msg AnyBody
+	var msg anyBody
 	body, err := setModelIfMissing(inf, &msg, c.Request().Body)
 	if err != nil {
 		return err
@@ -134,7 +134,7 @@ func (inf *Infer) proxyOAIHandler(c echo.Context) error {
 }
 
 func (inf *Infer) proxyOAIPostFormHandler(c echo.Context) error {
-	var msg AnyBody
+	var msg anyBody
 	body, err := setModelIfMissing(inf, &msg, c.Request().Body)
 	if err != nil {
 		return err
