@@ -23,27 +23,27 @@ import (
 type (
 	// Cfg holds all settings.
 	Cfg struct {
-		APIKey       string               `yaml:"api_key"             toml:"api_key"             comment:"⚠️ Set your API key, can be 64-hex-digit (32-byte) 🚨\nGoinfer sets a random API key with: ./goinfer -write"`
-		Host         string               `yaml:"host,omitempty"      toml:"host,omitempty"      comment:"\nHost to listen (env. var: GI_HOST)"`
-		Origins      string               `yaml:"origins"             toml:"origins"             comment:"\nCORS whitelist (env. var: GI_ORIGINS)"`
-		ModelsDir    string               `yaml:"models_dir"          toml:"models_dir"          comment:"\nGoinfer recursively searches GGUF files in one or multiple folders separated by ':'\nList your GGUF dirs with: locate .gguf | sed -e 's,/[^/]*$,,' | uniq\nenv. var: GI_MODELS_DIR"`
-		DefaultModel string               `yaml:"default_model"       toml:"default_model"       comment:"\nThe default model name to load at startup\nCan also be set with: ./goinfer -start <model-name>"`
-		ExtraModels  map[string]string    `yaml:"extra_models"        toml:"extra_models"        comment:"List model names and their llama-server flags"`
-		Llama        Llama                `yaml:"llama"               toml:"llama"`
-		Listen       map[string]string    `yaml:"listen"              toml:"listen"              comment:"Addresses (ports) to listen\nAddress can be <ip|host>:<port> or simply :<port> when <host> is localhost"`
-		Templates    map[string]string    `yaml:"templates,omitempty" toml:"templates,omitempty" comment:"Provide a template file for each model (not yet fully implemented)"`
-		Info         map[string]ModelInfo `yaml:"-"                   toml:"-"                                                                                                                                                                 `
-		Swap         config.Config        `yaml:"-"                   toml:"-"                                                                                                                                                                 `
+		APIKey       string               `toml:"api_key"             yaml:"api_key"        comment:"⚠️ Set your API key, can be 64-hex-digit (32-byte) 🚨\nGoinfer sets a random API key with: ./goinfer -write"`
+		Host         string               `toml:"host,omitempty"      yaml:"host,omitempty" comment:"\nHost to listen (env. var: GI_HOST)"`
+		Origins      string               `toml:"origins"             yaml:"origins"        comment:"\nCORS whitelist (env. var: GI_ORIGINS)"`
+		ModelsDir    string               `toml:"models_dir"          yaml:"models_dir"     comment:"\nGoinfer recursively searches GGUF files in one or multiple folders separated by ':'\nList your GGUF dirs with: locate .gguf | sed -e 's,/[^/]*$,,' | uniq\nenv. var: GI_MODELS_DIR"`
+		DefaultModel string               `toml:"default_model"       yaml:"default_model"  comment:"\nThe default model name to load at startup\nCan also be set with: ./goinfer -start <model-name>"`
+		ExtraModels  map[string]string    `toml:"extra_models"        yaml:"extra_models"   comment:"List model names and their llama-server flags"`
+		Llama        Llama                `toml:"llama"               yaml:"llama"`
+		Listen       map[string]string    `toml:"listen"              yaml:"listen"              comment:"Addresses (ports) to listen\nAddress can be <ip|host>:<port> or simply :<port> when <host> is localhost"`
+		Templates    map[string]string    `toml:"templates,omitempty" yaml:"templates,omitempty" comment:"Provide a template file for each model (not yet fully implemented)"`
+		Info         map[string]ModelInfo `toml:"-"                   yaml:"-"`
+		Swap         config.Config        `toml:"-"                   yaml:"-"`
 		// Swap is stored in llama-swap.yml
 	}
 
 	// Llama holds the inference engine settings.
 	Llama struct {
-		Exe     string `yaml:"exe"     toml:"exe"     comment:"path of llama-server"`
-		Common  string `yaml:"common"  toml:"common"  comment:"common args used for every model"`
-		Goinfer string `yaml:"goinfer" toml:"goinfer" comment:"extra args to let tools like Agent-Smith doing the templating (/completions endpoint)"`
-		Verbose string `yaml:"verbose" toml:"verbose" comment:"extra llama-server flag when ./goinfer is used without the -q flag"`
-		Debug   string `yaml:"debug"   toml:"debug"   comment:"extra llama-server flag for ./goinfer -debug"`
+		Exe     string `toml:"exe"     yaml:"exe"     comment:"path of llama-server"`
+		Common  string `toml:"common"  yaml:"common"  comment:"common args used for every model"`
+		Goinfer string `toml:"goinfer" yaml:"goinfer" comment:"extra args to let tools like Agent-Smith doing the templating (/completions endpoint)"`
+		Verbose string `toml:"verbose" yaml:"verbose" comment:"extra llama-server flag when ./goinfer is used without the -q flag"`
+		Debug   string `toml:"debug"   yaml:"debug"   comment:"extra llama-server flag for ./goinfer -debug"`
 	}
 )
 
