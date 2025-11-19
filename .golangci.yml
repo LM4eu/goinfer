@@ -511,7 +511,7 @@ linters:
         # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#flag-parameter
         - name: flag-parameter # control-coupled = a function controls the flow of another by passing it information on what to do
           disabled: true
-        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#function-result-limit
+        # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#forbidden-call-in-wg-go
         - name: forbidden-call-in-wg-go # Since Go 1.25, it is possible to create goroutines with the method waitgroup.Go
         # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#function-length
         - name: function-length # Functions returning too many results can be hard to understand/use
