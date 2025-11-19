@@ -2,6 +2,7 @@
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
 
+// Package conf reads/writes configuration
 package conf
 
 import (
@@ -20,6 +21,7 @@ import (
 )
 
 type (
+	// Cfg holds all settings.
 	Cfg struct {
 		APIKey       string               `yaml:"api_key"             toml:"api_key"             comment:"⚠️ Set your API key, can be 64-hex-digit (32-byte) 🚨\nGoinfer sets a random API key with: ./goinfer -write"`
 		Host         string               `yaml:"host,omitempty"      toml:"host,omitempty"      comment:"\nHost to listen (env. var: GI_HOST)"`
@@ -35,6 +37,7 @@ type (
 		// Swap is stored in llama-swap.yml
 	}
 
+	// Llama holds the inference engine settings.
 	Llama struct {
 		Exe     string `yaml:"exe"     toml:"exe"     comment:"path of llama-server"`
 		Common  string `yaml:"common"  toml:"common"  comment:"common args used for every model"`
@@ -50,7 +53,9 @@ const (
 	debugAPIKey = "C0ffee15C00150C0ffee15900dBadC0de15Dead101Cafe91f790Cafe7e57C0de"
 	unsetAPIKey = "Please ⚠️ Set your private 64-hex-digit API key (32 bytes)"
 
-	GoinferINI   = "goinfer.ini"
+	// GoinferINI is the config filename.
+	GoinferINI = "goinfer.ini"
+	// LlamaSwapYML is the llama-swap config filename.
 	LlamaSwapYML = "llama-swap.yml"
 )
 

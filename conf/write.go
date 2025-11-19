@@ -139,6 +139,7 @@ func (cfg *Cfg) fixDefaultModel() {
 	cfg.DefaultModel = betterName
 }
 
+// FixModelName returns a modified model name.
 func (cfg *Cfg) FixModelName(modelName string) string {
 	_, ok := cfg.Swap.Models[modelName]
 	if ok {
