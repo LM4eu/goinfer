@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -35,6 +36,7 @@ type (
 		Code    Code   `json:"code,omitempty"`
 	}
 
+	// Data contains the error details.
 	Data struct {
 		Time     time.Time      `json:"time,omitzero"`
 		Cause    error          `json:"cause,omitempty"`
@@ -44,7 +46,7 @@ type (
 	}
 
 	// Code represents the type of error.
-	Code int
+	Code int64
 )
 
 const (
