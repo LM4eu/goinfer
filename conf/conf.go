@@ -189,8 +189,6 @@ func (cfg *Cfg) validate(noAPIKey bool) error {
 
 // validatePorts() prevents bad ports: they are blocked by web browsers,
 // as specified by the Fetch standard: fetch.spec.whatwg.org/#port-blocking
-//
-//nolint:revive // for better readability => do not rewrite with `if !c { continue }`
 func (cfg *Cfg) validatePorts() error {
 	for hostPort := range cfg.Listen {
 		_, port, err := net.SplitHostPort(hostPort)
