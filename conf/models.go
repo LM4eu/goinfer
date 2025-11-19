@@ -88,7 +88,7 @@ func (cfg *Cfg) refineModelInfo(name string) {
 			mi.Error = "file absent but configured in llama-swap.yml"
 		}
 	} else {
-		slog.Warn("missing space characters", "cmd", cfg.Swap.Models[name].Cmd)
+		slog.Debug("WARN missing space characters", "cmd", cfg.Swap.Models[name].Cmd)
 		mi.Error = "missing space characters in cmd=" + cfg.Swap.Models[name].Cmd
 	}
 	cfg.Info[name] = mi
@@ -108,6 +108,23 @@ func (cfg *Cfg) updateInfo() {
 	// collect templates.yml and GUFF files
 	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
 		err := cfg.search(templates, strings.TrimSpace(root))
+
+		var count uint
+		var errStr string
+		for _, mi := range cfg.Info {
+			if mi.Error != "" {
+				count++
+				errStr = mi.Error
+			}
+		}
+		switch count {
+		case 0:
+		case 1:
+			slog.Warn(errStr)
+		default:
+			slog.Warn("search models", "warnings", count)
+		}
+
 		if err != nil {
 			slog.Warn("cannot search files in", "root", root, "err", err)
 		}
@@ -196,7 +213,7 @@ func (cfg *Cfg) keepGUFF(root, path string) {
 
 	mi := ModelInfo{Template: nil, Flags: flags, Path: path, Error: "", Size: size}
 	if old, ok := cfg.Info[name]; ok {
-		slog.Warn("Duplicated models", "dir", root, "name", name, "old", old, "new", mi)
+		slog.Debug("WARN Duplicated models", "dir", root, "name", name, "old", old, "new", mi)
 		mi.Error = "two files have same model name (must be unique)"
 	}
 	cfg.Info[name] = mi
