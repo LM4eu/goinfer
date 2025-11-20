@@ -205,32 +205,36 @@ curl -X POST https://localhost:4444/completions  \
 
 ```ini
 # ⚠️ Set your API key, can be 64-hex-digit (32-byte) 🚨
-# Goinfer sets a random API key: ./goinfer -write
-api_key = '0787066b85d2b186ffd826c7c083d8a5037e33a8aa2040ee6c330be01b540cbd'
-
+# Goinfer sets a random API key with: ./goinfer -write
+api_key = '166a7c4bb8e9da0e1c414049c20797ec0fb9053d6bb553bf3f2dfcf1183451f5'
+# 
 # CORS whitelist (env. var: GI_ORIGINS)
 origins = 'localhost'
-
+# 
 # Goinfer recursively searches GGUF files in one or multiple folders separated by ':'
 # List your GGUF dirs with: locate .gguf | sed -e 's,/[^/]*$,,' | uniq
 # env. var: GI_MODELS_DIR
 models_dir = '/home/me/path/to/models'
-
+# 
 # The default model name to load at startup
 # Can also be set with: ./goinfer -start <model-name>
 default_model = ''
 
-# List model names and their llama-server flags
+# Download models using llama-server flags
+# see : github.com/ggml-org/llama.cpp/blob/master/common/arg.cpp#L3000
 [extra_models]
+'OuteAI/OuteTTS-0.2-500M-GGUF+ggml-org/WavTokenizer' = '--tts-oute-default'
 'ggml-org/Qwen2.5-Coder-1.5B-Q8_0-GGUF' = '--fim-qwen-1.5b-default'
 'ggml-org/Qwen2.5-Coder-14B-Q8_0-GGUF+0.5B-draft' = '--fim-qwen-14b-spec'
 'ggml-org/Qwen2.5-Coder-3B-Q8_0-GGUF' = '--fim-qwen-3b-default'
 'ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF' = '--fim-qwen-7b-default'
 'ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF+0.5B-draft' = '--fim-qwen-7b-spec'
 'ggml-org/Qwen3-Coder-30B-A3B-Instruct-Q8_0-GGUF' = '--fim-qwen-30b-default'
-'ggml-org/bge-small-en-v1.5-Q8_0-GGUF' = '--embd-bge-small-en-default'
-'ggml-org/e5-small-v2-Q8_0-GGUF' = '--embd-e5-small-en-default'
-'ggml-org/gte-small-Q8_0-GGUF' = '--embd-gte-small-default'
+'ggml-org/embeddinggemma-300M-qat-q4_0-GGUF' = '--embd-gemma-default'
+'ggml-org/gemma-3-12b-it-qat-GGUF' = '--vision-gemma-12b-default'
+'ggml-org/gemma-3-4b-it-qat-GGUF' = '--vision-gemma-4b-default'
+'ggml-org/gpt-oss-120b-GGUF' = '--gpt-oss-120b-default'
+'ggml-org/gpt-oss-20b-GGUF' = '--gpt-oss-20b-default'
 
 [llama]
 # path of llama-server
@@ -258,7 +262,7 @@ debug = '--verbosity 3'
 ### `llama-swap.yml`
 
 At startup, Goinfer verifies the available GUFF files.
-The flag `-write` allow Goinfer to write the `llama-swap.yml` file.
+The flag `-write` tells Goinfer to write the `llama-swap.yml` file.
 
 Official documentation:
 [github/mostlygeek/llama-swap/wiki/Configuration](https://github.com/mostlygeek/llama-swap/wiki/Configuration)

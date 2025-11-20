@@ -28,7 +28,7 @@ type (
 		Origins      string               `toml:"origins"             yaml:"origins"        comment:"\nCORS whitelist (env. var: GI_ORIGINS)"`
 		ModelsDir    string               `toml:"models_dir"          yaml:"models_dir"     comment:"\nGoinfer recursively searches GGUF files in one or multiple folders separated by ':'\nList your GGUF dirs with: locate .gguf | sed -e 's,/[^/]*$,,' | uniq\nenv. var: GI_MODELS_DIR"`
 		DefaultModel string               `toml:"default_model"       yaml:"default_model"  comment:"\nThe default model name to load at startup\nCan also be set with: ./goinfer -start <model-name>"`
-		ExtraModels  map[string]string    `toml:"extra_models"        yaml:"extra_models"   comment:"List model names and their llama-server flags"`
+		ExtraModels  map[string]string    `toml:"extra_models"        yaml:"extra_models"   comment:"Download models using llama-server flags\nsee : github.com/ggml-org/llama.cpp/blob/master/common/arg.cpp#L3000"`
 		Llama        Llama                `toml:"llama"               yaml:"llama"`
 		Listen       map[string]string    `toml:"listen"              yaml:"listen"              comment:"Addresses (ports) to listen\nAddress can be <ip|host>:<port> or simply :<port> when <host> is localhost"`
 		Templates    map[string]string    `toml:"templates,omitempty" yaml:"templates,omitempty" comment:"Provide a template file for each model (not yet fully implemented)"`
@@ -91,16 +91,19 @@ func defaultCfg() *Cfg {
 			Goinfer: "--jinja --chat-template-file template.jinja",
 		},
 		ExtraModels: map[string]string{ // Output of `llama-server -h` contains:
-			// github.com/ggml-org/llama.cpp/blob/master/common/arg.cpp#L3857
-			"ggml-org/bge-small-en-v1.5-Q8_0-GGUF":            "--embd-bge-small-en-default",
-			"ggml-org/e5-small-v2-Q8_0-GGUF":                  "--embd-e5-small-en-default",
-			"ggml-org/gte-small-Q8_0-GGUF":                    "--embd-gte-small-default",
-			"ggml-org/Qwen2.5-Coder-1.5B-Q8_0-GGUF":           "--fim-qwen-1.5b-default",
-			"ggml-org/Qwen2.5-Coder-3B-Q8_0-GGUF":             "--fim-qwen-3b-default",
-			"ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF":             "--fim-qwen-7b-default",
-			"ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF+0.5B-draft":  "--fim-qwen-7b-spec",
-			"ggml-org/Qwen2.5-Coder-14B-Q8_0-GGUF+0.5B-draft": "--fim-qwen-14b-spec",
-			"ggml-org/Qwen3-Coder-30B-A3B-Instruct-Q8_0-GGUF": "--fim-qwen-30b-default",
+			// github.com/ggml-org/llama.cpp/blob/master/common/arg.cpp#L3000
+			"OuteAI/OuteTTS-0.2-500M-GGUF+ggml-org/WavTokenizer": "--tts-oute-default",
+			"ggml-org/embeddinggemma-300M-qat-q4_0-GGUF":         "--embd-gemma-default",
+			"ggml-org/Qwen2.5-Coder-1.5B-Q8_0-GGUF":              "--fim-qwen-1.5b-default",
+			"ggml-org/Qwen2.5-Coder-3B-Q8_0-GGUF":                "--fim-qwen-3b-default",
+			"ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF":                "--fim-qwen-7b-default",
+			"ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF+0.5B-draft":     "--fim-qwen-7b-spec",
+			"ggml-org/Qwen2.5-Coder-14B-Q8_0-GGUF+0.5B-draft":    "--fim-qwen-14b-spec",
+			"ggml-org/Qwen3-Coder-30B-A3B-Instruct-Q8_0-GGUF":    "--fim-qwen-30b-default",
+			"ggml-org/gpt-oss-20b-GGUF":                          "--gpt-oss-20b-default",
+			"ggml-org/gpt-oss-120b-GGUF":                         "--gpt-oss-120b-default",
+			"ggml-org/gemma-3-4b-it-qat-GGUF":                    "--vision-gemma-4b-default",
+			"ggml-org/gemma-3-12b-it-qat-GGUF":                   "--vision-gemma-12b-default",
 		},
 	}
 }
