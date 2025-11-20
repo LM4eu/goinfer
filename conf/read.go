@@ -62,8 +62,13 @@ func ReadFileData(data []byte, noAPIKey bool, extra, start string) (*Cfg, error)
 				continue
 			}
 			delete(cfg.Listen, addr)
-			if strings.ContainsRune(cfg.Host[:len(cfg.Host)-1], ':') {
-				addr = cfg.Host // Host contains the port
+			p := strings.IndexRune(cfg.Host[:len(cfg.Host)-1], ':')
+			if p > 0 { // Host contains the port
+				if service == "goinfer" {
+					addr = cfg.Host
+				} else {
+					addr = cfg.Host[:p] + addr
+				}
 			} else {
 				addr = cfg.Host + addr
 			}
