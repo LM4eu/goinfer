@@ -1,8 +1,12 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package proxy
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -40,7 +44,7 @@ func (pm *ProxyManager) StreamLogsHandler(c *gin.Context) {
 
 	flusher, ok := c.Writer.(http.Flusher)
 	if !ok {
-		c.AbortWithError(http.StatusInternalServerError, fmt.Errorf("streaming unsupported"))
+		c.AbortWithError(http.StatusInternalServerError, errors.New("streaming unsupported"))
 		return
 	}
 
@@ -81,19 +85,20 @@ func (pm *ProxyManager) StreamLogsHandler(c *gin.Context) {
 	}
 }
 
-// getLogger searches for the appropriate logger based on the logMonitorId
+// getLogger searches for the appropriate logger based on the logMonitorId.
 func (pm *ProxyManager) getLogger(logMonitorId string) (*LogMonitor, error) {
 	var logger *LogMonitor
 
-	if logMonitorId == "" {
+	switch logMonitorId {
+	case "":
 		// maintain the default
 		logger = pm.muxLogger
-	} else if logMonitorId == "proxy" {
+	case "proxy":
 		logger = pm.proxyLogger
-	} else if logMonitorId == "upstream" {
+	case "upstream":
 		logger = pm.upstreamLogger
-	} else {
-		return nil, fmt.Errorf("invalid logger. Use 'proxy' or 'upstream'")
+	default:
+		return nil, errors.New("invalid logger. Use 'proxy' or 'upstream'")
 	}
 
 	return logger, nil

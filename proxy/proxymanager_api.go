@@ -1,9 +1,12 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package proxy
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"sort"
 	"strings"
@@ -98,7 +101,7 @@ type messageEnvelope struct {
 	Data string      `json:"data"`
 }
 
-// sends a stream of different message types that happen on the server
+// sends a stream of different message types that happen on the server.
 func (pm *ProxyManager) apiSendEvents(c *gin.Context) {
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
@@ -119,7 +122,6 @@ func (pm *ProxyManager) apiSendEvents(c *gin.Context) {
 				return
 			default:
 			}
-
 		}
 	}
 
@@ -217,12 +219,13 @@ func (pm *ProxyManager) apiUnloadSingleModelHandler(c *gin.Context) {
 
 	processGroup := pm.findGroupByModelName(realModelName)
 	if processGroup == nil {
-		pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("process group not found for model %s", requestedModel))
+		pm.sendErrorResponse(c, http.StatusInternalServerError, "process group not found for model "+requestedModel)
 		return
 	}
 
-	if err := processGroup.StopProcess(realModelName, StopImmediately); err != nil {
-		pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("error stopping process: %s", err.Error()))
+	err := processGroup.StopProcess(realModelName, StopImmediately)
+	if err != nil {
+		pm.sendErrorResponse(c, http.StatusInternalServerError, "error stopping process: "+err.Error())
 		return
 	} else {
 		c.String(http.StatusOK, "OK")

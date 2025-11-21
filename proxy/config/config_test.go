@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package config
 
 import (
@@ -66,9 +70,8 @@ models:
 }
 
 func TestConfig_FindConfig(t *testing.T) {
-
 	// TODO?
-	// make make this shared between the different tests
+	// make this shared between the different tests
 	config := &Config{
 		Models: map[string]ModelConfig{
 			"model1": {
@@ -109,12 +112,11 @@ func TestConfig_FindConfig(t *testing.T) {
 	// Test finding a model that does not exist
 	modelConfig, modelId, found = config.FindConfig("model3")
 	assert.False(t, found)
-	assert.Equal(t, "", modelId)
+	assert.Empty(t, modelId)
 	assert.Equal(t, ModelConfig{}, modelConfig)
 }
 
 func TestConfig_AutomaticPortAssignments(t *testing.T) {
-
 	t.Run("Default Port Ranges", func(t *testing.T) {
 		content := ``
 		config, err := LoadConfigFromReader(strings.NewReader(content))
@@ -137,13 +139,13 @@ func TestConfig_AutomaticPortAssignments(t *testing.T) {
 	t.Run("Invalid start port", func(t *testing.T) {
 		content := `startPort: abcd`
 		_, err := LoadConfigFromReader(strings.NewReader(content))
-		assert.NotNil(t, err)
+		assert.Error(t, err)
 	})
 
 	t.Run("start port must be greater than 1", func(t *testing.T) {
 		content := `startPort: -99`
 		_, err := LoadConfigFromReader(strings.NewReader(content))
-		assert.NotNil(t, err)
+		assert.Error(t, err)
 	})
 
 	t.Run("Automatic port assignments", func(t *testing.T) {
@@ -173,7 +175,6 @@ models:
 
 		assert.Equal(t, "svr --port 1999", config.Models["model3"].Cmd)
 		assert.Equal(t, "http://1.2.3.4:1999", config.Models["model3"].Proxy)
-
 	})
 
 	t.Run("Proxy value required if no ${PORT} in cmd", func(t *testing.T) {
@@ -226,7 +227,6 @@ models:
 }
 
 func TestConfig_MacroReservedNames(t *testing.T) {
-
 	tests := []struct {
 		name          string
 		config        string
@@ -274,7 +274,7 @@ models:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := LoadConfigFromReader(strings.NewReader(tt.config))
-			assert.NotNil(t, err)
+			assert.Error(t, err)
 			assert.Equal(t, tt.expectedError, err.Error())
 		})
 	}
@@ -361,10 +361,11 @@ models:
 			if assert.Error(t, err) {
 				assert.Contains(t, err.Error(), "unknown macro '${unknownMacro}' found in model1."+tt.field)
 			}
-			//t.Log(err)
+			// t.Log(err)
 		})
 	}
 }
+
 func TestStripComments(t *testing.T) {
 	tests := []struct {
 		name     string

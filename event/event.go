@@ -5,6 +5,7 @@ package event
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"sort"
@@ -13,12 +14,12 @@ import (
 	"sync/atomic"
 )
 
-// Event represents an event contract
+// Event represents an event contract.
 type Event interface {
 	Type() uint32
 }
 
-// registry holds an immutable sorted array of event mappings
+// registry holds an immutable sorted array of event mappings.
 type registry struct {
 	keys []uint32 // Event types (sorted)
 	grps []any    // Corresponding subscribers
@@ -39,7 +40,7 @@ func NewDispatcher() *Dispatcher {
 	return NewDispatcherConfig(50000)
 }
 
-// NewDispatcherConfig creates a new dispatcher with configurable max queue size
+// NewDispatcherConfig creates a new dispatcher with configurable max queue size.
 func NewDispatcherConfig(maxQueue int) *Dispatcher {
 	d := &Dispatcher{
 		done:     make(chan struct{}),
@@ -53,13 +54,13 @@ func NewDispatcherConfig(maxQueue int) *Dispatcher {
 	return d
 }
 
-// Close closes the dispatcher
+// Close closes the dispatcher.
 func (d *Dispatcher) Close() error {
 	close(d.done)
 	return nil
 }
 
-// isClosed returns whether the dispatcher is closed or not
+// isClosed returns whether the dispatcher is closed or not.
 func (d *Dispatcher) isClosed() bool {
 	select {
 	case <-d.done:
@@ -69,7 +70,7 @@ func (d *Dispatcher) isClosed() bool {
 	}
 }
 
-// findGroup performs a lock-free binary search for the event type
+// findGroup performs a lock-free binary search for the event type.
 func (d *Dispatcher) findGroup(eventType uint32) any {
 	reg := d.subs.Load()
 	keys := reg.keys
@@ -151,7 +152,7 @@ func SubscribeTo[T Event](broker *Dispatcher, eventType uint32, handler func(T))
 	}
 }
 
-// Publish writes an event into the dispatcher
+// Publish writes an event into the dispatcher.
 func Publish[T Event](broker *Dispatcher, ev T) {
 	eventType := ev.Type()
 	if sub := broker.findGroup(eventType); sub != nil {
@@ -168,7 +169,7 @@ func (d *Dispatcher) count(eventType uint32) int {
 	return 0
 }
 
-// groupOf casts the subscriber group to the specified generic type
+// groupOf casts the subscriber group to the specified generic type.
 func groupOf[T Event](eventType uint32, subs any) *group[T] {
 	if group, ok := subs.(*group[T]); ok {
 		return group
@@ -179,13 +180,13 @@ func groupOf[T Event](eventType uint32, subs any) *group[T] {
 
 // ------------------------------------- Subscriber -------------------------------------
 
-// consumer represents a consumer with a message queue
+// consumer represents a consumer with a message queue.
 type consumer[T Event] struct {
 	queue []T  // Current work queue
 	stop  bool // Stop signal
 }
 
-// Listen listens to the event queue and processes events
+// Listen listens to the event queue and processes events.
 func (s *consumer[T]) Listen(c *sync.Cond, fn func(T)) {
 	pending := make([]T, 0, 128)
 
@@ -219,7 +220,7 @@ func (s *consumer[T]) Listen(c *sync.Cond, fn func(T)) {
 
 // ------------------------------------- Subscriber Group -------------------------------------
 
-// group represents a consumer group
+// group represents a consumer group.
 type group[T Event] struct {
 	cond     *sync.Cond
 	subs     []*consumer[T]
@@ -227,7 +228,7 @@ type group[T Event] struct {
 	maxLen   int // Current maximum queue length across all consumers
 }
 
-// Broadcast sends an event to all consumers
+// Broadcast sends an event to all consumers.
 func (s *group[T]) Broadcast(ev T) {
 	s.cond.L.Lock()
 	defer s.cond.L.Unlock()
@@ -265,7 +266,7 @@ func (s *group[T]) Broadcast(ev T) {
 	s.cond.Broadcast() // Wake consumers
 }
 
-// Add adds a subscriber to the list
+// Add adds a subscriber to the list.
 func (s *group[T]) Add(handler func(T)) *consumer[T] {
 	sub := &consumer[T]{
 		queue: make([]T, 0, 64),
@@ -281,7 +282,7 @@ func (s *group[T]) Add(handler func(T)) *consumer[T] {
 	return sub
 }
 
-// Del removes a subscriber from the list
+// Del removes a subscriber from the list.
 func (s *group[T]) Del(sub *consumer[T]) {
 	s.cond.L.Lock()
 	defer s.cond.L.Unlock()
@@ -299,22 +300,22 @@ func (s *group[T]) Del(sub *consumer[T]) {
 
 // ------------------------------------- Debugging -------------------------------------
 
-var errClosed = fmt.Errorf("event dispatcher is closed")
+var errClosed = errors.New("event dispatcher is closed")
 
-// Count returns the number of subscribers in this group
+// Count returns the number of subscribers in this group.
 func (s *group[T]) Count() int {
 	return len(s.subs)
 }
 
-// String returns string representation of the type
+// String returns string representation of the type.
 func (s *group[T]) String() string {
-	typ := reflect.TypeOf(s).String()
+	typ := reflect.TypeFor[*group[T]]().String()
 	idx := strings.LastIndex(typ, "/")
 	typ = typ[idx+1 : len(typ)-1]
 	return typ
 }
 
-// errConflict returns a conflict message
+// errConflict returns a conflict message.
 func errConflict[T any](eventType uint32, existing any) string {
 	var want T
 	return fmt.Sprintf(

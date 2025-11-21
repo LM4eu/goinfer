@@ -45,7 +45,7 @@ func TestConfig_SanitizeCommand(t *testing.T) {
 }
 
 // Test the default values are automatically set for global, model and group configurations
-// after loading the configuration
+// after loading the configuration.
 func TestConfig_DefaultValuesPosix(t *testing.T) {
 	content := `
 models:
@@ -58,15 +58,15 @@ models:
 	assert.Equal(t, 120, config.HealthCheckTimeout)
 	assert.Equal(t, 5800, config.StartPort)
 	assert.Equal(t, "info", config.LogLevel)
-	assert.Equal(t, "", config.LogTimeFormat)
+	assert.Empty(t, config.LogTimeFormat)
 
 	// Test default group exists
 	defaultGroup, exists := config.Groups["(default)"]
 	assert.True(t, exists, "default group should exist")
 	if assert.NotNil(t, defaultGroup, "default group should not be nil") {
-		assert.Equal(t, true, defaultGroup.Swap)
-		assert.Equal(t, true, defaultGroup.Exclusive)
-		assert.Equal(t, false, defaultGroup.Persistent)
+		assert.True(t, defaultGroup.Swap)
+		assert.True(t, defaultGroup.Exclusive)
+		assert.False(t, defaultGroup.Persistent)
 		assert.Equal(t, []string{"model1"}, defaultGroup.Members)
 	}
 
@@ -74,19 +74,19 @@ models:
 	assert.True(t, exists, "model1 should exist")
 	if assert.NotNil(t, model1, "model1 should not be nil") {
 		assert.Equal(t, "path/to/cmd --port 5800", model1.Cmd) // has the port replaced
-		assert.Equal(t, "", model1.CmdStop)
+		assert.Empty(t, model1.CmdStop)
 		assert.Equal(t, "http://localhost:5800", model1.Proxy)
 		assert.Equal(t, "/health", model1.CheckEndpoint)
 		assert.Equal(t, []string{}, model1.Aliases)
 		assert.Equal(t, []string{}, model1.Env)
 		assert.Equal(t, 0, model1.UnloadAfter)
-		assert.Equal(t, false, model1.Unlisted)
-		assert.Equal(t, "", model1.UseModelName)
+		assert.False(t, model1.Unlisted)
+		assert.Empty(t, model1.UseModelName)
 		assert.Equal(t, 0, model1.ConcurrencyLimit)
 	}
 
 	// default empty filter exists
-	assert.Equal(t, "", model1.Filters.StripParams)
+	assert.Empty(t, model1.Filters.StripParams)
 }
 
 func TestConfig_LoadPosix(t *testing.T) {
@@ -151,7 +151,7 @@ groups:
       - "model4"
 `
 
-	if err := os.WriteFile(tempFile, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(tempFile, []byte(content), 0o644); err != nil {
 		t.Fatalf("Failed to write temporary file: %v", err)
 	}
 

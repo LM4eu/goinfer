@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package proxy
 
 import "testing"

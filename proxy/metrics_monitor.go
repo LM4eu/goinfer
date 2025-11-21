@@ -1,9 +1,13 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package proxy
 
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -15,11 +19,11 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-// TokenMetrics represents parsed token statistics from llama-server logs
+// TokenMetrics represents parsed token statistics from llama-server logs.
 type TokenMetrics struct {
-	ID              int       `json:"id"`
 	Timestamp       time.Time `json:"timestamp"`
 	Model           string    `json:"model"`
+	ID              int       `json:"id"`
 	CachedTokens    int       `json:"cache_tokens"`
 	InputTokens     int       `json:"input_tokens"`
 	OutputTokens    int       `json:"output_tokens"`
@@ -28,7 +32,7 @@ type TokenMetrics struct {
 	DurationMs      int       `json:"duration_ms"`
 }
 
-// TokenMetricsEvent represents a token metrics event
+// TokenMetricsEvent represents a token metrics event.
 type TokenMetricsEvent struct {
 	Metrics TokenMetrics
 }
@@ -37,13 +41,13 @@ func (e TokenMetricsEvent) Type() uint32 {
 	return TokenMetricsEventID // defined in events.go
 }
 
-// metricsMonitor parses llama-server output for token statistics
+// metricsMonitor parses llama-server output for token statistics.
 type metricsMonitor struct {
-	mu         sync.RWMutex
+	logger     *LogMonitor
 	metrics    []TokenMetrics
 	maxMetrics int
 	nextID     int
-	logger     *LogMonitor
+	mu         sync.RWMutex
 }
 
 func newMetricsMonitor(logger *LogMonitor, maxMetrics int) *metricsMonitor {
@@ -55,7 +59,7 @@ func newMetricsMonitor(logger *LogMonitor, maxMetrics int) *metricsMonitor {
 	return mp
 }
 
-// addMetrics adds a new metric to the collection and publishes an event
+// addMetrics adds a new metric to the collection and publishes an event.
 func (mp *metricsMonitor) addMetrics(metric TokenMetrics) {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
@@ -69,7 +73,7 @@ func (mp *metricsMonitor) addMetrics(metric TokenMetrics) {
 	event.Emit(TokenMetricsEvent{Metrics: metric})
 }
 
-// getMetrics returns a copy of the current metrics
+// getMetrics returns a copy of the current metrics.
 func (mp *metricsMonitor) getMetrics() []TokenMetrics {
 	mp.mu.RLock()
 	defer mp.mu.RUnlock()
@@ -79,7 +83,7 @@ func (mp *metricsMonitor) getMetrics() []TokenMetrics {
 	return result
 }
 
-// getMetricsJSON returns metrics as JSON
+// getMetricsJSON returns metrics as JSON.
 func (mp *metricsMonitor) getMetricsJSON() ([]byte, error) {
 	mp.mu.RLock()
 	defer mp.mu.RUnlock()
@@ -88,7 +92,7 @@ func (mp *metricsMonitor) getMetricsJSON() ([]byte, error) {
 
 // wrapHandler wraps the proxy handler to extract token metrics
 // if wrapHandler returns an error it is safe to assume that no
-// data was sent to the client
+// data was sent to the client.
 func (mp *metricsMonitor) wrapHandler(
 	modelID string,
 	writer gin.ResponseWriter,
@@ -96,7 +100,8 @@ func (mp *metricsMonitor) wrapHandler(
 	next func(modelID string, w http.ResponseWriter, r *http.Request) error,
 ) error {
 	recorder := newBodyCopier(writer)
-	if err := next(modelID, recorder, request); err != nil {
+	err := next(modelID, recorder, request)
+	if err != nil {
 		return err
 	}
 
@@ -178,14 +183,14 @@ func processStreamingResponse(modelID string, start time.Time, body []byte) (Tok
 		}
 	}
 
-	return TokenMetrics{}, fmt.Errorf("no valid JSON data found in stream")
+	return TokenMetrics{}, errors.New("no valid JSON data found in stream")
 }
 
 func parseMetrics(modelID string, start time.Time, jsonData gjson.Result) (TokenMetrics, error) {
 	usage := jsonData.Get("usage")
 	timings := jsonData.Get("timings")
 	if !usage.Exists() && !timings.Exists() {
-		return TokenMetrics{}, fmt.Errorf("no usage or timings data found")
+		return TokenMetrics{}, errors.New("no usage or timings data found")
 	}
 	// default values
 	cachedTokens := -1 // unknown or missing data
@@ -228,7 +233,7 @@ func parseMetrics(modelID string, start time.Time, jsonData gjson.Result) (Token
 }
 
 // responseBodyCopier records the response body and writes to the original response writer
-// while also capturing it in a buffer for later processing
+// while also capturing it in a buffer for later processing.
 type responseBodyCopier struct {
 	gin.ResponseWriter
 	body  *bytes.Buffer

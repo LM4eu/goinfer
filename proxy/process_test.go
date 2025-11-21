@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package proxy
 
 import (
@@ -14,9 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	debugLogger = NewLogMonitorWriter(os.Stdout)
-)
+var debugLogger = NewLogMonitorWriter(os.Stdout)
 
 func init() {
 	// flip to help with debugging tests
@@ -28,7 +30,6 @@ func init() {
 }
 
 func TestProcess_AutomaticallyStartsUpstream(t *testing.T) {
-
 	expectedMessage := "testing91931"
 	config := getTestSimpleResponderConfig(expectedMessage)
 
@@ -36,7 +37,7 @@ func TestProcess_AutomaticallyStartsUpstream(t *testing.T) {
 	process := NewProcess("test-process", 5, config, debugLogger, debugLogger)
 	defer process.Stop()
 
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
 	w := httptest.NewRecorder()
 
 	// process is automatically started
@@ -50,7 +51,7 @@ func TestProcess_AutomaticallyStartsUpstream(t *testing.T) {
 	// Stop the process
 	process.Stop()
 
-	req = httptest.NewRequest("GET", "/", nil)
+	req = httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	w = httptest.NewRecorder()
 
 	// Proxy the request
@@ -63,9 +64,8 @@ func TestProcess_AutomaticallyStartsUpstream(t *testing.T) {
 }
 
 // TestProcess_WaitOnMultipleStarts tests that multiple concurrent requests
-// are all handled successfully, even though they all may ask for the process to .start()
+// are all handled successfully, even though they all may ask for the process to .start().
 func TestProcess_WaitOnMultipleStarts(t *testing.T) {
-
 	expectedMessage := "testing91931"
 	config := getTestSimpleResponderConfig(expectedMessage)
 
@@ -73,11 +73,11 @@ func TestProcess_WaitOnMultipleStarts(t *testing.T) {
 	defer process.Stop()
 
 	var wg sync.WaitGroup
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		wg.Add(1)
 		go func(reqID int) {
 			defer wg.Done()
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
 			w := httptest.NewRecorder()
 			process.ProxyRequest(w, req)
 			assert.Equal(t, http.StatusOK, w.Code, "Worker %d got wrong HTTP code", reqID)
@@ -88,7 +88,7 @@ func TestProcess_WaitOnMultipleStarts(t *testing.T) {
 	assert.Equal(t, StateReady, process.CurrentState())
 }
 
-// test that the automatic start returns the expected error type
+// test that the automatic start returns the expected error type.
 func TestProcess_BrokenModelConfig(t *testing.T) {
 	// Create a process configuration
 	config := config.ModelConfig{
@@ -99,7 +99,7 @@ func TestProcess_BrokenModelConfig(t *testing.T) {
 
 	process := NewProcess("broken", 1, config, debugLogger, debugLogger)
 
-	req := httptest.NewRequest("GET", "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	w := httptest.NewRecorder()
 	process.ProxyRequest(w, req)
 	assert.Equal(t, http.StatusBadGateway, w.Code)
@@ -126,8 +126,8 @@ func TestProcess_UnloadAfterTTL(t *testing.T) {
 	defer process.Stop()
 
 	// this should take 4 seconds
-	req1 := httptest.NewRequest("GET", "/slow-respond?echo=1234&delay=1000ms", nil)
-	req2 := httptest.NewRequest("GET", "/test", nil)
+	req1 := httptest.NewRequest(http.MethodGet, "/slow-respond?echo=1234&delay=1000ms", http.NoBody)
+	req2 := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
 
 	w := httptest.NewRecorder()
 
@@ -167,18 +167,17 @@ func TestProcess_LowTTLValue(t *testing.T) {
 	process := NewProcess("ttl", 2, config, debugLogger, debugLogger)
 	defer process.Stop()
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		t.Logf("Waiting before sending request %d", i)
 		time.Sleep(1500 * time.Millisecond)
 
 		expected := fmt.Sprintf("echo=test_%d", i)
-		req := httptest.NewRequest("GET", fmt.Sprintf("/slow-respond?echo=%s&delay=50ms", expected), nil)
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/slow-respond?echo=%s&delay=50ms", expected), http.NoBody)
 		w := httptest.NewRecorder()
 		process.ProxyRequest(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), expected)
 	}
-
 }
 
 // issue #19
@@ -209,7 +208,7 @@ func TestProcess_HTTPRequestsHaveTimeToFinish(t *testing.T) {
 			defer wg.Done()
 			// send a request where simple-responder is will wait 300ms before responding
 			// this will simulate an in-progress request.
-			req := httptest.NewRequest("GET", fmt.Sprintf("/slow-respond?echo=%s&delay=300ms", key), nil)
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/slow-respond?echo=%s&delay=300ms", key), http.NoBody)
 			w := httptest.NewRecorder()
 
 			process.ProxyRequest(w, req)
@@ -221,7 +220,6 @@ func TestProcess_HTTPRequestsHaveTimeToFinish(t *testing.T) {
 			mu.Lock()
 			results[key] = w.Body.String()
 			mu.Unlock()
-
 		}(key)
 	}
 
@@ -336,7 +334,7 @@ func TestProcess_ExitInterruptsHealthCheck(t *testing.T) {
 	process.healthCheckLoopInterval = time.Second // make it faster
 	err := process.start()
 	assert.Equal(t, "upstream command exited prematurely but successfully", err.Error())
-	assert.Equal(t, process.CurrentState(), StateStopped)
+	assert.Equal(t, StateStopped, process.CurrentState())
 }
 
 func TestProcess_ConcurrencyLimit(t *testing.T) {
@@ -356,7 +354,7 @@ func TestProcess_ConcurrencyLimit(t *testing.T) {
 
 	// launch a goroutine first to take up the semaphore
 	go func() {
-		req1 := httptest.NewRequest("GET", "/slow-respond?echo=12345&delay=75ms", nil)
+		req1 := httptest.NewRequest(http.MethodGet, "/slow-respond?echo=12345&delay=75ms", http.NoBody)
 		w := httptest.NewRecorder()
 		process.ProxyRequest(w, req1)
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -365,7 +363,7 @@ func TestProcess_ConcurrencyLimit(t *testing.T) {
 	// let the goroutine start
 	<-time.After(time.Millisecond * 25)
 
-	denied := httptest.NewRequest("GET", "/test", nil)
+	denied := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
 	w := httptest.NewRecorder()
 	process.ProxyRequest(w, denied)
 	assert.Equal(t, http.StatusTooManyRequests, w.Code)
@@ -379,21 +377,21 @@ func TestProcess_StopImmediately(t *testing.T) {
 	defer process.Stop()
 
 	err := process.start()
-	assert.Nil(t, err)
-	assert.Equal(t, process.CurrentState(), StateReady)
+	assert.NoError(t, err)
+	assert.Equal(t, StateReady, process.CurrentState())
 	go func() {
 		// slow, but will get killed by StopImmediate
-		req := httptest.NewRequest("GET", "/slow-respond?echo=12345&delay=1s", nil)
+		req := httptest.NewRequest(http.MethodGet, "/slow-respond?echo=12345&delay=1s", http.NoBody)
 		w := httptest.NewRecorder()
 		process.ProxyRequest(w, req)
 	}()
 	<-time.After(time.Millisecond)
 	process.StopImmediately()
-	assert.Equal(t, process.CurrentState(), StateStopped)
+	assert.Equal(t, StateStopped, process.CurrentState())
 }
 
 // Test that SIGKILL is sent when gracefulStopTimeout is reached and properly terminates
-// the upstream command
+// the upstream command.
 func TestProcess_ForceStopWithKill(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping SIGTERM test on Windows ")
@@ -418,13 +416,13 @@ func TestProcess_ForceStopWithKill(t *testing.T) {
 	process.gracefulStopTimeout = time.Second
 
 	err := process.start()
-	assert.Nil(t, err)
-	assert.Equal(t, process.CurrentState(), StateReady)
+	assert.NoError(t, err)
+	assert.Equal(t, StateReady, process.CurrentState())
 
 	waitChan := make(chan struct{})
 	go func() {
 		// slow, but will get killed by StopImmediate
-		req := httptest.NewRequest("GET", "/slow-respond?echo=12345&delay=2s", nil)
+		req := httptest.NewRequest(http.MethodGet, "/slow-respond?echo=12345&delay=2s", http.NoBody)
 		w := httptest.NewRecorder()
 		process.ProxyRequest(w, req)
 
@@ -446,7 +444,7 @@ func TestProcess_ForceStopWithKill(t *testing.T) {
 
 	<-time.After(time.Millisecond)
 	process.StopImmediately()
-	assert.Equal(t, process.CurrentState(), StateStopped)
+	assert.Equal(t, StateStopped, process.CurrentState())
 
 	// the request should have been interrupted by SIGKILL
 	<-waitChan
@@ -465,17 +463,17 @@ func TestProcess_StopCmd(t *testing.T) {
 	defer process.Stop()
 
 	err := process.start()
-	assert.Nil(t, err)
-	assert.Equal(t, process.CurrentState(), StateReady)
+	assert.NoError(t, err)
+	assert.Equal(t, StateReady, process.CurrentState())
 	process.StopImmediately()
-	assert.Equal(t, process.CurrentState(), StateStopped)
+	assert.Equal(t, StateStopped, process.CurrentState())
 }
 
 func TestProcess_EnvironmentSetCorrectly(t *testing.T) {
 	expectedMessage := "test_env_not_emptied"
 	conf := getTestSimpleResponderConfig(expectedMessage)
 
-	// ensure that the the default config does not blank out the inherited environment
+	// ensure that the default config does not blank out the inherited environment
 	configWEnv := conf
 
 	// ensure the additiona variables are appended to the process' environment
@@ -489,17 +487,16 @@ func TestProcess_EnvironmentSetCorrectly(t *testing.T) {
 	process2.start()
 	defer process2.Stop()
 
-	assert.NotZero(t, len(process1.cmd.Environ()))
-	assert.NotZero(t, len(process2.cmd.Environ()))
-	assert.Equal(t, len(process1.cmd.Environ())+2, len(process2.cmd.Environ()), "process2 should have 2 more environment variables than process1")
-
+	assert.NotEmpty(t, process1.cmd.Environ())
+	assert.NotEmpty(t, process2.cmd.Environ())
+	assert.Len(t, process2.cmd.Environ(), len(process1.cmd.Environ())+2, "process2 should have 2 more environment variables than process1")
 }
 
 // TestProcess_ReverseProxyPanicIsHandled tests that panics from
 // httputil.ReverseProxy in Process.ProxyRequest(w, r) do not bubble up and are
 // handled appropriately.
 //
-// httputil.ReverseProxy will panic with http.ErrAbortHandler when it has sent headers
+// Httputil.ReverseProxy will panic with http.ErrAbortHandler when it has sent headers
 // can't copy the body. This can be caused by a client disconnecting before the full
 // response is sent from some reason.
 //
@@ -522,7 +519,7 @@ func TestProcess_ReverseProxyPanicIsHandled(t *testing.T) {
 
 	// Start the process
 	err := process.start()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, StateReady, process.CurrentState())
 
 	// Create a custom ResponseWriter that simulates a client disconnect
@@ -533,7 +530,7 @@ func TestProcess_ReverseProxyPanicIsHandled(t *testing.T) {
 	}
 
 	// Make a request that will trigger the panic
-	req := httptest.NewRequest("GET", "/slow-respond?echo=test&delay=100ms", nil)
+	req := httptest.NewRequest(http.MethodGet, "/slow-respond?echo=test&delay=100ms", http.NoBody)
 
 	// This should panic inside reverseProxy.ServeHTTP when the panicWriter.Write() is called.
 	// ProxyRequest should catch and handle this panic gracefully.
@@ -546,7 +543,7 @@ func TestProcess_ReverseProxyPanicIsHandled(t *testing.T) {
 
 // panicOnWriteResponseWriter is a ResponseWriter that panics on Write
 // to simulate a client disconnect after headers are sent
-// used by: TestProcess_ReverseProxyPanicIsHandled
+// used by: TestProcess_ReverseProxyPanicIsHandled.
 type panicOnWriteResponseWriter struct {
 	*httptest.ResponseRecorder
 	shouldPanic   bool

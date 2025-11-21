@@ -62,7 +62,7 @@ func TestConcurrent(t *testing.T) {
 
 	// Asynchronously publish
 	go func() {
-		for i := 0; i < max; i++ {
+		for range max {
 			Publish(d, MyEvent1{})
 		}
 	}()
@@ -112,8 +112,8 @@ func TestMatrix(t *testing.T) {
 				wg.Add(expected)
 
 				d := NewDispatcher()
-				for i := 0; i < subs; i++ {
-					for id := 0; id < topics; id++ {
+				for range subs {
+					for id := range topics {
 						defer SubscribeTo(d, uint32(id), func(ev MyEvent3) {
 							count.Add(1)
 							wg.Done()
@@ -121,8 +121,8 @@ func TestMatrix(t *testing.T) {
 					}
 				}
 
-				for n := 0; n < amount; n++ {
-					for id := 0; id < topics; id++ {
+				for range amount {
+					for id := range topics {
 						go Publish(d, MyEvent3{ID: id})
 					}
 				}
@@ -152,7 +152,7 @@ func TestConcurrentSubscriptionRace(t *testing.T) {
 	wg.Add(numGoroutines)
 
 	// Start multiple goroutines that subscribe to different event types concurrently
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		go func(goroutineID int) {
 			defer wg.Done()
 
@@ -174,7 +174,7 @@ func TestConcurrentSubscriptionRace(t *testing.T) {
 
 	// Count the number of unique event types subscribed
 	expectedTypes := 0
-	subscribedTypes.Range(func(key, value interface{}) bool {
+	subscribedTypes.Range(func(key, value any) bool {
 		expectedTypes++
 		return true
 	})
@@ -183,7 +183,7 @@ func TestConcurrentSubscriptionRace(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// Publish events to each subscribed type
-	subscribedTypes.Range(func(key, value interface{}) bool {
+	subscribedTypes.Range(func(key, value any) bool {
 		eventType := key.(uint32)
 		Publish(d, MyEvent3{ID: int(eventType)})
 		return true
@@ -213,14 +213,12 @@ func TestConcurrentHandlerRegistration(t *testing.T) {
 		var wg sync.WaitGroup
 
 		// Start multiple goroutines subscribing to the same event type (0x1)
-		for i := 0; i < numGoroutines; i++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+		for range numGoroutines {
+			wg.Go(func() {
 				SubscribeTo(d, uint32(0x1), func(ev MyEvent1) {
 					atomic.AddInt64(&handlerCount, 1)
 				})
-			}()
+			})
 		}
 
 		wg.Wait()
@@ -243,7 +241,7 @@ func TestConcurrentHandlerRegistration(t *testing.T) {
 		receivedEvents := make(map[uint32]*int64)
 
 		// Create multiple event types and subscribe concurrently
-		for i := 0; i < numGoroutines; i++ {
+		for i := range numGoroutines {
 			eventType := uint32(100 + i)
 			counter := new(int64)
 			receivedEvents[eventType] = counter
@@ -286,7 +284,7 @@ func TestBackpressure(t *testing.T) {
 	defer unsub()
 
 	const eventsToPublish = 1000
-	for i := 0; i < eventsToPublish; i++ {
+	for range eventsToPublish {
 		Publish(d, MyEvent3{ID: 0x200})
 	}
 

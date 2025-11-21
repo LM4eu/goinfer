@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package proxy
 
 import (
@@ -26,7 +30,7 @@ func TestMetricsMonitor_AddMetrics(t *testing.T) {
 		mm.addMetrics(metric)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, 0, metrics[0].ID)
 		assert.Equal(t, "test-model", metrics[0].Model)
 		assert.Equal(t, 100, metrics[0].InputTokens)
@@ -36,13 +40,13 @@ func TestMetricsMonitor_AddMetrics(t *testing.T) {
 	t.Run("increments ID for each metric", func(t *testing.T) {
 		mm := newMetricsMonitor(testLogger, 10)
 
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			mm.addMetrics(TokenMetrics{Model: "model"})
 		}
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 5, len(metrics))
-		for i := 0; i < 5; i++ {
+		assert.Len(t, metrics, 5)
+		for i := range 5 {
 			assert.Equal(t, i, metrics[i].ID)
 		}
 	})
@@ -51,7 +55,7 @@ func TestMetricsMonitor_AddMetrics(t *testing.T) {
 		mm := newMetricsMonitor(testLogger, 3)
 
 		// Add 5 metrics
-		for i := 0; i < 5; i++ {
+		for i := range 5 {
 			mm.addMetrics(TokenMetrics{
 				Model:       "model",
 				InputTokens: i,
@@ -59,7 +63,7 @@ func TestMetricsMonitor_AddMetrics(t *testing.T) {
 		}
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 3, len(metrics))
+		assert.Len(t, metrics, 3)
 
 		// Should keep the last 3 metrics (IDs 2, 3, 4)
 		assert.Equal(t, 2, metrics[0].ID)
@@ -101,7 +105,7 @@ func TestMetricsMonitor_GetMetrics(t *testing.T) {
 		mm := newMetricsMonitor(testLogger, 10)
 		metrics := mm.getMetrics()
 		assert.NotNil(t, metrics)
-		assert.Equal(t, 0, len(metrics))
+		assert.Empty(t, metrics)
 	})
 
 	t.Run("returns copy of metrics", func(t *testing.T) {
@@ -113,8 +117,8 @@ func TestMetricsMonitor_GetMetrics(t *testing.T) {
 		metrics2 := mm.getMetrics()
 
 		// Verify we got copies
-		assert.Equal(t, 2, len(metrics1))
-		assert.Equal(t, 2, len(metrics2))
+		assert.Len(t, metrics1, 2)
+		assert.Len(t, metrics2, 2)
 
 		// Modify the returned slice shouldn't affect the original
 		metrics1[0].Model = "modified"
@@ -133,7 +137,7 @@ func TestMetricsMonitor_GetMetricsJSON(t *testing.T) {
 		var metrics []TokenMetrics
 		err = json.Unmarshal(jsonData, &metrics)
 		assert.NoError(t, err)
-		assert.Equal(t, 0, len(metrics))
+		assert.Empty(t, metrics)
 	})
 
 	t.Run("returns valid JSON with metrics", func(t *testing.T) {
@@ -157,7 +161,7 @@ func TestMetricsMonitor_GetMetricsJSON(t *testing.T) {
 		var metrics []TokenMetrics
 		err = json.Unmarshal(jsonData, &metrics)
 		assert.NoError(t, err)
-		assert.Equal(t, 2, len(metrics))
+		assert.Len(t, metrics, 2)
 		assert.Equal(t, "model1", metrics[0].Model)
 		assert.Equal(t, "model2", metrics[1].Model)
 	})
@@ -181,7 +185,7 @@ func TestMetricsMonitor_WrapHandler(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -189,7 +193,7 @@ func TestMetricsMonitor_WrapHandler(t *testing.T) {
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, "test-model", metrics[0].Model)
 		assert.Equal(t, 100, metrics[0].InputTokens)
 		assert.Equal(t, 50, metrics[0].OutputTokens)
@@ -217,7 +221,7 @@ func TestMetricsMonitor_WrapHandler(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -225,7 +229,7 @@ func TestMetricsMonitor_WrapHandler(t *testing.T) {
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, "test-model", metrics[0].Model)
 		assert.Equal(t, 100, metrics[0].InputTokens)
 		assert.Equal(t, 50, metrics[0].OutputTokens)
@@ -256,7 +260,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -264,7 +268,7 @@ data: [DONE]
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, "test-model", metrics[0].Model)
 		// When timings data is present, it takes precedence
 		assert.Equal(t, 10, metrics[0].InputTokens)
@@ -280,7 +284,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -288,7 +292,7 @@ data: [DONE]
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 0, len(metrics))
+		assert.Empty(t, metrics)
 	})
 
 	t.Run("empty response body does not record metrics", func(t *testing.T) {
@@ -299,7 +303,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -307,7 +311,7 @@ data: [DONE]
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 0, len(metrics))
+		assert.Empty(t, metrics)
 	})
 
 	t.Run("invalid JSON does not record metrics", func(t *testing.T) {
@@ -320,7 +324,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -328,7 +332,7 @@ data: [DONE]
 		assert.NoError(t, err) // Errors after response is sent are logged, not returned
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 0, len(metrics))
+		assert.Empty(t, metrics)
 	})
 
 	t.Run("next handler error is propagated", func(t *testing.T) {
@@ -339,7 +343,7 @@ data: [DONE]
 			return expectedErr
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -347,7 +351,7 @@ data: [DONE]
 		assert.Equal(t, expectedErr, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 0, len(metrics))
+		assert.Empty(t, metrics)
 	})
 
 	t.Run("response without usage or timings does not record metrics", func(t *testing.T) {
@@ -362,7 +366,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -370,7 +374,7 @@ data: [DONE]
 		assert.NoError(t, err) // Errors after response is sent are logged, not returned
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 0, len(metrics))
+		assert.Empty(t, metrics)
 	})
 }
 
@@ -396,7 +400,7 @@ func TestMetricsMonitor_ResponseBodyCopier(t *testing.T) {
 
 		assert.True(t, copier.StartTime().IsZero())
 
-		copier.Write([]byte("test"))
+		copier.WriteString("test")
 
 		assert.False(t, copier.StartTime().IsZero())
 	})
@@ -431,11 +435,11 @@ func TestMetricsMonitor_Concurrent(t *testing.T) {
 		numGoroutines := 10
 		metricsPerGoroutine := 100
 
-		for i := 0; i < numGoroutines; i++ {
+		for i := range numGoroutines {
 			wg.Add(1)
 			go func(id int) {
 				defer wg.Done()
-				for j := 0; j < metricsPerGoroutine; j++ {
+				for j := range metricsPerGoroutine {
 					mm.addMetrics(TokenMetrics{
 						Model:        "test-model",
 						InputTokens:  id*1000 + j,
@@ -448,7 +452,7 @@ func TestMetricsMonitor_Concurrent(t *testing.T) {
 		wg.Wait()
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, numGoroutines*metricsPerGoroutine, len(metrics))
+		assert.Len(t, metrics, numGoroutines*metricsPerGoroutine)
 	})
 
 	t.Run("concurrent reads and writes are safe", func(t *testing.T) {
@@ -458,7 +462,7 @@ func TestMetricsMonitor_Concurrent(t *testing.T) {
 
 		// Writer goroutine
 		go func() {
-			for i := 0; i < 50; i++ {
+			for range 50 {
 				mm.addMetrics(TokenMetrics{Model: "test-model"})
 				time.Sleep(1 * time.Millisecond)
 			}
@@ -467,16 +471,14 @@ func TestMetricsMonitor_Concurrent(t *testing.T) {
 
 		// Multiple reader goroutines
 		var wg sync.WaitGroup
-		for i := 0; i < 5; i++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				for j := 0; j < 20; j++ {
+		for range 5 {
+			wg.Go(func() {
+				for range 20 {
 					_ = mm.getMetrics()
 					_, _ = mm.getMetricsJSON()
 					time.Sleep(2 * time.Millisecond)
 				}
-			}()
+			})
 		}
 
 		<-done
@@ -484,7 +486,7 @@ func TestMetricsMonitor_Concurrent(t *testing.T) {
 
 		// Final check
 		metrics := mm.getMetrics()
-		assert.Equal(t, 50, len(metrics))
+		assert.Len(t, metrics, 50)
 	})
 }
 
@@ -515,7 +517,7 @@ func TestMetricsMonitor_ParseMetrics(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -523,7 +525,7 @@ func TestMetricsMonitor_ParseMetrics(t *testing.T) {
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		// Should use timings values, not usage values
 		assert.Equal(t, 100, metrics[0].InputTokens)
 		assert.Equal(t, 50, metrics[0].OutputTokens)
@@ -550,7 +552,7 @@ func TestMetricsMonitor_ParseMetrics(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -558,7 +560,7 @@ func TestMetricsMonitor_ParseMetrics(t *testing.T) {
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, -1, metrics[0].CachedTokens) // Default value when not present
 	})
 }
@@ -585,7 +587,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -593,7 +595,7 @@ data: [DONE]
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, 100, metrics[0].InputTokens)
 		assert.Equal(t, 50, metrics[0].OutputTokens)
 	})
@@ -614,7 +616,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -622,7 +624,7 @@ data: [DONE]
 		assert.NoError(t, err) // Errors after response is sent are logged, not returned
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 0, len(metrics))
+		assert.Empty(t, metrics)
 	})
 
 	t.Run("handles empty streaming response", func(t *testing.T) {
@@ -637,7 +639,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -646,11 +648,11 @@ data: [DONE]
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 0, len(metrics))
+		assert.Empty(t, metrics)
 	})
 }
 
-// Benchmark tests
+// Benchmark tests.
 func BenchmarkMetricsMonitor_AddMetrics(b *testing.B) {
 	mm := newMetricsMonitor(testLogger, 1000)
 
@@ -665,8 +667,7 @@ func BenchmarkMetricsMonitor_AddMetrics(b *testing.B) {
 		Timestamp:       time.Now(),
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		mm.addMetrics(metric)
 	}
 }
@@ -686,8 +687,7 @@ func BenchmarkMetricsMonitor_AddMetrics_SmallBuffer(b *testing.B) {
 		Timestamp:       time.Now(),
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		mm.addMetrics(metric)
 	}
 }

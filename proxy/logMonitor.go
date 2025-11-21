@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package proxy
 
 import (
@@ -22,20 +26,21 @@ const (
 )
 
 type LogMonitor struct {
-	eventbus *event.Dispatcher
-	mu       sync.RWMutex
-	buffer   *ring.Ring
-	bufferMu sync.RWMutex
-
 	// typically this can be os.Stdout
-	stdout io.Writer
+	stdout     io.Writer
 
-	// logging levels
-	level  LogLevel
-	prefix string
+	eventbus   *event.Dispatcher
+	buffer     *ring.Ring
+	prefix     string
 
 	// timestamps
 	timeFormat string
+
+	// logging levels
+	level      LogLevel
+
+	mu         sync.RWMutex
+	bufferMu   sync.RWMutex
 }
 
 func NewLogMonitor() *LogMonitor {
@@ -117,16 +122,16 @@ func (w *LogMonitor) SetLogTimeFormat(timeFormat string) {
 	w.timeFormat = timeFormat
 }
 
-func (w *LogMonitor) formatMessage(level string, msg string) []byte {
+func (w *LogMonitor) formatMessage(level, msg string) []byte {
 	prefix := ""
 	if w.prefix != "" {
 		prefix = fmt.Sprintf("[%s] ", w.prefix)
 	}
 	timestamp := ""
 	if w.timeFormat != "" {
-		timestamp = fmt.Sprintf("%s ", time.Now().Format(w.timeFormat))
+		timestamp = time.Now().Format(w.timeFormat) + " "
 	}
-	return []byte(fmt.Sprintf("%s%s[%s] %s\n", timestamp, prefix, level, msg))
+	return fmt.Appendf(nil, "%s%s[%s] %s\n", timestamp, prefix, level, msg)
 }
 
 func (w *LogMonitor) log(level LogLevel, msg string) {
@@ -152,19 +157,19 @@ func (w *LogMonitor) Error(msg string) {
 	w.log(LevelError, msg)
 }
 
-func (w *LogMonitor) Debugf(format string, args ...interface{}) {
+func (w *LogMonitor) Debugf(format string, args ...any) {
 	w.log(LevelDebug, fmt.Sprintf(format, args...))
 }
 
-func (w *LogMonitor) Infof(format string, args ...interface{}) {
+func (w *LogMonitor) Infof(format string, args ...any) {
 	w.log(LevelInfo, fmt.Sprintf(format, args...))
 }
 
-func (w *LogMonitor) Warnf(format string, args ...interface{}) {
+func (w *LogMonitor) Warnf(format string, args ...any) {
 	w.log(LevelWarn, fmt.Sprintf(format, args...))
 }
 
-func (w *LogMonitor) Errorf(format string, args ...interface{}) {
+func (w *LogMonitor) Errorf(format string, args ...any) {
 	w.log(LevelError, fmt.Sprintf(format, args...))
 }
 

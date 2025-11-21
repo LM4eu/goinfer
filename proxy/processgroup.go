@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package proxy
 
 import (
@@ -10,23 +14,21 @@ import (
 )
 
 type ProcessGroup struct {
-	sync.Mutex
-
-	config     config.Config
-	id         string
-	swap       bool
-	exclusive  bool
-	persistent bool
-
-	proxyLogger    *LogMonitor
-	upstreamLogger *LogMonitor
+	proxyLogger     *LogMonitor
+	upstreamLogger  *LogMonitor
 
 	// map of current processes
 	processes       map[string]*Process
 	lastUsedProcess string
+	id              string
+	config          config.Config
+	sync.Mutex
+	swap       bool
+	exclusive  bool
+	persistent bool
 }
 
-func NewProcessGroup(id string, config config.Config, proxyLogger *LogMonitor, upstreamLogger *LogMonitor) *ProcessGroup {
+func NewProcessGroup(id string, config config.Config, proxyLogger, upstreamLogger *LogMonitor) *ProcessGroup {
 	groupConfig, ok := config.Groups[id]
 	if !ok {
 		panic("Unable to find configuration for group id: " + id)
@@ -53,7 +55,7 @@ func NewProcessGroup(id string, config config.Config, proxyLogger *LogMonitor, u
 	return pg
 }
 
-// ProxyRequest proxies a request to the specified model
+// ProxyRequest proxies a request to the specified model.
 func (pg *ProcessGroup) ProxyRequest(modelID string, writer http.ResponseWriter, request *http.Request) error {
 	if !pg.HasMember(modelID) {
 		return fmt.Errorf("model %s not part of group %s", modelID, pg.id)
@@ -62,7 +64,6 @@ func (pg *ProcessGroup) ProxyRequest(modelID string, writer http.ResponseWriter,
 	if pg.swap {
 		pg.Lock()
 		if pg.lastUsedProcess != modelID {
-
 			// is there something already running?
 			if pg.lastUsedProcess != "" {
 				pg.processes[pg.lastUsedProcess].Stop()

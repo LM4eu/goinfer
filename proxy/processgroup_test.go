@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package proxy
 
 import (
@@ -49,7 +53,7 @@ func TestProcessGroup_HasMember(t *testing.T) {
 // TestProcessGroup_ProxyRequestSwapIsTrueParallel tests that when swap is true
 // and multiple requests are made in parallel, only one process is running at a time.
 func TestProcessGroup_ProxyRequestSwapIsTrueParallel(t *testing.T) {
-	var processGroupTestConfig = config.AddDefaultGroupToConfig(config.Config{
+	processGroupTestConfig := config.AddDefaultGroupToConfig(config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]config.ModelConfig{
 			// use the same listening so if a model is already running, it will fail
@@ -81,7 +85,7 @@ func TestProcessGroup_ProxyRequestSwapIsTrueParallel(t *testing.T) {
 	for _, modelName := range tests {
 		go func(modelName string) {
 			defer wg.Done()
-			req := httptest.NewRequest("POST", "/v1/chat/completions", nil)
+			req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", http.NoBody)
 			w := httptest.NewRecorder()
 			assert.NoError(t, pg.ProxyRequest(modelName, w, req))
 			assert.Equal(t, http.StatusOK, w.Code)
@@ -100,7 +104,7 @@ func TestProcessGroup_ProxyRequestSwapIsFalse(t *testing.T) {
 	for _, modelName := range tests {
 		t.Run(modelName, func(t *testing.T) {
 			reqBody := `{"x", "y"}`
-			req := httptest.NewRequest("POST", "/v1/chat/completions", bytes.NewBufferString(reqBody))
+			req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", bytes.NewBufferString(reqBody))
 			w := httptest.NewRecorder()
 			assert.NoError(t, pg.ProxyRequest(modelName, w, req))
 			assert.Equal(t, http.StatusOK, w.Code)

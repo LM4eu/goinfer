@@ -7,7 +7,7 @@ import (
 	"context"
 )
 
-// Default initializes a default in-process dispatcher
+// Default initializes a default in-process dispatcher.
 var Default = NewDispatcherConfig(25000)
 
 // On subscribes to an event, the type of the event will be automatically

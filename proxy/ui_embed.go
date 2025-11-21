@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package proxy
 
 import (
@@ -9,7 +13,7 @@ import (
 //go:embed ui_dist
 var reactStaticFS embed.FS
 
-// GetReactFS returns the embedded React filesystem
+// GetReactFS returns the embedded React filesystem.
 func GetReactFS() (http.FileSystem, error) {
 	subFS, err := fs.Sub(reactStaticFS, "ui_dist")
 	if err != nil {
@@ -18,7 +22,7 @@ func GetReactFS() (http.FileSystem, error) {
 	return http.FS(subFS), nil
 }
 
-// GetReactIndexHTML returns the main index.html for the React app
+// GetReactIndexHTML returns the main index.html for the React app.
 func GetReactIndexHTML() ([]byte, error) {
 	return reactStaticFS.ReadFile("ui_dist/index.html")
 }

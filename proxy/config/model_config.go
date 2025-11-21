@@ -1,3 +1,7 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package config
 
 import (
@@ -8,39 +12,40 @@ import (
 )
 
 type ModelConfig struct {
-	Cmd           string   `yaml:"cmd"`
-	CmdStop       string   `yaml:"cmdStop"`
-	Proxy         string   `yaml:"proxy"`
-	Aliases       []string `yaml:"aliases"`
-	Env           []string `yaml:"env"`
-	CheckEndpoint string   `yaml:"checkEndpoint"`
-	UnloadAfter   int      `yaml:"ttl"`
-	Unlisted      bool     `yaml:"unlisted"`
-	UseModelName  string   `yaml:"useModelName"`
-
-	// #179 for /v1/models
-	Name        string `yaml:"name"`
-	Description string `yaml:"description"`
-
-	// Limit concurrency of HTTP requests to process
-	ConcurrencyLimit int `yaml:"concurrencyLimit"`
-
-	// Model filters see issue #174
-	Filters ModelFilters `yaml:"filters"`
-
-	// Macros: see #264
-	// Model level macros take precedence over the global macros
-	Macros MacroList `yaml:"macros"`
-
 	// Metadata: see #264
 	// Arbitrary metadata that can be exposed through the API
 	Metadata map[string]any `yaml:"metadata"`
 
 	// override global setting
 	SendLoadingState *bool `yaml:"sendLoadingState"`
+
+	// Model filters see issue #174
+	Filters ModelFilters `yaml:"filters"`
+
+	Cmd           string   `yaml:"cmd"`
+	CmdStop       string   `yaml:"cmdStop"`
+	Aliases       []string `yaml:"aliases"`
+	Env           []string `yaml:"env"`
+	CheckEndpoint string   `yaml:"checkEndpoint"`
+	Proxy         string   `yaml:"proxy"`
+	UseModelName  string   `yaml:"useModelName"`
+
+	// #179 for /v1/models
+	Name        string `yaml:"name"`
+	Description string `yaml:"description"`
+
+	// Macros: see #264
+	// Model level macros take precedence over the global macros
+	Macros MacroList `yaml:"macros"`
+
+	// Limit concurrency of HTTP requests to process
+	ConcurrencyLimit int `yaml:"concurrencyLimit"`
+
+	UnloadAfter int  `yaml:"ttl"`
+	Unlisted    bool `yaml:"unlisted"`
 }
 
-func (m *ModelConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (m *ModelConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	type rawModelConfig ModelConfig
 	defaults := rawModelConfig{
 		Cmd:              "",
@@ -62,7 +67,8 @@ func (m *ModelConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		defaults.CmdStop = "taskkill /f /t /pid ${PID}"
 	}
 
-	if err := unmarshal(&defaults); err != nil {
+	err := unmarshal(&defaults)
+	if err != nil {
 		return err
 	}
 
@@ -74,18 +80,19 @@ func (m *ModelConfig) SanitizedCommand() ([]string, error) {
 	return SanitizeCommand(m.Cmd)
 }
 
-// ModelFilters see issue #174
+// ModelFilters see issue #174.
 type ModelFilters struct {
 	StripParams string `yaml:"stripParams"`
 }
 
-func (m *ModelFilters) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (m *ModelFilters) UnmarshalYAML(unmarshal func(any) error) error {
 	type rawModelFilters ModelFilters
 	defaults := rawModelFilters{
 		StripParams: "",
 	}
 
-	if err := unmarshal(&defaults); err != nil {
+	err := unmarshal(&defaults)
+	if err != nil {
 		return err
 	}
 
@@ -94,7 +101,8 @@ func (m *ModelFilters) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		var legacy struct {
 			StripParams string `yaml:"strip_params"`
 		}
-		if legacyErr := unmarshal(&legacy); legacyErr != nil {
+		legacyErr := unmarshal(&legacy)
+		if legacyErr != nil {
 			return errors.New("failed to unmarshal legacy filters.strip_params: " + legacyErr.Error())
 		}
 		defaults.StripParams = legacy.StripParams

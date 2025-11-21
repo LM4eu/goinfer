@@ -1,6 +1,11 @@
+// Copyright 2025 The contributors of Goinfer.
+// This file is part of Goinfer, a LLM proxy under the MIT License.
+// SPDX-License-Identifier: MIT
+
 package config
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -8,6 +13,7 @@ import (
 	"regexp"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/billziss-gh/golib/shlex"
@@ -17,16 +23,16 @@ import (
 const DEFAULT_GROUP_ID = "(default)"
 
 type MacroEntry struct {
-	Name  string
 	Value any
+	Name  string
 }
 
 type MacroList []MacroEntry
 
-// UnmarshalYAML implements custom YAML unmarshaling that preserves macro definition order
+// UnmarshalYAML implements custom YAML unmarshaling that preserves macro definition order.
 func (ml *MacroList) UnmarshalYAML(value *yaml.Node) error {
 	if value.Kind != yaml.MappingNode {
-		return fmt.Errorf("macros must be a mapping")
+		return errors.New("macros must be a mapping")
 	}
 
 	// yaml.Node.Content for a mapping contains alternating key/value nodes
@@ -36,12 +42,14 @@ func (ml *MacroList) UnmarshalYAML(value *yaml.Node) error {
 		valueNode := value.Content[i+1]
 
 		var name string
-		if err := keyNode.Decode(&name); err != nil {
+		err := keyNode.Decode(&name)
+		if err != nil {
 			return fmt.Errorf("failed to decode macro name: %w", err)
 		}
 
 		var val any
-		if err := valueNode.Decode(&val); err != nil {
+		err = valueNode.Decode(&val)
+		if err != nil {
 			return fmt.Errorf("failed to decode macro value for '%s': %w", name, err)
 		}
 
@@ -52,7 +60,7 @@ func (ml *MacroList) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
-// Get retrieves a macro value by name
+// Get retrieves a macro value by name.
 func (ml MacroList) Get(name string) (any, bool) {
 	for _, entry := range ml {
 		if entry.Name == name {
@@ -62,7 +70,7 @@ func (ml MacroList) Get(name string) (any, bool) {
 	return nil, false
 }
 
-// ToMap converts MacroList to a map (for backward compatibility if needed)
+// ToMap converts MacroList to a map (for backward compatibility if needed).
 func (ml MacroList) ToMap() map[string]any {
 	result := make(map[string]any, len(ml))
 	for _, entry := range ml {
@@ -72,10 +80,10 @@ func (ml MacroList) ToMap() map[string]any {
 }
 
 type GroupConfig struct {
+	Members    []string `yaml:"members"`
 	Swap       bool     `yaml:"swap"`
 	Exclusive  bool     `yaml:"exclusive"`
 	Persistent bool     `yaml:"persistent"`
-	Members    []string `yaml:"members"`
 }
 
 var (
@@ -83,8 +91,8 @@ var (
 	macroPatternRegex = regexp.MustCompile(`\$\{([a-zA-Z0-9_-]+)\}`)
 )
 
-// set default values for GroupConfig
-func (c *GroupConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+// set default values for GroupConfig.
+func (c *GroupConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	type rawGroupConfig GroupConfig
 	defaults := rawGroupConfig{
 		Swap:       true,
@@ -93,7 +101,8 @@ func (c *GroupConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		Members:    []string{},
 	}
 
-	if err := unmarshal(&defaults); err != nil {
+	err := unmarshal(&defaults)
+	if err != nil {
 		return err
 	}
 
@@ -110,26 +119,28 @@ type HookOnStartup struct {
 }
 
 type Config struct {
-	HealthCheckTimeout int                    `yaml:"healthCheckTimeout"`
-	LogRequests        bool                   `yaml:"logRequests"`
-	LogLevel           string                 `yaml:"logLevel"`
-	LogTimeFormat      string                 `yaml:"logTimeFormat"`
-	MetricsMaxInMemory int                    `yaml:"metricsMaxInMemory"`
-	Models             map[string]ModelConfig `yaml:"models"` /* key is model ID */
-	Profiles           map[string][]string    `yaml:"profiles"`
-	Groups             map[string]GroupConfig `yaml:"groups"` /* key is group ID */
-
-	// for key/value replacements in model's cmd, cmdStop, proxy, checkEndPoint
-	Macros MacroList `yaml:"macros"`
+	Models   map[string]ModelConfig `yaml:"models"` /* key is model ID */
+	Profiles map[string][]string    `yaml:"profiles"`
+	Groups   map[string]GroupConfig `yaml:"groups"` /* key is group ID */
 
 	// map aliases to actual model IDs
 	aliases map[string]string
 
-	// automatic port assignments
-	StartPort int `yaml:"startPort"`
+	LogLevel      string `yaml:"logLevel"`
+	LogTimeFormat string `yaml:"logTimeFormat"`
+
+	// for key/value replacements in model's cmd, cmdStop, proxy, checkEndPoint
+	Macros MacroList `yaml:"macros"`
 
 	// hooks, see: #209
 	Hooks HooksConfig `yaml:"hooks"`
+
+	// automatic port assignments
+	StartPort int `yaml:"startPort"`
+
+	HealthCheckTimeout int  `yaml:"healthCheckTimeout"`
+	MetricsMaxInMemory int  `yaml:"metricsMaxInMemory"`
+	LogRequests        bool `yaml:"logRequests"`
 
 	// send loading state in reasoning
 	SendLoadingState bool `yaml:"sendLoadingState"`
@@ -190,7 +201,7 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 	}
 
 	if config.StartPort < 1 {
-		return Config{}, fmt.Errorf("startPort must be greater than 1")
+		return Config{}, errors.New("startPort must be greater than 1")
 	}
 
 	// Populate the aliases map
@@ -212,7 +223,8 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 	- macro values must be less than 1024 characters
 	*/
 	for _, macro := range config.Macros {
-		if err = validateMacro(macro.Name, macro.Value); err != nil {
+		err = validateMacro(macro.Name, macro.Value)
+		if err != nil {
 			return Config{}, err
 		}
 	}
@@ -234,7 +246,8 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 
 		// validate model macros
 		for _, macro := range modelConfig.Macros {
-			if err = validateMacro(macro.Name, macro.Value); err != nil {
+			err = validateMacro(macro.Name, macro.Value)
+			if err != nil {
 				return Config{}, fmt.Errorf("model %s: %s", modelId, err.Error())
 			}
 		}
@@ -300,7 +313,7 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 			// Add PORT macro and substitute it
 			portEntry := MacroEntry{Name: "PORT", Value: nextPort}
 			macroSlug := "${PORT}"
-			macroStr := fmt.Sprintf("%v", nextPort)
+			macroStr := strconv.Itoa(nextPort)
 
 			modelConfig.Cmd = strings.ReplaceAll(modelConfig.Cmd, macroSlug, macroStr)
 			modelConfig.CmdStop = strings.ReplaceAll(modelConfig.CmdStop, macroSlug, macroStr)
@@ -346,7 +359,8 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 
 		// Check for unknown macros in metadata
 		if len(modelConfig.Metadata) > 0 {
-			if err := validateMetadataForUnknownMacros(modelConfig.Metadata, modelId); err != nil {
+			err := validateMetadataForUnknownMacros(modelConfig.Metadata, modelId)
+			if err != nil {
 				return Config{}, err
 			}
 		}
@@ -407,9 +421,8 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 	return config, nil
 }
 
-// rewrites the yaml to include a default group with any orphaned models
+// rewrites the yaml to include a default group with any orphaned models.
 func AddDefaultGroupToConfig(config Config) Config {
-
 	if config.Groups == nil {
 		config.Groups = make(map[string]GroupConfig)
 	}
@@ -454,15 +467,15 @@ func AddDefaultGroupToConfig(config Config) Config {
 
 func SanitizeCommand(cmdStr string) ([]string, error) {
 	var cleanedLines []string
-	for _, line := range strings.Split(cmdStr, "\n") {
+	for line := range strings.SplitSeq(cmdStr, "\n") {
 		trimmed := strings.TrimSpace(line)
 		// Skip comment lines
 		if strings.HasPrefix(trimmed, "#") {
 			continue
 		}
 		// Handle trailing backslashes by replacing with space
-		if strings.HasSuffix(trimmed, "\\") {
-			cleanedLines = append(cleanedLines, strings.TrimSuffix(trimmed, "\\")+" ")
+		if before, ok := strings.CutSuffix(trimmed, "\\"); ok {
+			cleanedLines = append(cleanedLines, before+" ")
 		} else {
 			cleanedLines = append(cleanedLines, line)
 		}
@@ -481,7 +494,7 @@ func SanitizeCommand(cmdStr string) ([]string, error) {
 
 	// Ensure the command is not empty
 	if len(args) == 0 {
-		return nil, fmt.Errorf("empty command")
+		return nil, errors.New("empty command")
 	}
 
 	return args, nil
@@ -489,7 +502,7 @@ func SanitizeCommand(cmdStr string) ([]string, error) {
 
 func StripComments(cmdStr string) string {
 	var cleanedLines []string
-	for _, line := range strings.Split(cmdStr, "\n") {
+	for line := range strings.SplitSeq(cmdStr, "\n") {
 		trimmed := strings.TrimSpace(line)
 		// Skip comment lines
 		if strings.HasPrefix(trimmed, "#") {
@@ -500,7 +513,7 @@ func StripComments(cmdStr string) string {
 	return strings.Join(cleanedLines, "\n")
 }
 
-// validateMacro validates macro name and value constraints
+// validateMacro validates macro name and value constraints.
 func validateMacro(name string, value any) error {
 	if len(name) >= 64 {
 		return fmt.Errorf("macro name '%s' exceeds maximum length of 63 characters", name)
@@ -534,7 +547,7 @@ func validateMacro(name string, value any) error {
 	return nil
 }
 
-// validateMetadataForUnknownMacros recursively checks for any remaining macro references in metadata
+// validateMetadataForUnknownMacros recursively checks for any remaining macro references in metadata.
 func validateMetadataForUnknownMacros(value any, modelId string) error {
 	switch v := value.(type) {
 	case string:
@@ -547,7 +560,8 @@ func validateMetadataForUnknownMacros(value any, modelId string) error {
 
 	case map[string]any:
 		for _, val := range v {
-			if err := validateMetadataForUnknownMacros(val, modelId); err != nil {
+			err := validateMetadataForUnknownMacros(val, modelId)
+			if err != nil {
 				return err
 			}
 		}
@@ -555,7 +569,8 @@ func validateMetadataForUnknownMacros(value any, modelId string) error {
 
 	case []any:
 		for _, val := range v {
-			if err := validateMetadataForUnknownMacros(val, modelId); err != nil {
+			err := validateMetadataForUnknownMacros(val, modelId)
+			if err != nil {
 				return err
 			}
 		}
@@ -568,7 +583,7 @@ func validateMetadataForUnknownMacros(value any, modelId string) error {
 }
 
 // substituteMacroInValue recursively substitutes a single macro in a value structure
-// This is called once per macro, allowing LIFO substitution order
+// This is called once per macro, allowing LIFO substitution order.
 func substituteMacroInValue(value any, macroName string, macroValue any) (any, error) {
 	macroSlug := fmt.Sprintf("${%s}", macroName)
 	macroStr := fmt.Sprintf("%v", macroValue)
@@ -615,8 +630,7 @@ func substituteMacroInValue(value any, macroName string, macroValue any) (any, e
 	}
 }
 
-// MarshalYAML cannot guarantee the order because it returns map[string]any
+// MarshalYAML cannot guarantee the order because it returns map[string]any.
 func (ml MacroList) MarshalYAML() (any, error) {
 	return ml.ToMap(), nil
 }
-
