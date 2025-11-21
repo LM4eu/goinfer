@@ -1,7 +1,3 @@
-// to set the latest version of llama-swap:
-//
-//    go get github.com/LM4eu/llama-swap@lm4
-
 module github.com/LM4eu/goinfer
 
 go 1.25.4
@@ -9,6 +5,8 @@ go 1.25.4
 require (
 	github.com/LM4eu/garcon v0.40.0
 	github.com/LM4eu/llama-swap v0.173.1
+	github.com/billziss-gh/golib v0.2.0
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gin-gonic/gin v1.11.0
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/labstack/gommon v0.4.2
@@ -23,7 +21,6 @@ require (
 require (
 	github.com/LM4eu/emo v0.0.0-20250927010905-4655469361e2 // indirect
 	github.com/acmacalister/skittles v0.0.0-20160609003031-7423546701e1 // indirect
-	github.com/billziss-gh/golib v0.2.0 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.14.2 // indirect
 	github.com/bytedance/sonic/loader v0.4.0 // indirect
