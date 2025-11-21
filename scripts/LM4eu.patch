@@ -1,0 +1,118 @@
+diff --git a/proxy/proxymanager.go b/proxy/proxymanager.go
+index 50b677d..bdb3b23 100644
+--- a/proxy/proxymanager.go
++++ b/proxy/proxymanager.go
+@@ -215,21 +215,23 @@ func (pm *ProxyManager) setupGinEngine() {
+ 
+ 	// in proxymanager_loghandlers.go
+ 	pm.ginEngine.GET("/logs", pm.sendLogsHandlers)
+ 	pm.ginEngine.GET("/logs/stream", pm.streamLogsHandler)
+ 	pm.ginEngine.GET("/logs/stream/:logMonitorID", pm.streamLogsHandler)
+ 
+ 	/**
+ 	 * User Interface Endpoints
+ 	 */
+-	pm.ginEngine.GET("/", func(c *gin.Context) {
+-		c.Redirect(http.StatusFound, "/ui")
+-	})
++	// pm.ginEngine.GET("/", func(c *gin.Context) {
++	// 	c.Redirect(http.StatusFound, "/ui")
++	// })
++	pm.ginEngine.GET("/", pm.proxyToFirstRunningProcess)
++	pm.ginEngine.GET("/props", pm.proxyToFirstRunningProcess)
+ 
+ 	pm.ginEngine.GET("/upstream", func(c *gin.Context) {
+ 		c.Redirect(http.StatusFound, "/ui/models")
+ 	})
+ 	pm.ginEngine.Any("/upstream/*upstreamPath", pm.proxyToUpstream)
+ 	pm.ginEngine.GET("/unload", pm.unloadAllModelsHandler)
+ 	pm.ginEngine.GET("/running", pm.listRunningProcessesHandler)
+ 	pm.ginEngine.GET("/health", func(c *gin.Context) {
+ 		c.String(http.StatusOK, "OK")
+@@ -461,20 +463,30 @@ func (pm *ProxyManager) proxyToUpstream(c *gin.Context) {
+ func (pm *ProxyManager) proxyOAIHandler(c *gin.Context) {
+ 	bodyBytes, err := io.ReadAll(c.Request.Body)
+ 	if err != nil {
+ 		pm.sendErrorResponse(c, http.StatusBadRequest, "could not ready request body")
+ 		return
+ 	}
+ 
+ 	requestedModel := gjson.GetBytes(bodyBytes, "model").String()
+ 	if requestedModel == "" {
+-		pm.sendErrorResponse(c, http.StatusBadRequest, "missing or invalid 'model' key")
+-		return
++		// fallback: the first running process we find
++		for _, processGroup := range pm.processGroups {
++			for _, process := range processGroup.processes {
++				if process.CurrentState() == StateReady {
++					requestedModel = process.ID
++				}
++			}
++		}
++		if requestedModel == "" {
++			pm.sendErrorResponse(c, http.StatusBadRequest, "missing or invalid 'model' key")
++			return
++		}
+ 	}
+ 
+ 	realModelName, found := pm.config.RealModelName(requestedModel)
+ 	if !found {
+ 		pm.sendErrorResponse(c, http.StatusBadRequest, fmt.Sprintf("could not find real modelID for %s", requestedModel))
+ 		return
+ 	}
+ 
+ 	processGroup, _, err := pm.swapProcessGroup(realModelName)
+@@ -516,30 +528,51 @@ func (pm *ProxyManager) proxyOAIHandler(c *gin.Context) {
+ 	c.Request.ContentLength = int64(len(bodyBytes))
+ 
+ 	if err := processGroup.ProxyRequest(realModelName, c.Writer, c.Request); err != nil {
+ 		pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("error proxying request: %s", err.Error()))
+ 		pm.proxyLogger.Errorf("Error Proxying Request for processGroup %s and model %s", processGroup.id, realModelName)
+ 		return
+ 	}
+ }
+ 
++func (pm *ProxyManager) proxyToFirstRunningProcess(c *gin.Context) {
++	for _, processGroup := range pm.processGroups {
++		for _, process := range processGroup.processes {
++			if process.CurrentState() == StateReady {
++				process.ProxyRequest(c.Writer, c.Request)
++				return
++			}
++		}
++	}
++	pm.sendErrorResponse(c, http.StatusInternalServerError, "No model currently running. Please select a model.")
++}
+ func (pm *ProxyManager) proxyOAIPostFormHandler(c *gin.Context) {
+ 	// Parse multipart form
+ 	if err := c.Request.ParseMultipartForm(32 << 20); err != nil { // 32MB max memory, larger files go to tmp disk
+ 		pm.sendErrorResponse(c, http.StatusBadRequest, fmt.Sprintf("error parsing multipart form: %s", err.Error()))
+ 		return
+ 	}
+ 
+ 	// Get model parameter from the form
+ 	requestedModel := c.Request.FormValue("model")
+ 	if requestedModel == "" {
+-		pm.sendErrorResponse(c, http.StatusBadRequest, "missing or invalid 'model' parameter in form data")
+-		return
++		// fallback: the first running process we find
++		for _, processGroup := range pm.processGroups {
++			for _, process := range processGroup.processes {
++				if process.CurrentState() == StateReady {
++					requestedModel = process.ID
++				}
++			}
++		}
++		if requestedModel == "" {
++			pm.sendErrorResponse(c, http.StatusBadRequest, "missing or invalid 'model' parameter in form data")
++			return
++		}
+ 	}
+ 
+ 	processGroup, realModelName, err := pm.swapProcessGroup(requestedModel)
+ 	if err != nil {
+ 		pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("error swapping process group: %s", err.Error()))
+ 		return
+ 	}
+ 
+ 	// We need to reconstruct the multipart form in any case since the body is consumed
