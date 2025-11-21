@@ -822,4 +822,3 @@ func (pm *ProxyManager) ProxyToFirstRunningProcess(c *gin.Context) {
 	}
 	pm.sendErrorResponse(c, http.StatusInternalServerError, "No model currently running. Please select a model.")
 }
-

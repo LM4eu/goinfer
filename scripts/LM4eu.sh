@@ -189,8 +189,7 @@ func (pm *ProxyManager) ProxyToFirstRunningProcess(c *gin.Context) {
 		}
 	}
 	pm.sendErrorResponse(c, http.StatusInternalServerError, "No model currently running. Please select a model.")
-}
-'
+}'
     go run . -h 2>/dev/null # smoke test
     git commit -m 'proxy: forward the request to the any running process
 
