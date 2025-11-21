@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/billziss-gh/golib/shlex"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 const DEFAULT_GROUP_ID = "(default)"
