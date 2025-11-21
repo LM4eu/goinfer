@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mostlygeek/llama-swap/event"
-	"github.com/mostlygeek/llama-swap/proxy/config"
+	"github.com/LM4eu/llama-swap/event"
+	"github.com/LM4eu/llama-swap/proxy/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
 )
