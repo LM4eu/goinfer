@@ -173,14 +173,29 @@ func (ml MacroList) MarshalYAML() (any, error) {
     git commit -m 'config: add missing MacroList.MarshalYAML()' proxy/config/config.go
 )
 
-# (
-#     log "patch metrics_middleware.go proxymanager.go"
-#     set -x
-#     git status
-#     patch -p1 -u < "$dir"/LM4eu.patch
-#     go run . -h 2>/dev/null # smoke test
-#     git commit -m 'proxy: use current running llama-server when model is not specified' proxy/metrics_middleware.go proxy/proxymanager.go
-# )
+(
+    log "add ProxyToFirstRunningProcess in proxymanager.go"
+    set -x
+    git status
+    echo >> proxy/proxymanager.go '
+// ProxyToFirstRunningProcess forwards the request to the any running process (llama-server)
+func (pm *ProxyManager) ProxyToFirstRunningProcess(c *gin.Context) {
+	for _, processGroup := range pm.processGroups {
+		for _, process := range processGroup.processes {
+			if process.CurrentState() == StateReady {
+				process.ProxyRequest(c.Writer, c.Request)
+				return
+			}
+		}
+	}
+	pm.sendErrorResponse(c, http.StatusInternalServerError, "No model currently running. Please select a model.")
+}
+'
+    go run . -h 2>/dev/null # smoke test
+    git commit -m 'proxy: forward the request to the any running process
+
+This is useful when model is not specified' proxy/proxymanager.go
+)
 
 (
     log "export seven endpoint handlers"
@@ -190,7 +205,6 @@ func (ml MacroList) MarshalYAML() (any, error) {
             s/\<proxyOAIPostFormHandler\>/ProxyOAIPostFormHandler/g;
             s/\<listModelsHandler\>/ListModelsHandler/g;
             s/\<streamLogsHandler\>/StreamLogsHandler/g;
-            s/\<proxyToFirstRunningProcess\>/ProxyToFirstRunningProcess/g;
             s/\<unloadAllModelsHandler\>/UnloadAllModelsHandler/g;
             s/\<listRunningProcessesHandler\>/ListRunningProcessesHandler/g;
     '       proxy/proxymanager.go proxy/proxymanager_loghandlers.go
@@ -204,7 +218,6 @@ Export these endpoint handlers (Capitalize the initial)
 2. proxyOAIPostFormHandler
 3. listModelsHandler
 4. streamLogsHandler
-5. proxyToFirstRunningProcess
 6. unloadAllModelsHandler
 7. listRunningProcessesHandler
 
