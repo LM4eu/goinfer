@@ -164,7 +164,7 @@ npm run build
     set -x
     git status
     echo >> proxy/config/config.go "
-
+// MarshalYAML cannot guarantee the order because it returns map[string]any
 func (ml MacroList) MarshalYAML() (any, error) {
 	return ml.ToMap(), nil
 }
@@ -173,14 +173,14 @@ func (ml MacroList) MarshalYAML() (any, error) {
     git commit -m 'config: add missing MacroList.MarshalYAML()' proxy/config/config.go
 )
 
-(
-    log "patch metrics_middleware.go proxymanager.go"
-    set -x
-    git status
-    patch -p1 -u < "$dir"/LM4eu.patch
-    go run . -h 2>/dev/null # smoke test
-    git commit -m 'proxy: use current running llama-server when model is not specified' proxy/metrics_middleware.go proxy/proxymanager.go
-)
+# (
+#     log "patch metrics_middleware.go proxymanager.go"
+#     set -x
+#     git status
+#     patch -p1 -u < "$dir"/LM4eu.patch
+#     go run . -h 2>/dev/null # smoke test
+#     git commit -m 'proxy: use current running llama-server when model is not specified' proxy/metrics_middleware.go proxy/proxymanager.go
+# )
 
 (
     log "export seven endpoint handlers"

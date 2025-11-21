@@ -236,24 +236,24 @@ func (pm *ProxyManager) setupGinEngine() {
 	})
 
 	// Set up routes using the Gin engine
-	pm.ginEngine.POST("/v1/chat/completions", pm.proxyOAIHandler)
+	pm.ginEngine.POST("/v1/chat/completions", pm.ProxyOAIHandler)
 	// Support legacy /v1/completions api, see issue #12
-	pm.ginEngine.POST("/v1/completions", pm.proxyOAIHandler)
+	pm.ginEngine.POST("/v1/completions", pm.ProxyOAIHandler)
 
 	// Support embeddings and reranking
-	pm.ginEngine.POST("/v1/embeddings", pm.proxyOAIHandler)
+	pm.ginEngine.POST("/v1/embeddings", pm.ProxyOAIHandler)
 
 	// llama-server's /reranking endpoint + aliases
-	pm.ginEngine.POST("/reranking", pm.proxyOAIHandler)
-	pm.ginEngine.POST("/rerank", pm.proxyOAIHandler)
-	pm.ginEngine.POST("/v1/rerank", pm.proxyOAIHandler)
-	pm.ginEngine.POST("/v1/reranking", pm.proxyOAIHandler)
+	pm.ginEngine.POST("/reranking", pm.ProxyOAIHandler)
+	pm.ginEngine.POST("/rerank", pm.ProxyOAIHandler)
+	pm.ginEngine.POST("/v1/rerank", pm.ProxyOAIHandler)
+	pm.ginEngine.POST("/v1/reranking", pm.ProxyOAIHandler)
 
 	// llama-server's /infill endpoint for code infilling
-	pm.ginEngine.POST("/infill", pm.proxyOAIHandler)
+	pm.ginEngine.POST("/infill", pm.ProxyOAIHandler)
 
 	// llama-server's /completion endpoint
-	pm.ginEngine.POST("/completion", pm.proxyOAIHandler)
+	pm.ginEngine.POST("/completion", pm.ProxyOAIHandler)
 
 	// Support audio/speech endpoint
 	pm.ginEngine.POST("/v1/audio/speech", pm.ProxyOAIHandler)
@@ -635,17 +635,6 @@ func (pm *ProxyManager) ProxyOAIHandler(c *gin.Context) {
 	}
 }
 
-func (pm *ProxyManager) ProxyToFirstRunningProcess(c *gin.Context) {
-	for _, processGroup := range pm.processGroups {
-		for _, process := range processGroup.processes {
-			if process.CurrentState() == StateReady {
-				process.ProxyRequest(c.Writer, c.Request)
-				return
-			}
-		}
-	}
-	pm.sendErrorResponse(c, http.StatusInternalServerError, "No model currently running. Please select a model.")
-}
 func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context) {
 	// Parse multipart form
 	if err := c.Request.ParseMultipartForm(32 << 20); err != nil { // 32MB max memory, larger files go to tmp disk
