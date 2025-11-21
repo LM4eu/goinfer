@@ -787,3 +787,16 @@ func (pm *ProxyManager) SetVersion(buildDate string, commit string, version stri
 	pm.commit = commit
 	pm.version = version
 }
+
+// ProxyToFirstRunningProcess forwards the request to the any running process (llama-server)
+func (pm *ProxyManager) ProxyToFirstRunningProcess(c *gin.Context) {
+	for _, processGroup := range pm.processGroups {
+		for _, process := range processGroup.processes {
+			if process.CurrentState() == StateReady {
+				process.ProxyRequest(c.Writer, c.Request)
+				return
+			}
+		}
+	}
+	pm.sendErrorResponse(c, http.StatusInternalServerError, "No model currently running. Please select a model.")
+}
