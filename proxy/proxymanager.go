@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/LM4eu/goinfer/event"
+	"github.com/LM4eu/goinfer/proxy/config"
 	"github.com/gin-gonic/gin"
-	"github.com/LM4eu/llama-swap/event"
-	"github.com/LM4eu/llama-swap/proxy/config"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )

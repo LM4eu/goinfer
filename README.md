@@ -99,20 +99,19 @@ curl -X POST localhost:5555/v1/chat/completions \
 Build all dependencies and run Goinfer with the bash script
 [`clone-pull-build-run.sh`](./scripts/clone-pull-build-run.sh)
 
-- clone and build [llama.cpp](https://github.com/ggml-org/llama.cpp) using optimizations flags
-- clone and build the [llama-swap](https://github.com/LM4eu/llama-swap) frontend with `--build--swap`:
-
     ```sh
     git clone https://github.com/LM4eu/goinfer
     goinfer/scripts/clone-pull-build-run.sh --build--swap
     ```
 
-Perfect to setup the environment,
-and to update/build daily the dependencies.
+This script clones and builds [llama.cpp](https://github.com/ggml-org/llama.cpp)
+using the best optimizations flags for your CPU.
+This script also discovers your GGUF files:
+your personalized configuration files is automatically generated
+(no need to edit manually the configuration files).
 
-No need to edit manually the configuration files:
-this script discovers your GGUF files.
-Your personalized configuration files is automatically generated.
+Perfect to setup the environment,
+and to daily update/build the [llama.cpp](https://github.com/ggml-org/llama.cpp) dependency.
 
 The script ends by running a fully configured Goinfer server.
 

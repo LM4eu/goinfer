@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/LM4eu/goinfer/gie"
-	"github.com/LM4eu/llama-swap/proxy/config"
+	"github.com/LM4eu/goinfer/proxy/config"
 	"github.com/pelletier/go-toml/v2"
 	"go.yaml.in/yaml/v4"
 )

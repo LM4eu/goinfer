@@ -19,7 +19,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/LM4eu/garcon/vv"
-	"github.com/LM4eu/llama-swap/proxy"
+	"github.com/LM4eu/goinfer/proxy"
 	"github.com/labstack/echo/v4"
 
 	"github.com/LM4eu/goinfer/conf"

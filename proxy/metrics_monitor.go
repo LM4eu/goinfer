@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/LM4eu/goinfer/event"
 	"github.com/gin-gonic/gin"
-	"github.com/LM4eu/llama-swap/event"
 	"github.com/tidwall/gjson"
 )
 

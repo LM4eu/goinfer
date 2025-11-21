@@ -2,8 +2,6 @@ github.com/LM4eu/emo v0.0.0-20250927010905-4655469361e2 h1:iEQxJkd7mDtb+GAsl1PgM
 github.com/LM4eu/emo v0.0.0-20250927010905-4655469361e2/go.mod h1:KqLb05XU70BLek1CLc1b/Vm02Cs9A5M0igZced3P12s=
 github.com/LM4eu/garcon v0.40.0 h1:tmA6g9R0Ei8zqb7pBRpjl8FkEvKnZ+B8bX/f8PWM+q4=
 github.com/LM4eu/garcon v0.40.0/go.mod h1:JTCKIa40J7GKicRbPmJ6iDlNJMVa5y0oWlyiPCT05HQ=
-github.com/LM4eu/llama-swap v0.173.1 h1:4oGuutikDH3vrUcWEV43mrFZijzbRDivqqw9tnhBKCs=
-github.com/LM4eu/llama-swap v0.173.1/go.mod h1:GdGEQEo9n4NhgIZ+yqMkVDRWGiGbJhcF6MFNwcWvxDs=
 github.com/acmacalister/skittles v0.0.0-20160609003031-7423546701e1 h1:RKnVV4C7qoN/sToLX2y1dqH7T6kKLMHcwRJlgwb9Ggk=
 github.com/acmacalister/skittles v0.0.0-20160609003031-7423546701e1/go.mod h1:gI5CyA/CEnS6eqNV22rqs4dG3aGfaSbXgPORIlwr2r0=
 github.com/billziss-gh/golib v0.2.0 h1:NyvcAQdfvM8xokKkKotiligKjKXzuQD4PPykg1nKc/8=

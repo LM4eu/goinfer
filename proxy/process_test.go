@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/LM4eu/llama-swap/proxy/config"
+	"github.com/LM4eu/goinfer/proxy/config"
 	"github.com/stretchr/testify/assert"
 )
 

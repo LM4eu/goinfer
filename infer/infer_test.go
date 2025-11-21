@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	"github.com/LM4eu/goinfer/conf"
-	"github.com/LM4eu/llama-swap/proxy"
+	"github.com/LM4eu/goinfer/proxy"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
 )

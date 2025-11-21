@@ -5,21 +5,21 @@
 help='
 Usage:
 
-  ./clone-pull-build-run.sh [-b|--build-swap] [goinfer flags]
+  ./clone-pull-build-run.sh [goinfer flags]
 
 This script git-clone (git-pull) and builds llama.cpp with best optimizations.
-The flag --build-swap enables the same for llama-swap => enables the llama-swap frontend.
 The script also generates the configuration based on the discovered GUFF files.
 Finally the script runs goinfer with the provided [goinfer flags] if any.
 
 This script can be used:
 - once, to setup all the dependencies and the configuration files
-- daily, to update the source code and rebuild only if a new commit is detected
+- daily, to update the llama.cpp source code and rebuild it
+  (only if a new commit is detected)
 
 For better reproducibility, you can specify the tag or branch:
 
-  llamaCpp_tag=b6666 llamaSwap_tag=v0.0.166 ./clone-pull-build-run.sh`
-  llamaCpp_branch=master llamaSwap_branch=lm4 ./clone-pull-build-run.sh`
+  llamaCpp_tag=b6666     ./clone-pull-build-run.sh`
+  llamaCpp_branch=master ./clone-pull-build-run.sh`
 
 If you have already your `llama-server` (or compatible fork),
 set `export GI_LLAMA_EXE=/home/me/path/llama-server`.
@@ -31,13 +31,13 @@ set the GI_MODELS_DIR. This also speeds up the script (disables GUFF files searc
   export GI_MODELS_DIR=/home/me/models:/home/me/other/path
 
 The [goinfer flags] are passed to goinfer.
-For example, to run Goinfer in local without API key:
+For example, to run Goinfer without API key:
 
   ~/repo/goinfer/scripts/clone-pull-build-run.sh -no-api-key
 
 One-line example:
 
-  git pull && GI_LLAMA_EXE=~/path/llama-server GI_MODELS_DIR=~/path/models ./clone-pull-build-run.sh -p -no-api-key
+  git pull && GI_LLAMA_EXE=~/path/llama-server GI_MODELS_DIR=~/path/models ./clone-pull-build-run.sh -no-api-key
 '
 
 # Safe bash
@@ -60,32 +60,16 @@ goinfer_dir="$(  cd "${BASH_SOURCE[0]%/*}/.."  &&  pwd)"
 root_dir="$(     cd "${goinfer_dir}/.."        &&  pwd)"
 llamaCpp_dir="$( cd "${root_dir}/llama.cpp"    &&  pwd)"
 
-build_swap=0
-
 case "${1:-}" in
   -h|--help)
     echo "$help"
     exit
-    ;;
-  -b|--build-swap)
-    log "flag $1 => enable llama-swap build"
-    shift # drop this flag from command line
-    build_swap=1
     ;;
 esac
 
 # if go.work present and uses llama-swap => enable llama-swap build
 work_file="$goinfer_dir/go.work"
 
-swap_in_work_file() {
-  sed 's|//.*||' "$work_file" 2>/dev/null | grep -sqw '../llama-swap' && 
-    log "found llama-swap in $work_file => enable llama-swap build" 
-}
-
-(( build_swap )) || { swap_in_work_file && build_swap=1 || build_swap=0 ; }
-
-# check the required external tools
-(( ! build_swap )) ||
 command -v npm    >/dev/null || { err REQUIRED: install npm    && exit 1; }
 command -v git    >/dev/null || { err REQUIRED: install git    && exit 1; }
 command -v go     >/dev/null || { err REQUIRED: install go     && exit 1; }
@@ -189,30 +173,6 @@ do_llamaCpp() {
   )
 }
 
-do_llamaSwap(){
-  cd "$root_dir"
-  clone_checkout_pull LM4eu/llama-swap "${llamaSwap_branch:-lm4}" "${llamaSwap_tag:-}"
-  [[ -n "$build_reason" ]] || { [[ -f proxy/ui_dist/index.html ]] || build_reason="missing proxy/ui_dist/index.html" ; }
-  [[ -z "$build_reason" ]] || (
-    log "build llama-swap because $build_reason"
-    # we may: rm proxy/ui_dist/
-    cd ui
-    pwd
-    set -x
-    npm ci --prefer-offline --no-audit --no-fund # --omit=dev (--omit=dev prevents the installation of tsc)
-    npm run build # requires "tsc"
-  )
-  # always do `work use` especially on new Go version
-  (
-    log "set up $work_file"
-    set -x
-    cd "$goinfer_dir"
-    go work init || :
-    go work use . ../llama-swap
-    go work sync
-  )
-}
-
 # if GI_MODELS_DIR is unset => discover the parent folders of the GUFF files:
 #   - find the files *.gguf in $HOME and /mnt directories
 #   - -printf their folders (%h) separated by nul character `\0`
@@ -229,9 +189,7 @@ export GI_MODELS_DIR=${GI_MODELS_DIR:?GI_MODELS_DIR is empty: Download a model f
 # clone/pull/build llama.cpp if GI_LLAMA_EXE is unset/empty
 export GI_LLAMA_EXE="${GI_LLAMA_EXE:-"$(do_llamaCpp >&2 && \ls -1 "$llamaCpp_dir/build/bin/llama-server")"}"
 
-(( ! build_swap )) || do_llamaSwap
-
- cd "$goinfer_dir"
+cd "$goinfer_dir"
 
 (
   log build goinfer with CPU-optimizations

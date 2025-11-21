@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/LM4eu/llama-swap/event"
+	"github.com/LM4eu/goinfer/event"
 )
 
 type LogLevel int

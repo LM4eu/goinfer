@@ -6,7 +6,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/LM4eu/llama-swap/proxy/config"
+	"github.com/LM4eu/goinfer/proxy/config"
 )
 
 type ProcessGroup struct {
