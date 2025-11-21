@@ -24,7 +24,7 @@ func (pm *ProxyManager) sendLogsHandlers(c *gin.Context) {
 	}
 }
 
-func (pm *ProxyManager) streamLogsHandler(c *gin.Context) {
+func (pm *ProxyManager) StreamLogsHandler(c *gin.Context) {
 	c.Header("Content-Type", "text/plain")
 	c.Header("Transfer-Encoding", "chunked")
 	c.Header("X-Content-Type-Options", "nosniff")
