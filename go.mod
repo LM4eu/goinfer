@@ -1,4 +1,4 @@
-module github.com/mostlygeek/llama-swap
+module github.com/LM4eu/llama-swap
 
 go 1.23.0
 

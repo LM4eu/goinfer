@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mostlygeek/llama-swap/event"
+	"github.com/LM4eu/llama-swap/event"
 )
 
 type Model struct {

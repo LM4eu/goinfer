@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/mostlygeek/llama-swap/proxy/config"
+	"github.com/LM4eu/llama-swap/proxy/config"
 	"github.com/stretchr/testify/assert"
 )
 
