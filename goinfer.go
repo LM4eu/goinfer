@@ -218,7 +218,7 @@ func startSwapServer(ctx context.Context, cfg *conf.Cfg, grp *errgroup.Group) *p
 			continue
 		}
 
-		proxyMan = proxy.New(cfg.Swap)
+		proxyMan = proxy.New(cfg.Swap, cfg)
 		swapServer := &http.Server{
 			Addr:    addr,
 			Handler: proxyMan,

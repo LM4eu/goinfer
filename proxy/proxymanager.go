@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/LM4eu/goinfer/conf"
 	"github.com/LM4eu/goinfer/event"
 	"github.com/LM4eu/goinfer/proxy/config"
 	"github.com/gin-gonic/gin"
@@ -33,7 +34,9 @@ type proxyCtxKey string
 
 type ProxyManager struct {
 	// shutdown signaling
-	shutdownCtx    context.Context
+	shutdownCtx context.Context
+
+	cfg *conf.Cfg
 
 	metricsMonitor *metricsMonitor
 	ginEngine      *gin.Engine
@@ -48,15 +51,15 @@ type ProxyManager struct {
 	shutdownCancel context.CancelFunc
 
 	// version info
-	buildDate      string
-	commit         string
-	version        string
+	buildDate string
+	commit    string
+	version   string
 
-	config         config.Config
+	config config.Config
 	sync.Mutex
 }
 
-func New(config config.Config) *ProxyManager {
+func New(config config.Config, cfg *conf.Cfg) *ProxyManager {
 	// set up loggers
 	stdoutLogger := NewLogMonitorWriter(os.Stdout)
 	upstreamLogger := NewLogMonitorWriter(stdoutLogger)
@@ -118,6 +121,7 @@ func New(config config.Config) *ProxyManager {
 	}
 
 	pm := &ProxyManager{
+		cfg:       cfg,
 		config:    config,
 		ginEngine: gin.New(),
 
