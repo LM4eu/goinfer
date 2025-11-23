@@ -38,7 +38,7 @@ func ReadGoinferINI(noAPIKey bool, extra, start string) (*Cfg, error) {
 // ReadFileData unmarshals the TOML bytes, applies the env vars and verifies the settings.
 // Always return a valid configuration, because the receiver may want to write a valid config.
 func ReadFileData(data []byte, noAPIKey bool, extra, start string) (*Cfg, error) {
-	cfg := defaultCfg()
+	cfg := DefaultCfg()
 	err := cfg.parse(data)
 	cfg.applyEnvVars()
 

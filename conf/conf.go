@@ -70,9 +70,9 @@ var badPorts = []string{
 	"5060", "5061", "6000", "6566", "6665", "6666", "6667", "6668", "6669", "6679", "6697", "10080",
 }
 
-// defaultCfg returns a unique copy of its local variable
+// DefaultCfg returns a unique copy of its local variable
 // to each receiver preventing data race (concurrency testing).
-func defaultCfg() *Cfg {
+func DefaultCfg() *Cfg {
 	return &Cfg{
 		ModelsDir:    "/home/me/path/to/models",
 		DefaultModel: "",
