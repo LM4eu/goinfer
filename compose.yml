@@ -19,7 +19,7 @@ services:
         - CUDA_PATCH=1
         - UBUNTU_VERSION=24.04
     command: # no need for arguments
-    ports: [4444:4444]
+    ports: [8080:8080]
     volumes:
       # GI_MODELS_DIR is also used by goinfer
       - ${GI_MODELS_DIR:-./models}:/models

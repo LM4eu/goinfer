@@ -30,7 +30,7 @@ type (
 		DefaultModel string               `toml:"default_model"       yaml:"default_model"  comment:"\nThe default model name to load at startup\nCan also be set with: ./goinfer -start <model-name>"`
 		ExtraModels  map[string]string    `toml:"extra_models"        yaml:"extra_models"   comment:"Download models using llama-server flags\nsee : github.com/ggml-org/llama.cpp/blob/master/common/arg.cpp#L3000"`
 		Llama        Llama                `toml:"llama"               yaml:"llama"`
-		Listen       map[string]string    `toml:"listen"              yaml:"listen"              comment:"Addresses (ports) to listen\nAddress can be <ip|host>:<port> or simply :<port> when <host> is localhost"`
+		Addr         string               `toml:"addr"                yaml:"addr"           comment:"address can be 'host:port' or 'ip:por' or simply ':port' (for host = localhost)"`
 		Templates    map[string]string    `toml:"templates,omitempty" yaml:"templates,omitempty" comment:"Provide a template file for each model (not yet fully implemented)"`
 		Info         map[string]ModelInfo `toml:"-"                   yaml:"-"`
 		Swap         config.Config        `toml:"-"                   yaml:"-"`
@@ -79,10 +79,7 @@ func DefaultCfg() *Cfg {
 		APIKey:       "",
 		Host:         "",
 		Origins:      "localhost",
-		Listen: map[string]string{
-			":4444": "goinfer",
-			":5555": "llama-swap",
-		},
+		Addr:         ":8080",
 		Llama: Llama{
 			Exe:     "/home/me/llama.cpp/build/bin/llama-server",
 			Verbose: "--verbose-prompt",
@@ -148,7 +145,7 @@ func printEnvVar(key string, confidential bool) {
 }
 
 func (cfg *Cfg) validate(noAPIKey bool) error {
-	err := cfg.validatePorts()
+	err := cfg.validateAddr()
 	if err != nil {
 		return err
 	}
@@ -195,20 +192,18 @@ func (cfg *Cfg) validate(noAPIKey bool) error {
 	return nil
 }
 
-// validatePorts() prevents bad ports: they are blocked by web browsers,
+// validateAddr() prevents bad ports: they are blocked by web browsers,
 // as specified by the Fetch standard: http://fetch.spec.whatwg.org/#bad-port
-func (cfg *Cfg) validatePorts() error {
-	for hostPort := range cfg.Listen {
-		_, port, err := net.SplitHostPort(hostPort)
-		if err != nil {
-			slog.Error("Cannot split", "hostPort", hostPort, "err", err)
-			return err
-		}
-		if slices.Contains(badPorts, port) {
-			const msg = "Chrome/Firefox block the bad ports"
-			slog.Error(msg, "port", port, "reference", "https://fetch.spec.whatwg.org/#port-blocking")
-			return gie.New(gie.ConfigErr, msg, "port", port, "reference", "https://fetch.spec.whatwg.org/#port-blocking")
-		}
+func (cfg *Cfg) validateAddr() error {
+	_, port, err := net.SplitHostPort(cfg.Addr)
+	if err != nil {
+		slog.Error("Cannot SplitHostPort", "cfg.Addr", cfg.Addr, "err", err)
+		return err
+	}
+	if slices.Contains(badPorts, port) {
+		const msg = "Chrome/Firefox block the bad ports"
+		slog.Error(msg, "port", port, "reference", "https://fetch.spec.whatwg.org/#port-blocking")
+		return gie.New(gie.ConfigErr, msg, "port", port, "reference", "https://fetch.spec.whatwg.org/#port-blocking")
 	}
 	return nil
 }

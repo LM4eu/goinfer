@@ -9,7 +9,7 @@ const template = "<|im_start|>system\nYou are a javascript coding assistant<|im_
 
 async function baseQuery(prompt) {
   // run the inference query
-  const response = await fetch(`http://localhost:4444/completion`, {
+  const response = await fetch(`http://localhost:8080/completion`, {
     method: 'POST',
     headers: {
       Accept: 'application/json',

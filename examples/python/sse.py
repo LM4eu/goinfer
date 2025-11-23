@@ -19,7 +19,7 @@ payload = {
     "temperature": 0.6,
 }
 headers = {"Authorization": f"Bearer {KEY}", "Accept": "text/event-stream"}
-url = "http://localhost:4444/completion"
+url = "http://localhost:8080/completion"
 response = requests.post(url, stream=True, headers=headers, json=payload)
 client = sseclient.SSEClient(response)
 for event in client.events():

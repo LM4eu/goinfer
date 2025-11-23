@@ -57,22 +57,16 @@ func ReadFileData(data []byte, noAPIKey bool, extra, start string) (*Cfg, error)
 
 	// concatenate host and ports => addr = "host:port"
 	if cfg.Host != "" {
-		for addr, service := range cfg.Listen {
-			if addr != "" && addr[0] != ':' {
-				continue
-			}
-			delete(cfg.Listen, addr)
-			p := strings.IndexRune(cfg.Host[:len(cfg.Host)-1], ':')
-			if p > 0 { // Host contains the port
-				if service == "goinfer" {
-					addr = cfg.Host
-				} else {
-					addr = cfg.Host[:p] + addr
-				}
-			} else {
-				addr = cfg.Host + addr
-			}
-			cfg.Listen[addr] = service
+		switch {
+		case strings.ContainsRune(cfg.Host[:len(cfg.Host)-1], ':'):
+			cfg.Addr = cfg.Host // Host contains the port
+		case cfg.Addr == "":
+			cfg.Addr = cfg.Host + ":8080"
+		case cfg.Addr[0] == ':':
+			cfg.Addr = cfg.Host + cfg.Addr
+		default:
+			p := strings.IndexRune(cfg.Addr[1:], ':')
+			cfg.Addr = cfg.Host + cfg.Addr[p:]
 		}
 	}
 

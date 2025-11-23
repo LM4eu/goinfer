@@ -8,7 +8,7 @@ const apiKey = "C0ffee15C00150C0ffee15900dBadC0de15Dead101Cafe91f790Cafe7e57C0de
 const prompt = "What is the capital of Kenya?";
 
 async function listModels() {
-  const response = await fetch(`http://localhost:4444/models`, {
+  const response = await fetch(`http://localhost:8080/models`, {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -31,7 +31,7 @@ async function infer(models) {
   const finalPrompt = tpl.prompt(prompt);
   console.log(finalPrompt);
   // run the inference query
-  const response = await fetch(`http://localhost:4444/completion`, {
+  const response = await fetch(`http://localhost:8080/completion`, {
     method: 'POST',
     headers: {
       Accept: 'application/json',

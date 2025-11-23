@@ -69,25 +69,22 @@ go run . -write
 go run . -no-api-key
 ```
 
-Goinfer listens on the ports defined in `goinfer.ini`.
-Default ports:
-
-- `:4444` for extra-featured endpoints `/models`, `/completions`, `/v1/chat/completions`
-- `:5555` for OpenAI-compatible API (provided by llama-swap)
+Goinfer listens on the port defined in `goinfer.ini`.
+Default port is `8080` using OpenAI-compatible API.
 
 ```sh
 # use the default model
-curl -X POST localhost:4444/completions -d '{"prompt":"Hello"}'
+curl -X POST localhost:8080/completions -d '{"prompt":"Hello"}'
 
 # list the models
-curl -X GET localhost:4444/models | jq
+curl -X GET localhost:8080/models | jq
 
-# pick up a model and prompt it
-curl -X POST localhost:4444/completion \
+# pick up a model and prompt
+curl -X POST localhost:8080/completion \
   -d '{ "model":"qwen-3b", "prompt":"Hello AI" }'
 
-# same using the OpenAI API
-curl -X POST localhost:5555/v1/chat/completions \
+# OpenAI API fashion
+curl -X POST localhost:8080/v1/chat/completions \
   -d '{ "model": "qwen-3b",                     \
         "messages": [ {"role":"user",           \
                        "content":"Hello AI"}]   \
@@ -195,7 +192,7 @@ This flag can be combined with:
 Set the Authorization header within the HTTP request:
 
 ```sh
-curl -X POST https://localhost:4444/completions  \
+curl -X POST https://localhost:8080/completions  \
   -H "Authorization: Bearer $GI_API_KEY"         \
   -d '{ "prompt": "Say hello in French" }'
 ```
@@ -246,12 +243,8 @@ goinfer = '--jinja --chat-template-file template.jinja'
 verbose = '--verbose-prompt'
 # extra llama-server flag for ./goinfer -debug
 debug = '--verbosity 3'
-
-# Addresses (ports) to listen
-# Address can be <ip|host>:<port> or simply :<port> when <host> is localhost
-[listen]
-':4444' = 'goinfer'    # /completions endpoint letting tools like Agent-Smith doing the templating
-':5555' = 'llama-swap' # OpenAI-compatible API by llama-swap
+# address can be 'host:port' or 'ip:por' or simply ':port' (for host = localhost)
+addr = ':8080' # OpenAI-compatible API
 ```
 
 - **API key** – Never commit them. Use env. var. `GI_API_KEY` or a secrets manager in production.

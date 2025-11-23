@@ -13,7 +13,6 @@ require (
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/sjson v1.2.5
 	go.yaml.in/yaml/v4 v4.0.0-rc.3
-	golang.org/x/sync v0.18.0
 )
 
 require (

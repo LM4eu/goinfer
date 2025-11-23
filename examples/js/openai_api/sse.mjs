@@ -37,7 +37,7 @@ async function runInference() {
     ]
   };
   const completionParams = { ...params, prompt };
-  const response = await fetch("http://localhost:5555/v1/chat/completions", {
+  const response = await fetch("http://localhost:8080/v1/chat/completions", {
     method: 'POST',
     body: JSON.stringify(completionParams),
     headers: {

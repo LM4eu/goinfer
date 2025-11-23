@@ -69,7 +69,7 @@ payload = {
     "repeat_penalty": 1.2,
 }
 headers = {"Authorization": f"Bearer {KEY}"}
-url = "http://localhost:4444/completion"
+url = "http://localhost:8080/completion"
 response = requests.post(url, headers=headers, json=payload)
 data = response.json()
 print("Model response:")

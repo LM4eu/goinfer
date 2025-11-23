@@ -27,7 +27,7 @@ payload = {
     "template": TEMPLATE,
     "prompt": f"{PROMPT}\n\n{text}",
 }
-url = "http://localhost:4444/completion"
+url = "http://localhost:8080/completion"
 headers = {"Authorization": f"Bearer {KEY}"}
 response = requests.post(url, headers=headers, json=payload)
 data = response.json()

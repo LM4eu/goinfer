@@ -68,7 +68,7 @@ func TestReadMainCfg(t *testing.T) {
 func TestWriteMainCfg(t *testing.T) {
 	// t.Parallel omitted because of t.Setenv usage.
 
-	cfg := &Cfg{}
+	cfg := DefaultCfg()
 	modelsDir := t.TempDir()
 	modelPath := filepath.Join(modelsDir, "model.gguf")
 	err := os.WriteFile(modelPath, make([]byte, 2048), 0o600)
