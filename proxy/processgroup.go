@@ -14,8 +14,8 @@ import (
 )
 
 type ProcessGroup struct {
-	proxyLogger     *LogMonitor
-	upstreamLogger  *LogMonitor
+	proxyLogger    *LogMonitor
+	upstreamLogger *LogMonitor
 
 	// map of current processes
 	processes       map[string]*Process

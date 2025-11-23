@@ -19,7 +19,8 @@ const (
 )
 
 func (pm *ProxyManager) getSetModel(body io.ReadCloser, download, agentSmith bool) (
-	bodyJsonBytes []byte, fixed string, download_, agentSmith_ bool, err error) {
+	bodyJsonBytes []byte, fixed string, download_, agentSmith_ bool, err error,
+) {
 	bodyJsonBytes, err = io.ReadAll(body)
 	if err != nil {
 		return nil, "", true, true, gie.Wrap(err, gie.Invalid, "cannot io.ReadAll(request body)")
@@ -48,7 +49,8 @@ func (pm *ProxyManager) getSetModel(body io.ReadCloser, download, agentSmith boo
 }
 
 func (pm *ProxyManager) fixModelName(requested string, download, agentSmith bool) (
-	fixed string, download_, agentSmith_ bool) {
+	fixed string, download_, agentSmith_ bool,
+) {
 	fixed = requested
 
 	if requested != "" {
