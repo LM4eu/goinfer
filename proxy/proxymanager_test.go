@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/LM4eu/goinfer/conf"
 	"github.com/LM4eu/goinfer/event"
 	"github.com/LM4eu/goinfer/proxy/config"
 	"github.com/stretchr/testify/assert"
@@ -61,7 +62,7 @@ func TestProxyManager_SwapProcessCorrectly(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	for _, modelName := range []string{"model1", "model2"} {
@@ -97,7 +98,7 @@ func TestProxyManager_SwapMultiProcess(t *testing.T) {
 		},
 	})
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	tests := []string{"model1", "model2"}
@@ -139,7 +140,7 @@ func TestProxyManager_PersistentGroupsAreNotSwapped(t *testing.T) {
 		},
 	})
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	// make requests to load all models, loading model1 should not affect model2
@@ -175,7 +176,7 @@ func TestProxyManager_SwapMultiProcessParallelRequests(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	results := map[string]string{}
@@ -237,7 +238,7 @@ func TestProxyManager_ListModelsHandler(t *testing.T) {
 		LogLevel: "error",
 	}
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 
 	// Create a test request
 	req := httptest.NewRequest(http.MethodGet, "/v1/models", http.NoBody)
@@ -339,7 +340,7 @@ models:
 	processedConfig, err := config.LoadConfigFromReader(strings.NewReader(configYaml))
 	assert.NoError(t, err)
 
-	proxy := New(processedConfig)
+	proxy := New(processedConfig, conf.DefaultCfg())
 
 	req := httptest.NewRequest(http.MethodGet, "/v1/models", http.NoBody)
 	w := CreateTestResponseRecorder()
@@ -414,7 +415,7 @@ func TestProxyManager_ListModelsHandler_SortedByID(t *testing.T) {
 		LogLevel: "error",
 	}
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 
 	// Request models list
 	req := httptest.NewRequest(http.MethodGet, "/v1/models", http.NoBody)
@@ -459,7 +460,7 @@ func TestProxyManager_ListModelsHandler_IncludeAliasesInList(t *testing.T) {
 		LogLevel: "error",
 	}
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 
 	// Request models list
 	req := httptest.NewRequest(http.MethodGet, "/v1/models", http.NoBody)
@@ -535,7 +536,7 @@ func TestProxyManager_Shutdown(t *testing.T) {
 		},
 	})
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 
 	// Start all the processes
 	var wg sync.WaitGroup
@@ -562,7 +563,7 @@ func TestProxyManager_Shutdown(t *testing.T) {
 }
 
 func TestProxyManager_Unload(t *testing.T) {
-	conf := config.AddDefaultGroupToConfig(config.Config{
+	cfg := config.AddDefaultGroupToConfig(config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]config.ModelConfig{
 			"model1": getTestSimpleResponderConfig("model1"),
@@ -570,7 +571,7 @@ func TestProxyManager_Unload(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(conf)
+	proxy := New(cfg, conf.DefaultCfg())
 	reqBody := fmt.Sprintf(`{"model":"%s"}`, "model1")
 	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", bytes.NewBufferString(reqBody))
 	w := CreateTestResponseRecorder()
@@ -609,7 +610,7 @@ func TestProxyManager_UnloadSingleModel(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 	defer proxy.StopProcesses(StopImmediately)
 
 	// start both model
@@ -663,7 +664,7 @@ func TestProxyManager_RunningEndpoint(t *testing.T) {
 	}
 
 	// Create proxy once for all tests
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	t.Run("no models loaded", func(t *testing.T) {
@@ -718,7 +719,7 @@ func TestProxyManager_AudioTranscriptionHandler(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	// Create a buffer with multipart form data
@@ -763,7 +764,7 @@ func TestProxyManager_UseModelName(t *testing.T) {
 	modelConfig := getTestSimpleResponderConfig(upstreamModelName)
 	modelConfig.UseModelName = upstreamModelName
 
-	conf := config.AddDefaultGroupToConfig(config.Config{
+	cfg := config.AddDefaultGroupToConfig(config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]config.ModelConfig{
 			"model1": modelConfig,
@@ -771,7 +772,7 @@ func TestProxyManager_UseModelName(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(conf)
+	proxy := New(cfg, conf.DefaultCfg())
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	requestedModel := "model1"
@@ -873,7 +874,7 @@ func TestProxyManager_CORSOptionsHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			proxy := New(config)
+			proxy := New(config, conf.DefaultCfg())
 			defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 			req := httptest.NewRequest(tt.method, "/v1/chat/completions", http.NoBody)
@@ -905,7 +906,7 @@ models:
 	config, err := config.LoadConfigFromReader(strings.NewReader(configStr))
 	assert.NoError(t, err)
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 	t.Run("main model name", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/upstream/model1/test", http.NoBody)
@@ -933,7 +934,7 @@ func TestProxyManager_ChatContentLength(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	reqBody := fmt.Sprintf(`{"model":"%s", "x": "this is just some content to push the length out a bit"}`, "model1")
@@ -962,7 +963,7 @@ func TestProxyManager_FiltersStripParams(t *testing.T) {
 		},
 	})
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 	reqBody := `{"model":"model1", "temperature":0.1, "x_param":"123", "y_param":"abc", "stream":true}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", bytes.NewBufferString(reqBody))
@@ -991,7 +992,7 @@ func TestProxyManager_HealthEndpoint(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 	req := httptest.NewRequest(http.MethodGet, "/health", http.NoBody)
 	rec := CreateTestResponseRecorder()
@@ -1010,7 +1011,7 @@ func TestProxyManager_CompletionEndpoint(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	reqBody := `{"model":"model1"}`
@@ -1061,7 +1062,7 @@ models:
 	defer unsub()
 
 	// Create the proxy which should trigger preloading
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	for range 2 {
@@ -1089,7 +1090,7 @@ func TestProxyManager_StreamingEndpointsReturnNoBufferingHeader(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	endpoints := []string{
@@ -1138,7 +1139,7 @@ func TestProxyManager_ProxiedStreamingEndpointReturnsNoBufferingHeader(t *testin
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	// Make a streaming request
@@ -1170,7 +1171,7 @@ func TestProxyManager_ApiGetVersion(t *testing.T) {
 		"version":    "v001",
 	}
 
-	proxy := New(config)
+	proxy := New(config, conf.DefaultCfg())
 	proxy.SetVersion(versionTest["build_date"], versionTest["commit"], versionTest["version"])
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 

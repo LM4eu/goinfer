@@ -20,6 +20,7 @@ import (
 
 	"github.com/LM4eu/goinfer/conf"
 	"github.com/LM4eu/goinfer/event"
+	"github.com/LM4eu/goinfer/gie"
 	"github.com/LM4eu/goinfer/proxy/config"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
@@ -242,30 +243,61 @@ func (pm *ProxyManager) setupGinEngine() {
 	})
 
 	// Set up routes using the Gin engine
-	pm.ginEngine.POST("/v1/chat/completions", pm.ProxyOAIHandler)
+	pm.ginEngine.POST("/v1/chat/completions", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, false) })
+	pm.ginEngine.POST("/d1/chat/completions", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, false) })
+	pm.ginEngine.POST("/a1/chat/completions", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, true) })
+	pm.ginEngine.POST("/A1/chat/completions", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, true) })
 	// Support legacy /v1/completions api, see issue #12
-	pm.ginEngine.POST("/v1/completions", pm.ProxyOAIHandler)
+	pm.ginEngine.POST("/v1/completions", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, false) })
+	pm.ginEngine.POST("/d1/completions", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, false) })
+	pm.ginEngine.POST("/a1/completions", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, true) })
+	pm.ginEngine.POST("/A1/completions", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, true) })
 
 	// Support embeddings and reranking
-	pm.ginEngine.POST("/v1/embeddings", pm.ProxyOAIHandler)
+	pm.ginEngine.POST("/v1/embeddings", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, false) })
+	pm.ginEngine.POST("/d1/embeddings", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, false) })
+	pm.ginEngine.POST("/a1/embeddings", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, true) })
+	pm.ginEngine.POST("/A1/embeddings", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, true) })
 
 	// llama-server's /reranking endpoint + aliases
-	pm.ginEngine.POST("/reranking", pm.ProxyOAIHandler)
-	pm.ginEngine.POST("/rerank", pm.ProxyOAIHandler)
-	pm.ginEngine.POST("/v1/rerank", pm.ProxyOAIHandler)
-	pm.ginEngine.POST("/v1/reranking", pm.ProxyOAIHandler)
+	pm.ginEngine.POST("/reranking", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, false) })
+	pm.ginEngine.POST("/rerank", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, false) })
+	pm.ginEngine.POST("/v1/rerank", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, false) })
+	pm.ginEngine.POST("/d1/rerank", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, false) })
+	pm.ginEngine.POST("/a1/rerank", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, true) })
+	pm.ginEngine.POST("/A1/rerank", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, true) })
+	pm.ginEngine.POST("/v1/reranking", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, false) })
+	pm.ginEngine.POST("/d1/reranking", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, false) })
+	pm.ginEngine.POST("/a1/reranking", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, true) })
+	pm.ginEngine.POST("/A1/reranking", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, true) })
 
 	// llama-server's /infill endpoint for code infilling
-	pm.ginEngine.POST("/infill", pm.ProxyOAIHandler)
+	pm.ginEngine.POST("/v1/infill", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, false) })
+	pm.ginEngine.POST("/d1/infill", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, false) })
+	pm.ginEngine.POST("/a1/infill", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, true) })
+	pm.ginEngine.POST("/A1/infill", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, true) })
 
 	// llama-server's /completion endpoint
-	pm.ginEngine.POST("/completion", pm.ProxyOAIHandler)
+	pm.ginEngine.POST("/completion", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, false) })
+	pm.ginEngine.POST("/d/completion", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, false) })
+	pm.ginEngine.POST("/a/completion", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, true) })
+	pm.ginEngine.POST("/A/completion", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, true) })
 
 	// Support audio/speech endpoint
-	pm.ginEngine.POST("/v1/audio/speech", pm.ProxyOAIHandler)
-	pm.ginEngine.POST("/v1/audio/transcriptions", pm.ProxyOAIPostFormHandler)
+	pm.ginEngine.POST("/v1/audio/speech", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, false) })
+	pm.ginEngine.POST("/d1/audio/speech", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, false) })
+	pm.ginEngine.POST("/a1/audio/speech", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, true) })
+	pm.ginEngine.POST("/A1/audio/speech", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, true) })
+	pm.ginEngine.POST("/v1/audio/transcriptions", func(c *gin.Context) { pm.ProxyOAIPostFormHandler(c, false, false) })
+	pm.ginEngine.POST("/d1/audio/transcriptions", func(c *gin.Context) { pm.ProxyOAIPostFormHandler(c, true, false) })
+	pm.ginEngine.POST("/a1/audio/transcriptions", func(c *gin.Context) { pm.ProxyOAIPostFormHandler(c, false, true) })
+	pm.ginEngine.POST("/A1/audio/transcriptions", func(c *gin.Context) { pm.ProxyOAIPostFormHandler(c, true, true) })
 
 	pm.ginEngine.GET("/v1/models", pm.ListModelsHandler)
+	pm.ginEngine.GET("/d1/models", pm.ListModelsHandler)
+	pm.ginEngine.GET("/a1/models", pm.ListModelsHandler)
+	pm.ginEngine.GET("/A1/models", pm.ListModelsHandler)
+	pm.ginEngine.GET("/gi/models", pm.GiListModelsHandler)
 
 	// in proxymanager_loghandlers.go
 	pm.ginEngine.GET("/logs", pm.sendLogsHandlers)
@@ -470,6 +502,18 @@ func (pm *ProxyManager) ListModelsHandler(c *gin.Context) {
 	})
 }
 
+func (pm *ProxyManager) GiListModelsHandler(c *gin.Context) {
+	models := pm.cfg.ListModels()
+
+	if len(models) == 0 {
+		c.String(http.StatusNoContent, `{"count":0, "models":[]}`)
+		return
+	}
+
+	// Use gin's JSON method which handles content-type and encoding
+	c.JSON(http.StatusOK, gin.H{"count": len(models), "models": models})
+}
+
 func (pm *ProxyManager) proxyToUpstream(c *gin.Context) {
 	upstreamPath := c.Param("upstreamPath")
 
@@ -553,55 +597,35 @@ func (pm *ProxyManager) proxyToUpstream(c *gin.Context) {
 	}
 }
 
-func (pm *ProxyManager) ProxyOAIHandler(c *gin.Context) {
-	bodyBytes, err := io.ReadAll(c.Request.Body)
+func (pm *ProxyManager) ProxyOAIHandler(c *gin.Context, download, agentSmith bool) {
+	if download || agentSmith {
+		if c.Request.URL.Path[2] == '/' {
+			c.Request.URL.Path = c.Request.URL.Path[2:]
+		} else {
+			c.Request.URL.Path = "/v" + c.Request.URL.Path[2:]
+		}
+	}
+
+	bodyBytes, realModelName, download, agentSmith, err := pm.getSetModel(c.Request.Body, download, agentSmith)
 	if err != nil {
-		pm.sendErrorResponse(c, http.StatusBadRequest, "could not ready request body")
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+	if realModelName == "" {
+		c.JSON(http.StatusBadRequest, gie.New(gie.Invalid, "no model provided and no model loaded"))
 		return
 	}
 
-	requestedModel := gjson.GetBytes(bodyBytes, "model").String()
-	if requestedModel == "" {
-		// fallback: the first running process we find
-		for _, processGroup := range pm.processGroups {
-			for _, process := range processGroup.processes {
-				if process.CurrentState() == StateReady {
-					requestedModel = process.ID
-				}
-			}
-		}
-		if requestedModel == "" {
-			pm.sendErrorResponse(c, http.StatusBadRequest, "missing or invalid 'model' key")
-			return
-		}
-	}
-
-	realModelName, found := pm.config.RealModelName(requestedModel)
-	if !found {
-		pm.sendErrorResponse(c, http.StatusBadRequest, "could not find real modelID for "+requestedModel)
-		return
-	}
-
-	processGroup, _, err := pm.swapProcessGroup(realModelName)
+	processGroup, realModelName, err := pm.swapProcessGroup(realModelName)
 	if err != nil {
-		pm.sendErrorResponse(c, http.StatusInternalServerError, "error swapping process group: "+err.Error())
+		c.JSON(http.StatusInternalServerError, gie.Wrap(err, gie.Invalid, "error swapping process group", "model", realModelName))
 		return
-	}
-
-	// issue #69 allow custom model names to be sent to upstream
-	useModelName := pm.config.Models[realModelName].UseModelName
-	if useModelName != "" {
-		bodyBytes, err = sjson.SetBytes(bodyBytes, "model", useModelName)
-		if err != nil {
-			pm.sendErrorResponse(c, http.StatusInternalServerError, "error rewriting model name in JSON: "+err.Error())
-			return
-		}
 	}
 
 	// issue #174 strip parameters from the JSON body
 	stripParams, err := pm.config.Models[realModelName].Filters.SanitizedStripParams()
 	if err != nil { // just log it and continue
-		pm.proxyLogger.Errorf("Error sanitizing strip params string: %s, %s", pm.config.Models[realModelName].Filters.StripParams, err.Error())
+		pm.proxyLogger.Warnf("Error sanitizing strip params string: %s, %s", pm.config.Models[realModelName].Filters.StripParams, err.Error())
 	} else {
 		for _, param := range stripParams {
 			pm.proxyLogger.Debugf("<%s> stripping param: %s", realModelName, param)
@@ -631,19 +655,19 @@ func (pm *ProxyManager) ProxyOAIHandler(c *gin.Context) {
 		if err != nil {
 			pm.sendErrorResponse(c, http.StatusInternalServerError, "error proxying metrics wrapped request: "+err.Error())
 			pm.proxyLogger.Errorf("Error Proxying Metrics Wrapped Request for processGroup %s and model %s", processGroup.id, realModelName)
-			return
 		}
-	} else {
-		err := processGroup.ProxyRequest(realModelName, c.Writer, c.Request)
-		if err != nil {
-			pm.sendErrorResponse(c, http.StatusInternalServerError, "error proxying request: "+err.Error())
-			pm.proxyLogger.Errorf("Error Proxying Request for processGroup %s and model %s", processGroup.id, realModelName)
-			return
-		}
+		return
+	}
+
+	err = processGroup.ProxyRequest(realModelName, c.Writer, c.Request)
+	if err != nil {
+		pm.sendErrorResponse(c, http.StatusInternalServerError, "error proxying request: "+err.Error())
+		pm.proxyLogger.Errorf("Error Proxying Request for processGroup %s and model %s", processGroup.id, realModelName)
+		return
 	}
 }
 
-func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context) {
+func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context, download, agentSmith bool) {
 	// Parse multipart form
 	if err := c.Request.ParseMultipartForm(32 << 20); err != nil { // 32MB max memory, larger files go to tmp disk
 		pm.sendErrorResponse(c, http.StatusBadRequest, "error parsing multipart form: "+err.Error())
@@ -652,22 +676,9 @@ func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context) {
 
 	// Get model parameter from the form
 	requestedModel := c.Request.FormValue("model")
-	if requestedModel == "" {
-		// fallback: the first running process we find
-		for _, processGroup := range pm.processGroups {
-			for _, process := range processGroup.processes {
-				if process.CurrentState() == StateReady {
-					requestedModel = process.ID
-				}
-			}
-		}
-		if requestedModel == "" {
-			pm.sendErrorResponse(c, http.StatusBadRequest, "missing or invalid 'model' parameter in form data")
-			return
-		}
-	}
+	fixed, download, agentSmith := pm.fixModelName(requestedModel, download, agentSmith)
 
-	processGroup, realModelName, err := pm.swapProcessGroup(requestedModel)
+	processGroup, realModelName, err := pm.swapProcessGroup(fixed)
 	if err != nil {
 		pm.sendErrorResponse(c, http.StatusInternalServerError, "error swapping process group: "+err.Error())
 		return
@@ -780,7 +791,18 @@ func (pm *ProxyManager) UnloadAllModelsHandler(c *gin.Context) {
 
 func (pm *ProxyManager) ListRunningProcessesHandler(context *gin.Context) {
 	context.Header("Content-Type", "application/json")
-	runningProcesses := make([]gin.H, 0) // Default to an empty response.
+
+	// Put the results under the `running` key.
+	response := gin.H{
+		"running": pm.listRunningProcesses(),
+	}
+
+	context.JSON(http.StatusOK, response) // Always return 200 OK
+}
+
+func (pm *ProxyManager) listRunningProcesses() []gin.H {
+	count := pm.countRunningProcesses()
+	runningProcesses := make([]gin.H, count) // Default to an empty response.
 
 	for _, processGroup := range pm.processGroups {
 		for _, process := range processGroup.processes {
@@ -792,13 +814,21 @@ func (pm *ProxyManager) ListRunningProcessesHandler(context *gin.Context) {
 			}
 		}
 	}
+	return runningProcesses
+}
 
-	// Put the results under the `running` key.
-	response := gin.H{
-		"running": runningProcesses,
+func (pm *ProxyManager) countRunningProcesses() int {
+	count := 0
+
+	for _, processGroup := range pm.processGroups {
+		for _, process := range processGroup.processes {
+			if process.CurrentState() == StateReady {
+				count++
+			}
+		}
 	}
 
-	context.JSON(http.StatusOK, response) // Always return 200 OK
+	return count
 }
 
 func (pm *ProxyManager) findGroupByModelName(modelName string) *ProcessGroup {
@@ -818,15 +848,37 @@ func (pm *ProxyManager) SetVersion(buildDate, commit, version string) {
 	pm.version = version
 }
 
-// ProxyToFirstRunningProcess forwards the request to the any running process (llama-server).
-func (pm *ProxyManager) ProxyToFirstRunningProcess(c *gin.Context) {
+func (pm *ProxyManager) firstRunningProcess() string {
+	var starting string
 	for _, processGroup := range pm.processGroups {
 		for _, process := range processGroup.processes {
-			if process.CurrentState() == StateReady {
+			if process.state == StateReady {
+				return process.ID
+			}
+			if process.state == StateStarting {
+				starting = process.ID
+			}
+		}
+	}
+	return starting
+}
+
+// ProxyToFirstRunningProcess forwards the request to a running process (llama-server).
+func (pm *ProxyManager) ProxyToFirstRunningProcess(c *gin.Context) {
+	var starting *Process
+	for _, processGroup := range pm.processGroups {
+		for _, process := range processGroup.processes {
+			if process.state == StateReady {
 				process.ProxyRequest(c.Writer, c.Request)
 				return
 			}
+			if process.state == StateStarting {
+				starting = process
+			}
 		}
+	}
+	if starting != nil {
+		starting.ProxyRequest(c.Writer, c.Request)
 	}
 	pm.sendErrorResponse(c, http.StatusInternalServerError, "No model currently running. Please select a model.")
 }
