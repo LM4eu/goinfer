@@ -9,7 +9,6 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/LM4eu/goinfer/gie"
@@ -66,23 +65,6 @@ func (inf *Infer) completionHandler(c echo.Context) error {
 	// prompt parameter is mandatory
 	if prompt.Str == "" {
 		return gie.New(gie.Invalid, "mandatory prompt is empty", "the issue is in this /completions request", msg)
-	}
-
-	// apply template if any
-	tpl := gjson.GetBytes(body, "template").String()
-	if tpl != "" {
-		tpl = inf.Cfg.Templates[msg.Model]
-	}
-	if tpl != "" {
-		newPrompt := strings.ReplaceAll(msg.Template, "{prompt}", prompt.Str)
-		body, err = sjson.SetBytes(body, "prompt", newPrompt)
-		if err != nil {
-			return gie.Wrap(err, gie.Invalid, "cannot update prompt in the JSON", "the issue is in this request body", body, "newPrompt", newPrompt)
-		}
-		body, err = sjson.DeleteBytes(body, "template")
-		if err != nil {
-			return gie.Wrap(err, gie.Invalid, "cannot delete the template field in the JSON", "the issue is in this request body", body)
-		}
 	}
 
 	var timeout int64

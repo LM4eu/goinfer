@@ -31,7 +31,6 @@ type (
 		ExtraModels  map[string]string    `toml:"extra_models"        yaml:"extra_models"   comment:"Download models using llama-server flags\nsee : github.com/ggml-org/llama.cpp/blob/master/common/arg.cpp#L3000"`
 		Llama        Llama                `toml:"llama"               yaml:"llama"`
 		Addr         string               `toml:"addr"                yaml:"addr"           comment:"address can be 'host:port' or 'ip:por' or simply ':port' (for host = localhost)"`
-		Templates    map[string]string    `toml:"templates,omitempty" yaml:"templates,omitempty" comment:"Provide a template file for each model (not yet fully implemented)"`
 		Info         map[string]ModelInfo `toml:"-"                   yaml:"-"`
 		Swap         config.Config        `toml:"-"                   yaml:"-"`
 		// Swap is stored in llama-swap.yml
