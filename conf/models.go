@@ -38,7 +38,11 @@ type (
 	}
 )
 
-const notConfigured = "file present but not configured in llama-swap.yml"
+const (
+	notConfigured = "file present but not configured in llama-swap.yml"
+	D_            = "D_"
+	A_            = "A_"
+)
 
 // ListModels returns the model names from the config and from the models_dir.
 func (cfg *Cfg) ListModels() map[string]ModelInfo {
@@ -55,7 +59,7 @@ func (cfg *Cfg) ListModels() map[string]ModelInfo {
 	}
 
 	for name := range cfg.Swap.Models {
-		if len(name) > 3 && name[:3] == "GI_" && cfg.Swap.Models[name].Unlisted {
+		if len(name) > len(A_) && name[:len(A_)] == A_ && cfg.Swap.Models[name].Unlisted {
 			continue // do not report models for /completion endpoint
 		}
 		cfg.refineModelInfo(name)

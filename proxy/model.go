@@ -8,14 +8,15 @@ import (
 	"io"
 	"strings"
 
+	"github.com/LM4eu/goinfer/conf"
 	"github.com/LM4eu/goinfer/gie"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
 
 const (
-	D_  = "D_"
-	AS_ = "AS_"
+	D_ = conf.D_
+	A_ = conf.A_
 )
 
 func (pm *ProxyManager) getSetModel(body io.ReadCloser, download, agentSmith bool) (
@@ -59,9 +60,9 @@ func (pm *ProxyManager) fixModelName(requested string, download, agentSmith bool
 			fixed = fixed[len(D_):]
 		}
 
-		if strings.HasPrefix(fixed, AS_) {
+		if strings.HasPrefix(fixed, A_) {
 			agentSmith = true
-			fixed = fixed[len(AS_):]
+			fixed = fixed[len(A_):]
 		}
 
 		real, found := pm.config.RealModelName(fixed)

@@ -224,28 +224,28 @@ func (cfg *Cfg) setSwapModels() {
 		switch {
 		case flags == "":
 			cfg.addModelCfg(model, "${cmd-common} -hf "+model, commonMC)
-			cfg.addModelCfg("GI_"+model, "${cmd-goinfer} -hf "+model, goinferMC)
+			cfg.addModelCfg(A_+model, "${cmd-goinfer} -hf "+model, goinferMC)
 		case strings.HasPrefix(flags, "--embd-"):
 			cfg.addModelCfg(model, "${cmd-common} "+flags, commonMC)
 		case strings.HasPrefix(flags, "--fim-"):
 			cfg.addModelCfg(model, "${cmd-common} "+flags, fimMC)
 		case strings.Contains(flags, "-m "), strings.Contains(flags, "-hf "):
 			cfg.addModelCfg(model, "${cmd-common} "+flags, commonMC)
-			cfg.addModelCfg("GI_"+model, "${cmd-goinfer} "+flags, goinferMC)
+			cfg.addModelCfg(A_+model, "${cmd-goinfer} "+flags, goinferMC)
 		default:
 			cfg.addModelCfg(model, "${cmd-common} -hf "+model+" "+flags, commonMC)
-			cfg.addModelCfg("GI_"+model, "${cmd-goinfer} -hf "+model+" "+flags, goinferMC)
+			cfg.addModelCfg(A_+model, "${cmd-goinfer} -hf "+model+" "+flags, goinferMC)
 		}
 	}
 
 	// For each model, set two model settings:
 	// 1. for the OpenAI endpoints
-	// 2. for the /completion endpoint (prefix with GI_ and hide the model)
+	// 2. for the /completion endpoint (prefix with A_ and hide the model)
 	for name, mi := range cfg.Info {
 		goinferMC.UseModelName = name // overrides the model name that is sent to /upstream server
 		args := " " + mi.Flags + " -m " + mi.Path
-		cfg.addModelCfg(name, "${cmd-common}"+args, commonMC)         // API for Cline, RooCode, RolePlay...
-		cfg.addModelCfg("GI_"+name, "${cmd-goinfer}"+args, goinferMC) // API for Agent-Smith...
+		cfg.addModelCfg(name, "${cmd-common}"+args, commonMC)      // API for Cline, RooCode, RolePlay...
+		cfg.addModelCfg(A_+name, "${cmd-goinfer}"+args, goinferMC) // API for Agent-Smith...
 	}
 }
 

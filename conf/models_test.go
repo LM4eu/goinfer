@@ -154,9 +154,9 @@ func TestListModels(t *testing.T) {
 		ModelsDir: tmp,
 		Swap: config.Config{
 			Models: map[string]config.ModelConfig{
-				"disk-model": {Cmd: "llama-server -flag", Unlisted: false},
-				"missing":    {Cmd: "llama-server -flag -m missing.gguf", Unlisted: false},
-				"GI_hidden":  {Cmd: "llama-server -flag -m mistral.gguf", Unlisted: true},
+				"disk-model":  {Cmd: "llama-server -flag", Unlisted: false},
+				"missing":     {Cmd: "llama-server -flag -m missing.gguf", Unlisted: false},
+				A_ + "hidden": {Cmd: "llama-server -flag -m mistral.gguf", Unlisted: true},
 			},
 		},
 	}
@@ -167,8 +167,8 @@ func TestListModels(t *testing.T) {
 	if info, ok := models["missing"]; !ok || !strings.Contains(info.Error, "file absent") {
 		t.Errorf("missing entry error not as expected: %v", info)
 	}
-	if _, ok := models["GI_hidden"]; ok {
-		t.Errorf("GI_hidden should not be listed")
+	if _, ok := models[A_+"hidden"]; ok {
+		t.Errorf(A_ + "hidden should not be listed")
 	}
 }
 

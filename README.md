@@ -291,8 +291,8 @@ models:
       # useful for preventing overriding of default server params by requests
       strip_params: "temperature,top_p,top_k"
 
-  # GI_ prefix for goinfer /completions endpoint
-  GI_ggml-org/Qwen2.5-Coder-0.5B-Q8_0-GGUF_qwen2.5-coder-0.5b-q8_0:
+  # A_ prefix for Agent-Smith compatibility
+  A_ggml-org/Qwen2.5-Coder-0.5B-Q8_0-GGUF_qwen2.5-coder-0.5b-q8_0:
       cmd: ${cmd-goinfer}  -m /home/c/.cache/llama.cpp/ggml-org_Qwen2.5-Coder-0.5B-Q8_0-GGUF_qwen2.5-coder-0.5b-q8_0.gguf
       proxy: http://localhost:${PORT}
       checkEndpoint: /health
@@ -375,7 +375,7 @@ llama-swap starts `llama-server` using the command lines configured in `llama-sw
 Goinfer generates that `llama-swap.yml` file setting two different command lines for each model:
 
 1. classic command line for models listed by `/v1/models` (to be used by tools like Cline / RooCode)
-2. with extra arguments `--jinja --chat-template-file template.jinja` when the requested model is prefixed with `GI_`
+2. with extra arguments `--jinja --chat-template-file template.jinja` when the requested model is prefixed with `A_`
 
 The first one is suitable for most of the use cases such as Cline / RooCode.
 The second one is a specific use case for tools like
