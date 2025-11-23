@@ -73,7 +73,7 @@ func setModelIfMissing[T ModelRequest](inf *Infer, msg T, bodyReader io.ReadClos
 	}
 
 	model := gjson.GetBytes(body, "model").String()
-	if model != "" && model != "default" {
+	if model != "" {
 		fixed := inf.Cfg.FixModelName(model)
 		if model == fixed {
 			return body, nil
@@ -87,7 +87,7 @@ func setModelIfMissing[T ModelRequest](inf *Infer, msg T, bodyReader io.ReadClos
 		}
 	}
 	if model == "" {
-		return nil, gie.Wrap(err, gie.Invalid,
+		return nil, gie.New(gie.Invalid,
 			"no model loaded and no default_model in goinfer.ini => specify the field model in the request")
 	}
 
