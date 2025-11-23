@@ -27,7 +27,7 @@ func (pm *ProxyManager) getSetModel(body io.ReadCloser, download, agentSmith boo
 		return nil, "", true, true, gie.Wrap(err, gie.Invalid, "cannot io.ReadAll(request body)")
 	}
 
-	// model name fom the request
+	// model name from the request
 	requested := gjson.GetBytes(bodyJsonBytes, "model").String()
 
 	fixed, download, agentSmith = pm.fixModelName(requested, download, agentSmith)
@@ -76,6 +76,13 @@ func (pm *ProxyManager) fixModelName(requested string, download, agentSmith bool
 	if fixed == "" {
 		download = false
 		fixed = pm.firstRunningProcess()
+	}
+
+	if agentSmith {
+		real, found := pm.config.RealModelName(A_ + fixed)
+		if found {
+			return real, download, agentSmith
+		}
 	}
 
 	return fixed, download, agentSmith
