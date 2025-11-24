@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"unicode"
 
@@ -489,4 +490,65 @@ func verify(path string) (int64, error) {
 
 	slog.Debug("OK Model file is the first of a series", "path", path)
 	return size, nil // OK
+}
+
+// DiscoverModelFolders returns a sorted slice
+// of *top‑most* directories that contain *.gguf files.
+// If no root paths are supplied, the function scans
+// the typical locations: /mnt /var/opt /opt /home/user
+//
+// Example usage:
+//
+//	dirs := conf.DiscoverModelFolders() // []string{"/home/bob/models", "/mnt/models"}
+//
+// This Go function is a rewrite of the following bash command line:
+//
+//	p=; find /mnt /var/opt /opt "$HOME" -type f -name '*.gguf' -printf '%h\0' | sort -zu |
+//	while IFS= read -rd '' d; do [[ $p && $d == "$p"/* ]] && continue; echo -n "$d:"; p=$d; done
+//
+// This bash command line discovers the parent folders of the GUFF files:
+//   - find the files *.gguf in /mnt /var/opt /opt "$HOME" directories
+//   - -printf their folders (%h) separated by nul character `\0`
+//     (support folder names containing newline characters)
+//   - sort them, -u to keep a unique copy of each folder (`z` = input is `\0` separated)
+//   - while read xxx; do xxx; done  =>  keep the parent folders only
+//   - echo $d: prints each parent folder separated by ":" (`-n` no newline)
+func DiscoverModelFolders(roots ...string) []string {
+	// default roots = /mnt /var/opt /opt /home/$USER
+	if len(roots) == 0 {
+		roots = []string{"/mnt", "/var/opt", "/opt"}
+		home, _ := os.UserHomeDir() // ignore error – if we can't get it we just omit it
+		if home != "" {
+			roots = append(roots, home)
+		}
+	}
+
+	// collect the parent directories of *.gguf files
+	dirSet := make(map[string]struct{}) // set for uniqueness
+	for _, r := range roots {
+		_ = filepath.Walk(r, func(path string, fi os.FileInfo, e error) error {
+			if e == nil && !fi.IsDir() && strings.HasSuffix(path, ".gguf") {
+				dirSet[filepath.Dir(path)] = struct{}{}
+			}
+			return nil
+		})
+	}
+
+	// convert the set to a sorted slice
+	dirs := make([]string, 0, len(dirSet))
+	for d := range dirSet {
+		dirs = append(dirs, d)
+	}
+	sort.Strings(dirs)
+
+	// drop sub‑directories that are already covered by a higher‑level entry
+	out := make([]string, 0, len(dirs))
+	sep := string(os.PathSeparator)
+	for _, d := range dirs {
+		if len(out) > 0 && strings.HasPrefix(d, out[len(out)-1]+sep) {
+			continue // skip d = child of the previously kept directory
+		}
+		out = append(out, d)
+	}
+	return out
 }
