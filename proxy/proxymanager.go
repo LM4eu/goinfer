@@ -277,11 +277,17 @@ func (pm *ProxyManager) setupGinEngine() {
 	pm.ginEngine.POST("/a1/infill", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, true) })
 	pm.ginEngine.POST("/A1/infill", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, true) })
 
-	// llama-server's /completion endpoint
+	// llama-server's /completion endpoint  (legacy)
 	pm.ginEngine.POST("/completion", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, false) })
 	pm.ginEngine.POST("/d/completion", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, false) })
 	pm.ginEngine.POST("/a/completion", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, true) })
 	pm.ginEngine.POST("/A/completion", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, true) })
+
+	// llama-server's /completions endpoint  (official)
+	pm.ginEngine.POST("/completions", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, false) })
+	pm.ginEngine.POST("/d/completions", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, false) })
+	pm.ginEngine.POST("/a/completions", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, true) })
+	pm.ginEngine.POST("/A/completions", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, true) })
 
 	// Support audio/speech endpoint
 	pm.ginEngine.POST("/v1/audio/speech", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, false) })
