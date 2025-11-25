@@ -492,14 +492,14 @@ func verify(path string) (int64, error) {
 	return size, nil // OK
 }
 
-// DiscoverModelFolders returns a sorted slice
+// DiscoverModelParentFolders returns a sorted slice
 // of *top‑most* directories that contain *.gguf files.
 // If no root paths are supplied, the function scans
-// the typical locations: /mnt /var/opt /opt /home/user
+// the typical locations: /mnt /var/opt /opt /home/username
 //
 // Example usage:
 //
-//	dirs := conf.DiscoverModelFolders() // []string{"/home/bob/models", "/mnt/models"}
+//	dirs := conf.DiscoverModelParentFolders() // []string{"/home/bob/models", "/mnt/models"}
 //
 // This Go function is a rewrite of the following bash command line:
 //
@@ -513,17 +513,17 @@ func verify(path string) (int64, error) {
 //   - sort them, -u to keep a unique copy of each folder (`z` = input is `\0` separated)
 //   - while read xxx; do xxx; done  =>  keep the parent folders only
 //   - echo $d: prints each parent folder separated by ":" (`-n` no newline)
-func DiscoverModelFolders(roots ...string) []string {
-	// default roots = /mnt /var/opt /opt /home/$USER
+func DiscoverModelParentFolders(roots ...string) []string {
+	// default roots = /mnt /var/opt /opt /home/username
 	if len(roots) == 0 {
 		roots = []string{"/mnt", "/var/opt", "/opt"}
-		home, _ := os.UserHomeDir() // ignore error – if we can't get it we just omit it
+		home, _ := os.UserHomeDir()
 		if home != "" {
 			roots = append(roots, home)
 		}
 	}
 
-	// collect the parent directories of *.gguf files
+	// collect all directories containing *.gguf files
 	dirSet := make(map[string]struct{}) // set for uniqueness
 	for _, r := range roots {
 		_ = filepath.Walk(r, func(path string, fi os.FileInfo, e error) error {
@@ -542,13 +542,107 @@ func DiscoverModelFolders(roots ...string) []string {
 	sort.Strings(dirs)
 
 	// drop sub‑directories that are already covered by a higher‑level entry
-	out := make([]string, 0, len(dirs))
+	parents := make([]string, 0, len(dirs))
 	sep := string(os.PathSeparator)
 	for _, d := range dirs {
-		if len(out) > 0 && strings.HasPrefix(d, out[len(out)-1]+sep) {
+		if len(parents) > 0 && strings.HasPrefix(d, parents[len(parents)-1]+sep) {
 			continue // skip d = child of the previously kept directory
 		}
-		out = append(out, d)
+		parents = append(parents, d)
 	}
-	return out
+	return parents
+}
+
+// DiscoverModelsTree returns the GGUF files tree
+// by walking the supplied roots (or a default set).
+// It returns a `map[parentDir]map[childDir][]file` where:
+//
+//   - parentDir – shallowest directory that contains at least one *.gguf file.
+//   - childDir – path relative to that parent (empty string for files directly inside the parent).
+//   - file   – the basename of the *.gguf file (including the ".gguf" suffix).
+//
+// All filesystem errors are ignored:
+// the function always returns whatever it could discover.
+//
+// Example (files on disk):
+//
+//	/home/bob/models/model1.gguf
+//	/home/bob/models/subdir/model2.gguf
+//	/mnt/models/model3.gguf
+//
+//	tree := DiscoverModelsTree()
+//
+//	// equivalent to:
+//
+//	tree = map[string]map[string][]string{
+//	    "/home/bob/models": {
+//	        "":         {"model1.gguf"},
+//	        "subdir":   {"model2.gguf"},
+//	    },
+//	    "/mnt/models": {
+//	        "":         {"model3.gguf"},
+//	    },
+//	}
+func DiscoverModelsTree(roots ...string) map[string]map[string][]string {
+	if len(roots) == 0 {
+		// default roots = /mnt /var/opt /opt /home/$USER
+		roots = []string{"/mnt", "/var/opt", "/opt"}
+		home, _ := os.UserHomeDir()
+		if home != "" {
+			roots = append(roots, home)
+		}
+	}
+
+	dirFiles := collectModelFiles(roots)
+
+	return buildModelsTree(dirFiles)
+}
+
+// collectModelFiles walks each root and groups *.gguf files by the directory that holds them.
+func collectModelFiles(roots []string) map[string][]string {
+	dirFiles := make(map[string][]string) // dir → []basename
+	for _, root := range roots {
+		_ = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+			if err != nil || d.IsDir() {
+				return nil // ignore unreadable paths and directories
+			}
+			if strings.EqualFold(filepath.Ext(path), ".gguf") {
+				dir := filepath.Dir(path)
+				dirFiles[dir] = append(dirFiles[dir], filepath.Base(path))
+			}
+			return nil
+		})
+	}
+	return dirFiles
+}
+
+// buildModelsTree turns the flat dir→files map into the hierarchical result.
+func buildModelsTree(dirFiles map[string][]string) map[string]map[string][]string {
+	// sort the directory keys so parents come first.
+	dirs := make([]string, 0, len(dirFiles))
+	for d := range dirFiles {
+		dirs = append(dirs, d)
+	}
+	sort.Strings(dirs)
+
+	// Collapse children under their parent directory.
+	const sep = string(filepath.Separator)
+	tree := make(map[string]map[string][]string)
+	var parent string // current parent directory
+
+	for _, d := range dirs {
+		files := dirFiles[d]
+		sort.Strings(files) // deterministic order of file names
+
+		// Is this a new top‑level parent?
+		if parent == "" || !strings.HasPrefix(d, parent+sep) {
+			parent = d
+			tree[parent] = map[string][]string{"": files}
+			continue
+		}
+		// d is a descendant of the current parent
+		relativeDir := d[len(parent)+1:] // trim parent dir
+		tree[parent][relativeDir] = files
+	}
+	return tree
 }
