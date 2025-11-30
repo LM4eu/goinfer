@@ -48,8 +48,9 @@ set -o noclobber         # prevent accidental file overwriting with > redirectio
 shopt -s inherit_errexit # apply these restrictions to $(command substitution)
 
 # Color logs
-log() { set +x; echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[32m" "$@" "\033[m"; }
 err() { set +x; echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[31m" "$@" "\033[m"; }
+log() { set +x; echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[32m" "$@" "\033[m"; }
+lop() { log "repo ${repo:-none} - $@"; set -x; } # lop stands for LOg rePo
 
 # print the script line number if something goes wrong
 set -E
@@ -60,15 +61,15 @@ goinfer_dir="$(  cd "${BASH_SOURCE[0]%/*}/.."  &&  pwd)"
 root_dir="$(     cd "${goinfer_dir}/.."        &&  pwd)"
 llamaCpp_dir="$( cd "${root_dir}/llama.cpp"    &&  pwd)"
 
+# CPU flags used to build both llama.cpp and goinfer
+flags="$(grep "^flags" -wm1 /proc/cpuinfo) " # trailing space required
+
 case "${1:-}" in
   -h|--help)
     echo "$help"
     exit
     ;;
 esac
-
-# if go.work present and uses llama-swap => enable llama-swap build
-work_file="$goinfer_dir/go.work"
 
 command -v npm    >/dev/null || { err REQUIRED: install npm    && exit 1; }
 command -v git    >/dev/null || { err REQUIRED: install git    && exit 1; }
@@ -77,7 +78,13 @@ command -v cmake  >/dev/null || { err REQUIRED: install cmake  && exit 1; }
 command -v ninja  >/dev/null || { err REQUIRED: install ninja  && exit 1; }
 command -v ccache >/dev/null || { err REQUIRED: install ccache && exit 1; }
 
-logx() { log "repo ${repo:-none} - $@"; set -x; }
+do_llamaCpp() {
+  cd "$root_dir"
+
+  clone_checkout_pull ggml-org/llama.cpp "${branch:-master}" "${tag:-}"
+
+  build_llamaCpp
+}
 
 # clone_checkout_pull sets the variable build_reason=... to trigger the build
 clone_checkout_pull() {
@@ -87,40 +94,36 @@ clone_checkout_pull() {
 
   build_reason=clone
   [ -d "${repo#*/}" ] && build_reason= || 
-    ( pwd; logx clone; git clone https://github.com/"$repo" )
+    ( pwd; lop clone; git clone https://github.com/"$repo" )
   
   cd "${repo#*/}"
   pwd
 
-  ( logx fetch; git fetch --all --prune --tags )
+  ( lop fetch; git fetch --all --prune --tags )
 
   if [[ -n "$tag" ]]
   then
     build_reason="tag: $tag"
-    ( logx "checkout $tag"; git checkout "$tag" )
+    ( lop "checkout $tag"; git checkout "$tag" )
   else
-    # logx "switch $branch"; git switch -C "$branch" origin/"$branch" )
-    ( logx "switch $branch"; git switch "$branch" )
+    # lop "switch $branch"; git switch -C "$branch" origin/"$branch" )
+    ( lop "switch $branch"; git switch "$branch" )
 
     local="$( git rev-parse HEAD)"
     remote="$(git rev-parse "@{upstream}")"
     if [[ "$local" != "$remote" ]]
     then
       build_reason="new commit: $(git log -1 --pretty=format:%f)"
-      ( logx "$build_reason"; git pull --ff-only ) || 
-      ( logx "discard local changes"; git reset --hard )
+      ( lop "$build_reason"; git pull --ff-only ) || 
+      ( lop "discard local changes"; git reset --hard )
     fi
   fi
 
   ( set -x; git status --short )
 }
 
-# CPU flags used to build llama.cpp and goinfer
-flags="$(grep "^flags" -wm1 /proc/cpuinfo) " # trailing space required
 
-do_llamaCpp() {
-  cd "$root_dir"
-  clone_checkout_pull ggml-org/llama.cpp "${branch:-master}" "${tag:-}"
+build_llamaCpp() {
   [[ -n "$build_reason" ]] || { [[ -f build/bin/llama-server ]] || build_reason="missing build/bin/llama-server" ; }
   [[ -z "$build_reason" ]] || (
     log "build llama.cpp because $build_reason"
