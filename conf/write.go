@@ -164,7 +164,7 @@ func (cfg *Cfg) selectModelName(model string, useSmallest bool) (betterName, rea
 	subname := ""    // same as subName but with a lowercase comparison
 	minName := model // the name of the smallest model
 	minSize := int64(math.MaxInt64)
-	for name, mi := range cfg.Info {
+	for name, mi := range cfg.getInfo() {
 		lowName := strings.ToLower(name)
 		switch {
 		case model == "": // skip the following strings.Contains checks
@@ -207,10 +207,10 @@ func (cfg *Cfg) selectModelName(model string, useSmallest bool) (betterName, rea
 }
 
 func (cfg *Cfg) setSwapModels() {
-	cfg.updateInfo()
+	info := cfg.getInfo()
 
 	if cfg.Swap.Models == nil {
-		cfg.Swap.Models = make(map[string]config.ModelConfig, 2*len(cfg.Info)+9)
+		cfg.Swap.Models = make(map[string]config.ModelConfig, 2*len(info)+9)
 	}
 
 	commonMC := &config.ModelConfig{Proxy: "http://localhost:${PORT}"}
@@ -241,7 +241,7 @@ func (cfg *Cfg) setSwapModels() {
 	// For each model, set two model settings:
 	// 1. for the OpenAI endpoints
 	// 2. for the /completion endpoint (prefix with A_ and hide the model)
-	for name, mi := range cfg.Info {
+	for name, mi := range info {
 		goinferMC.UseModelName = name // overrides the model name that is sent to /upstream server
 		args := " " + mi.Flags + " -m " + mi.Path
 		cfg.addModelCfg(name, "${cmd-common}"+args, commonMC)      // API for Cline, RooCode, RolePlay...
