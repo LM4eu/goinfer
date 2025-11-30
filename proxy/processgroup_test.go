@@ -15,36 +15,40 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var processGroupTestConfig = config.AddDefaultGroupToConfig(config.Config{
-	HealthCheckTimeout: 15,
-	Models: map[string]config.ModelConfig{
-		"model1": getTestSimpleResponderConfig("model1"),
-		"model2": getTestSimpleResponderConfig("model2"),
-		"model3": getTestSimpleResponderConfig("model3"),
-		"model4": getTestSimpleResponderConfig("model4"),
-		"model5": getTestSimpleResponderConfig("model5"),
-	},
-	Groups: map[string]config.GroupConfig{
-		"G1": {
-			Swap:      true,
-			Exclusive: true,
-			Members:   []string{"model1", "model2"},
+func makeConfig() *config.Config {
+	c := config.Config{
+		HealthCheckTimeout: 15,
+		Models: map[string]config.ModelConfig{
+			"model1": getTestSimpleResponderConfig("model1"),
+			"model2": getTestSimpleResponderConfig("model2"),
+			"model3": getTestSimpleResponderConfig("model3"),
+			"model4": getTestSimpleResponderConfig("model4"),
+			"model5": getTestSimpleResponderConfig("model5"),
 		},
-		"G2": {
-			Swap:      false,
-			Exclusive: true,
-			Members:   []string{"model3", "model4"},
+		Groups: map[string]config.GroupConfig{
+			"G1": {
+				Swap:      true,
+				Exclusive: true,
+				Members:   []string{"model1", "model2"},
+			},
+			"G2": {
+				Swap:      false,
+				Exclusive: true,
+				Members:   []string{"model3", "model4"},
+			},
 		},
-	},
-})
+	}
+	c.AddDefaultGroup()
+	return &c
+}
 
 func TestProcessGroup_DefaultHasCorrectModel(t *testing.T) {
-	pg := NewProcessGroup(config.DEFAULT_GROUP_ID, processGroupTestConfig, testLogger, testLogger)
+	pg := NewProcessGroup(config.DEFAULT_GROUP_ID, makeConfig(), testLogger, testLogger)
 	assert.True(t, pg.HasMember("model5"))
 }
 
 func TestProcessGroup_HasMember(t *testing.T) {
-	pg := NewProcessGroup("G1", processGroupTestConfig, testLogger, testLogger)
+	pg := NewProcessGroup("G1", makeConfig(), testLogger, testLogger)
 	assert.True(t, pg.HasMember("model1"))
 	assert.True(t, pg.HasMember("model2"))
 	assert.False(t, pg.HasMember("model3"))
@@ -53,7 +57,7 @@ func TestProcessGroup_HasMember(t *testing.T) {
 // TestProcessGroup_ProxyRequestSwapIsTrueParallel tests that when swap is true
 // and multiple requests are made in parallel, only one process is running at a time.
 func TestProcessGroup_ProxyRequestSwapIsTrueParallel(t *testing.T) {
-	processGroupTestConfig := config.AddDefaultGroupToConfig(config.Config{
+	cfg := config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]config.ModelConfig{
 			// use the same listening so if a model is already running, it will fail
@@ -72,9 +76,10 @@ func TestProcessGroup_ProxyRequestSwapIsTrueParallel(t *testing.T) {
 				Members: []string{"model1", "model2", "model3", "model4", "model5"},
 			},
 		},
-	})
+	}
+	cfg.AddDefaultGroup()
 
-	pg := NewProcessGroup("G1", processGroupTestConfig, testLogger, testLogger)
+	pg := NewProcessGroup("G1", makeConfig(), testLogger, testLogger)
 	defer pg.StopProcesses(StopWaitForInflightRequest)
 
 	tests := []string{"model1", "model2", "model3", "model4", "model5"}
@@ -87,7 +92,7 @@ func TestProcessGroup_ProxyRequestSwapIsTrueParallel(t *testing.T) {
 			defer wg.Done()
 			req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", http.NoBody)
 			w := httptest.NewRecorder()
-			assert.NoError(t, pg.ProxyRequest(modelName, w, req))
+			assert.NoError(t, pg.proxyRequest(modelName, w, req))
 			assert.Equal(t, http.StatusOK, w.Code)
 			assert.Contains(t, w.Body.String(), modelName)
 		}(modelName)
@@ -96,7 +101,7 @@ func TestProcessGroup_ProxyRequestSwapIsTrueParallel(t *testing.T) {
 }
 
 func TestProcessGroup_ProxyRequestSwapIsFalse(t *testing.T) {
-	pg := NewProcessGroup("G2", processGroupTestConfig, testLogger, testLogger)
+	pg := NewProcessGroup("G2", makeConfig(), testLogger, testLogger)
 	defer pg.StopProcesses(StopWaitForInflightRequest)
 
 	tests := []string{"model3", "model4"}
@@ -106,7 +111,7 @@ func TestProcessGroup_ProxyRequestSwapIsFalse(t *testing.T) {
 			reqBody := `{"x", "y"}`
 			req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", bytes.NewBufferString(reqBody))
 			w := httptest.NewRecorder()
-			assert.NoError(t, pg.ProxyRequest(modelName, w, req))
+			assert.NoError(t, pg.proxyRequest(modelName, w, req))
 			assert.Equal(t, http.StatusOK, w.Code)
 			assert.Contains(t, w.Body.String(), modelName)
 		})

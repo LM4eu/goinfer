@@ -31,10 +31,10 @@ func init() {
 
 func TestProcess_AutomaticallyStartsUpstream(t *testing.T) {
 	expectedMessage := "testing91931"
-	config := getTestSimpleResponderConfig(expectedMessage)
+	cfg := getTestSimpleResponderConfig(expectedMessage)
 
 	// Create a process
-	process := NewProcess("test-process", 5, config, debugLogger, debugLogger)
+	process := NewProcess("test-process", 5, cfg, debugLogger, debugLogger)
 	defer process.Stop()
 
 	req := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
@@ -67,9 +67,9 @@ func TestProcess_AutomaticallyStartsUpstream(t *testing.T) {
 // are all handled successfully, even though they all may ask for the process to .start().
 func TestProcess_WaitOnMultipleStarts(t *testing.T) {
 	expectedMessage := "testing91931"
-	config := getTestSimpleResponderConfig(expectedMessage)
+	cfg := getTestSimpleResponderConfig(expectedMessage)
 
-	process := NewProcess("test-process", 5, config, debugLogger, debugLogger)
+	process := NewProcess("test-process", 5, cfg, debugLogger, debugLogger)
 	defer process.Stop()
 
 	var wg sync.WaitGroup
@@ -91,13 +91,13 @@ func TestProcess_WaitOnMultipleStarts(t *testing.T) {
 // test that the automatic start returns the expected error type.
 func TestProcess_BrokenModelConfig(t *testing.T) {
 	// Create a process configuration
-	config := config.ModelConfig{
+	cfg := config.ModelConfig{
 		Cmd:           "nonexistent-command",
 		Proxy:         "http://127.0.0.1:9913",
 		CheckEndpoint: "/health",
 	}
 
-	process := NewProcess("broken", 1, config, debugLogger, debugLogger)
+	process := NewProcess("broken", 1, cfg, debugLogger, debugLogger)
 
 	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	w := httptest.NewRecorder()
@@ -117,12 +117,12 @@ func TestProcess_UnloadAfterTTL(t *testing.T) {
 	}
 
 	expectedMessage := "I_sense_imminent_danger"
-	config := getTestSimpleResponderConfig(expectedMessage)
-	assert.Equal(t, 0, config.UnloadAfter)
-	config.UnloadAfter = 3 // seconds
-	assert.Equal(t, 3, config.UnloadAfter)
+	cfg := getTestSimpleResponderConfig(expectedMessage)
+	assert.Equal(t, 0, cfg.UnloadAfter)
+	cfg.UnloadAfter = 3 // seconds
+	assert.Equal(t, 3, cfg.UnloadAfter)
 
-	process := NewProcess("ttl_test", 2, config, debugLogger, debugLogger)
+	process := NewProcess("ttl_test", 2, cfg, debugLogger, debugLogger)
 	defer process.Stop()
 
 	// this should take 4 seconds
@@ -159,12 +159,12 @@ func TestProcess_LowTTLValue(t *testing.T) {
 		t.Skip("skipping test, edit process_test.go to run it ")
 	}
 
-	config := getTestSimpleResponderConfig("fast_ttl")
-	assert.Equal(t, 0, config.UnloadAfter)
-	config.UnloadAfter = 1 // second
-	assert.Equal(t, 1, config.UnloadAfter)
+	cfg := getTestSimpleResponderConfig("fast_ttl")
+	assert.Equal(t, 0, cfg.UnloadAfter)
+	cfg.UnloadAfter = 1 // second
+	assert.Equal(t, 1, cfg.UnloadAfter)
 
-	process := NewProcess("ttl", 2, config, debugLogger, debugLogger)
+	process := NewProcess("ttl", 2, cfg, debugLogger, debugLogger)
 	defer process.Stop()
 
 	for i := range 100 {
@@ -189,8 +189,8 @@ func TestProcess_HTTPRequestsHaveTimeToFinish(t *testing.T) {
 	}
 
 	expectedMessage := "12345"
-	config := getTestSimpleResponderConfig(expectedMessage)
-	process := NewProcess("t", 10, config, debugLogger, debugLogger)
+	cfg := getTestSimpleResponderConfig(expectedMessage)
+	process := NewProcess("t", 10, cfg, debugLogger, debugLogger)
 	defer process.Stop()
 
 	results := map[string]string{
@@ -290,12 +290,12 @@ func TestProcess_ShutdownInterruptsHealthCheck(t *testing.T) {
 
 	expectedMessage := "testing91931"
 
-	// make a config where the healthcheck will always fail because port is wrong
-	config := getTestSimpleResponderConfigPort(expectedMessage, 9999)
-	config.Proxy = "http://localhost:9998/test"
+	// make a cfg where the healthcheck will always fail because port is wrong
+	cfg := getTestSimpleResponderConfigPort(expectedMessage, 9999)
+	cfg.Proxy = "http://localhost:9998/test"
 
 	healthCheckTTLSeconds := 30
-	process := NewProcess("test-process", healthCheckTTLSeconds, config, debugLogger, debugLogger)
+	process := NewProcess("test-process", healthCheckTTLSeconds, cfg, debugLogger, debugLogger)
 
 	// make it a lot faster
 	process.healthCheckLoopInterval = time.Second
@@ -324,13 +324,13 @@ func TestProcess_ExitInterruptsHealthCheck(t *testing.T) {
 
 	// should run and exit but interrupt the long checkHealthTimeout
 	checkHealthTimeout := 5
-	config := config.ModelConfig{
+	cfg := config.ModelConfig{
 		Cmd:           "sleep 1",
 		Proxy:         "http://127.0.0.1:9913",
 		CheckEndpoint: "/health",
 	}
 
-	process := NewProcess("sleepy", checkHealthTimeout, config, debugLogger, debugLogger)
+	process := NewProcess("sleepy", checkHealthTimeout, cfg, debugLogger, debugLogger)
 	process.healthCheckLoopInterval = time.Second // make it faster
 	err := process.start()
 	assert.Equal(t, "upstream command exited prematurely but successfully", err.Error())
@@ -343,12 +343,12 @@ func TestProcess_ConcurrencyLimit(t *testing.T) {
 	}
 
 	expectedMessage := "concurrency_limit_test"
-	config := getTestSimpleResponderConfig(expectedMessage)
+	cfg := getTestSimpleResponderConfig(expectedMessage)
 
 	// only allow 1 concurrent request at a time
-	config.ConcurrencyLimit = 1
+	cfg.ConcurrencyLimit = 1
 
-	process := NewProcess("ttl_test", 2, config, debugLogger, debugLogger)
+	process := NewProcess("ttl_test", 2, cfg, debugLogger, debugLogger)
 	assert.Equal(t, 1, cap(process.concurrencyLimitSemaphore))
 	defer process.Stop()
 
@@ -371,9 +371,9 @@ func TestProcess_ConcurrencyLimit(t *testing.T) {
 
 func TestProcess_StopImmediately(t *testing.T) {
 	expectedMessage := "test_stop_immediate"
-	config := getTestSimpleResponderConfig(expectedMessage)
+	cfg := getTestSimpleResponderConfig(expectedMessage)
 
-	process := NewProcess("stop_immediate", 2, config, debugLogger, debugLogger)
+	process := NewProcess("stop_immediate", 2, cfg, debugLogger, debugLogger)
 	defer process.Stop()
 
 	err := process.start()
@@ -512,9 +512,9 @@ func TestProcess_ReverseProxyPanicIsHandled(t *testing.T) {
 	}()
 
 	expectedMessage := "panic_test"
-	config := getTestSimpleResponderConfig(expectedMessage)
+	cfg := getTestSimpleResponderConfig(expectedMessage)
 
-	process := NewProcess("panic-test", 5, config, debugLogger, debugLogger)
+	process := NewProcess("panic-test", 5, cfg, debugLogger, debugLogger)
 	defer process.Stop()
 
 	// Start the process

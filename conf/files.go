@@ -198,6 +198,10 @@ func oneLine(input []byte) string {
 // that each model referenced in the swap configuration exists on disk.
 // It logs warnings and errors as appropriate.
 func (cfg *Cfg) ValidateSwap() error {
+	if cfg.Swap == nil {
+		return nil // nothing to validate
+	}
+
 	if len(cfg.Swap.Models) == 0 {
 		n := len(cfg.getInfo())
 		if n == 0 {

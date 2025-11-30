@@ -39,7 +39,7 @@ func TestListModels(t *testing.T) {
 
 	cfg := &Cfg{
 		ModelsDir: tmp,
-		Swap: config.Config{
+		Swap: &config.Config{
 			Models: map[string]config.ModelConfig{
 				"disk-model":  {Cmd: "llama-server -flag", Unlisted: false},
 				"missing":     {Cmd: "llama-server -flag -m missing.gguf", Unlisted: false},
@@ -67,7 +67,7 @@ func TestCountModels(t *testing.T) {
 
 	cfg := &Cfg{
 		ModelsDir: tmp,
-		Swap:      config.Config{},
+		Swap:      nil,
 	}
 	if n := len(cfg.getInfo()); n != 2 {
 		t.Errorf("len(cfg.getInfo()) = %d, want 2", n)

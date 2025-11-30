@@ -21,7 +21,6 @@ import (
 	"github.com/LM4eu/goinfer/conf"
 	"github.com/LM4eu/goinfer/event"
 	"github.com/LM4eu/goinfer/gie"
-	"github.com/LM4eu/goinfer/proxy/config"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -34,43 +33,32 @@ const (
 type proxyCtxKey string
 
 type ProxyManager struct {
-	// shutdown signaling
-	shutdownCtx context.Context
-
-	cfg *conf.Cfg
-
+	shutdownCtx    context.Context
+	muxLogger      *LogMonitor
 	metricsMonitor *metricsMonitor
 	ginEngine      *gin.Engine
-
-	// logging
 	proxyLogger    *LogMonitor
 	upstreamLogger *LogMonitor
-	muxLogger      *LogMonitor
+	cfg            *conf.Cfg
 	processGroups  map[string]*ProcessGroup
-
-	// shutdown signaling
 	shutdownCancel context.CancelFunc
-
-	// version info
-	buildDate string
-	commit    string
-	version   string
-
-	config config.Config
+	buildDate      string
+	commit         string
+	version        string
 	sync.Mutex
 }
 
-func New(config config.Config, cfg *conf.Cfg) *ProxyManager {
+func New(cfg *conf.Cfg) *ProxyManager {
 	// set up loggers
 	stdoutLogger := NewLogMonitorWriter(os.Stdout)
 	upstreamLogger := NewLogMonitorWriter(stdoutLogger)
 	proxyLogger := NewLogMonitorWriter(stdoutLogger)
 
-	if config.LogRequests {
+	if cfg.Swap.LogRequests {
 		proxyLogger.Warn("LogRequests configuration is deprecated. Use logLevel instead.")
 	}
 
-	switch strings.ToLower(strings.TrimSpace(config.LogLevel)) {
+	switch strings.ToLower(strings.TrimSpace(cfg.Swap.LogLevel)) {
 	case "debug":
 		proxyLogger.SetLogLevel(LevelDebug)
 		upstreamLogger.SetLogLevel(LevelDebug)
@@ -107,7 +95,7 @@ func New(config config.Config, cfg *conf.Cfg) *ProxyManager {
 		"stampnano":   time.StampNano,
 	}
 
-	if timeFormat, ok := timeFormats[strings.ToLower(strings.TrimSpace(config.LogTimeFormat))]; ok {
+	if timeFormat, ok := timeFormats[strings.ToLower(strings.TrimSpace(cfg.Swap.LogTimeFormat))]; ok {
 		proxyLogger.SetLogTimeFormat(timeFormat)
 		upstreamLogger.SetLogTimeFormat(timeFormat)
 	}
@@ -115,15 +103,14 @@ func New(config config.Config, cfg *conf.Cfg) *ProxyManager {
 	shutdownCtx, shutdownCancel := context.WithCancel(context.Background())
 
 	var maxMetrics int
-	if config.MetricsMaxInMemory <= 0 {
+	if cfg.Swap.MetricsMaxInMemory <= 0 {
 		maxMetrics = 1000 // Default fallback
 	} else {
-		maxMetrics = config.MetricsMaxInMemory
+		maxMetrics = cfg.Swap.MetricsMaxInMemory
 	}
 
 	pm := &ProxyManager{
 		cfg:       cfg,
-		config:    config,
 		ginEngine: gin.New(),
 
 		proxyLogger:    proxyLogger,
@@ -143,19 +130,19 @@ func New(config config.Config, cfg *conf.Cfg) *ProxyManager {
 	}
 
 	// create the process groups
-	for groupID := range config.Groups {
-		processGroup := NewProcessGroup(groupID, config, proxyLogger, upstreamLogger)
+	for groupID := range cfg.Swap.Groups {
+		processGroup := NewProcessGroup(groupID, cfg.Swap, proxyLogger, upstreamLogger)
 		pm.processGroups[groupID] = processGroup
 	}
 
 	pm.setupGinEngine()
 
 	// run any startup hooks
-	if len(config.Hooks.OnStartup.Preload) > 0 {
+	if len(cfg.Swap.Hooks.OnStartup.Preload) > 0 {
 		// do it in the background, don't block startup -- not sure if good idea yet
 		go func() {
 			discardWriter := &DiscardWriter{}
-			for _, realModelName := range config.Hooks.OnStartup.Preload {
+			for _, realModelName := range cfg.Swap.Hooks.OnStartup.Preload {
 				proxyLogger.Infof("Preloading model: %s", realModelName)
 				processGroup, _, err := pm.swapProcessGroup(realModelName)
 
@@ -168,7 +155,7 @@ func New(config config.Config, cfg *conf.Cfg) *ProxyManager {
 					continue
 				} else {
 					req, _ := http.NewRequest(http.MethodGet, "/", http.NoBody)
-					processGroup.ProxyRequest(realModelName, discardWriter, req)
+					processGroup.proxyRequest(realModelName, discardWriter, req)
 					event.Emit(ModelPreloadedEvent{
 						ModelName: realModelName,
 						Success:   true,
@@ -294,16 +281,16 @@ func (pm *ProxyManager) setupGinEngine() {
 	pm.ginEngine.POST("/d1/audio/speech", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, false) })
 	pm.ginEngine.POST("/a1/audio/speech", func(c *gin.Context) { pm.ProxyOAIHandler(c, false, true) })
 	pm.ginEngine.POST("/A1/audio/speech", func(c *gin.Context) { pm.ProxyOAIHandler(c, true, true) })
-	pm.ginEngine.POST("/v1/audio/transcriptions", func(c *gin.Context) { pm.ProxyOAIPostFormHandler(c, false, false) })
-	pm.ginEngine.POST("/d1/audio/transcriptions", func(c *gin.Context) { pm.ProxyOAIPostFormHandler(c, true, false) })
-	pm.ginEngine.POST("/a1/audio/transcriptions", func(c *gin.Context) { pm.ProxyOAIPostFormHandler(c, false, true) })
-	pm.ginEngine.POST("/A1/audio/transcriptions", func(c *gin.Context) { pm.ProxyOAIPostFormHandler(c, true, true) })
+	pm.ginEngine.POST("/v1/audio/transcriptions", func(c *gin.Context) { pm.proxyOAIPostFormHandler(c, false, false) })
+	pm.ginEngine.POST("/d1/audio/transcriptions", func(c *gin.Context) { pm.proxyOAIPostFormHandler(c, true, false) })
+	pm.ginEngine.POST("/a1/audio/transcriptions", func(c *gin.Context) { pm.proxyOAIPostFormHandler(c, false, true) })
+	pm.ginEngine.POST("/A1/audio/transcriptions", func(c *gin.Context) { pm.proxyOAIPostFormHandler(c, true, true) })
 
 	pm.ginEngine.GET("/v1/models", pm.ListModelsHandler)
 	pm.ginEngine.GET("/d1/models", pm.ListModelsHandler)
 	pm.ginEngine.GET("/a1/models", pm.ListModelsHandler)
 	pm.ginEngine.GET("/A1/models", pm.ListModelsHandler)
-	pm.ginEngine.GET("/gi/models", pm.GiListModelsHandler)
+	pm.ginEngine.GET("/gi/models", pm.giListModelsHandler)
 
 	// in proxymanager_loghandlers.go
 	pm.ginEngine.GET("/logs", pm.sendLogsHandlers)
@@ -422,7 +409,7 @@ func (pm *ProxyManager) Shutdown() {
 
 func (pm *ProxyManager) swapProcessGroup(requestedModel string) (*ProcessGroup, string, error) {
 	// de-alias the real model name and get a real one
-	realModelName, found := pm.config.RealModelName(requestedModel)
+	realModelName, found := pm.cfg.Swap.RealModelName(requestedModel)
 	if !found {
 		return nil, realModelName, fmt.Errorf("could not find real modelID for %s", requestedModel)
 	}
@@ -445,10 +432,10 @@ func (pm *ProxyManager) swapProcessGroup(requestedModel string) (*ProcessGroup, 
 }
 
 func (pm *ProxyManager) ListModelsHandler(c *gin.Context) {
-	data := make([]gin.H, 0, len(pm.config.Models))
+	data := make([]gin.H, 0, len(pm.cfg.Swap.Models))
 	createdTime := time.Now().Unix()
 
-	for id, modelConfig := range pm.config.Models {
+	for id, modelConfig := range pm.cfg.Swap.Models {
 		if modelConfig.Unlisted {
 			continue
 		}
@@ -480,9 +467,9 @@ func (pm *ProxyManager) ListModelsHandler(c *gin.Context) {
 		data = append(data, newRecord(id))
 
 		// Include aliases
-		if pm.config.IncludeAliasesInList {
+		if pm.cfg.Swap.IncludeAliasesInList {
 			for _, alias := range modelConfig.Aliases {
-				if alias := strings.TrimSpace(alias); alias != "" {
+				if alias = strings.TrimSpace(alias); alias != "" {
 					data = append(data, newRecord(alias))
 				}
 			}
@@ -508,7 +495,7 @@ func (pm *ProxyManager) ListModelsHandler(c *gin.Context) {
 	})
 }
 
-func (pm *ProxyManager) GiListModelsHandler(c *gin.Context) {
+func (pm *ProxyManager) giListModelsHandler(c *gin.Context) {
 	models := pm.cfg.ListModels()
 
 	if len(models) == 0 {
@@ -544,8 +531,8 @@ func (pm *ProxyManager) proxyToUpstream(c *gin.Context) {
 			searchModelName = searchModelName + "/" + parts[i]
 		}
 
-		if real, ok := pm.config.RealModelName(searchModelName); ok {
-			modelName = real
+		if realName, ok := pm.cfg.Swap.RealModelName(searchModelName); ok {
+			modelName = realName
 			remainingPath = "/" + strings.Join(parts[i+1:], "/")
 			modelFound = true
 
@@ -587,14 +574,14 @@ func (pm *ProxyManager) proxyToUpstream(c *gin.Context) {
 
 	// attempt to record metrics if it is a POST request
 	if pm.metricsMonitor != nil && c.Request.Method == http.MethodPost {
-		err := pm.metricsMonitor.wrapHandler(realModelName, c.Writer, c.Request, processGroup.ProxyRequest)
+		err := pm.metricsMonitor.wrapHandler(realModelName, c.Writer, c.Request, processGroup.proxyRequest)
 		if err != nil {
 			pm.sendErrorResponse(c, http.StatusInternalServerError, "error proxying metrics wrapped request: "+err.Error())
 			pm.proxyLogger.Errorf("Error proxying wrapped upstream request for model %s, path=%s", realModelName, originalPath)
 			return
 		}
 	} else {
-		err := processGroup.ProxyRequest(realModelName, c.Writer, c.Request)
+		err := processGroup.proxyRequest(realModelName, c.Writer, c.Request)
 		if err != nil {
 			pm.sendErrorResponse(c, http.StatusInternalServerError, "error proxying request: "+err.Error())
 			pm.proxyLogger.Errorf("Error proxying upstream request for model %s, path=%s", realModelName, originalPath)
@@ -612,7 +599,7 @@ func (pm *ProxyManager) ProxyOAIHandler(c *gin.Context, download, agentSmith boo
 		}
 	}
 
-	bodyBytes, realModelName, download, agentSmith, err := pm.getSetModel(c.Request.Body, download, agentSmith)
+	bodyBytes, realModelName, _, _, err := pm.getSetModel(c.Request.Body, download, agentSmith)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
 		return
@@ -629,9 +616,9 @@ func (pm *ProxyManager) ProxyOAIHandler(c *gin.Context, download, agentSmith boo
 	}
 
 	// issue #174 strip parameters from the JSON body
-	stripParams, err := pm.config.Models[realModelName].Filters.SanitizedStripParams()
+	stripParams, err := pm.cfg.Swap.Models[realModelName].Filters.SanitizedStripParams()
 	if err != nil { // just log it and continue
-		pm.proxyLogger.Warnf("Error sanitizing strip params string: %s, %s", pm.config.Models[realModelName].Filters.StripParams, err.Error())
+		pm.proxyLogger.Warnf("Error sanitizing strip params string: %s, %s", pm.cfg.Swap.Models[realModelName].Filters.StripParams, err.Error())
 	} else {
 		for _, param := range stripParams {
 			pm.proxyLogger.Debugf("<%s> stripping param: %s", realModelName, param)
@@ -657,7 +644,7 @@ func (pm *ProxyManager) ProxyOAIHandler(c *gin.Context, download, agentSmith boo
 	c.Request = c.Request.WithContext(ctx)
 
 	if pm.metricsMonitor != nil && c.Request.Method == http.MethodPost {
-		err := pm.metricsMonitor.wrapHandler(realModelName, c.Writer, c.Request, processGroup.ProxyRequest)
+		err = pm.metricsMonitor.wrapHandler(realModelName, c.Writer, c.Request, processGroup.proxyRequest)
 		if err != nil {
 			pm.sendErrorResponse(c, http.StatusInternalServerError, "error proxying metrics wrapped request: "+err.Error())
 			pm.proxyLogger.Errorf("Error Proxying Metrics Wrapped Request for processGroup %s and model %s", processGroup.id, realModelName)
@@ -665,7 +652,7 @@ func (pm *ProxyManager) ProxyOAIHandler(c *gin.Context, download, agentSmith boo
 		return
 	}
 
-	err = processGroup.ProxyRequest(realModelName, c.Writer, c.Request)
+	err = processGroup.proxyRequest(realModelName, c.Writer, c.Request)
 	if err != nil {
 		pm.sendErrorResponse(c, http.StatusInternalServerError, "error proxying request: "+err.Error())
 		pm.proxyLogger.Errorf("Error Proxying Request for processGroup %s and model %s", processGroup.id, realModelName)
@@ -673,7 +660,7 @@ func (pm *ProxyManager) ProxyOAIHandler(c *gin.Context, download, agentSmith boo
 	}
 }
 
-func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context, download, agentSmith bool) {
+func (pm *ProxyManager) proxyOAIPostFormHandler(c *gin.Context, download, agentSmith bool) {
 	// Parse multipart form
 	if err := c.Request.ParseMultipartForm(32 << 20); err != nil { // 32MB max memory, larger files go to tmp disk
 		pm.sendErrorResponse(c, http.StatusBadRequest, "error parsing multipart form: "+err.Error())
@@ -682,7 +669,7 @@ func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context, download, agentS
 
 	// Get model parameter from the form
 	requestedModel := c.Request.FormValue("model")
-	fixed, download, agentSmith := pm.fixModelName(requestedModel, download, agentSmith)
+	fixed, _, _ := pm.fixModelName(requestedModel, download, agentSmith)
 
 	processGroup, realModelName, err := pm.swapProcessGroup(fixed)
 	if err != nil {
@@ -697,25 +684,25 @@ func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context, download, agentS
 
 	// Copy all form values
 	for key, values := range c.Request.MultipartForm.Value {
-		for _, value := range values {
-			fieldValue := value
+		for _, val := range values {
 			// If this is the model field and we have a profile, use just the model name
 			if key == "model" {
 				// # issue #69 allow custom model names to be sent to upstream
-				useModelName := pm.config.Models[realModelName].UseModelName
+				useModelName := pm.cfg.Swap.Models[realModelName].UseModelName
 
 				if useModelName != "" {
-					fieldValue = useModelName
+					val = useModelName
 				} else {
-					fieldValue = requestedModel
+					val = requestedModel
 				}
 			}
-			field, err := multipartWriter.CreateFormField(key)
-			if err != nil {
+			field, er := multipartWriter.CreateFormField(key)
+			if er != nil {
 				pm.sendErrorResponse(c, http.StatusInternalServerError, "error recreating form field")
 				return
 			}
-			if _, err = field.Write([]byte(fieldValue)); err != nil {
+			_, err = field.Write([]byte(val))
+			if err != nil {
 				pm.sendErrorResponse(c, http.StatusInternalServerError, "error writing form field")
 				return
 			}
@@ -725,19 +712,19 @@ func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context, download, agentS
 	// Copy all files from the original request
 	for key, fileHeaders := range c.Request.MultipartForm.File {
 		for _, fileHeader := range fileHeaders {
-			formFile, err := multipartWriter.CreateFormFile(key, fileHeader.Filename)
-			if err != nil {
+			formFile, er := multipartWriter.CreateFormFile(key, fileHeader.Filename)
+			if er != nil {
 				pm.sendErrorResponse(c, http.StatusInternalServerError, "error recreating form file")
 				return
 			}
 
-			file, err := fileHeader.Open()
-			if err != nil {
+			file, er := fileHeader.Open()
+			if er != nil {
 				pm.sendErrorResponse(c, http.StatusInternalServerError, "error opening uploaded file")
 				return
 			}
 
-			if _, err = io.Copy(formFile, file); err != nil {
+			if _, er = io.Copy(formFile, file); er != nil {
 				file.Close()
 				pm.sendErrorResponse(c, http.StatusInternalServerError, "error copying file data")
 				return
@@ -747,7 +734,8 @@ func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context, download, agentS
 	}
 
 	// Close the multipart writer to finalize the form
-	if err := multipartWriter.Close(); err != nil {
+	err = multipartWriter.Close()
+	if err != nil {
 		pm.sendErrorResponse(c, http.StatusInternalServerError, "error finalizing multipart form")
 		return
 	}
@@ -773,7 +761,7 @@ func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context, download, agentS
 	modifiedReq.ContentLength = int64(requestBuffer.Len())
 
 	// Use the modified request for proxying
-	if err := processGroup.ProxyRequest(realModelName, c.Writer, modifiedReq); err != nil {
+	if err := processGroup.proxyRequest(realModelName, c.Writer, modifiedReq); err != nil {
 		pm.sendErrorResponse(c, http.StatusInternalServerError, "error proxying request: "+err.Error())
 		pm.proxyLogger.Errorf("Error Proxying Request for processGroup %s and model %s", processGroup.id, realModelName)
 		return
@@ -795,20 +783,20 @@ func (pm *ProxyManager) UnloadAllModelsHandler(c *gin.Context) {
 	c.String(http.StatusOK, "OK")
 }
 
-func (pm *ProxyManager) ListRunningProcessesHandler(context *gin.Context) {
-	context.Header("Content-Type", "application/json")
+func (pm *ProxyManager) ListRunningProcessesHandler(ctx *gin.Context) {
+	ctx.Header("Content-Type", "application/json")
 
 	// Put the results under the `running` key.
 	response := gin.H{
 		"running": pm.listRunningProcesses(),
 	}
 
-	context.JSON(http.StatusOK, response) // Always return 200 OK
+	ctx.JSON(http.StatusOK, response) // Always return 200 OK
 }
 
 func (pm *ProxyManager) listRunningProcesses() []gin.H {
 	count := pm.countRunningProcesses()
-	runningProcesses := make([]gin.H, count) // Default to an empty response.
+	runningProcesses := make([]gin.H, 0, count) // Default to an empty response.
 
 	for _, processGroup := range pm.processGroups {
 		for _, process := range processGroup.processes {

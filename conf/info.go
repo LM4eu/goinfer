@@ -43,6 +43,7 @@ const (
 )
 
 // ListModels returns the model names from the config and from the models_dir.
+// TODO: this function should not change cfg.Info.
 func (cfg *Cfg) ListModels() map[string]ModelInfo {
 	info := cfg.getInfo()
 	for name, mi := range info {
@@ -52,14 +53,16 @@ func (cfg *Cfg) ListModels() map[string]ModelInfo {
 		}
 	}
 
-	for name := range cfg.Swap.Models {
-		if len(name) > len(A_) && name[:len(A_)] == A_ && cfg.Swap.Models[name].Unlisted {
-			continue // do not report models for /completion endpoint
+	if cfg.Swap != nil {
+		for name := range cfg.Swap.Models {
+			if len(name) > len(A_) && name[:len(A_)] == A_ && cfg.Swap.Models[name].Unlisted {
+				continue // do not report models for /completion endpoint
+			}
+			cfg.refineModelInfo(name)
 		}
-		cfg.refineModelInfo(name)
 	}
 
-	return info
+	return cfg.getInfo()
 }
 
 func (cfg *Cfg) refineModelInfo(name string) {

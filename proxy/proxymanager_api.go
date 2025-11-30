@@ -26,13 +26,11 @@ type Model struct {
 func addApiHandlers(pm *ProxyManager) {
 	// Add API endpoints for React to consume
 	apiGroup := pm.ginEngine.Group("/api")
-	{
-		apiGroup.POST("/models/unload", pm.apiUnloadAllModels)
-		apiGroup.POST("/models/unload/*model", pm.apiUnloadSingleModelHandler)
-		apiGroup.GET("/events", pm.apiSendEvents)
-		apiGroup.GET("/metrics", pm.apiGetMetrics)
-		apiGroup.GET("/version", pm.apiGetVersion)
-	}
+	apiGroup.POST("/models/unload", pm.apiUnloadAllModels)
+	apiGroup.POST("/models/unload/*model", pm.apiUnloadSingleModelHandler)
+	apiGroup.GET("/events", pm.apiSendEvents)
+	apiGroup.GET("/metrics", pm.apiGetMetrics)
+	apiGroup.GET("/version", pm.apiGetVersion)
 }
 
 func (pm *ProxyManager) apiUnloadAllModels(c *gin.Context) {
@@ -44,8 +42,8 @@ func (pm *ProxyManager) getModelStatus() []Model {
 	// Extract keys and sort them
 	models := []Model{}
 
-	modelIDs := make([]string, 0, len(pm.config.Models))
-	for modelID := range pm.config.Models {
+	modelIDs := make([]string, 0, len(pm.cfg.Swap.Models))
+	for modelID := range pm.cfg.Swap.Models {
 		modelIDs = append(modelIDs, modelID)
 	}
 	sort.Strings(modelIDs)
@@ -78,10 +76,10 @@ func (pm *ProxyManager) getModelStatus() []Model {
 		}
 		models = append(models, Model{
 			Id:          modelID,
-			Name:        pm.config.Models[modelID].Name,
-			Description: pm.config.Models[modelID].Description,
+			Name:        pm.cfg.Swap.Models[modelID].Name,
+			Description: pm.cfg.Swap.Models[modelID].Description,
 			State:       state,
-			Unlisted:    pm.config.Models[modelID].Unlisted,
+			Unlisted:    pm.cfg.Swap.Models[modelID].Unlisted,
 		})
 	}
 
@@ -140,7 +138,7 @@ func (pm *ProxyManager) apiSendEvents(c *gin.Context) {
 		}
 	}
 
-	sendMetrics := func(metrics []TokenMetrics) {
+	sendMetrics := func(metrics []*TokenMetrics) {
 		jsonData, err := json.Marshal(metrics)
 		if err == nil {
 			select {
@@ -176,7 +174,7 @@ func (pm *ProxyManager) apiSendEvents(c *gin.Context) {
 	 * Send Metrics data
 	 */
 	defer event.On(func(e TokenMetricsEvent) {
-		sendMetrics([]TokenMetrics{e.Metrics})
+		sendMetrics([]*TokenMetrics{e.Metrics})
 	})()
 
 	// send initial batch of data
@@ -211,7 +209,7 @@ func (pm *ProxyManager) apiGetMetrics(c *gin.Context) {
 
 func (pm *ProxyManager) apiUnloadSingleModelHandler(c *gin.Context) {
 	requestedModel := strings.TrimPrefix(c.Param("model"), "/")
-	realModelName, found := pm.config.RealModelName(requestedModel)
+	realModelName, found := pm.cfg.Swap.RealModelName(requestedModel)
 	if !found {
 		pm.sendErrorResponse(c, http.StatusNotFound, "Model not found")
 		return

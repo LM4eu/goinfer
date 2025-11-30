@@ -34,7 +34,7 @@ type TokenMetrics struct {
 
 // TokenMetricsEvent represents a token metrics event.
 type TokenMetricsEvent struct {
-	Metrics TokenMetrics
+	Metrics *TokenMetrics
 }
 
 func (e TokenMetricsEvent) Type() uint32 {
@@ -44,7 +44,7 @@ func (e TokenMetricsEvent) Type() uint32 {
 // metricsMonitor parses llama-server output for token statistics.
 type metricsMonitor struct {
 	logger     *LogMonitor
-	metrics    []TokenMetrics
+	metrics    []*TokenMetrics
 	maxMetrics int
 	nextID     int
 	mu         sync.RWMutex
@@ -60,7 +60,7 @@ func newMetricsMonitor(logger *LogMonitor, maxMetrics int) *metricsMonitor {
 }
 
 // addMetrics adds a new metric to the collection and publishes an event.
-func (mp *metricsMonitor) addMetrics(metric TokenMetrics) {
+func (mp *metricsMonitor) addMetrics(metric *TokenMetrics) {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
 
@@ -74,11 +74,11 @@ func (mp *metricsMonitor) addMetrics(metric TokenMetrics) {
 }
 
 // getMetrics returns a copy of the current metrics.
-func (mp *metricsMonitor) getMetrics() []TokenMetrics {
+func (mp *metricsMonitor) getMetrics() []*TokenMetrics {
 	mp.mu.RLock()
 	defer mp.mu.RUnlock()
 
-	result := make([]TokenMetrics, len(mp.metrics))
+	result := make([]*TokenMetrics, len(mp.metrics))
 	copy(result, mp.metrics)
 	return result
 }
@@ -120,14 +120,16 @@ func (mp *metricsMonitor) wrapHandler(
 	}
 
 	if strings.Contains(recorder.Header().Get("Content-Type"), "text/event-stream") {
-		if tm, err := processStreamingResponse(modelID, recorder.StartTime(), body); err != nil {
+		tm, err := processStreamingResponse(modelID, recorder.StartTime(), body)
+		if err != nil {
 			mp.logger.Warnf("error processing streaming response: %v, path=%s", err, request.URL.Path)
 		} else {
 			mp.addMetrics(tm)
 		}
 	} else {
 		if gjson.ValidBytes(body) {
-			if tm, err := parseMetrics(modelID, recorder.StartTime(), gjson.ParseBytes(body)); err != nil {
+			tm, err := parseMetrics(modelID, recorder.StartTime(), gjson.ParseBytes(body))
+			if err != nil {
 				mp.logger.Warnf("error parsing metrics: %v, path=%s", err, request.URL.Path)
 			} else {
 				mp.addMetrics(tm)
@@ -140,7 +142,7 @@ func (mp *metricsMonitor) wrapHandler(
 	return nil
 }
 
-func processStreamingResponse(modelID string, start time.Time, body []byte) (TokenMetrics, error) {
+func processStreamingResponse(modelID string, start time.Time, body []byte) (*TokenMetrics, error) {
 	// Iterate **backwards** through the body looking for the data payload with
 	// usage data. This avoids allocating a slice of all lines via bytes.Split.
 
@@ -183,14 +185,14 @@ func processStreamingResponse(modelID string, start time.Time, body []byte) (Tok
 		}
 	}
 
-	return TokenMetrics{}, errors.New("no valid JSON data found in stream")
+	return nil, errors.New("no valid JSON data found in stream")
 }
 
-func parseMetrics(modelID string, start time.Time, jsonData gjson.Result) (TokenMetrics, error) {
+func parseMetrics(modelID string, start time.Time, jsonData gjson.Result) (*TokenMetrics, error) {
 	usage := jsonData.Get("usage")
 	timings := jsonData.Get("timings")
 	if !usage.Exists() && !timings.Exists() {
-		return TokenMetrics{}, errors.New("no usage or timings data found")
+		return nil, errors.New("no usage or timings data found")
 	}
 	// default values
 	cachedTokens := -1 // unknown or missing data
@@ -220,7 +222,7 @@ func parseMetrics(modelID string, start time.Time, jsonData gjson.Result) (Token
 		}
 	}
 
-	return TokenMetrics{
+	return &TokenMetrics{
 		Timestamp:       time.Now(),
 		Model:           modelID,
 		CachedTokens:    cachedTokens,

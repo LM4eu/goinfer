@@ -33,7 +33,7 @@ func (pm *ProxyManager) getSetModel(body io.ReadCloser, download, agentSmith boo
 	fixed, download, agentSmith = pm.fixModelName(requested, download, agentSmith)
 
 	// issue #69 allow custom model names to be sent to upstream
-	model, ok := pm.config.Models[fixed]
+	model, ok := pm.cfg.Swap.Models[fixed]
 	if ok {
 		useModelName := model.UseModelName
 		if useModelName != "" && useModelName != requested {
@@ -65,9 +65,9 @@ func (pm *ProxyManager) fixModelName(requested string, download, agentSmith bool
 			fixed = fixed[len(A_):]
 		}
 
-		real, found := pm.config.RealModelName(fixed)
+		realName, found := pm.cfg.Swap.RealModelName(fixed)
 		if found {
-			fixed = real
+			fixed = realName
 		} else if !download {
 			fixed = pm.cfg.FixModelName(fixed)
 		}
@@ -79,9 +79,9 @@ func (pm *ProxyManager) fixModelName(requested string, download, agentSmith bool
 	}
 
 	if agentSmith {
-		real, found := pm.config.RealModelName(A_ + fixed)
+		realName, found := pm.cfg.Swap.RealModelName(A_ + fixed)
 		if found {
-			return real, download, agentSmith
+			return realName, download, agentSmith
 		}
 	}
 

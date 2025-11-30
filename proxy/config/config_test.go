@@ -72,7 +72,7 @@ models:
 func TestConfig_FindConfig(t *testing.T) {
 	// TODO?
 	// make this shared between the different tests
-	config := &Config{
+	cfg := &Config{
 		Models: map[string]ModelConfig{
 			"model1": {
 				Cmd:           "python model1.py",
@@ -98,19 +98,19 @@ func TestConfig_FindConfig(t *testing.T) {
 	}
 
 	// Test finding a model by its name
-	modelConfig, modelId, found := config.FindConfig("model1")
+	modelConfig, modelId, found := cfg.FindConfig("model1")
 	assert.True(t, found)
 	assert.Equal(t, "model1", modelId)
-	assert.Equal(t, config.Models["model1"], modelConfig)
+	assert.Equal(t, cfg.Models["model1"], modelConfig)
 
 	// Test finding a model by its alias
-	modelConfig, modelId, found = config.FindConfig("m1")
+	modelConfig, modelId, found = cfg.FindConfig("m1")
 	assert.True(t, found)
 	assert.Equal(t, "model1", modelId)
-	assert.Equal(t, config.Models["model1"], modelConfig)
+	assert.Equal(t, cfg.Models["model1"], modelConfig)
 
 	// Test finding a model that does not exist
-	modelConfig, modelId, found = config.FindConfig("model3")
+	modelConfig, modelId, found = cfg.FindConfig("model3")
 	assert.False(t, found)
 	assert.Empty(t, modelId)
 	assert.Equal(t, ModelConfig{}, modelConfig)
@@ -119,21 +119,21 @@ func TestConfig_FindConfig(t *testing.T) {
 func TestConfig_AutomaticPortAssignments(t *testing.T) {
 	t.Run("Default Port Ranges", func(t *testing.T) {
 		content := ``
-		config, err := LoadConfigFromReader(strings.NewReader(content))
+		cfg, err := LoadConfigFromReader(strings.NewReader(content))
 		if !assert.NoError(t, err) {
 			t.Fatalf("Failed to load config: %v", err)
 		}
 
-		assert.Equal(t, 5800, config.StartPort)
+		assert.Equal(t, 5800, cfg.StartPort)
 	})
 	t.Run("User specific port ranges", func(t *testing.T) {
 		content := `startPort: 1000`
-		config, err := LoadConfigFromReader(strings.NewReader(content))
+		cfg, err := LoadConfigFromReader(strings.NewReader(content))
 		if !assert.NoError(t, err) {
 			t.Fatalf("Failed to load config: %v", err)
 		}
 
-		assert.Equal(t, 1000, config.StartPort)
+		assert.Equal(t, 1000, cfg.StartPort)
 	})
 
 	t.Run("Invalid start port", func(t *testing.T) {
@@ -161,20 +161,20 @@ models:
     cmd: svr --port 1999
     proxy: "http://1.2.3.4:1999"
 `
-		config, err := LoadConfigFromReader(strings.NewReader(content))
+		cfg, err := LoadConfigFromReader(strings.NewReader(content))
 		if !assert.NoError(t, err) {
 			t.Fatalf("Failed to load config: %v", err)
 		}
 
-		assert.Equal(t, 5800, config.StartPort)
-		assert.Equal(t, "svr --port 5800", config.Models["model1"].Cmd)
-		assert.Equal(t, "http://localhost:5800", config.Models["model1"].Proxy)
+		assert.Equal(t, 5800, cfg.StartPort)
+		assert.Equal(t, "svr --port 5800", cfg.Models["model1"].Cmd)
+		assert.Equal(t, "http://localhost:5800", cfg.Models["model1"].Proxy)
 
-		assert.Equal(t, "svr --port 5801", config.Models["model2"].Cmd)
-		assert.Equal(t, "http://172.11.22.33:5801", config.Models["model2"].Proxy)
+		assert.Equal(t, "svr --port 5801", cfg.Models["model2"].Cmd)
+		assert.Equal(t, "http://172.11.22.33:5801", cfg.Models["model2"].Proxy)
 
-		assert.Equal(t, "svr --port 1999", config.Models["model3"].Cmd)
-		assert.Equal(t, "http://1.2.3.4:1999", config.Models["model3"].Proxy)
+		assert.Equal(t, "svr --port 1999", cfg.Models["model3"].Cmd)
+		assert.Equal(t, "http://1.2.3.4:1999", cfg.Models["model3"].Proxy)
 	})
 
 	t.Run("Proxy value required if no ${PORT} in cmd", func(t *testing.T) {
@@ -213,15 +213,15 @@ models:
       /path/to/stop.sh --port ${PORT} ${argTwo}
 `
 
-	config, err := LoadConfigFromReader(strings.NewReader(content))
+	cfg, err := LoadConfigFromReader(strings.NewReader(content))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-	sanitizedCmd, err := SanitizeCommand(config.Models["model1"].Cmd)
+	sanitizedCmd, err := SanitizeCommand(cfg.Models["model1"].Cmd)
 	assert.NoError(t, err)
 	assert.Equal(t, "path/to/server --arg2 --port 9990 --arg1 --arg3 three --overridden success", strings.Join(sanitizedCmd, " "))
 
-	sanitizedCmdStop, err := SanitizeCommand(config.Models["model1"].CmdStop)
+	sanitizedCmdStop, err := SanitizeCommand(cfg.Models["model1"].CmdStop)
 	assert.NoError(t, err)
 	assert.Equal(t, "/path/to/stop.sh --port 9990 --arg2", strings.Join(sanitizedCmdStop, " "))
 }
@@ -438,11 +438,11 @@ models:
       -ngl 99
 `
 
-	config, err := LoadConfigFromReader(strings.NewReader(content))
+	cfg, err := LoadConfigFromReader(strings.NewReader(content))
 	assert.NoError(t, err)
 
 	// Get the sanitized command
-	sanitizedCmd, err := SanitizeCommand(config.Models["test-model"].Cmd)
+	sanitizedCmd, err := SanitizeCommand(cfg.Models["test-model"].Cmd)
 	assert.NoError(t, err)
 
 	// Join the command for easier inspection
@@ -500,25 +500,25 @@ models:
     cmdStop: stop
 `
 
-	config, err := LoadConfigFromReader(strings.NewReader(content))
+	cfg, err := LoadConfigFromReader(strings.NewReader(content))
 	assert.NoError(t, err)
-	sanitizedCmd, err := SanitizeCommand(config.Models["model1"].Cmd)
+	sanitizedCmd, err := SanitizeCommand(cfg.Models["model1"].Cmd)
 	assert.NoError(t, err)
 	assert.Equal(t, "/path/to/server -p 9001 -hf model1", strings.Join(sanitizedCmd, " "))
 
-	dockerStopMacro, found := config.Macros.Get("docker-stop")
+	dockerStopMacro, found := cfg.Macros.Get("docker-stop")
 	assert.True(t, found)
 	assert.Equal(t, "docker stop ${MODEL_ID}", dockerStopMacro)
 
-	sanitizedCmd2, err := SanitizeCommand(config.Models["model2"].Cmd)
+	sanitizedCmd2, err := SanitizeCommand(cfg.Models["model2"].Cmd)
 	assert.NoError(t, err)
 	assert.Equal(t, "docker run --name model2 -p 9002:8080 docker_img", strings.Join(sanitizedCmd2, " "))
 
-	sanitizedCmdStop, err := SanitizeCommand(config.Models["model2"].CmdStop)
+	sanitizedCmdStop, err := SanitizeCommand(cfg.Models["model2"].CmdStop)
 	assert.NoError(t, err)
 	assert.Equal(t, "docker stop model2", strings.Join(sanitizedCmdStop, " "))
 
-	sanitizedCmd3, err := SanitizeCommand(config.Models["author/model:F16"].Cmd)
+	sanitizedCmd3, err := SanitizeCommand(cfg.Models["author/model:F16"].Cmd)
 	assert.NoError(t, err)
 	assert.Equal(t, "/path/to/server -p 9000 -hf author/model:F16", strings.Join(sanitizedCmd3, " "))
 }
@@ -545,10 +545,10 @@ models:
       note: "Running on port ${PORT_NUM} with temp ${TEMP} and context ${CTX}"
 `
 
-	config, err := LoadConfigFromReader(strings.NewReader(content))
+	cfg, err := LoadConfigFromReader(strings.NewReader(content))
 	assert.NoError(t, err)
 
-	meta := config.Models["test-model"].Metadata
+	meta := cfg.Models["test-model"].Metadata
 	assert.NotNil(t, meta)
 
 	// Verify direct substitution preserves types
@@ -581,10 +581,10 @@ models:
           value: ${TEMP}
 `
 
-	config, err := LoadConfigFromReader(strings.NewReader(content))
+	cfg, err := LoadConfigFromReader(strings.NewReader(content))
 	assert.NoError(t, err)
 
-	meta := config.Models["test-model"].Metadata
+	meta := cfg.Models["test-model"].Metadata
 	assert.NotNil(t, meta)
 
 	// Verify nested objects
@@ -622,10 +622,10 @@ models:
       local: ${LOCAL_VAL}
 `
 
-	config, err := LoadConfigFromReader(strings.NewReader(content))
+	cfg, err := LoadConfigFromReader(strings.NewReader(content))
 	assert.NoError(t, err)
 
-	meta := config.Models["test-model"].Metadata
+	meta := cfg.Models["test-model"].Metadata
 	assert.NotNil(t, meta)
 
 	// Model-level macro should override global

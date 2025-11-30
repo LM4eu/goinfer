@@ -6,7 +6,7 @@ package proxy
 
 import "net/http"
 
-// Custom discard writer that implements http.ResponseWriter but just discards everything.
+// DiscardWriter is a custom discard writer that implements http.ResponseWriter but just discards everything.
 type DiscardWriter struct {
 	header http.Header
 	status int

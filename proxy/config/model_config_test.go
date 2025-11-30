@@ -12,13 +12,13 @@ import (
 )
 
 func TestConfig_ModelConfigSanitizedCommand(t *testing.T) {
-	config := &ModelConfig{
+	cfg := &ModelConfig{
 		Cmd: `python model1.py \
     --arg1 value1 \
     --arg2 value2`,
 	}
 
-	args, err := config.SanitizedCommand()
+	args, err := cfg.SanitizedCommand()
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"python", "model1.py", "--arg1", "value1", "--arg2", "value2"}, args)
 }
@@ -39,9 +39,12 @@ models:
     filters:
       strip_params: "model, top_k, top_k, temperature, ${default_strip}, , ,"
 `
-	config, err := LoadConfigFromReader(strings.NewReader(content))
+	cfg, err := LoadConfigFromReader(strings.NewReader(content))
 	assert.NoError(t, err)
-	for modelId, modelConfig := range config.Models {
+	if cfg == nil {
+		return
+	}
+	for modelId, modelConfig := range cfg.Models {
 		t.Run("Testing macros in filters for model "+modelId, func(t *testing.T) {
 			assert.Equal(t, "model, top_k, temperature, top_p, ,", modelConfig.Filters.StripParams)
 			sanitized, err := modelConfig.Filters.SanitizedStripParams()
@@ -65,13 +68,13 @@ models:
   model2:
     cmd: path/to/cmd --port ${PORT}
 `
-	config, err := LoadConfigFromReader(strings.NewReader(content))
+	cfg, err := LoadConfigFromReader(strings.NewReader(content))
 	assert.NoError(t, err)
-	assert.True(t, config.SendLoadingState)
-	if assert.NotNil(t, config.Models["model1"].SendLoadingState) {
-		assert.False(t, *config.Models["model1"].SendLoadingState)
+	assert.True(t, cfg.SendLoadingState)
+	if assert.NotNil(t, cfg.Models["model1"].SendLoadingState) {
+		assert.False(t, *cfg.Models["model1"].SendLoadingState)
 	}
-	if assert.NotNil(t, config.Models["model2"].SendLoadingState) {
-		assert.True(t, *config.Models["model2"].SendLoadingState)
+	if assert.NotNil(t, cfg.Models["model2"].SendLoadingState) {
+		assert.True(t, *cfg.Models["model2"].SendLoadingState)
 	}
 }

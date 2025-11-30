@@ -25,9 +25,9 @@ models:
     proxy: http://localhost:8080
 `
 
-	config, err := LoadConfigFromReader(strings.NewReader(content))
+	cfg, err := LoadConfigFromReader(strings.NewReader(content))
 	assert.NoError(t, err)
-	assert.Equal(t, "echo prefix-value-A-suffix", config.Models["test"].Cmd)
+	assert.Equal(t, "echo prefix-value-A-suffix", cfg.Models["test"].Cmd)
 }
 
 // Test LIFO substitution order with 3+ macro levels.
@@ -45,9 +45,9 @@ models:
     proxy: http://localhost:8080
 `
 
-	config, err := LoadConfigFromReader(strings.NewReader(content))
+	cfg, err := LoadConfigFromReader(strings.NewReader(content))
 	assert.NoError(t, err)
-	assert.Equal(t, "load /models/llama/model.gguf", config.Models["test"].Cmd)
+	assert.Equal(t, "load /models/llama/model.gguf", cfg.Models["test"].Cmd)
 }
 
 // Test MODEL_ID in global macro used by model.
@@ -63,9 +63,9 @@ models:
     proxy: http://localhost:8080
 `
 
-	config, err := LoadConfigFromReader(strings.NewReader(content))
+	cfg, err := LoadConfigFromReader(strings.NewReader(content))
 	assert.NoError(t, err)
-	assert.Equal(t, "podman run --name my-model ghcr.io/ggml-org/llama.cpp:server-cuda -m model.gguf", config.Models["my-model"].Cmd)
+	assert.Equal(t, "podman run --name my-model ghcr.io/ggml-org/llama.cpp:server-cuda -m model.gguf", cfg.Models["my-model"].Cmd)
 }
 
 // Test model macro overrides global macro in substitution.
@@ -84,9 +84,9 @@ models:
     proxy: http://localhost:8080
 `
 
-	config, err := LoadConfigFromReader(strings.NewReader(content))
+	cfg, err := LoadConfigFromReader(strings.NewReader(content))
 	assert.NoError(t, err)
-	assert.Equal(t, "echo value-model-level", config.Models["test"].Cmd)
+	assert.Equal(t, "echo value-model-level", cfg.Models["test"].Cmd)
 }
 
 // Test self-reference detection error.

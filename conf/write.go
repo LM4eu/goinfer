@@ -68,6 +68,10 @@ func WriteLlamaSwapYML(yml []byte) error {
 
 // GenSwapYAMLData generates the llama-swap configuration.
 func (cfg *Cfg) GenSwapYAMLData(verbose, debug bool) ([]byte, error) {
+	if cfg.Swap == nil {
+		cfg.Swap = &config.Config{}
+	}
+
 	switch {
 	case debug:
 		cfg.Swap.LogLevel = "debug"
@@ -209,6 +213,9 @@ func (cfg *Cfg) selectModelName(model string, useSmallest bool) (betterName, rea
 func (cfg *Cfg) setSwapModels() {
 	info := cfg.getInfo()
 
+	if cfg.Swap == nil {
+		cfg.Swap = &config.Config{}
+	}
 	if cfg.Swap.Models == nil {
 		cfg.Swap.Models = make(map[string]config.ModelConfig, 2*len(info)+9)
 	}

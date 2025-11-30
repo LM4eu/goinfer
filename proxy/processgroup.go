@@ -14,29 +14,27 @@ import (
 )
 
 type ProcessGroup struct {
-	proxyLogger    *LogMonitor
-	upstreamLogger *LogMonitor
-
-	// map of current processes
+	proxyLogger     *LogMonitor
+	upstreamLogger  *LogMonitor
 	processes       map[string]*Process
+	config          *config.Config
 	lastUsedProcess string
 	id              string
-	config          config.Config
 	sync.Mutex
 	swap       bool
 	exclusive  bool
 	persistent bool
 }
 
-func NewProcessGroup(id string, config config.Config, proxyLogger, upstreamLogger *LogMonitor) *ProcessGroup {
-	groupConfig, ok := config.Groups[id]
+func NewProcessGroup(id string, cfg *config.Config, proxyLogger, upstreamLogger *LogMonitor) *ProcessGroup {
+	groupConfig, ok := cfg.Groups[id]
 	if !ok {
 		panic("Unable to find configuration for group id: " + id)
 	}
 
 	pg := &ProcessGroup{
 		id:             id,
-		config:         config,
+		config:         cfg,
 		swap:           groupConfig.Swap,
 		exclusive:      groupConfig.Exclusive,
 		persistent:     groupConfig.Persistent,
@@ -47,16 +45,16 @@ func NewProcessGroup(id string, config config.Config, proxyLogger, upstreamLogge
 
 	// Create a Process for each member in the group
 	for _, modelID := range groupConfig.Members {
-		modelConfig, modelID, _ := pg.config.FindConfig(modelID)
-		process := NewProcess(modelID, pg.config.HealthCheckTimeout, modelConfig, pg.upstreamLogger, pg.proxyLogger)
-		pg.processes[modelID] = process
+		modelConfig, id, _ := pg.config.FindConfig(modelID)
+		process := NewProcess(id, pg.config.HealthCheckTimeout, modelConfig, pg.upstreamLogger, pg.proxyLogger)
+		pg.processes[id] = process
 	}
 
 	return pg
 }
 
-// ProxyRequest proxies a request to the specified model.
-func (pg *ProcessGroup) ProxyRequest(modelID string, writer http.ResponseWriter, request *http.Request) error {
+// proxyRequest proxies a request to the specified model.
+func (pg *ProcessGroup) proxyRequest(modelID string, writer http.ResponseWriter, request *http.Request) error {
 	if !pg.HasMember(modelID) {
 		return fmt.Errorf("model %s not part of group %s", modelID, pg.id)
 	}

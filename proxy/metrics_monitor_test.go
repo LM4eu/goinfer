@@ -21,7 +21,7 @@ func TestMetricsMonitor_AddMetrics(t *testing.T) {
 	t.Run("adds metrics and assigns ID", func(t *testing.T) {
 		mm := newMetricsMonitor(testLogger, 10)
 
-		metric := TokenMetrics{
+		metric := &TokenMetrics{
 			Model:        "test-model",
 			InputTokens:  100,
 			OutputTokens: 50,
@@ -41,7 +41,7 @@ func TestMetricsMonitor_AddMetrics(t *testing.T) {
 		mm := newMetricsMonitor(testLogger, 10)
 
 		for range 5 {
-			mm.addMetrics(TokenMetrics{Model: "model"})
+			mm.addMetrics(&TokenMetrics{Model: "model"})
 		}
 
 		metrics := mm.getMetrics()
@@ -56,7 +56,7 @@ func TestMetricsMonitor_AddMetrics(t *testing.T) {
 
 		// Add 5 metrics
 		for i := range 5 {
-			mm.addMetrics(TokenMetrics{
+			mm.addMetrics(&TokenMetrics{
 				Model:       "model",
 				InputTokens: i,
 			})
@@ -86,7 +86,7 @@ func TestMetricsMonitor_AddMetrics(t *testing.T) {
 			OutputTokens: 50,
 		}
 
-		mm.addMetrics(metric)
+		mm.addMetrics(&metric)
 
 		select {
 		case evt := <-receivedEvent:
@@ -110,8 +110,8 @@ func TestMetricsMonitor_GetMetrics(t *testing.T) {
 
 	t.Run("returns copy of metrics", func(t *testing.T) {
 		mm := newMetricsMonitor(testLogger, 10)
-		mm.addMetrics(TokenMetrics{Model: "model1"})
-		mm.addMetrics(TokenMetrics{Model: "model2"})
+		mm.addMetrics(&TokenMetrics{Model: "model1"})
+		mm.addMetrics(&TokenMetrics{Model: "model2"})
 
 		metrics1 := mm.getMetrics()
 		metrics2 := mm.getMetrics()
@@ -134,7 +134,7 @@ func TestMetricsMonitor_GetMetricsJSON(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, jsonData)
 
-		var metrics []TokenMetrics
+		var metrics []*TokenMetrics
 		err = json.Unmarshal(jsonData, &metrics)
 		assert.NoError(t, err)
 		assert.Empty(t, metrics)
@@ -142,13 +142,13 @@ func TestMetricsMonitor_GetMetricsJSON(t *testing.T) {
 
 	t.Run("returns valid JSON with metrics", func(t *testing.T) {
 		mm := newMetricsMonitor(testLogger, 10)
-		mm.addMetrics(TokenMetrics{
+		mm.addMetrics(&TokenMetrics{
 			Model:           "model1",
 			InputTokens:     100,
 			OutputTokens:    50,
 			TokensPerSecond: 25.5,
 		})
-		mm.addMetrics(TokenMetrics{
+		mm.addMetrics(&TokenMetrics{
 			Model:           "model2",
 			InputTokens:     200,
 			OutputTokens:    100,
@@ -158,7 +158,7 @@ func TestMetricsMonitor_GetMetricsJSON(t *testing.T) {
 		jsonData, err := mm.getMetricsJSON()
 		assert.NoError(t, err)
 
-		var metrics []TokenMetrics
+		var metrics []*TokenMetrics
 		err = json.Unmarshal(jsonData, &metrics)
 		assert.NoError(t, err)
 		assert.Len(t, metrics, 2)
@@ -440,7 +440,7 @@ func TestMetricsMonitor_Concurrent(t *testing.T) {
 			go func(id int) {
 				defer wg.Done()
 				for j := range metricsPerGoroutine {
-					mm.addMetrics(TokenMetrics{
+					mm.addMetrics(&TokenMetrics{
 						Model:        "test-model",
 						InputTokens:  id*1000 + j,
 						OutputTokens: j,
@@ -463,7 +463,7 @@ func TestMetricsMonitor_Concurrent(t *testing.T) {
 		// Writer goroutine
 		go func() {
 			for range 50 {
-				mm.addMetrics(TokenMetrics{Model: "test-model"})
+				mm.addMetrics(&TokenMetrics{Model: "test-model"})
 				time.Sleep(1 * time.Millisecond)
 			}
 			done <- true
@@ -656,7 +656,7 @@ data: [DONE]
 func BenchmarkMetricsMonitor_AddMetrics(b *testing.B) {
 	mm := newMetricsMonitor(testLogger, 1000)
 
-	metric := TokenMetrics{
+	metric := &TokenMetrics{
 		Model:           "test-model",
 		CachedTokens:    100,
 		InputTokens:     500,
@@ -676,7 +676,7 @@ func BenchmarkMetricsMonitor_AddMetrics_SmallBuffer(b *testing.B) {
 	// Test performance with a smaller buffer where wrapping occurs more frequently
 	mm := newMetricsMonitor(testLogger, 100)
 
-	metric := TokenMetrics{
+	metric := &TokenMetrics{
 		Model:           "test-model",
 		CachedTokens:    100,
 		InputTokens:     500,

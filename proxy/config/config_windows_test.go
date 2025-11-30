@@ -50,15 +50,15 @@ models:
     cmd: path/to/cmd --port ${PORT}
 `
 
-	config, err := LoadConfigFromReader(strings.NewReader(content))
+	cfg, err := LoadConfigFromReader(strings.NewReader(content))
 	assert.NoError(t, err)
-	assert.Equal(t, 120, config.HealthCheckTimeout)
-	assert.Equal(t, 5800, config.StartPort)
-	assert.Equal(t, "info", config.LogLevel)
-	assert.Equal(t, "", config.LogTimeFormat)
+	assert.Equal(t, 120, cfg.HealthCheckTimeout)
+	assert.Equal(t, 5800, cfg.StartPort)
+	assert.Equal(t, "info", cfg.LogLevel)
+	assert.Equal(t, "", cfg.LogTimeFormat)
 
 	// Test default group exists
-	defaultGroup, exists := config.Groups["(default)"]
+	defaultGroup, exists := cfg.Groups["(default)"]
 	assert.True(t, exists, "default group should exist")
 	if assert.NotNil(t, defaultGroup, "default group should not be nil") {
 		assert.Equal(t, true, defaultGroup.Swap)
@@ -67,7 +67,7 @@ models:
 		assert.Equal(t, []string{"model1"}, defaultGroup.Members)
 	}
 
-	model1, exists := config.Models["model1"]
+	model1, exists := cfg.Models["model1"]
 	assert.True(t, exists, "model1 should exist")
 	if assert.NotNil(t, model1, "model1 should not be nil") {
 		assert.Equal(t, "path/to/cmd --port 5800", model1.Cmd) // has the port replaced
@@ -147,8 +147,8 @@ groups:
 		t.Fatalf("Failed to write temporary file: %v", err)
 	}
 
-	// Load the config and verify
-	config, err := LoadConfig(tempFile)
+	// Load the cfg and verify
+	cfg, err := LoadConfig(tempFile)
 	if err != nil {
 		t.Fatalf("Failed to load config: %v", err)
 	}
@@ -232,9 +232,9 @@ groups:
 		},
 	}
 
-	assert.Equal(t, expected, config)
+	assert.Equal(t, expected, cfg)
 
-	realname, found := config.RealModelName("m1")
+	realname, found := cfg.RealModelName("m1")
 	assert.True(t, found)
 	assert.Equal(t, "model1", realname)
 }

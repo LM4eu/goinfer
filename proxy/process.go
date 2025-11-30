@@ -34,7 +34,7 @@ const (
 	StateReady    ProcessState = ProcessState("ready")
 	StateStopping ProcessState = ProcessState("stopping")
 
-	// process is shutdown and will not be restarted
+	// StateShutdown means the process will not be restarted.
 	StateShutdown ProcessState = ProcessState("shutdown")
 )
 
@@ -87,7 +87,7 @@ type Process struct {
 	inFlightRequestsCount atomic.Int32
 }
 
-func NewProcess(ID string, healthCheckTimeout int, config config.ModelConfig, processLogger, proxyLogger *LogMonitor) *Process {
+func NewProcess(id string, healthCheckTimeout int, config config.ModelConfig, processLogger, proxyLogger *LogMonitor) *Process {
 	concurrentLimit := 10
 	if config.ConcurrencyLimit > 0 {
 		concurrentLimit = config.ConcurrencyLimit
@@ -96,7 +96,7 @@ func NewProcess(ID string, healthCheckTimeout int, config config.ModelConfig, pr
 	// Setup the reverse proxy.
 	proxyURL, err := url.Parse(config.Proxy)
 	if err != nil {
-		proxyLogger.Errorf("<%s> invalid proxy URL %q: %v", ID, config.Proxy, err)
+		proxyLogger.Errorf("<%s> invalid proxy URL %q: %v", id, config.Proxy, err)
 	}
 
 	var reverseProxy *httputil.ReverseProxy
@@ -112,7 +112,7 @@ func NewProcess(ID string, healthCheckTimeout int, config config.ModelConfig, pr
 	}
 
 	return &Process{
-		ID:                      ID,
+		ID:                      id,
 		config:                  config,
 		cmd:                     nil,
 		reverseProxy:            reverseProxy,
@@ -152,7 +152,7 @@ func (p *Process) getLastRequestHandled() time.Time {
 	return p.lastRequestHandled
 }
 
-// custom error types for swapping state
+// custom error types for swapping state.
 var (
 	ErrExpectedStateMismatch  = errors.New("expected state mismatch")
 	ErrInvalidStateTransition = errors.New("invalid state transition")
@@ -187,7 +187,7 @@ func (p *Process) swapState(expectedState, newState ProcessState) (ProcessState,
 	return p.state, nil
 }
 
-// Helper function to encapsulate transition rules
+// Helper function to encapsulate transition rules.
 func isValidTransition(from, to ProcessState) bool {
 	switch from {
 	case StateStopped:
@@ -232,7 +232,8 @@ func (p *Process) start() error {
 		return fmt.Errorf("unable to get sanitized command: %w", err)
 	}
 
-	if curState, err := p.swapState(StateStopped, StateStarting); err != nil {
+	curState, err := p.swapState(StateStopped, StateStarting)
+	if err != nil {
 		if errors.Is(err, ErrExpectedStateMismatch) {
 			// already starting, just wait for it to complete and expect
 			// it to be in the Ready start after. If not, return an error
@@ -273,7 +274,8 @@ func (p *Process) start() error {
 	err = p.cmd.Start()
 	// Set process state to failed
 	if err != nil {
-		if curState, swapErr := p.swapState(StateStarting, StateStopped); swapErr != nil {
+		curState, swapErr := p.swapState(StateStarting, StateStopped)
+		if swapErr != nil {
 			p.forceState(StateStopped) // force it into a stopped state
 			return fmt.Errorf(
 				"failed to start command '%s' and state swap failed. command error: %w, current state: %v, state swap error: %w",
@@ -362,7 +364,8 @@ func (p *Process) start() error {
 		}()
 	}
 
-	if curState, err := p.swapState(StateStarting, StateReady); err != nil {
+	curState, err = p.swapState(StateStarting, StateReady)
+	if err != nil {
 		return fmt.Errorf("failed to set Process state to ready: current state: %v, error: %w", curState, err)
 	} else {
 		p.failedStartCount = 0
@@ -541,8 +544,10 @@ func (p *Process) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 	// recover from http.ErrAbortHandler panics that can occur when the client
 	// disconnects before the response is sent
 	defer func() {
-		if r := recover(); r != nil {
-			if err, ok := r.(error); ok && errors.Is(http.ErrAbortHandler, err) {
+		r := recover()
+		if r != nil {
+			err, ok := r.(error)
+			if ok && errors.Is(http.ErrAbortHandler, err) {
 				p.proxyLogger.Infof("<%s> recovered from client disconnection during streaming", p.ID)
 			} else {
 				p.proxyLogger.Infof("<%s> recovered from panic: %v", p.ID, r)
@@ -566,7 +571,7 @@ func (p *Process) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 		p.ID, r.RequestURI, startDuration, totalTime)
 }
 
-// waitForCmd waits for the command to exit and handles exit conditions depending on current state
+// waitForCmd waits for the command to exit and handles exit conditions depending on current state.
 func (p *Process) waitForCmd() {
 	exitErr := p.cmd.Wait()
 	p.proxyLogger.Debugf("<%s> cmd.Wait() returned error: %v", p.ID, exitErr)
@@ -580,17 +585,17 @@ func (p *Process) waitForCmd() {
 			exitError = &exec.ExitError{}
 		}
 		if errors.As(exitErr, &exitError) {
-			if strings.Contains(exitError.String(), "signal: terminated") {
+			str := exitError.String()
+			switch {
+			case strings.Contains(str, "signal: terminated"):
 				p.proxyLogger.Debugf("<%s> Process stopped OK", p.ID)
-			} else if strings.Contains(exitError.String(), "signal: interrupt") {
+			case strings.Contains(str, "signal: interrupt"):
 				p.proxyLogger.Debugf("<%s> Process interrupted OK", p.ID)
-			} else {
+			default:
 				p.proxyLogger.Warnf("<%s> ExitError >> %v, exit code: %d", p.ID, exitError, exitError.ExitCode())
 			}
-		} else {
-			if exitErr.Error() != "context canceled" /* this is normal */ {
-				p.proxyLogger.Errorf("<%s> Process exited >> %v", p.ID, exitErr)
-			}
+		} else if exitErr.Error() != "context canceled" /* this is normal */ {
+			p.proxyLogger.Errorf("<%s> Process exited >> %v", p.ID, exitErr)
 		}
 	}
 
@@ -611,7 +616,7 @@ func (p *Process) waitForCmd() {
 	p.cmdMutex.Unlock()
 }
 
-// cmdStopUpstreamProcess attempts to stop the upstream process gracefully
+// cmdStopUpstreamProcess attempts to stop the upstream process gracefully.
 func (p *Process) cmdStopUpstreamProcess() error {
 	p.processLogger.Debugf("<%s> cmdStopUpstreamProcess() initiating graceful stop of upstream process", p.ID)
 
@@ -738,7 +743,7 @@ func newStatusResponseWriter(p *Process, w http.ResponseWriter) *statusResponseW
 	return s
 }
 
-// statusUpdates sends status updates to the client while the model is loading
+// statusUpdates sends status updates to the client while the model is loading.
 func (s *statusResponseWriter) statusUpdates(ctx context.Context) {
 	s.wg.Add(1)
 	defer s.wg.Done()
@@ -796,7 +801,7 @@ func (s *statusResponseWriter) statusUpdates(ctx context.Context) {
 	}
 }
 
-// waitForCompletion waits for the statusUpdates goroutine to finish
+// waitForCompletion waits for the statusUpdates goroutine to finish.
 func (s *statusResponseWriter) waitForCompletion(timeout time.Duration) bool {
 	done := make(chan struct{})
 	go func() {
@@ -869,7 +874,6 @@ func (s *statusResponseWriter) WriteHeader(statusCode int) {
 	s.Flush()
 }
 
-// Add Flush method
 func (s *statusResponseWriter) Flush() {
 	if flusher, ok := s.writer.(http.Flusher); ok {
 		flusher.Flush()

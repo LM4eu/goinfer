@@ -32,7 +32,7 @@ type (
 		Llama        Llama                `toml:"llama"               yaml:"llama"`
 		Addr         string               `toml:"addr"                yaml:"addr"           comment:"address can be 'host:port' or 'ip:por' or simply ':port' (for host = localhost)"`
 		Info         map[string]ModelInfo `toml:"-"                   yaml:"-"`
-		Swap         config.Config        `toml:"-"                   yaml:"-"`
+		Swap         *config.Config        `toml:"-"                   yaml:"-"`
 		// Swap is stored in llama-swap.yml
 	}
 

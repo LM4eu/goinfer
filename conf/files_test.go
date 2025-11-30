@@ -167,7 +167,7 @@ func TestValidateModelFiles_NoSwapModels(t *testing.T) {
 	tmp := t.TempDir()
 	cfg := &Cfg{
 		ModelsDir: tmp,
-		Swap:      config.Config{},
+		Swap:      &config.Config{},
 	}
 	err := cfg.ValidateSwap()
 	if err == nil {
@@ -182,7 +182,7 @@ func TestValidateModelFiles_WithSwapModels(t *testing.T) {
 
 	cfg := &Cfg{
 		ModelsDir: tmp,
-		Swap: config.Config{
+		Swap: &config.Config{
 			Models: map[string]config.ModelConfig{
 				"ref": {Cmd: "--model " + modelPath, Unlisted: false},
 			},

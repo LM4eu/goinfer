@@ -149,7 +149,7 @@ func doLlamaSwapYML(cfg *conf.Cfg, write, verbose, debug bool) {
 
 // startServer creates and runs the HTTP server (API).
 func startServer(cfg *conf.Cfg) {
-	proxyMan := proxy.New(cfg.Swap, cfg)
+	proxyMan := proxy.New(cfg)
 	server := &http.Server{
 		Addr:    cfg.Addr,
 		Handler: proxyMan,
