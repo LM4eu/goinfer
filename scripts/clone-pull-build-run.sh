@@ -194,6 +194,18 @@ export GI_LLAMA_EXE="${GI_LLAMA_EXE:-"$(do_llamaCpp >&2 && \ls -1 "$llamaCpp_dir
 
 cd "$goinfer_dir"
 
+build_reason=
+[[ -f proxy/ui_dist/favicon.ico ]] || build_reason="missing proxy/ui_dist/favicon.ico"
+[[ -z "$build_reason" ]] || (
+  log "build Web UI because $build_reason"
+  # we may: rm proxy/ui_dist/
+  cd ui
+  pwd
+  set -x
+  npm ci --prefer-offline --no-audit --no-fund # --omit=dev (--omit=dev prevents the installation of tsc)
+  npm run build
+)
+
 (
   log build goinfer with CPU-optimizations
   case "$flags" in
