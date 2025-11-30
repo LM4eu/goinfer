@@ -18,8 +18,8 @@ This script can be used:
 
 For better reproducibility, you can specify the tag or branch:
 
-  llamaCpp_tag=b6666     ./clone-pull-build-run.sh`
-  llamaCpp_branch=master ./clone-pull-build-run.sh`
+  tag=b7777     ./clone-pull-build-run.sh`
+  branch=master ./clone-pull-build-run.sh`
 
 If you have already your `llama-server` (or compatible fork),
 set `export GI_LLAMA_EXE=/home/me/path/llama-server`.
@@ -81,9 +81,9 @@ logx() { log "repo ${repo:-none} - $@"; set -x; }
 
 # clone_checkout_pull sets the variable build_reason=... to trigger the build
 clone_checkout_pull() {
-  repo=$1
-  branch=$2
-  tag=$3
+  local repo=$1
+  local branch=$2
+  local tag=$3
 
   build_reason=clone
   [ -d "${repo#*/}" ] && build_reason= || 
@@ -120,7 +120,7 @@ flags="$(grep "^flags" -wm1 /proc/cpuinfo) " # trailing space required
 
 do_llamaCpp() {
   cd "$root_dir"
-  clone_checkout_pull ggml-org/llama.cpp "${llamaCpp_branch:-master}" "${llamaCpp_tag:-}"
+  clone_checkout_pull ggml-org/llama.cpp "${branch:-master}" "${tag:-}"
   [[ -n "$build_reason" ]] || { [[ -f build/bin/llama-server ]] || build_reason="missing build/bin/llama-server" ; }
   [[ -z "$build_reason" ]] || (
     log "build llama.cpp because $build_reason"
