@@ -32,7 +32,7 @@ type (
 		Llama        Llama                `toml:"llama"               yaml:"llama"`
 		Addr         string               `toml:"addr"                yaml:"addr"           comment:"address can be 'host:port' or 'ip:por' or simply ':port' (for host = localhost)"`
 		Info         map[string]ModelInfo `toml:"-"                   yaml:"-"`
-		Swap         *config.Config        `toml:"-"                   yaml:"-"`
+		Swap         *config.Config       `toml:"-"                   yaml:"-"`
 		// Swap is stored in llama-swap.yml
 	}
 
@@ -106,7 +106,7 @@ func DefaultCfg() *Cfg {
 
 // Print configuration.
 func (cfg *Cfg) Print() {
-	slog.Info("-----------------------------")
+	slog.Info("-------------------------------------------")
 
 	printEnvVar("GI_MODELS_DIR", false)
 	printEnvVar("GI_EXTRA_MODELS", false)
@@ -116,7 +116,7 @@ func (cfg *Cfg) Print() {
 	printEnvVar("GI_API_KEY", true)
 	printEnvVar("GI_LLAMA_EXE", false)
 
-	slog.Info("-----------------------------")
+	slog.Info("-------------------------------------------")
 
 	yml, err := yaml.Marshal(&cfg)
 	if err != nil {
@@ -126,7 +126,7 @@ func (cfg *Cfg) Print() {
 
 	_, _ = os.Stdout.Write(yml)
 
-	slog.Info("-----------------------------")
+	slog.Info("-------------------------------------------")
 }
 
 func printEnvVar(key string, confidential bool) {
