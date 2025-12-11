@@ -158,12 +158,12 @@ func (cfg *Cfg) parseExtraModels(extra string) {
 
 	for pair := range strings.SplitSeq(extra, "|||") {
 		// split model=flags
-		mf := strings.SplitN(pair, "=", 2)
-		model := strings.TrimSpace(mf[0])
+		model, flags, ok := strings.Cut(pair, "=")
+		model = strings.TrimSpace(model)
+		model = strings.Replace(model, "-GGUF", "", 1)
 		cfg.ExtraModels[model] = ""
-		if len(mf) > 1 {
-			flags := strings.TrimSpace(mf[1])
-			cfg.ExtraModels[model] = flags
+		if ok {
+			cfg.ExtraModels[model] = strings.TrimSpace(flags)
 		}
 		// if DefaultModel unset => use the first ExtraModels
 		if cfg.DefaultModel == "" {

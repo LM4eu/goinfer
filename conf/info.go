@@ -82,11 +82,11 @@ func (cfg *Cfg) refineModelInfo(name string) {
 	// after the first space, the arguments
 	pos := strings.Index(cfg.Swap.Models[name].Cmd, " ")
 	if pos > 1 {
-		// split the arguments at -m: -first -args -m path/to/file.gguf
-		args := strings.SplitN(cfg.Swap.Models[name].Cmd[pos:], " -m ", 2)
-		mi.Flags = args[0]
-		if len(args) > 1 {
-			mi.Path = args[1]
+		// split the arguments at -m: -arg1 -arg2 -m path/to/file.gguf
+		flags, path, ok := strings.Cut(cfg.Swap.Models[name].Cmd[pos:], " -m ")
+		mi.Flags = flags
+		if ok {
+			mi.Path = path
 			mi.Error = "file absent but configured in llama-swap.yml"
 		}
 	} else {

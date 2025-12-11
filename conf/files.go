@@ -28,7 +28,7 @@ func replaceDIR(path, flags string) string {
 	return strings.ReplaceAll(flags, "$DIR", filepath.Dir(path))
 }
 
-// getNameAndFlags returns model name and llama-server flags
+// getNameAndFlags returns model name and llama-server flags.
 func getNameAndFlags(root, path string) (name, flags_ string) {
 	truncated, flags := extractFlags(path)
 	name = beautifyModelName(root, truncated)
@@ -48,6 +48,7 @@ func beautifyModelName(root, truncated string) string {
 	name = strings.TrimSuffix(name, "_")
 	name = strings.TrimSuffix(name, "-GGUF")
 	name = strings.Replace(name, "-GGUF_", ":", 1)
+	name = strings.Replace(name, "-GGUF:", ":", 1)
 
 	return name
 }
@@ -96,6 +97,7 @@ func nameWithSlash(root, truncated, name string) string {
 			return string(out)
 		case !unicode.IsLower(char):
 			return nameWithDir(root, truncated, name)
+		default:
 		}
 	}
 	return nameWithDir(root, truncated, name)
@@ -116,22 +118,22 @@ func nameWithGGUF(name string) string {
 		return ""
 	}
 
-	// expected split:
-	// begin[0] = ggml-org     unsloth
-	// begin[1] = gpt-oss-120b Devstral-2-123B-Instruct-2512
-	begin := strings.SplitN(name[:pos], "_", 2)
-	if len(begin) != 2 {
+	// Expected Cut:
+	// grp   = ggml-org     unsloth
+	// model = gpt-oss-120b Devstral-2-123B-Instruct-2512
+	grp, model, ok := strings.Cut(name[:pos], "_")
+	if !ok {
 		return ""
 	}
 
 	// search for the duplicated model name
 	after := name[pos+len(gguf):]
-	pos = strings.Index(after, begin[1])
+	pos = strings.Index(after, model)
 	if pos < 0 {
 		return ""
 	}
 
-	name = begin[0] + "/" + begin[1]
+	name = grp + "/" + model
 	if pos > 1 {
 		quants := after[:pos-1]
 		name += ":" + quants
@@ -163,6 +165,7 @@ func nameWithDir(root, truncated, name string) string {
 			dash = i // number of letters before the dash
 		case !unicode.IsLower(char):
 			return name
+		default:
 		}
 	}
 	if dash > 0 {
@@ -212,10 +215,10 @@ func extractFlags(path string) (truncated, flags_ string) {
 
 	// Slice after the first '&' to avoid an empty first element.
 	for f := range strings.SplitSeq(truncated[pos+1:], "&") {
-		kv := strings.SplitN(f, "=", 2)
-		if len(kv) > 0 {
-			kv[0] = "-" + kv[0]
-			flags = append(flags, kv...)
+		key, value, ok := strings.Cut(f, "=")
+		if ok {
+			key = "-" + key
+			flags = append(flags, key, value)
 		}
 	}
 
