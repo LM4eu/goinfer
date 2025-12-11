@@ -12,6 +12,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/LM4eu/goinfer/gie"
@@ -228,54 +229,105 @@ func (cfg *Cfg) setSwapModels() {
 	}
 
 	for model, flags := range cfg.ExtraModels {
+		gi := true
+		mc := commonMC
 		switch {
 		case flags == "":
-			cfg.addModelCfg(model, "${cmd-common} -hf "+model, commonMC)
-			cfg.addModelCfg(A_+model, "${cmd-goinfer} -hf "+model, goinferMC)
+			flags = "-hf " + model
 		case strings.HasPrefix(flags, "--embd-"):
-			cfg.addModelCfg(model, "${cmd-common} "+flags, commonMC)
+			gi = false
 		case strings.HasPrefix(flags, "--fim-"):
-			cfg.addModelCfg(model, "${cmd-common} "+flags, fimMC)
-		case strings.Contains(flags, "-m "), strings.Contains(flags, "-hf "):
-			cfg.addModelCfg(model, "${cmd-common} "+flags, commonMC)
-			cfg.addModelCfg(A_+model, "${cmd-goinfer} "+flags, goinferMC)
+			mc = fimMC
+			gi = false
 		default:
-			cfg.addModelCfg(model, "${cmd-common} -hf "+model+" "+flags, commonMC)
-			cfg.addModelCfg(A_+model, "${cmd-goinfer} -hf "+model+" "+flags, goinferMC)
+		}
+		cfg.addModelCfg(model, "${cmd-common}", flags, mc)
+		if gi {
+			goinferMC.UseModelName = model // overrides the model name that is sent to /upstream server
+			cfg.addModelCfg(A_+model, "${cmd-goinfer}", flags, goinferMC)
 		}
 	}
 
 	// For each model, set two model settings:
 	// 1. for the OpenAI endpoints
 	// 2. for the /completion endpoint (prefix with A_ and hide the model)
-	for name, mi := range info {
-		goinferMC.UseModelName = name // overrides the model name that is sent to /upstream server
-		args := " " + mi.Flags + " -m " + mi.Path
-		cfg.addModelCfg(name, "${cmd-common}"+args, commonMC)      // API for Cline, RooCode, RolePlay...
-		cfg.addModelCfg(A_+name, "${cmd-goinfer}"+args, goinferMC) // API for Agent-Smith...
+	for model, mi := range info {
+		goinferMC.UseModelName = model // overrides the model name that is sent to /upstream server
+		flags := mi.Flags + " -m " + mi.Path
+		cfg.addModelCfg(model, "${cmd-common}", flags, commonMC)      // API for Cline, RooCode, RolePlay...
+		cfg.addModelCfg(A_+model, "${cmd-goinfer}", flags, goinferMC) // API for Agent-Smith...
 	}
 }
 
 // Add the model settings within the llama-swap configuration.
-func (cfg *Cfg) addModelCfg(modelName, cmd string, mc *config.ModelConfig) {
-	mCfg := *mc // copy
-	mCfg.Cmd = cmd
+func (cfg *Cfg) addModelCfg(model, cmd, flags string, mc *config.ModelConfig) {
+	nMC := *mc // copy
 
-	mCfg.CheckEndpoint = "/health"
-	if strings.Contains(cmd, " -hf ") {
-		// -hf may download a model for a while
-		// but /health check will stop it,
-		// so better to disable /health check
-		mCfg.CheckEndpoint = "none"
+	nMC.CheckEndpoint = "/health"
+	nMC.Cmd = cmd
+	if flags != "" {
+		nMC.Cmd += " " + flags
+		if strings.Contains(flags, " -hf ") {
+			// -hf may download a model for a while
+			// but /health check will stop it,
+			// so better to disable /health check
+			nMC.CheckEndpoint = "none"
+		}
 	}
 
-	old, ok := cfg.Swap.Models[modelName]
+	model = strings.Replace(model, "-GGUF", "", 1)
+	old, ok := cfg.Swap.Models[model]
 	if ok {
-		slog.Debug("Overwrite config", "old", old)
-		slog.Debug("Overwrite config", "new", modelName)
+		merge(&old, &nMC, flags)
+	}
+	cfg.Swap.Models[model] = nMC
+}
+
+// Add the model settings within the llama-swap configuration.
+func merge(old, mc *config.ModelConfig, newFlags string) {
+	if reflect.DeepEqual(old.Cmd, mc.Cmd) {
+		return // same values
 	}
 
-	cfg.Swap.Models[modelName] = mCfg
+	if old.Cmd == mc.Cmd {
+		slog.Debug("Overwrite but same", "cmd", old.Cmd)
+		return
+	}
+
+	if newFlags == "" {
+		slog.Debug("Empty flags => Skip new, keep", "old", old.Cmd)
+		*mc = *old
+		return
+	}
+
+	oH := strings.Contains(old.Cmd, " -hf ")
+	nH := strings.Contains(newFlags, "-hf ")
+	oM := strings.Contains(old.Cmd, " -m ")
+	nM := strings.Contains(newFlags, "-m ")
+
+	if oH && oM {
+		slog.Warn("Overwrite. Cannot use both -hf and -m", "cmd", old.Cmd)
+		return
+	}
+	if nH && nM {
+		slog.Warn("Overwrite. Cannot use both -hf and -m", "flags", newFlags)
+		*mc = *old
+		return
+	}
+	if oH && nM {
+		slog.Debug("Skip -hf (old) to use -m (new)", "old", old.Cmd, "new", mc.Cmd)
+		return
+	}
+	if nH && oM {
+		slog.Debug("Skip -hf (new) to use -m (old)", "old", old.Cmd, "new", mc.Cmd)
+		*mc = *old
+		return
+	}
+
+	slog.Info("Merge", "old", old.Cmd)
+	slog.Info("Merge", "new", mc.Cmd)
+	mc.Cmd = old.Cmd + " " + newFlags
+	slog.Info("Merge", "both", mc.Cmd)
 }
 
 func (cfg *Cfg) setAPIKey(debug, noAPIKey bool) {
