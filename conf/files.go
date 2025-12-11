@@ -142,9 +142,12 @@ func extractFlags(path string) (string, string) {
 	}
 
 	// 1. Is there a file containing the command line arguments?
-	args, err := os.ReadFile(filepath.Clean(truncated + ".args"))
+	argsFn := filepath.Clean(truncated + ".args")
+	args, err := os.ReadFile(argsFn)
 	if err == nil {
-		return truncated, oneLine(args)
+		flags := oneLine(args)
+		slog.Info("Found", "flags", flags, "from file", argsFn)
+		return truncated, flags
 	}
 
 	// 2. Are there flags encoded within the filename?
@@ -167,6 +170,7 @@ func extractFlags(path string) (string, string) {
 		}
 	}
 
+	slog.Info("Found", "flags", flags, "from filename", truncated)
 	return truncated[:pos], strings.Join(flags, " ")
 }
 
