@@ -23,17 +23,16 @@ import (
 type (
 	// Cfg holds all settings.
 	Cfg struct {
-		APIKey       string               `toml:"api_key"             yaml:"api_key"        comment:"⚠️ Set your API key, can be 64-hex-digit (32-byte) 🚨\nGoinfer sets a random API key with: ./goinfer -write"`
-		Host         string               `toml:"host,omitempty"      yaml:"host,omitempty" comment:"\nHost to listen (env. var: GI_HOST)"`
-		Origins      string               `toml:"origins"             yaml:"origins"        comment:"\nCORS whitelist (env. var: GI_ORIGINS)"`
-		ModelsDir    string               `toml:"models_dir"          yaml:"models_dir"     comment:"\nGoinfer recursively searches GGUF files in one or multiple folders separated by ':'\nList your GGUF dirs with: locate .gguf | sed -e 's,/[^/]*$,,' | uniq\nenv. var: GI_MODELS_DIR"`
-		DefaultModel string               `toml:"default_model"       yaml:"default_model"  comment:"\nThe default model name to load at startup\nCan also be set with: ./goinfer -start <model-name>"`
-		ExtraModels  map[string]string    `toml:"extra_models"        yaml:"extra_models"   comment:"Download models using llama-server flags\nsee : github.com/ggml-org/llama.cpp/blob/master/common/arg.cpp#L3000"`
-		Llama        Llama                `toml:"llama"               yaml:"llama"`
-		Addr         string               `toml:"addr"                yaml:"addr"           comment:"address can be 'host:port' or 'ip:por' or simply ':port' (for host = localhost)"`
-		Info         map[string]ModelInfo `toml:"-"                   yaml:"-"`
-		Swap         *config.Config       `toml:"-"                   yaml:"-"`
-		// Swap is stored in llama-swap.yml
+		ExtraModels  map[string]string    `toml:"extra_models"   yaml:"extra_models"   comment:"Download models using llama-server flags\nsee : github.com/ggml-org/llama.cpp/blob/master/common/arg.cpp#L3000"`
+		Info         map[string]ModelInfo `toml:"-"              yaml:"-"`
+		Swap         *config.Config       `toml:"-"              yaml:"-"`
+		Llama        Llama                `toml:"llama"          yaml:"llama"`
+		APIKey       string               `toml:"api_key"        yaml:"api_key"        comment:"⚠️ Set your API key, can be 64-hex-digit (32-byte) 🚨\nGoinfer sets a random API key with: ./goinfer -write"`
+		Host         string               `toml:"host,omitempty" yaml:"host,omitempty" comment:"\nHost to listen (env. var: GI_HOST)"`
+		Origins      string               `toml:"origins"        yaml:"origins"        comment:"\nCORS whitelist (env. var: GI_ORIGINS)"`
+		ModelsDir    string               `toml:"models_dir"     yaml:"models_dir"     comment:"\nGoinfer recursively searches GGUF files in one or multiple folders separated by ':'\nList your GGUF dirs with: locate .gguf | sed -e 's,/[^/]*$,,' | uniq\nenv. var: GI_MODELS_DIR"`
+		DefaultModel string               `toml:"default_model"  yaml:"default_model"  comment:"\nThe default model name to load at startup\nCan also be set with: ./goinfer -start <model-name>"`
+		Addr         string               `toml:"addr"           yaml:"addr"           comment:"address can be 'host:port' or 'ip:por' or simply ':port' (for host = localhost)"`
 	}
 
 	// Llama holds the inference engine settings.

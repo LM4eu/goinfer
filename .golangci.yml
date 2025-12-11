@@ -42,7 +42,6 @@ linters:
     - nlreturn
     - nonamedreturns
     - staticcheck
-    - tagliatelle # disable because is moves the 'comment' tag in the beginning
     - testpackage
     - wrapcheck
     - wsl
@@ -693,14 +692,18 @@ linters:
     # https://golangci-lint.run/docs/linters/configuration/#tagalign
     tagalign:
       align: true
-      sort: true
+      sort: false
       strict: true
 
     # https://github.com/ldez/tagliatelle
+    # https://golangci-lint.run/usage/linters/#tagliatelle
     tagliatelle:
       case:
         rules:
           whatever: snake
+          json: snake
+          toml: snake
+          yaml: snake
 
     # https://github.com/butuzov/ireturn
     # https://golangci-lint.run/usage/linters/#ireturn

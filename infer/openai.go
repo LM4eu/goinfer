@@ -74,8 +74,8 @@ type (
 		Filename string `json:"filename,omitzero,omitempty"`
 	}
 	ContentPartImageImageURL struct {
-		URL    string `format:"uri" json:"url,omitzero,omitempty"`
-		Detail string `             json:"detail,omitzero,omitempty"`
+		URL    string `json:"url,omitzero,omitempty"`
+		Detail string `json:"detail,omitzero,omitempty"`
 	}
 	ContentPartInputAudioInputAudio struct {
 		Data   string `json:"data,omitzero,omitempty"`
