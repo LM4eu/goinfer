@@ -21,7 +21,9 @@ const templateJinja = "template.jinja"
 
 func main() {
 	cfg := getCfg()
-	startServer(cfg)
+	if cfg != nil {
+		startServer(cfg)
+	}
 }
 
 // Config is created from lower to higher priority: (1) config files, (2) env. Vars. And (3) flags.
@@ -59,13 +61,12 @@ func getCfg() *conf.Cfg {
 		cfg.Print()
 	}
 
-	// if -write without -run => stop here, just successfully generated "goinfer.ini"
-	if *write && !*run {
-		os.Exit(0)
-	}
-
 	doLlamaSwapYML(cfg, *write, verbose, *debug)
 
+	if *write && !*run {
+		slog.Info("flag -write without any -run -hf -start => stop here")
+		return nil
+	}
 	return cfg
 }
 
@@ -142,7 +143,7 @@ func doLlamaSwapYML(cfg *conf.Cfg, write, verbose, debug bool) {
 	reader := bytes.NewReader(yml)
 	err = cfg.ReadSwapFromReader(reader)
 	if err != nil {
-		slog.Error("Invalid llama-swap config (use flag -write to check "+conf.LlamaSwapYML+")", "error", err)
+		slog.Error("Invalid llama-swap config. Use flag -write to check", "file", conf.LlamaSwapYML, "error", err)
 		os.Exit(1)
 	}
 }
