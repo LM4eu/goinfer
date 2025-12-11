@@ -37,10 +37,13 @@ func getNameAndFlags(root, path string) (string, string) {
 
 // nameWithSlash converts the first underscore in a model name to a slash.
 // If there is a dash, only top domain names between the dash and the slash.
-//
-
 func nameWithSlash(root, truncated string) string {
 	name := filepath.Base(truncated)
+
+	withGGUF := nameWithGGUF(name)
+	if withGGUF != "" {
+		return withGGUF
+	}
 
 	pos := -1
 
@@ -87,6 +90,44 @@ func nameWithSlash(root, truncated string) string {
 		}
 	}
 	return nameWithDir(root, truncated, name)
+}
+
+// nameWithGGUF detects files downloaded from HuggingFace (flag -hf).
+// Patterns:
+//   - cmd: -hf ggml-org/gpt-oss-120b-GGUF
+//     in = ggml-org_gpt-oss-120b-GGUF_gpt-oss-120b-mxfp4
+//     out = ggml-org/gpt-oss-120b
+//   - cmd: -hf unsloth/Devstral-2-123B-Instruct-2512-GGUF:UD-Q4_K_XL
+//     in = unsloth_Devstral-2-123B-Instruct-2512-GGUF_UD-Q4_K_XL_Devstral-2-123B-Instruct-2512-UD-Q4_K_XL
+//     out: unsloth/Devstral-2-123B-Instruct-2512:UD-Q4_K_XL
+func nameWithGGUF(name string) string {
+	const gguf = "-GGUF_"
+	pos := strings.Index(name, gguf)
+	if pos <= 0 {
+		return ""
+	}
+
+	// expected split:
+	// begin[0] = ggml-org     unsloth
+	// begin[1] = gpt-oss-120b Devstral-2-123B-Instruct-2512
+	begin := strings.SplitN(name[:pos], "_", 2)
+	if len(begin) != 2 {
+		return ""
+	}
+
+	// search for the duplicated model name
+	after := name[pos+len(gguf):]
+	pos = strings.Index(after, begin[1])
+	if pos < 0 {
+		return ""
+	}
+
+	name = begin[0] + "/" + begin[1]
+	if pos > 1 {
+		quants := after[:pos-1]
+		name += ":" + quants
+	}
+	return name
 }
 
 // nameWithDir prefixes the model name with its folder name.

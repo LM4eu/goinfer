@@ -62,11 +62,13 @@ func TestUnderlineToSlash(t *testing.T) {
 		{"/home/me/models/folder/example/granite3.3_8b_Q4_K_M", "example/granite3.3_8b_Q4_K_M"},
 		{"/home/me/models/folder/granite3.3_8b_Q4_K_M", "folder/granite3.3_8b_Q4_K_M"},
 		{"/home/me/models/granite3.3_8b_Q4_K_M", "granite3.3_8b_Q4_K_M"},
+		{"ggml-org_gpt-oss-120b-GGUF_gpt-oss-120b-mxfp4", "ggml-org/gpt-oss-120b"},
+		{"unsloth_Devstral-2-123B-Instruct-2512-GGUF_UD-Q4_K_XL_Devstral-2-123B-Instruct-2512-UD-Q4_K_XL", "unsloth/Devstral-2-123B-Instruct-2512:UD-Q4_K_XL"},
 	}
 	for _, tt := range tests {
 		got := nameWithSlash("/home/me/models", tt.in)
 		if got != tt.want {
-			t.Errorf("underlineToSlash(%q) = %q, want %q", tt.in, got, tt.want)
+			t.Errorf("nameWithSlash(%q) = %q, want %q", tt.in, got, tt.want)
 		}
 	}
 }
@@ -191,5 +193,22 @@ func TestValidateModelFiles_WithSwapModels(t *testing.T) {
 	err := cfg.ValidateSwap()
 	if err != nil {
 		t.Fatalf("validateModelFiles error: %v", err)
+	}
+}
+
+func Test_nameWithGGUF(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"ggml-org_gpt-oss-120b-GGUF_gpt-oss-120b-mxfp4", "ggml-org/gpt-oss-120b"},
+		{"unsloth_Devstral-2-123B-Instruct-2512-GGUF_UD-Q4_K_XL_Devstral-2-123B-Instruct-2512-UD-Q4_K_XL", "unsloth/Devstral-2-123B-Instruct-2512:UD-Q4_K_XL"},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.in, func(t *testing.T) {
+			t.Parallel()
+			got := nameWithGGUF(tt.in)
+			if got != tt.want {
+				t.Errorf("nameWithGGUF(%s) -> %q, want %q", tt.in, got, tt.want)
+			}
+		})
 	}
 }
