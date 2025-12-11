@@ -28,16 +28,15 @@ func replaceDIR(path, flags string) string {
 	return strings.ReplaceAll(flags, "$DIR", filepath.Dir(path))
 }
 
-//nolint:gocritic // return model name and llama-server flags
-func getNameAndFlags(root, path string) (string, string) {
+// getNameAndFlags returns model name and llama-server flags
+func getNameAndFlags(root, path string) (name, flags_ string) {
 	truncated, flags := extractFlags(path)
-	name := nameWithSlash(root, truncated)
+	name = beautifyModelName(root, truncated)
 	return name, flags
 }
 
-// nameWithSlash converts the first underscore in a model name to a slash.
-// If there is a dash, only top domain names between the dash and the slash.
-func nameWithSlash(root, truncated string) string {
+// beautifyModelName converts the first underscore in a model name to a slash.
+func beautifyModelName(root, truncated string) string {
 	name := filepath.Base(truncated)
 
 	withGGUF := nameWithGGUF(name)
@@ -45,6 +44,18 @@ func nameWithSlash(root, truncated string) string {
 		return withGGUF
 	}
 
+	name = nameWithSlash(root, truncated, name)
+	name = strings.TrimSuffix(name, "_")
+	name = strings.TrimSuffix(name, "-GGUF")
+	name = strings.Replace(name, "-GGUF_", ":", 1)
+
+	return name
+}
+
+// nameWithSlash converts the first underscore in a model name to a slash or use the folder name.
+// If there is a dash before the 1st underscore (e.g. ggml-org_gpt...),
+// consider a valid grp only if 3 or 4 chars between dash and underscore (e.g. org).
+func nameWithSlash(root, truncated, name string) string {
 	pos := -1
 
 	for i, char := range name {
@@ -58,8 +69,6 @@ func nameWithSlash(root, truncated string) string {
 		}
 
 		switch {
-		case unicode.IsLower(char):
-			continue
 		case char == '-': // dash
 			if i < 4 {
 				return nameWithDir(root, truncated, name)
@@ -82,10 +91,10 @@ func nameWithSlash(root, truncated string) string {
 			if i-pos < 3 {
 				return nameWithDir(root, truncated, name)
 			}
-			n := []byte(name)
-			n[i] = '/'
-			return string(n)
-		default:
+			out := []byte(name)
+			out[i] = '/'
+			return string(out)
+		case !unicode.IsLower(char):
 			return nameWithDir(root, truncated, name)
 		}
 	}
@@ -131,40 +140,39 @@ func nameWithGGUF(name string) string {
 }
 
 // nameWithDir prefixes the model name with its folder name.
-// If there is a dash, only top domain names between the dash and the slash.
+// If there is a dash in the directory name (e.g. ggml-org/file.gguf),
+// consider a valid grp only if 3 or 4 chars after the dash (e.g. org).
 func nameWithDir(root, truncated, name string) string {
 	dir := filepath.Dir(truncated)
 	if len(dir) <= len(root) {
 		return name
 	}
-	dir = filepath.Base(dir)
-	pos := -1
-	for i, char := range dir {
+	grp := filepath.Base(dir)
+	dash := -1
+	for i, char := range grp {
 		switch {
 		case i > 12:
 			return name
-		case unicode.IsLower(char):
-			continue
 		case char == '-':
 			if i < 4 {
 				return name
 			}
-			if pos > -1 {
+			if dash > -1 {
 				return name
 			}
-			pos = i
-		default:
+			dash = i // number of letters before the dash
+		case !unicode.IsLower(char):
 			return name
 		}
 	}
-	if pos > 0 {
-		n := len(dir) - pos // number of letters before the dash
+	if dash > 0 {
+		n := len(grp) - dash // n = number of letters after the dash
 		ok := n == 3 || n == 4
 		if !ok {
 			return name
 		}
 	}
-	return dir + "/" + name
+	return grp + "/" + name
 }
 
 // extractFlags returns the truncated path and the llama-server flags from a file path.
@@ -172,9 +180,9 @@ func nameWithDir(root, truncated, name string) string {
 // Otherwise, it parses flags encoded in the filename after an '&' delimiter.
 // Returns the truncated path (without extension) and a space-separated flag string.
 //
-//nolint:gocritic // return the truncated model filename and the llama-server flags.
-func extractFlags(path string) (string, string) {
-	truncated := strings.TrimSuffix(path, ".gguf")
+
+func extractFlags(path string) (truncated, flags_ string) {
+	truncated = strings.TrimSuffix(path, ".gguf")
 
 	// Huge GGUF are spilt into smaller files ending with -00001-of-00003.gguf
 	pos := strings.LastIndex(truncated, "-00001-of-")

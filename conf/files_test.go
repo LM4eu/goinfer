@@ -13,11 +13,25 @@ import (
 	"github.com/LM4eu/goinfer/proxy/config"
 )
 
-func TestUnderlineToSlash(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		in, want string
-	}{
+func Test_beautifyModelName(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"30b/Devstral-Small-2507-GGUF_", "Devstral-Small-2507"},
+		{"30b/Devstral-Small-2507-GGUF", "Devstral-Small-2507"},
+		{"30b/Devstral-Small-2507_", "Devstral-Small-2507"},
+		{"30b/Devstral-Small-2507-GGUF_Q8_K_XL", "Devstral-Small-2507:Q8_K_XL"},
+		{"Devstral-Small-2507-GGUF_Q8_K_XL", "Devstral-Small-2507:Q8_K_XL"},
+		{"folder/example-com_granite3.3_8b_Q4_K_M", "example-com/granite3.3_8b_Q4_K_M"},
+		{"folder/example-eu_granite3.3_8b_Q4_K_M", "example-eu/granite3.3_8b_Q4_K_M"},
+		{"folder/example-x_granite3.3_8b_Q4_K_M", "folder/example-x_granite3.3_8b_Q4_K_M"},
+		{"folder/example-four_granite3.3_8b_Q4_K_M", "folder/example-four_granite3.3_8b_Q4_K_M"},
+		{"folder/example-four/granite3.3_8b_Q4_K_M", "granite3.3_8b_Q4_K_M"},
+		{"folder/example-com/granite3.3_8b_Q4_K_M", "example-com/granite3.3_8b_Q4_K_M"},
+		{"folder/example-fr/granite3.3_8b_Q4_K_M", "example-fr/granite3.3_8b_Q4_K_M"},
+		{"folder/example-o/granite3.3_8b_Q4_K_M", "granite3.3_8b_Q4_K_M"},
+		{"folder/example/granite3.3_8b_Q4_K_M", "example/granite3.3_8b_Q4_K_M"},
+		{"folder/granite3.3_8b_Q4_K_M", "folder/granite3.3_8b_Q4_K_M"},
+		{"granite3.3_8b_Q4_K_M", "granite3.3_8b_Q4_K_M"},
+		{"sub-directory/granite3.3_8b_Q4_K_M", "granite3.3_8b_Q4_K_M"},
 		{"team-org_model_name", "team-org/model_name"},
 		{"model_name", "model/name"},
 		{"model-name", "model-name"},
@@ -42,34 +56,28 @@ func TestUnderlineToSlash(t *testing.T) {
 		{"ab-fr_llama-1", "ab-fr_llama-1"},
 		{"abc-fr_llama-1", "abc-fr_llama-1"},
 		{"abcd-fr_llama-1", "abcd-fr/llama-1"},
-		{"/home/me/models/abcd-fr_llama-1", "abcd-fr/llama-1"},
-		{"/home/me/models/group/abcd-fr_llama-1", "abcd-fr/llama-1"},
-		{"/home/me/models/group/abcd-f_llama-1", "group/abcd-f_llama-1"},
-		{"/home/me/models/30b/abcd-f_llama-1", "abcd-f_llama-1"},
-		{"/home/me/models/mistral-ai/abcd-f_llama-1", "mistral-ai/abcd-f_llama-1"},
-		{"/home/me/models/mistral-ai/mistral-ai_llama-1", "mistral-ai/llama-1"},
-		{"/home/me/models/sub/rolex/granite3.3_8b_Q4_K_M", "rolex/granite3.3_8b_Q4_K_M"},
-		{"/home/me/models/rolex/granite3.3_8b_Q4_K_M", "rolex/granite3.3_8b_Q4_K_M"},
-		{"/home/me/models/granite3.3_8b_Q4_K_M", "granite3.3_8b_Q4_K_M"},
-		{"/home/me/models/folder/example-com_granite3.3_8b_Q4_K_M", "example-com/granite3.3_8b_Q4_K_M"},
-		{"/home/me/models/folder/example-eu_granite3.3_8b_Q4_K_M", "example-eu/granite3.3_8b_Q4_K_M"},
-		{"/home/me/models/folder/example-x_granite3.3_8b_Q4_K_M", "folder/example-x_granite3.3_8b_Q4_K_M"},
-		{"/home/me/models/folder/example-four_granite3.3_8b_Q4_K_M", "folder/example-four_granite3.3_8b_Q4_K_M"},
-		{"/home/me/models/folder/example-four/granite3.3_8b_Q4_K_M", "granite3.3_8b_Q4_K_M"},
-		{"/home/me/models/folder/example-com/granite3.3_8b_Q4_K_M", "example-com/granite3.3_8b_Q4_K_M"},
-		{"/home/me/models/folder/example-fr/granite3.3_8b_Q4_K_M", "example-fr/granite3.3_8b_Q4_K_M"},
-		{"/home/me/models/folder/example-o/granite3.3_8b_Q4_K_M", "granite3.3_8b_Q4_K_M"},
-		{"/home/me/models/folder/example/granite3.3_8b_Q4_K_M", "example/granite3.3_8b_Q4_K_M"},
-		{"/home/me/models/folder/granite3.3_8b_Q4_K_M", "folder/granite3.3_8b_Q4_K_M"},
-		{"/home/me/models/granite3.3_8b_Q4_K_M", "granite3.3_8b_Q4_K_M"},
+		{"abcd-fr_llama-1", "abcd-fr/llama-1"},
+		{"group/abcd-fr_llama-1", "abcd-fr/llama-1"},
+		{"group/abcd-f_llama-1", "group/abcd-f_llama-1"},
+		{"30b/abcd-f_llama-1", "abcd-f_llama-1"},
+		{"mistral-ai/abcd-f_llama-1", "mistral-ai/abcd-f_llama-1"},
+		{"mistral-ai/mistral-ai_llama-1", "mistral-ai/llama-1"},
+		{"sub/rolex/granite3.3_8b_Q4_K_M", "rolex/granite3.3_8b_Q4_K_M"},
+		{"rolex/granite3.3_8b_Q4_K_M", "rolex/granite3.3_8b_Q4_K_M"},
+		{"granite3.3_8b_Q4_K_M", "granite3.3_8b_Q4_K_M"},
 		{"ggml-org_gpt-oss-120b-GGUF_gpt-oss-120b-mxfp4", "ggml-org/gpt-oss-120b"},
 		{"unsloth_Devstral-2-123B-Instruct-2512-GGUF_UD-Q4_K_XL_Devstral-2-123B-Instruct-2512-UD-Q4_K_XL", "unsloth/Devstral-2-123B-Instruct-2512:UD-Q4_K_XL"},
 	}
 	for _, tt := range tests {
-		got := nameWithSlash("/home/me/models", tt.in)
-		if got != tt.want {
-			t.Errorf("nameWithSlash(%q) = %q, want %q", tt.in, got, tt.want)
-		}
+		t.Run(tt.in, func(t *testing.T) {
+			t.Parallel()
+			const root = "/home/me/models"
+			truncated := filepath.Join(root, tt.in)
+			got := beautifyModelName("/home/me/models", truncated)
+			if got != tt.want {
+				t.Errorf("beautifyModelName(%q) = %q, want %q", truncated, got, tt.want)
+			}
+		})
 	}
 }
 
@@ -202,7 +210,6 @@ func Test_nameWithGGUF(t *testing.T) {
 		{"unsloth_Devstral-2-123B-Instruct-2512-GGUF_UD-Q4_K_XL_Devstral-2-123B-Instruct-2512-UD-Q4_K_XL", "unsloth/Devstral-2-123B-Instruct-2512:UD-Q4_K_XL"},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.in, func(t *testing.T) {
 			t.Parallel()
 			got := nameWithGGUF(tt.in)
