@@ -270,7 +270,13 @@ func (p *Process) start() error {
 
 	p.failedStartCount++ // this will be reset to zero when the process has successfully started
 
-	p.proxyLogger.Debugf("<%s> Executing start command: %s, env: %s", p.ID, strings.Join(args, " "), strings.Join(p.config.Env, ", "))
+	p.proxyLogger.Infof("<%s> ------------ START COMMAND -------------", p.ID)
+	p.proxyLogger.Debugf("<%s> ENV: %v", p.ID, p.cmd.Environ())
+	if len(p.config.Env) > 0 {
+		p.proxyLogger.Infof("<%s> ENV: %v", p.ID, p.config.Env)
+	}
+	p.proxyLogger.Infof("<%s> CMD: %v", p.ID, args)
+	p.proxyLogger.Infof("<%s> ----------------------------------------", p.ID)
 	err = p.cmd.Start()
 	// Set process state to failed
 	if err != nil {
