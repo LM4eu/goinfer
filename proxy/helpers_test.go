@@ -14,7 +14,7 @@ import (
 
 	"github.com/LM4eu/goinfer/proxy/config"
 	"github.com/gin-gonic/gin"
-	"go.yaml.in/yaml/v4"
+	"github.com/goccy/go-yaml"
 )
 
 var (

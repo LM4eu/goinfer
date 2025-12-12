@@ -17,8 +17,8 @@ import (
 
 	"github.com/LM4eu/goinfer/gie"
 	"github.com/LM4eu/goinfer/proxy/config"
+	"github.com/goccy/go-yaml"
 	"github.com/pelletier/go-toml/v2"
-	"go.yaml.in/yaml/v4"
 )
 
 // WriteGoinferINI populates the configuration with defaults, applies environment variables,

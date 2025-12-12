@@ -17,7 +17,7 @@ import (
 	"strings"
 
 	"github.com/billziss-gh/golib/shlex"
-	"go.yaml.in/yaml/v4"
+	"github.com/goccy/go-yaml"
 )
 
 const DEFAULT_GROUP_ID = "(default)"
@@ -30,33 +30,29 @@ type MacroEntry struct {
 type MacroList []MacroEntry
 
 // UnmarshalYAML implements custom YAML unmarshaling that preserves macro definition order.
-func (ml *MacroList) UnmarshalYAML(value *yaml.Node) error {
-	if value.Kind != yaml.MappingNode {
-		return errors.New("macros must be a mapping")
+func (ml *MacroList) UnmarshalYAML(value []byte) error {
+	// Parse the YAML into a yaml.MapSlice to preserve order
+	var mapSlice yaml.MapSlice
+	if err := yaml.Unmarshal(value, &mapSlice); err != nil {
+		return err
 	}
 
-	// yaml.Node.Content for a mapping contains alternating key/value nodes
-	entries := make([]MacroEntry, 0, len(value.Content)/2)
-	for i := 0; i < len(value.Content); i += 2 {
-		keyNode := value.Content[i]
-		valueNode := value.Content[i+1]
+	// Clear the existing list
+	*ml = MacroList{}
 
-		var name string
-		err := keyNode.Decode(&name)
-		if err != nil {
-			return fmt.Errorf("failed to decode macro name: %w", err)
+	// Convert the MapSlice to MacroList
+	for _, item := range mapSlice {
+		key, ok := item.Key.(string)
+		if !ok {
+			return errors.New("map key is not a string")
 		}
 
-		var val any
-		err = valueNode.Decode(&val)
-		if err != nil {
-			return fmt.Errorf("failed to decode macro value for '%s': %w", name, err)
-		}
-
-		entries = append(entries, MacroEntry{Name: name, Value: val})
+		*ml = append(*ml, MacroEntry{
+			Name:  key,
+			Value: item.Value,
+		})
 	}
 
-	*ml = entries
 	return nil
 }
 
