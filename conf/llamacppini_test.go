@@ -13,10 +13,10 @@ func TestCfg_GenLlamaINI(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name string
-		info ModelInfo
+		info *ModelInfo
 		want string
 	}{
-		{"model-with-flags", ModelInfo{Flags: "  -c   0   --n-gpu-layers 99  --no-jinja 	--context-switch  "}, `
+		{"model-with-flags", &ModelInfo{Flags: "  -c   0   --n-gpu-layers 99  --no-jinja 	--context-switch  "}, `
 version = 1
 
 [model-with-flags]
@@ -35,7 +35,7 @@ n-gpu-layers = 99
 no-jinja = true
 context-switch = true
 `},
-		{"model-no-flags", ModelInfo{Flags: ""}, `
+		{"model-no-flags", &ModelInfo{Flags: ""}, `
 version = 1
 
 [model-no-flags]
@@ -52,7 +52,7 @@ chat-template-file = template.jinja
 			t.Parallel()
 			cfg := DefaultCfg()
 			tt.info.Path = "/path/" + tt.name + ".gguf"
-			cfg.Info = map[string]*ModelInfo{tt.name: &tt.info}
+			cfg.Info = map[string]*ModelInfo{tt.name: tt.info}
 			got := string(cfg.GenLlamaINI())
 			if strings.TrimSpace(got) != strings.TrimSpace(tt.want) {
 				t.Errorf("GenLlamaINI() = %v, want %v", got, tt.want)
