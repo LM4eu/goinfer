@@ -18,7 +18,10 @@ import (
 )
 
 // LlamaSwapYML is the llama-swap config filename.
-const LlamaSwapYML = "llama-swap.yml"
+const (
+	LlamaSwapYML    = "llama-swap.yml"
+	useModelPresets = true
+)
 
 // ReadSwapFromReader uses the LoadConfigFromReader() from llama-swap project.
 func (cfg *Cfg) ReadSwapFromReader(r io.Reader) error {
@@ -82,11 +85,10 @@ func (cfg *Cfg) GenLlamaSwapYAML(verbose, debug bool) ([]byte, error) {
 		{Name: "cmd-goinfer", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT} " + cfg.Llama.Goinfer},
 	}
 
-	cfg.setSwapModels()
-
-	// when Goinfer starts, llama-server is started with the DefaultModel
-	if cfg.DefaultModel != "" {
-		cfg.Swap.Hooks.OnStartup.Preload = []string{cfg.DefaultModel}
+	if useModelPresets {
+		cfg.setModelPresets()
+	} else {
+		cfg.setSwapModels()
 	}
 
 	err := cfg.ValidateSwap()
@@ -186,6 +188,26 @@ func (cfg *Cfg) selectModelName(model string, useSmallest bool) (betterName, rea
 	}
 }
 
+func (cfg *Cfg) setModelPresets() {
+	if cfg.Swap == nil {
+		cfg.Swap = &config.Config{}
+	}
+	if cfg.Swap.Models == nil {
+		cfg.Swap.Models = make(map[string]config.ModelConfig, 1)
+	} else {
+		clear(cfg.Swap.Models)
+	}
+
+	cfg.Swap.Models["use-models-preset"] = config.ModelConfig{
+		Cmd:           "${cmd-common} --models-preset " + LlamaINI,
+		CheckEndpoint: "/health",
+		Proxy:         "http://localhost:${PORT}",
+	}
+
+	// on startup, Goinfer automatically runs `llama-server --models-preset llama.ini`
+	cfg.Swap.Hooks.OnStartup.Preload = []string{"use-models-preset"}
+}
+
 func (cfg *Cfg) setSwapModels() {
 	info := cfg.getInfo()
 
@@ -196,30 +218,29 @@ func (cfg *Cfg) setSwapModels() {
 		cfg.Swap.Models = make(map[string]config.ModelConfig, 2*len(info)+9)
 	}
 
-	commonMC := &config.ModelConfig{Proxy: "http://localhost:${PORT}"}
-	fimMC := &config.ModelConfig{Proxy: "http://localhost:8012"} // the flag --fim-qwen-xxxx sets port=8012
-	goinferMC := &config.ModelConfig{
-		Proxy:    "http://localhost:${PORT}",
-		Unlisted: true, // hide model in /v1/models and /upstream responses
-	}
+	commonMC := config.ModelConfig{Proxy: "http://localhost:${PORT}", CheckEndpoint: "/health"}
+	fimMC := commonMC
+	goinferMC := commonMC
+	fimMC.Proxy = "http://localhost:8012" // the flag --fim-qwen-xxxx sets port=8012
+	goinferMC.Unlisted = true             // hide model in /v1/models and /upstream responses
 
 	for model, flags := range cfg.ExtraModels {
 		gi := true
-		mc := commonMC
+		mc := &commonMC
 		switch {
 		case flags == "":
 			flags = "-hf " + model
 		case strings.HasPrefix(flags, "--embd-"):
 			gi = false
 		case strings.HasPrefix(flags, "--fim-"):
-			mc = fimMC
+			mc = &fimMC
 			gi = false
 		default:
 		}
 		cfg.addModelCfg(model, "${cmd-common}", flags, mc)
 		if gi {
 			goinferMC.UseModelName = model // overrides the model name that is sent to /upstream server
-			cfg.addModelCfg(A_+model, "${cmd-goinfer}", flags, goinferMC)
+			cfg.addModelCfg(A_+model, "${cmd-goinfer}", flags, &goinferMC)
 		}
 	}
 
@@ -229,16 +250,19 @@ func (cfg *Cfg) setSwapModels() {
 	for model, mi := range info {
 		goinferMC.UseModelName = model // overrides the model name that is sent to /upstream server
 		flags := mi.Flags + " -m " + mi.Path
-		cfg.addModelCfg(model, "${cmd-common}", flags, commonMC)      // API for Cline, RooCode, RolePlay...
-		cfg.addModelCfg(A_+model, "${cmd-goinfer}", flags, goinferMC) // API for Agent-Smith...
+		cfg.addModelCfg(model, "${cmd-common}", flags, &commonMC)      // API for Cline, RooCode, RolePlay...
+		cfg.addModelCfg(A_+model, "${cmd-goinfer}", flags, &goinferMC) // API for Agent-Smith...
+	}
+
+	// when Goinfer starts, llama-server is started with the DefaultModel
+	if cfg.DefaultModel != "" {
+		cfg.Swap.Hooks.OnStartup.Preload = []string{cfg.DefaultModel}
 	}
 }
 
 // Add the model settings within the llama-swap configuration.
 func (cfg *Cfg) addModelCfg(model, cmd, flags string, mc *config.ModelConfig) {
-	nMC := *mc // copy
-
-	nMC.CheckEndpoint = "/health"
+	nMC := *mc // copy content (do not use same pointer)
 	nMC.Cmd = cmd
 	if flags != "" {
 		nMC.Cmd += " " + flags
