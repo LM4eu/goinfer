@@ -5,17 +5,21 @@
 package conf
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
-	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"syscall"
 
 	"github.com/LM4eu/goinfer/gie"
-	"github.com/LM4eu/goinfer/proxy/config"
 	"github.com/pelletier/go-toml/v2"
 )
+
+// GoinferINI is the config filename.
+const GoinferINI = "goinfer.ini"
 
 // ReadGoinferINI loads the configuration file, reads the env vars and verifies the settings.
 // Always return a valid configuration, because the receiver may want to write a valid config.
@@ -80,15 +84,39 @@ func ReadFileData(data []byte, noAPIKey bool, extra, start string) (*Cfg, error)
 	return cfg, err
 }
 
-// ReadSwapFromReader uses the LoadConfigFromReader() from llama-swap project.
-func (cfg *Cfg) ReadSwapFromReader(r io.Reader) error {
-	var err error
-	cfg.Swap, err = config.LoadConfigFromReader(r)
-	if err != nil {
-		slog.Error("Cannot load llama-swap config", "file", LlamaSwapYML, "error", err)
-		os.Exit(1)
+// WriteGoinferINI populates the configuration with defaults, applies environment variables,
+// writes the resulting configuration to the given file.
+func (cfg *Cfg) WriteGoinferINI(debug, noAPIKey bool) error {
+	data, err := cfg.GenGoinferINI(debug, noAPIKey)
+	er := writeWithHeader(GoinferINI, "# Configuration of https://github.com/LM4eu/goinfer\n\n", data)
+	if er != nil {
+		if err != nil {
+			return errors.Join(err, er)
+		}
+		return er
 	}
-	return cfg.ValidateSwap()
+	return err
+}
+
+// GenGoinferINI sets the API keys, reads the environment variables,
+// fix some settings and writes the result config to a buffer.
+func (cfg *Cfg) GenGoinferINI(debug, noAPIKey bool) ([]byte, error) {
+	cfg.setAPIKey(debug, noAPIKey)
+	cfg.applyEnvVars()
+	cfg.trimParamValues()
+	cfg.fixDefaultModel()
+
+	err := cfg.validate(noAPIKey)
+
+	data, er := toml.Marshal(&cfg)
+	if er != nil {
+		er = gie.Wrap(err, gie.ConfigErr, "failed to yaml.Marshal", "cfg", cfg)
+		if err != nil {
+			return data, errors.Join(err, er)
+		}
+		return data, er
+	}
+	return data, err
 }
 
 // load the configuration file (if filename not empty).
@@ -189,4 +217,56 @@ func (cfg *Cfg) trimParamValues() {
 	cfg.Llama.Debug = strings.TrimSpace(cfg.Llama.Debug)
 	cfg.Llama.Common = strings.TrimSpace(cfg.Llama.Common)
 	cfg.Llama.Goinfer = strings.TrimSpace(cfg.Llama.Goinfer)
+}
+
+func writeWithHeader(path, header string, data []byte) error {
+	path = filepath.Clean(path)
+	file, err := os.Create(path)
+	if err != nil {
+		return gie.Wrap(err, gie.ConfigErr, "failed to create file="+path)
+	}
+
+	_, err = file.WriteString(header)
+	if err == nil {
+		_, err = file.Write(data)
+	}
+
+	er := file.Close()
+	if err != nil {
+		err = er
+	}
+	if err != nil {
+		return gie.Wrap(err, gie.ConfigErr, "failed to write file="+path)
+	}
+
+	return nil
+}
+
+func (cfg *Cfg) setAPIKey(debug, noAPIKey bool) {
+	switch {
+	case noAPIKey:
+		cfg.APIKey = unsetAPIKey
+		slog.Info("Flag -no-api-key => Do not generate API key")
+
+	case debug:
+		cfg.APIKey = debugAPIKey
+		slog.Warn("API key is DEBUG => security threat")
+
+	default:
+		cfg.APIKey = gen64HexDigits()
+		slog.Info("Generated random API key")
+	}
+}
+
+func gen64HexDigits() string {
+	buf := make([]byte, 32)
+	_, err := rand.Read(buf)
+	if err != nil {
+		slog.Warn("Failed to rand.Read", "error", err)
+		return ""
+	}
+
+	key := make([]byte, 64)
+	hex.Encode(key, buf)
+	return string(key)
 }

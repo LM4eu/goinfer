@@ -84,7 +84,7 @@ func TestWriteMainCfg(t *testing.T) {
 	t.Setenv("GI_MODELS_DIR", modelsDir)
 	t.Setenv("GI_LLAMA_EXE", llamaExe)
 
-	data, err := cfg.GenFileData(false, true)
+	data, err := cfg.GenGoinferINI(false, true)
 	if err != nil {
 		t.Fatalf("WriteMainCfg failed: %v", err)
 	}
@@ -107,7 +107,7 @@ func TestWriteSwapCfg(t *testing.T) {
 	}
 	cfg.ModelsDir = modelsDir
 
-	ymlData, err := cfg.GenSwapYAMLData(false, false)
+	ymlData, err := cfg.GenLlamaSwapYAML(false, false)
 	if err != nil {
 		t.Fatalf("WriteSwapCfg failed: %v ymlData=%s", err, string(ymlData))
 	}

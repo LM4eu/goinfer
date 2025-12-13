@@ -179,7 +179,7 @@ func nameWithDir(root, truncated, name string) string {
 }
 
 // extractFlags returns the truncated path and the llama-server flags from a file path.
-// It first checks for a companion ".args" file; if present, its contents are used as flags.
+// It first checks for a companion ".sh" file; if present, its contents are used as flags.
 // Otherwise, it parses flags encoded in the filename after an '&' delimiter.
 // Returns the truncated path (without extension) and a space-separated flag string.
 //
@@ -194,7 +194,7 @@ func extractFlags(path string) (truncated, flags_ string) {
 	}
 
 	// 1. Is there a file containing the command line arguments?
-	argsFn := filepath.Clean(truncated + ".args")
+	argsFn := filepath.Clean(truncated + ".sh")
 	args, err := os.ReadFile(argsFn)
 	if err == nil {
 		flags := oneLine(args)
@@ -226,7 +226,7 @@ func extractFlags(path string) (truncated, flags_ string) {
 	return truncated[:pos], strings.Join(flags, " ")
 }
 
-// oneLine converts the `.args` file into a single space-separated string,
+// oneLine converts the `.sh` file into a single space-separated string,
 // removing trailing backslashes, trimming whitespace, ignoring empty lines or comments.
 func oneLine(input []byte) string {
 	keep := make([]byte, 0, len(input))
@@ -238,13 +238,15 @@ func oneLine(input []byte) string {
 		}
 		// Remove leading/trailing whitespace
 		line = bytes.TrimSpace(line)
-		// Skip blank lines and comments
-		if len(line) == 0 || bytes.HasPrefix(line, []byte("#")) {
+		// Skip blank lines
+		if len(line) == 0 {
 			continue
 		}
 		// Convert the byte slice to a string before appending.
-		keep = append(keep, line...)
-		keep = append(keep, ' ')
+		if line[0] == '-' {
+			keep = append(keep, line...)
+			keep = append(keep, ' ')
+		}
 	}
 
 	return string(keep)

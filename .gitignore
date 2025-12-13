@@ -8,13 +8,13 @@
 /.continue/
 /.old-code/
 /.roo/
+/*.ini*
+/*.log*
+/*.yml*
 /docsite/dist/
 /go.work*
 /goinfer
-/goinfer.ini*
 /infer/dist/
 /llama-server.exe
-/llama-swap.yml
 /template.jinja
 dist/
-llama.log

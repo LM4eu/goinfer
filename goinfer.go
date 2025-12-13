@@ -62,6 +62,7 @@ func getCfg() *conf.Cfg {
 	}
 
 	doLlamaSwapYML(cfg, *write, verbose, *debug)
+	doLlamaIni(cfg)
 
 	if *write && !*run {
 		slog.Info("flag -write without any -run -hf -start => stop here")
@@ -126,7 +127,7 @@ func doGoinferINI(debug, write, run, noAPIKey bool, extra, start string) *conf.C
 }
 
 func doLlamaSwapYML(cfg *conf.Cfg, write, verbose, debug bool) {
-	yml, err := cfg.GenSwapYAMLData(verbose, debug)
+	yml, err := cfg.GenLlamaSwapYAML(verbose, debug)
 	if err != nil {
 		slog.Error("Failed creating a valid llama-swap config", "file", conf.LlamaSwapYML, "error", err)
 		os.Exit(1)
@@ -146,6 +147,16 @@ func doLlamaSwapYML(cfg *conf.Cfg, write, verbose, debug bool) {
 		slog.Error("Invalid llama-swap config. Use flag -write to check", "file", conf.LlamaSwapYML, "error", err)
 		os.Exit(1)
 	}
+}
+
+func doLlamaIni(cfg *conf.Cfg) {
+	ini := cfg.GenLlamaINI()
+	// always write llama.ini
+	err := conf.WriteLlamaINI(ini)
+	if err != nil {
+		slog.Warn("Failed writing the llama.cpp config", "file", conf.LlamaINI, "error", err)
+	}
+	slog.Info("Generated llama.cpp config", "file", conf.LlamaINI, "models", len(cfg.Swap.Models))
 }
 
 // startServer creates and runs the HTTP server (API).

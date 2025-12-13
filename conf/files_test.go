@@ -85,9 +85,9 @@ func TestExtractFlags(t *testing.T) {
 	t.Parallel()
 	tmp := t.TempDir()
 
-	// .args file present
+	// .sh file present
 	modelPath := createGGUFFile(t, tmp, "model1.gguf", 2048)
-	argsPath := strings.TrimSuffix(modelPath, ".gguf") + ".args"
+	argsPath := strings.TrimSuffix(modelPath, ".gguf") + ".sh"
 	err := os.WriteFile(argsPath, []byte("-foo bar -baz qux"), 0o600)
 	if err != nil {
 		t.Fatalf("failed to write args file: %v", err)
