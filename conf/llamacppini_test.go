@@ -55,14 +55,14 @@ version = 1
 [quote]
 model = /path/quote.gguf
 chat-template-kwargs = {"reasoning_effort": "high"}
-ot = "blk\.1.\.ffn_.*=CPU"
+ot = blk\.1.\.ffn_.*=CPU
 
 [quote` + PLUS_A + `]
 model = /path/quote.gguf
 jinja = true
 chat-template-file = template.jinja
 chat-template-kwargs = {"reasoning_effort": "high"}
-ot = "blk\.1.\.ffn_.*=CPU"
+ot = blk\.1.\.ffn_.*=CPU
 `},
 	}
 	for _, tt := range tests {
@@ -73,7 +73,12 @@ ot = "blk\.1.\.ffn_.*=CPU"
 			cfg.Info = map[string]*ModelInfo{tt.name: tt.info}
 			got := string(cfg.GenLlamaINI())
 			if strings.TrimSpace(got) != strings.TrimSpace(tt.want) {
-				t.Errorf("GenLlamaINI() = %v, want %v", got, tt.want)
+				t.Errorf(`
+------------------------------------------------
+got: %v
+------------------------------------------------
+want: %v
+------------------------------------------------`, got, tt.want)
 			}
 		})
 	}

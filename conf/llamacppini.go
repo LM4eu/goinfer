@@ -56,43 +56,57 @@ func genModel(out *bytes.Buffer, name, path, flags string) {
 [` + name + `]
 model = ` + path)
 
-	// wroteKey is the state of the state machine
-	wroteKey := false
-
+	var val string
+	firstLoop := true
 	for arg := range strings.FieldsSeq(flags) {
-		arg = strings.Trim(arg, "'")
-		wroteKey = genParam(out, arg, wroteKey)
+		val = genParam(out, val, arg, firstLoop)
+		firstLoop = false
 	}
 
-	if wroteKey {
-		out.WriteString(" true\n")
-	} else {
-		out.WriteByte('\n')
-	}
-}
-
-// Add the model settings within the llama-swap configuration.
-func genParam(out *bytes.Buffer, arg string, wroteKey bool) bool {
-	if arg == "" || arg[0] != '-' {
-		out.WriteByte(' ')
-		out.WriteString(arg)
-		return false
-	}
-
-	if wroteKey {
-		out.WriteString(" true")
+	if !firstLoop {
+		addValue(out, val)
 	}
 
 	out.WriteByte('\n')
+}
 
-	// write the parameter without the leading dash(es)
+// Add the model settings within the llama-swap configuration.
+func genParam(out *bytes.Buffer, val, arg string, firstLoop bool) (newVal string) {
+	// no leading dash => accumulate values
+	if arg == "" || arg[0] != '-' {
+		return val + " " + arg
+	}
+
+	if !firstLoop {
+		addValue(out, val)
+	}
+
+	// new key: remove without the leading dash(es)
 	i := 1
 	if len(arg) > 2 && arg[1] == '-' {
 		i = 2
 	}
-	out.WriteString(arg[i:])
+	newKey := arg[i:]
 
+	out.WriteByte('\n')
+	out.WriteString(newKey)
 	out.WriteByte(' ')
 	out.WriteByte('=')
-	return true
+
+	return ""
+}
+
+// Add the model settings within the llama-swap configuration.
+func addValue(out *bytes.Buffer, val string) {
+	switch {
+	// manage the case of flags without values
+	// --jinja => jinja = true
+	case val == "":
+		val = " true"
+	// remove surrounding quotes
+	case (val[1] == '"' && val[len(val)-1] == '"') ||
+		(val[1] == '\'' && val[len(val)-1] == '\''):
+		val = " " + val[2:len(val)-1]
+	}
+	out.WriteString(val)
 }
