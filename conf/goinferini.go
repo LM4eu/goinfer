@@ -220,24 +220,23 @@ func (cfg *Cfg) trimParamValues() {
 	cfg.Llama.Goinfer = strings.TrimSpace(cfg.Llama.Goinfer)
 }
 
-func writeWithHeader(path, header string, data []byte) error {
+// writeWithHeader verifies if the file contains the same data,
+// else write the header followed by the body.
+func writeWithHeader(path, header string, body []byte) error {
 	path = filepath.Clean(path)
-	file, err := os.Create(path)
-	if err != nil {
-		return gie.Wrap(err, gie.ConfigErr, "failed to create file="+path)
+	data := make([]byte, 0, len(header)+len(body))
+	data = append(data, []byte(header)...)
+	data = append(data, body...)
+
+	// prevent writing the same data
+	read, err := os.ReadFile(GoinferINI)
+	if err == nil && bytes.Equal(read, data) {
+		return nil
 	}
 
-	_, err = file.WriteString(header)
-	if err == nil {
-		_, err = file.Write(data)
-	}
-
-	er := file.Close()
+	err = os.WriteFile(path, data, 0o400)
 	if err != nil {
-		err = er
-	}
-	if err != nil {
-		return gie.Wrap(err, gie.ConfigErr, "failed to write file="+path)
+		return gie.Wrap(err, gie.ConfigErr, "failed to write", "file", path)
 	}
 
 	return nil
