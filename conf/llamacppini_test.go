@@ -52,7 +52,7 @@ chat-template-file = template.jinja
 			t.Parallel()
 			cfg := DefaultCfg()
 			tt.info.Path = "/path/" + tt.name + ".gguf"
-			cfg.Info = map[string]ModelInfo{tt.name: tt.info}
+			cfg.Info = map[string]*ModelInfo{tt.name: &tt.info}
 			got := string(cfg.GenLlamaINI())
 			if strings.TrimSpace(got) != strings.TrimSpace(tt.want) {
 				t.Errorf("GenLlamaINI() = %v, want %v", got, tt.want)

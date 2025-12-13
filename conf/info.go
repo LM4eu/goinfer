@@ -44,7 +44,7 @@ const (
 
 // ListModels returns the model names from the config and from the models_dir.
 // TODO: this function should not change cfg.Info.
-func (cfg *Cfg) ListModels() map[string]ModelInfo {
+func (cfg *Cfg) ListModels() map[string]*ModelInfo {
 	info := cfg.getInfo()
 	for name, mi := range info {
 		if info[name].Error == "" {
@@ -75,9 +75,7 @@ func (cfg *Cfg) refineModelInfo(name string) {
 		return
 	}
 
-	if mi.Flags != "" {
-		return // change nothing
-	}
+	mi = &ModelInfo{}
 
 	// after the first space, the arguments
 	pos := strings.Index(cfg.Swap.Models[name].Cmd, " ")
@@ -97,7 +95,7 @@ func (cfg *Cfg) refineModelInfo(name string) {
 }
 
 // getInfo return the cached cfg.Info else compute if it is empty.
-func (cfg *Cfg) getInfo() map[string]ModelInfo {
+func (cfg *Cfg) getInfo() map[string]*ModelInfo {
 	if len(cfg.Info) == 0 {
 		cfg.updateInfo()
 	}
@@ -110,7 +108,7 @@ func (cfg *Cfg) getInfo() map[string]ModelInfo {
 func (cfg *Cfg) updateInfo() {
 	templates := map[string]ModelParams{}
 	if cfg.Info == nil {
-		cfg.Info = make(map[string]ModelInfo, 16)
+		cfg.Info = make(map[string]*ModelInfo, 16)
 	} else {
 		clear(cfg.Info)
 	}
@@ -228,5 +226,5 @@ func (cfg *Cfg) keepGUFF(root, path string) {
 		slog.Debug("WARN Duplicated models", "dir", root, "name", name, "old", old, "new", mi)
 		mi.Error = "two files have same model name (must be unique)"
 	}
-	cfg.Info[name] = mi
+	cfg.Info[name] = &mi
 }

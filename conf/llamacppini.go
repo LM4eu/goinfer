@@ -6,6 +6,8 @@ package conf
 
 import (
 	"bytes"
+	"maps"
+	"slices"
 	"strings"
 )
 
@@ -39,7 +41,9 @@ version = 1
 	// For each model, set two model settings:
 	// 1. for the OpenAI endpoints
 	// 2. for the /completion endpoint (prefix with A_ and hide the model)
-	for model, mi := range cfg.getInfo() {
+	info := cfg.getInfo()
+	for _, model := range slices.Sorted(maps.Keys(info)) {
+		mi := info[model]
 		genModel(out, model, mi.Path, mi.Flags)
 		genModel(out, model+":A", mi.Path, cfg.Llama.Goinfer+" "+mi.Flags)
 	}
