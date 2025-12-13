@@ -37,7 +37,6 @@ func (cfg *Cfg) GenLlamaINI() []byte {
 	out := bytes.NewBufferString(`
 version = 1
 `)
-
 	// For each model, set two model settings:
 	// 1. for the OpenAI endpoints
 	// 2. for the /completion endpoint (prefix with A_ and hide the model)
@@ -61,10 +60,8 @@ model = ` + path)
 	wroteKey := false
 
 	for arg := range strings.FieldsSeq(flags) {
-		arg = strings.TrimSpace(arg)
-		if arg != "" {
-			wroteKey = genParam(out, arg, wroteKey)
-		}
+		arg = strings.Trim(arg, "'")
+		wroteKey = genParam(out, arg, wroteKey)
 	}
 
 	if wroteKey {
@@ -76,7 +73,7 @@ model = ` + path)
 
 // Add the model settings within the llama-swap configuration.
 func genParam(out *bytes.Buffer, arg string, wroteKey bool) bool {
-	if arg[0] != '-' {
+	if arg == "" || arg[0] != '-' {
 		out.WriteByte(' ')
 		out.WriteString(arg)
 		return false

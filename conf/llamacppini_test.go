@@ -16,18 +16,18 @@ func TestCfg_GenLlamaINI(t *testing.T) {
 		info *ModelInfo
 		want string
 	}{
-		{"model-with-flags", &ModelInfo{Flags: "  -c   0   --n-gpu-layers 99  --no-jinja 	--context-switch  "}, `
+		{"flags", &ModelInfo{Flags: "  -c   0   --n-gpu-layers 99  --no-jinja 	--context-switch  "}, `
 version = 1
 
-[model-with-flags]
-model = /path/model-with-flags.gguf
+[flags]
+model = /path/flags.gguf
 c = 0
 n-gpu-layers = 99
 no-jinja = true
 context-switch = true
 
-[model-with-flags` + PLUS_A + `]
-model = /path/model-with-flags.gguf
+[flags` + PLUS_A + `]
+model = /path/flags.gguf
 jinja = true
 chat-template-file = template.jinja
 c = 0
@@ -35,16 +35,34 @@ n-gpu-layers = 99
 no-jinja = true
 context-switch = true
 `},
-		{"model-no-flags", &ModelInfo{Flags: ""}, `
+		{"no-flags", &ModelInfo{Flags: ""}, `
 version = 1
 
-[model-no-flags]
-model = /path/model-no-flags.gguf
+[no-flags]
+model = /path/no-flags.gguf
 
-[model-no-flags` + PLUS_A + `]
-model = /path/model-no-flags.gguf
+[no-flags` + PLUS_A + `]
+model = /path/no-flags.gguf
 jinja = true
 chat-template-file = template.jinja
+`},
+		{"quote", &ModelInfo{Flags: `
+		--chat-template-kwargs '{"reasoning_effort": "high"}' 
+		-ot "blk\.1.\.ffn_.*=CPU"
+		`}, `
+version = 1
+
+[quote]
+model = /path/quote.gguf
+chat-template-kwargs = {"reasoning_effort": "high"}
+ot = "blk\.1.\.ffn_.*=CPU"
+
+[quote` + PLUS_A + `]
+model = /path/quote.gguf
+jinja = true
+chat-template-file = template.jinja
+chat-template-kwargs = {"reasoning_effort": "high"}
+ot = "blk\.1.\.ffn_.*=CPU"
 `},
 	}
 	for _, tt := range tests {
