@@ -57,39 +57,21 @@ func beautifyModelName(root, truncated string) string {
 // If there is a dash before the 1st underscore (e.g. ggml-org_gpt...),
 // consider a valid grp only if 3 or 4 chars between dash and underscore (e.g. org).
 func nameWithSlash(root, truncated, name string) string {
-	pos := -1
+	dash := -1 // position of the dash sign
 
 	for i, char := range name {
-		if i > 9 {
-			if pos < 0 { // the limit is 9 letters without a dash
-				return nameWithDir(root, truncated, name)
-			}
-			if i > 11 { // otherwise the limit is 10 letters + one dash
-				return nameWithDir(root, truncated, name)
-			}
+		if isLimitReached(i, dash) {
+			return nameWithDir(root, truncated, name)
 		}
 
 		switch {
 		case char == '-': // dash
-			if i < 4 {
+			if isWrongDash(i, dash) {
 				return nameWithDir(root, truncated, name)
 			}
-			if pos > -1 {
-				return nameWithDir(root, truncated, name)
-			}
-			pos = i
+			dash = i
 		case char == '_': // underscore
-			if pos > 0 {
-				n := i - pos // number of letters before the dash
-				ok := n == 3 || n == 4
-				if !ok {
-					return nameWithDir(root, truncated, name)
-				}
-			}
-			if i < 4 {
-				return nameWithDir(root, truncated, name)
-			}
-			if i-pos < 3 {
+			if isWrongUnderscore(i, dash) {
 				return nameWithDir(root, truncated, name)
 			}
 			out := []byte(name)
@@ -101,6 +83,45 @@ func nameWithSlash(root, truncated, name string) string {
 		}
 	}
 	return nameWithDir(root, truncated, name)
+}
+
+func isLimitReached(i, dash int) bool {
+	if i > 9 {
+		if dash < 0 { // the limit is 9 letters without a dash
+			return true
+		}
+		if i > 11 { // otherwise the limit is 10 letters + one dash
+			return true
+		}
+	}
+	return false
+}
+
+func isWrongDash(i, dash int) bool {
+	if i < 4 {
+		return true
+	}
+	if dash > -1 {
+		return true
+	}
+	return false
+}
+
+func isWrongUnderscore(i, dash int) bool {
+	if dash > 0 {
+		n := i - dash // number of letters before the dash
+		ok := n == 3 || n == 4
+		if !ok {
+			return true
+		}
+	}
+	if i < 4 {
+		return true
+	}
+	if i-dash < 3 {
+		return true
+	}
+	return false
 }
 
 // nameWithGGUF detects files downloaded from HuggingFace (flag -hf).
