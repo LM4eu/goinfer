@@ -26,7 +26,7 @@ n-gpu-layers = 99
 no-jinja = true
 context-switch = true
 
-[model-with-flags:A]
+[model-with-flags` + PLUS_A + `]
 model = /path/model-with-flags.gguf
 jinja = true
 chat-template-file = template.jinja
@@ -41,7 +41,7 @@ version = 1
 [model-no-flags]
 model = /path/model-no-flags.gguf
 
-[model-no-flags:A]
+[model-no-flags` + PLUS_A + `]
 model = /path/model-no-flags.gguf
 jinja = true
 chat-template-file = template.jinja

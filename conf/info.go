@@ -40,6 +40,7 @@ const (
 	notConfigured = "file present but not configured in llama-swap.yml"
 	D_            = "D_"
 	A_            = "A_"
+	PLUS_A        = "+A"
 )
 
 // ListModels returns the model names from the config and from the models_dir.

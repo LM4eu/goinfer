@@ -45,7 +45,7 @@ version = 1
 	for _, model := range slices.Sorted(maps.Keys(info)) {
 		mi := info[model]
 		genModel(out, model, mi.Path, mi.Flags)
-		genModel(out, model+":A", mi.Path, cfg.Llama.Goinfer+" "+mi.Flags)
+		genModel(out, model+PLUS_A, mi.Path, cfg.Llama.Goinfer+" "+mi.Flags)
 	}
 
 	return out.Bytes()
