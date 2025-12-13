@@ -370,7 +370,7 @@ func DiscoverModelParentFolders(roots ...string) []string {
 	}
 
 	// collect all directories containing *.gguf files
-	dirSet := make(map[string]struct{}) // set for uniqueness
+	dirSet := map[string]struct{}{} // set for uniqueness
 	for _, r := range roots {
 		_ = filepath.Walk(r, func(path string, fi os.FileInfo, e error) error {
 			if e == nil && !fi.IsDir() && strings.HasSuffix(path, ".gguf") {
@@ -446,11 +446,11 @@ func DiscoverModelsTree(roots ...string) map[string]map[string][]string {
 
 // collectModelFiles walks each root and groups *.gguf files by the directory that holds them.
 func collectModelFiles(roots []string) map[string][]string {
-	dirFiles := make(map[string][]string) // dir → []basename
+	dirFiles := map[string][]string{} // dir → []basename
 	for _, root := range roots {
 		_ = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 			if err != nil || d.IsDir() {
-				return nil // ignore unreadable paths and directories
+				return nil //nolint:nilerr // ignore unreadable paths and directories
 			}
 			if strings.EqualFold(filepath.Ext(path), ".gguf") {
 				dir := filepath.Dir(path)
@@ -473,7 +473,7 @@ func buildModelsTree(dirFiles map[string][]string) map[string]map[string][]strin
 
 	// Collapse children under their parent directory.
 	const sep = string(filepath.Separator)
-	tree := make(map[string]map[string][]string)
+	tree := map[string]map[string][]string{}
 	var parent string // current parent directory
 
 	for _, d := range dirs {

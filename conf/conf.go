@@ -2,7 +2,6 @@
 // This file is part of Goinfer, a LLM proxy under the MIT License.
 // SPDX-License-Identifier: MIT
 
-// Package conf reads/writes configuration
 package conf
 
 import (

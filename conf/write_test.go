@@ -17,7 +17,7 @@ func TestWriteWithHeader(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "out.txt")
-	header := "# Test Header"
+	header := "# Test Header\n\n"
 	data := []byte("key: value\nanother: line\n")
 
 	err := writeWithHeader(filePath, header, data)
@@ -27,7 +27,7 @@ func TestWriteWithHeader(t *testing.T) {
 	content, err := os.ReadFile(filepath.Clean(filePath))
 	require.NoError(t, err)
 
-	expected := header + "\n\n" + string(data)
+	expected := header + string(data)
 	require.Equal(t, expected, string(content))
 }
 

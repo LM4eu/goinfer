@@ -5,6 +5,7 @@
 package conf
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -30,7 +31,7 @@ func ReadGoinferINI(noAPIKey bool, extra, start string) (*Cfg, error) {
 		slog.Warn("Skip " + GoinferINI + " => Use default settings and env. vars")
 	}
 
-	cfg, er := ReadFileData(data, noAPIKey, extra, start)
+	cfg, er := parseGoinferINI(data, noAPIKey, extra, start)
 	if er != nil {
 		if err == nil {
 			err = er
@@ -39,9 +40,9 @@ func ReadGoinferINI(noAPIKey bool, extra, start string) (*Cfg, error) {
 	return cfg, err
 }
 
-// ReadFileData unmarshals the TOML bytes, applies the env vars and verifies the settings.
+// parseGoinferINI unmarshals the TOML bytes, applies the env vars and verifies the settings.
 // Always return a valid configuration, because the receiver may want to write a valid config.
-func ReadFileData(data []byte, noAPIKey bool, extra, start string) (*Cfg, error) {
+func parseGoinferINI(data []byte, noAPIKey bool, extra, start string) (*Cfg, error) {
 	cfg := DefaultCfg()
 	err := cfg.parse(data)
 	cfg.applyEnvVars()

@@ -43,6 +43,7 @@ linters:
     - nonamedreturns
     - staticcheck
     - testpackage
+    - varnamelen
     - wrapcheck
     - wsl
     - wsl_v5

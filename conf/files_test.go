@@ -14,6 +14,7 @@ import (
 )
 
 func Test_beautifyModelName(t *testing.T) {
+	t.Parallel()
 	tests := []struct{ in, want string }{
 		{"30b/Devstral-Small-2507-GGUF_", "Devstral-Small-2507"},
 		{"30b/Devstral-Small-2507-GGUF", "Devstral-Small-2507"},
@@ -205,6 +206,7 @@ func TestValidateModelFiles_WithSwapModels(t *testing.T) {
 }
 
 func Test_nameWithGGUF(t *testing.T) {
+	t.Parallel()
 	tests := []struct{ in, want string }{
 		{"ggml-org_gpt-oss-120b-GGUF_gpt-oss-120b-mxfp4", "ggml-org/gpt-oss-120b"},
 		{"unsloth_Devstral-2-123B-Instruct-2512-GGUF_UD-Q4_K_XL_Devstral-2-123B-Instruct-2512-UD-Q4_K_XL", "unsloth/Devstral-2-123B-Instruct-2512:UD-Q4_K_XL"},

@@ -33,7 +33,8 @@ type MacroList []MacroEntry
 func (ml *MacroList) UnmarshalYAML(value []byte) error {
 	// Parse the YAML into a yaml.MapSlice to preserve order
 	var mapSlice yaml.MapSlice
-	if err := yaml.Unmarshal(value, &mapSlice); err != nil {
+	err := yaml.Unmarshal(value, &mapSlice)
+	if err != nil {
 		return err
 	}
 
