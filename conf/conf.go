@@ -26,7 +26,7 @@ type (
 		Info         map[string]*ModelInfo `toml:"-"              yaml:"-"`
 		Swap         *config.Config        `toml:"-"              yaml:"-"`
 		Llama        Llama                 `toml:"llama"          yaml:"llama"`
-		APIKey       string                `toml:"api_key"        yaml:"api_key"        comment:"⚠️ Set your API key, can be 64-hex-digit (32-byte) 🚨\nGoinfer sets a random API key with: ./goinfer -write"`
+		APIKey       string                `toml:"api_key"        yaml:"api_key"        comment:"⚠️ Set your API key, can be 64-hex-digit (32-byte) 🚨\nGoinfer sets a random API key with: ./goinfer -overwrite-all"`
 		Host         string                `toml:"host,omitempty" yaml:"host,omitempty" comment:"\nHost to listen (env. var: GI_HOST)"`
 		Origins      string                `toml:"origins"        yaml:"origins"        comment:"\nCORS whitelist (env. var: GI_ORIGINS)"`
 		ModelsDir    string                `toml:"models_dir"     yaml:"models_dir"     comment:"\nGoinfer recursively searches GGUF files in one or multiple folders separated by ':'\nList your GGUF dirs with: locate .gguf | sed -e 's,/[^/]*$,,' | uniq\nenv. var: GI_MODELS_DIR"`

@@ -47,7 +47,7 @@ CUDA-13, GCC-14 and optimized CPU flags.
 
 ### First run
 
-```bash
+```sh
 git clone https://github.com/LM4eu/goinfer
 cd goinfer
 
@@ -62,11 +62,30 @@ while IFS= read -rd '' d; do [[ $p && $d == "$p"/* ]] && continue; echo -n "$d:"
 # set the path of your inference engine (llama.cpp/ik_llama.cpp/...)
 export GI_LLAMA_EXE=/home/me/bin/llama-server
 
-# generates the config
-go run . -write
-
-# voilà, it's running
+# generate the config files and start llama-server
 go run . -no-api-key
+
+# later: update only llama.ini (model presets) and start llama-server
+go run . -write -run
+```
+
+More control:
+
+```sh
+# optional: build the binary to replace `go run .` -> `./goinfer`
+go build .
+
+# generate the config files with random API key and exit (do not start llama-server)
+./goinfer -overwrite-all
+
+# start llama-server without API key (do not overwrite any file)
+./goinfer -run -no-api-key
+
+# generate the config files without API keys and exit
+./goinfer -overwrite-all -no-api-key
+
+# update llama.ini and start llama-server (using the API key in config if any)
+./goinfer -write -run
 ```
 
 Goinfer listens on the port defined in `goinfer.ini`.
@@ -98,7 +117,7 @@ Build all dependencies and run Goinfer with the bash script
 
     ```sh
     git clone https://github.com/LM4eu/goinfer
-    goinfer/scripts/clone-pull-build-run.sh --build--swap
+    goinfer/scripts/clone-pull-build-run.sh
     ```
 
 This script clones and builds [llama.cpp](https://github.com/ggml-org/llama.cpp)
@@ -181,7 +200,7 @@ export GIN_MODE=release
 
 ### API key
 
-The flag `-write` also generates a random API key in `goinfer.ini`.
+The flag `-overwrite-all` also generates a random API key in `goinfer.ini`.
 This flag can be combined with:
 
 - `-debug` sets the debug API key (only during the dev cycle)
@@ -201,7 +220,7 @@ curl -X POST https://localhost:8080/completions  \
 
 ```ini
 # ⚠️ Set your API key, can be 64-hex-digit (32-byte) 🚨
-# Goinfer sets a random API key with: ./goinfer -write
+# Goinfer sets a random API key with: ./goinfer -overwrite-all
 api_key = '166a7c4bb8e9da0e1c414049c20797ec0fb9053d6bb553bf3f2dfcf1183451f5'
 # 
 # CORS whitelist (env. var: GI_ORIGINS)
@@ -253,8 +272,8 @@ addr = ':8080' # OpenAI-compatible API
 
 ### `llama-swap.yml`
 
-At startup, Goinfer verifies the available GUFF files.
-The flag `-write` tells Goinfer to write the `llama-swap.yml` file.
+On startup, Goinfer verifies the available GUFF files.
+The flag `-write-swap` let Goinfer to write the `llama-swap.yml` file.
 
 Official documentation:
 [github/mostlygeek/llama-swap/wiki/Configuration](https://github.com/mostlygeek/llama-swap/wiki/Configuration)
@@ -589,6 +608,7 @@ Go         | [github/lordmathis/llamactl](https://github.com/lordmathis/llamactl
 Go         | [github/mostlygeek/llama-swap](https://github.com/mostlygeek/llama-swap)
 Go         | [github/thushan/olla](https://github.com/thushan/olla)
 Python     | [github/codelion/optillm](https://github.com/codelion/optillm)
+Python     | [github/Dominic-Shirazi/ConductorAPI](https://github.com/Dominic-Shirazi/ConductorAPI)
 Python     | [github/llm-proxy/llm-proxy](https://github.com/llm-proxy/llm-proxy) (inactive?)
 Rust       | [github/x5iu/llm-proxy](https://github.com/x5iu/llm-proxy)
 TypeScript | [github/bluewave-labs/langroute](https://github.com/bluewave-labs/langroute)
