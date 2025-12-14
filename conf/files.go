@@ -326,7 +326,7 @@ func verify(path string) (int64, error) {
 	// is empty?
 	size := info.Size()
 	if size < 1000 {
-		return 0, gie.New(gie.ConfigErr, "Model file is empty (or too small)", "path", path)
+		return 0, gie.New(gie.ConfigErr, "Model file is empty (or too small)", "path", path, "size", size)
 	}
 
 	// Check if the file is readable
