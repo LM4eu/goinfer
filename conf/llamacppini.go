@@ -73,7 +73,7 @@ model = ` + path)
 // Add the model settings within the llama-swap configuration.
 func genParam(out *bytes.Buffer, val, arg string, firstLoop bool) (newVal string) {
 	// no leading dash => accumulate values
-	if arg == "" || arg[0] != '-' {
+	if arg == "" || (arg[0] != '-') || len(arg) == 1 || ('0' <= arg[1] && arg[1] <= '9') {
 		return val + " " + arg
 	}
 

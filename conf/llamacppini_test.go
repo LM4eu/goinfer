@@ -12,12 +12,11 @@ import (
 func TestCfg_GenLlamaINI(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name string
-		info *ModelInfo
-		want string
+		name  string
+		flags string
+		want  string
 	}{
-		{"flags", &ModelInfo{Flags: "  -c   0   --n-gpu-layers 99  --no-jinja 	--context-switch  "}, `
-version = 1
+		{"flags", "  -c   0   --n-gpu-layers 99  --no-jinja 	--context-switch  ", `version = 1
 
 [flags]
 model = /path/flags.gguf
@@ -33,10 +32,8 @@ chat-template-file = template.jinja
 c = 0
 n-gpu-layers = 99
 no-jinja = true
-context-switch = true
-`},
-		{"no-flags", &ModelInfo{Flags: ""}, `
-version = 1
+context-switch = true`},
+		{"no-flags", "", `version = 1
 
 [no-flags]
 model = /path/no-flags.gguf
@@ -44,13 +41,8 @@ model = /path/no-flags.gguf
 [no-flags` + PLUS_A + `]
 model = /path/no-flags.gguf
 jinja = true
-chat-template-file = template.jinja
-`},
-		{"quote", &ModelInfo{Flags: `
-		--chat-template-kwargs '{"reasoning_effort": "high"}' 
-		-ot "blk\.1.\.ffn_.*=CPU"
-		`}, `
-version = 1
+chat-template-file = template.jinja`},
+		{"quote", `--chat-template-kwargs '{"reasoning_effort": "high"}' -ot "blk\.1.\.ffn_.*=CPU"`, `version = 1
 
 [quote]
 model = /path/quote.gguf
@@ -62,15 +54,24 @@ model = /path/quote.gguf
 jinja = true
 chat-template-file = template.jinja
 chat-template-kwargs = {"reasoning_effort": "high"}
-ot = blk\.1.\.ffn_.*=CPU
-`},
-	}
+ot = blk\.1.\.ffn_.*=CPU`},
+		{"negative", `--treads -1`, `
+version = 1
+
+[negative]
+model = /path/negative.gguf
+treads = -1
+
+[negative` + PLUS_A + `]
+model = /path/negative.gguf
+jinja = true
+chat-template-file = template.jinja
+treads = -1`}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			cfg := DefaultCfg()
-			tt.info.Path = "/path/" + tt.name + ".gguf"
-			cfg.Info = map[string]*ModelInfo{tt.name: tt.info}
+			cfg.Info = map[string]*ModelInfo{tt.name: {Flags: tt.flags, Path: "/path/" + tt.name + ".gguf"}}
 			got := string(cfg.GenLlamaINI())
 			if strings.TrimSpace(got) != strings.TrimSpace(tt.want) {
 				t.Errorf(`
