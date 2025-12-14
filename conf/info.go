@@ -212,7 +212,7 @@ func keepTemplates(templates map[string]ModelParams, root, path string) error {
 func (cfg *Cfg) keepGUFF(root, path string) {
 	size, err := verify(path)
 	if err != nil {
-		slog.Debug("skip GGUF", "path", path, "err", err)
+		slog.Debug("skip", "GGUF", path, "err", err)
 		return
 	}
 
