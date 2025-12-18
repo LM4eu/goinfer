@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -43,6 +44,18 @@ version = 1
 	info := cfg.getInfo()
 	for _, model := range slices.Sorted(maps.Keys(info)) {
 		mi := info[model]
+		out.WriteString("\n# GGUF = " + mi.Path)
+		out.WriteString("\n# size = " + strconv.FormatInt(mi.Size, 10))
+		if mi.Flags != "" {
+			out.WriteString("\n# args = " + mi.Flags)
+		}
+		if mi.Origin != "" {
+			out.WriteString("\n# args origin = " + mi.Origin)
+		}
+		if mi.Error != "" {
+			out.WriteString("\n# args origin = " + mi.Error)
+		}
+
 		genModel(out, model, mi.Path, mi.Flags)
 		genModel(out, model+PLUS_A, mi.Path, cfg.Llama.Goinfer+" "+mi.Flags)
 	}
