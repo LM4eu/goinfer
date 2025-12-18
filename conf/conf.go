@@ -49,6 +49,7 @@ const (
 	// Hex code: C0ffee 15 C001, 50 C0ffee 15 900d. Bad C0de 15 Dead, 101. Cafe 91f7, 90 Cafe, 7e57 C0de.
 	debugAPIKey = "C0ffee15C00150C0ffee15900dBadC0de15Dead101Cafe91f790Cafe7e57C0de"
 	unsetAPIKey = "Please ⚠️ Set your private 64-hex-digit API key (32 bytes)"
+	TemplateJinja = "template.jinja"
 )
 
 // Do not use the bad ports: they are blocked by web browsers,
@@ -78,7 +79,7 @@ func DefaultCfg() *Cfg {
 			Debug:   "--verbosity 3",
 			// --webui-config defaults: llama.cpp/tools/server/webui/src/lib/constants/settings-config.ts
 			Common:  `--prio 2 --prio-batch 2 --cpu-strict 1 --props --no-warmup --no-mmap --webui-config '{"keepStatsVisible":true,"showToolCalls":true,"pasteLongTextToFileLen":4444,"disableAutoScroll":true,"renderUserContentAsMarkdown":true}`,
-			Goinfer: "--jinja --chat-template-file template.jinja",
+			Goinfer: "--jinja --chat-template-file "+ TemplateJinja,
 		},
 		ExtraModels: map[string]string{ // Output of `llama-server -h` contains:
 			// github.com/ggml-org/llama.cpp/blob/master/common/arg.cpp#L3000

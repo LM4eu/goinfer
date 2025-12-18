@@ -17,8 +17,6 @@ import (
 	"github.com/LM4eu/goinfer/conf"
 )
 
-const templateJinja = "template.jinja"
-
 func main() {
 	cfg := getCfg()
 	if cfg != nil {
@@ -31,7 +29,7 @@ func main() {
 func getCfg() *conf.Cfg {
 	quiet := flag.Bool("q", false, "quiet mode (disable verbose output)")
 	debug := flag.Bool("debug", false, "debug mode (set debug ABI keys in "+conf.GoinferINI+" with -overwrite-all)")
-	writeAll := flag.Bool("overwrite-all", false, "write config files: "+conf.GoinferINI+" "+templateJinja+" "+conf.ModelsINI)
+	writeAll := flag.Bool("overwrite-all", false, "write config files: "+conf.GoinferINI+" "+conf.TemplateJinja+" "+conf.ModelsINI)
 	writeSwap := flag.Bool("write-swap", false, "write the llama-swap config file "+conf.LlamaSwapYML+" (this file is not used by goinfer)")
 	writeModelsINI := flag.Bool("write", false, "write only the llama.cpp config file "+conf.ModelsINI+" (do not modify "+conf.GoinferINI+" )")
 	run := flag.Bool("run", false, "run the server, to be used with -write (or -overwrite-all)")
@@ -107,9 +105,9 @@ func doGoinferINI(debug, writeAll, run, noAPIKey bool, extra, start string) *con
 	}
 
 	if writeAll {
-		err = os.WriteFile(templateJinja, []byte("{{- messages[0].content -}}"), 0o600)
+		err = os.WriteFile(conf.TemplateJinja, []byte("{{- messages[0].content -}}"), 0o600)
 		if err != nil {
-			slog.Error("Cannot write", "file", templateJinja, "error", err)
+			slog.Error("Cannot write", "file", conf.TemplateJinja, "error", err)
 		}
 
 		er := cfg.WriteGoinferINI(debug, noAPIKey)
@@ -126,7 +124,7 @@ func doGoinferINI(debug, writeAll, run, noAPIKey bool, extra, start string) *con
 			os.Exit(1)
 		}
 
-		// stop if any error from WriteFile(templateJinja) or WriteGoinferINI
+		// stop if any error from WriteFile(conf.TemplateJinja) or WriteGoinferINI
 		if err != nil {
 			slog.Info("Please review the env. vars and " + conf.GoinferINI)
 			os.Exit(1)
