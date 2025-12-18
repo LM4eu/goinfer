@@ -29,10 +29,10 @@ func replaceDIR(path, flags string) string {
 }
 
 // getNameAndFlags returns model name and llama-server flags.
-func getNameAndFlags(root, path string) (name, flags_ string) {
-	truncated, flags := extractFlags(path)
+func getNameAndFlags(root, path string) (name, flags, origin string) {
+	truncated, flags, origin := extractFlags(path)
 	name = beautifyModelName(root, truncated)
-	return name, flags
+	return name, flags, origin
 }
 
 // beautifyModelName converts the first underscore in a model name to a slash.
@@ -203,9 +203,7 @@ func nameWithDir(root, truncated, name string) string {
 // It first checks for a companion ".sh" file; if present, its contents are used as flags.
 // Otherwise, it parses flags encoded in the filename after an '&' delimiter.
 // Returns the truncated path (without extension) and a space-separated flag string.
-//
-
-func extractFlags(path string) (truncated, flags_ string) {
+func extractFlags(path string) (truncated, flags, origin string) {
 	truncated = strings.TrimSuffix(path, ".gguf")
 
 	// Huge GGUF are spilt into smaller files ending with -00001-of-00003.gguf
@@ -215,12 +213,12 @@ func extractFlags(path string) (truncated, flags_ string) {
 	}
 
 	// 1. Is there a file containing the command line arguments?
-	shell := filepath.Clean(truncated + ".sh")
-	args, err := os.ReadFile(shell)
+	shellPath := filepath.Clean(truncated + ".sh")
+	shellData, err := os.ReadFile(shellPath)
 	if err == nil {
-		flags := oneLine(args)
-		slog.Info("Found", "flags", flags, "from file", shell)
-		return truncated, flags
+		flags = string(oneLine(shellData))
+		slog.Info("Found from", "script", shellPath, "flags", flags)
+		return truncated, flags, shellPath
 	}
 
 	// 2. Are there flags encoded within the filename?
@@ -228,49 +226,50 @@ func extractFlags(path string) (truncated, flags_ string) {
 	slash := max(strings.LastIndexByte(truncated, '/'), 0)
 	amp := strings.IndexByte(truncated[slash:], '&')
 	if amp < 0 {
-		return truncated, ""
+		return truncated, "", ""
 	}
 	pos = slash + amp
 
-	var flags []string
+	var args []string
 
 	// Slice after the first '&' to avoid an empty first element.
 	for f := range strings.SplitSeq(truncated[pos+1:], "&") {
 		key, value, ok := strings.Cut(f, "=")
 		if ok {
 			key = "-" + key
-			flags = append(flags, key, value)
+			args = append(args, key, value)
 		}
 	}
 
-	slog.Info("Found", "flags", flags, "from filename", truncated)
-	return truncated[:pos], strings.Join(flags, " ")
+	slog.Info("Found from", "filename", truncated, "flags", flags)
+	return truncated[:pos], strings.Join(args, " "), "GGUF filename"
 }
 
 // oneLine converts the `.sh` file into a single space-separated string,
 // removing trailing backslashes, trimming whitespace, ignoring empty lines or comments.
-func oneLine(input []byte) string {
+func oneLine(input []byte) []byte {
 	keep := make([]byte, 0, len(input))
 
 	for line := range bytes.SplitSeq(input, []byte("\n")) {
-		// Remove trailing backslash
-		if bytes.HasSuffix(line, []byte("\\")) {
-			line = line[:len(line)-1]
-		}
-		// Remove leading/trailing whitespace
-		line = bytes.TrimSpace(line)
-		// Skip blank lines
 		if len(line) == 0 {
+			continue // Skip empty lines
+		}
+
+		if line[len(line)-1] == '\'' {
+			line = line[:len(line)-1] // Remove trailing backslash
+		}
+
+		// Skip blank lines, commented lines (keep only lines starting with a dash)
+		line = bytes.TrimSpace(line)
+		if len(line) == 0 || line[0] != '-' {
 			continue
 		}
-		// Convert the byte slice to a string before appending.
-		if line[0] == '-' {
-			keep = append(keep, line...)
-			keep = append(keep, ' ')
-		}
+
+		keep = append(keep, line...)
+		keep = append(keep, ' ')
 	}
 
-	return string(keep)
+	return keep
 }
 
 // ValidateSwap checks that the configuration contains at least one model file and

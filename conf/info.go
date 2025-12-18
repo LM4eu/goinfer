@@ -21,8 +21,9 @@ type (
 	// - eventual error (if the model is missing or misconfigured).
 	ModelInfo struct {
 		Params *ModelParams `json:"params,omitempty,omitzero" yaml:"params,omitempty"`
-		Flags  string       `json:"cmd,omitempty"             yaml:"cmd,omitempty"`
 		Path   string       `json:"path,omitempty"            yaml:"path,omitempty"`
+		Flags  string       `json:"cmd,omitempty"             yaml:"cmd,omitempty"`
+		Origin string       `json:"origin,omitempty"          yaml:"origin,omitempty"`
 		Error  string       `json:"error,omitempty"           yaml:"error,omitempty"`
 		Size   int64        `json:"size,omitempty"            yaml:"size,omitempty"`
 	}
@@ -218,11 +219,11 @@ func (cfg *Cfg) keepGUFF(root, path string) {
 
 	slog.Debug("Found", "model", path)
 
-	name, flags := getNameAndFlags(root, path)
+	name, flags, origin := getNameAndFlags(root, path)
 
 	flags = replaceDIR(path, flags)
 
-	mi := ModelInfo{Params: nil, Flags: flags, Path: path, Error: "", Size: size}
+	mi := ModelInfo{Params: nil, Flags: flags, Path: path, Error: "", Size: size, Origin: origin}
 	if old, ok := cfg.Info[name]; ok {
 		slog.Debug("WARN Duplicated models", "dir", root, "name", name, "old", old, "new", mi)
 		mi.Error = "two files have same model name (must be unique)"

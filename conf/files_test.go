@@ -82,7 +82,7 @@ func Test_beautifyModelName(t *testing.T) {
 	}
 }
 
-func TestExtractFlags(t *testing.T) {
+func Test_ExtractFlags_FromShell(t *testing.T) {
 	t.Parallel()
 	tmp := t.TempDir()
 
@@ -93,34 +93,52 @@ func TestExtractFlags(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to write .sh file: %v", err)
 	}
-	name, flags := extractFlags(modelPath)
+	name, flags, origin := extractFlags(modelPath)
 	if !strings.HasSuffix(name, "model1") {
 		t.Errorf("extractFlags name = %q, want suffix %q", name, "model1")
 	}
 	if strings.TrimSpace(flags) != "-foo bar -baz qux" {
 		t.Errorf("extractFlags flags = %q, want %q (ignoring trailing space)", flags, "-foo bar -baz qux")
 	}
+	if origin != shPath {
+		t.Errorf("extractFlags origin = %q, want %q", origin, shPath)
+	}
+}
 
+func Test_ExtractFlags_FromFilename(t *testing.T) {
+	t.Parallel()
+	tmp := t.TempDir()
 	// Flags encoded in filename
-	modelPath2 := filepath.Join(tmp, "model2&foo=1&bar=2.gguf")
+	modelPath := filepath.Join(tmp, "model2&foo=1&bar=2.gguf")
 	createGGUFFile(t, tmp, "model2&foo=1&bar=2.gguf", 2048)
-	name2, flags2 := extractFlags(modelPath2)
-	if name2 == "" {
-		t.Errorf("extractFlags name2 is empty")
+	name, flags, origin := extractFlags(modelPath)
+	if name == "" {
+		t.Errorf("extractFlags name is empty")
 	}
 	expected := "-foo 1 -bar 2"
-	if strings.TrimSpace(flags2) != expected {
-		t.Errorf("extractFlags flags2 = %q, want %q (ignoring trailing space)", flags2, expected)
+	if strings.TrimSpace(flags) != expected {
+		t.Errorf("extractFlags flags = %q, want %q (ignoring trailing space)", flags, expected)
 	}
+	expected = "GGUF filename"
+	if origin != expected {
+		t.Errorf("extractFlags origin = %q, want %q", origin, expected)
+	}
+}
 
+func Test_ExtractFlags(t *testing.T) {
+	t.Parallel()
+	tmp := t.TempDir()
 	// No flags
-	modelPath3 := createGGUFFile(t, tmp, "plain_model.gguf", 2048)
-	name3, flags3 := extractFlags(modelPath3)
-	if !strings.HasSuffix(name3, "plain_model") {
-		t.Errorf("extractFlags name3 = %q, want suffix %q", name3, "plain_model")
+	modelPath := createGGUFFile(t, tmp, "plain_model.gguf", 2048)
+	name, flags, origin := extractFlags(modelPath)
+	if !strings.HasSuffix(name, "plain_model") {
+		t.Errorf("extractFlags name = %q, want suffix %q", name, "plain_model")
 	}
-	if flags3 != "" {
-		t.Errorf("extractFlags flags3 = %q, want empty", flags3)
+	if flags != "" {
+		t.Errorf("extractFlags flags = %q, want empty", flags)
+	}
+	if origin != "" {
+		t.Errorf("extractFlags origin = %q, want empty", origin)
 	}
 }
 
@@ -128,12 +146,15 @@ func TestGetNameAndFlags(t *testing.T) {
 	t.Parallel()
 	tmp := t.TempDir()
 	modelPath := createGGUFFile(t, tmp, "my_model&opt=val.gguf", 2048)
-	name, flags := getNameAndFlags(tmp, modelPath)
+	name, flags, origin := getNameAndFlags(tmp, modelPath)
 	if name == "" {
 		t.Errorf("getNameAndFlags name is empty")
 	}
 	if strings.TrimSpace(flags) != "-opt val" {
 		t.Errorf("getNameAndFlags flags = %q, want %q (ignoring trailing space)", flags, "-opt val")
+	}
+	if origin != "GGUF filename" {
+		t.Errorf("getNameAndFlags origin = %q, want %q", flags, "GGUF filename")
 	}
 }
 
