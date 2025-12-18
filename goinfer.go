@@ -31,9 +31,9 @@ func main() {
 func getCfg() *conf.Cfg {
 	quiet := flag.Bool("q", false, "quiet mode (disable verbose output)")
 	debug := flag.Bool("debug", false, "debug mode (set debug ABI keys in "+conf.GoinferINI+" with -overwrite-all)")
-	writeAll := flag.Bool("overwrite-all", false, "write config files: "+conf.GoinferINI+" "+templateJinja+" "+conf.LlamaINI)
+	writeAll := flag.Bool("overwrite-all", false, "write config files: "+conf.GoinferINI+" "+templateJinja+" "+conf.ModelsINI)
 	writeSwap := flag.Bool("write-swap", false, "write the llama-swap config file "+conf.LlamaSwapYML+" (this file is not used by goinfer)")
-	writeLlamaINI := flag.Bool("write", false, "write only the llama.cpp config file "+conf.LlamaINI+" (do not modify "+conf.GoinferINI+" )")
+	writeModelsINI := flag.Bool("write", false, "write only the llama.cpp config file "+conf.ModelsINI+" (do not modify "+conf.GoinferINI+" )")
 	run := flag.Bool("run", false, "run the server, to be used with -write (or -overwrite-all)")
 	extra := flag.String("hf", "", "configure the given extra_models and load the first one (start llama-server)")
 	start := flag.String("start", "", "set the default_model and load it (start llama-server)")
@@ -47,7 +47,7 @@ func getCfg() *conf.Cfg {
 		*run = true
 	}
 	if *writeAll {
-		*writeLlamaINI = true
+		*writeModelsINI = true
 	}
 
 	switch {
@@ -68,7 +68,7 @@ func getCfg() *conf.Cfg {
 
 	doLlamaSwapYML(cfg, *writeSwap, verbose, *debug)
 
-	if *writeLlamaINI {
+	if *writeModelsINI {
 		writeLlamaIni(cfg)
 	}
 
@@ -76,7 +76,7 @@ func getCfg() *conf.Cfg {
 		slog.Info("flag -overwrite-all without any -run -hf -start => stop here")
 		return nil
 	}
-	if *writeLlamaINI && !*run {
+	if *writeModelsINI && !*run {
 		slog.Info("flag -write without any -run -hf -start => stop here")
 		return nil
 	}
@@ -167,13 +167,13 @@ func doLlamaSwapYML(cfg *conf.Cfg, writeSwap, verbose, debug bool) {
 }
 
 func writeLlamaIni(cfg *conf.Cfg) {
-	ini := cfg.GenLlamaINI()
-	// always write llama.ini
-	err := conf.WriteLlamaINI(ini)
+	ini := cfg.GenModelsINI()
+	// always write models.ini
+	err := conf.WriteModelsINI(ini)
 	if err != nil {
-		slog.Warn("Failed writing the llama.cpp config", "file", conf.LlamaINI, "error", err)
+		slog.Warn("Failed writing the llama.cpp config", "file", conf.ModelsINI, "error", err)
 	}
-	slog.Info("Generated llama.cpp config", "file", conf.LlamaINI, "models", len(cfg.Swap.Models))
+	slog.Info("Generated llama.cpp config", "file", conf.ModelsINI, "models", len(cfg.Swap.Models))
 }
 
 // startServer creates and runs the HTTP server (API).

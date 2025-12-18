@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestCfg_GenLlamaINI(t *testing.T) {
+func TestCfg_GenModelsINI(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name  string
@@ -72,7 +72,7 @@ treads = -1`}}
 			t.Parallel()
 			cfg := DefaultCfg()
 			cfg.Info = map[string]*ModelInfo{tt.name: {Flags: tt.flags, Path: "/path/" + tt.name + ".gguf"}}
-			got := string(cfg.GenLlamaINI())
+			got := string(cfg.GenModelsINI())
 			if strings.TrimSpace(got) != strings.TrimSpace(tt.want) {
 				t.Errorf(`
 ------------------------------------------------

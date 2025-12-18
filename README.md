@@ -65,7 +65,7 @@ export GI_LLAMA_EXE=/home/me/bin/llama-server
 # generate the config files and start llama-server
 go run . -no-api-key
 
-# later: update only llama.ini (model presets) and start llama-server
+# later: update only models.ini (model presets) and start llama-server
 go run . -write -run
 ```
 
@@ -84,7 +84,7 @@ go build .
 # generate the config files without API keys and exit
 ./goinfer -overwrite-all -no-api-key
 
-# update llama.ini and start llama-server (using the API key in config if any)
+# update models.ini and start llama-server (using the API key in config if any)
 ./goinfer -write -run
 ```
 

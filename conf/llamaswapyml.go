@@ -199,12 +199,12 @@ func (cfg *Cfg) setModelPresets() {
 	}
 
 	cfg.Swap.Models["use-models-preset"] = config.ModelConfig{
-		Cmd:           "${cmd-common} --models-preset " + LlamaINI,
+		Cmd:           "${cmd-common} --models-preset " + ModelsINI,
 		CheckEndpoint: "/health",
 		Proxy:         "http://localhost:${PORT}",
 	}
 
-	// on startup, Goinfer automatically runs `llama-server --models-preset llama.ini`
+	// on startup, Goinfer automatically runs `llama-server --models-preset models.ini`
 	cfg.Swap.Hooks.OnStartup.Preload = []string{"use-models-preset"}
 }
 
@@ -246,7 +246,7 @@ func (cfg *Cfg) setSwapModels() {
 
 	// For each model, set two model settings:
 	// 1. for the OpenAI endpoints
-	// 2. for the /completion endpoint (prefix with A_ and hide the model)
+	// 2. for the /completion endpoint (suffix +A)
 	for model, mi := range info {
 		goinferMC.UseModelName = model // overrides the model name that is sent to /upstream server
 		flags := mi.Flags + " -m " + mi.Path
