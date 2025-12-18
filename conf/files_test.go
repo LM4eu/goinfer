@@ -88,10 +88,10 @@ func TestExtractFlags(t *testing.T) {
 
 	// .sh file present
 	modelPath := createGGUFFile(t, tmp, "model1.gguf", 2048)
-	argsPath := strings.TrimSuffix(modelPath, ".gguf") + ".sh"
-	err := os.WriteFile(argsPath, []byte("-foo bar -baz qux"), 0o600)
+	shPath := strings.TrimSuffix(modelPath, ".gguf") + ".sh"
+	err := os.WriteFile(shPath, []byte("-foo bar -baz qux"), 0o600)
 	if err != nil {
-		t.Fatalf("failed to write args file: %v", err)
+		t.Fatalf("failed to write .sh file: %v", err)
 	}
 	name, flags := extractFlags(modelPath)
 	if !strings.HasSuffix(name, "model1") {

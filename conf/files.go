@@ -215,11 +215,11 @@ func extractFlags(path string) (truncated, flags_ string) {
 	}
 
 	// 1. Is there a file containing the command line arguments?
-	argsFn := filepath.Clean(truncated + ".sh")
-	args, err := os.ReadFile(argsFn)
+	shell := filepath.Clean(truncated + ".sh")
+	args, err := os.ReadFile(shell)
 	if err == nil {
 		flags := oneLine(args)
-		slog.Info("Found", "flags", flags, "from file", argsFn)
+		slog.Info("Found", "flags", flags, "from file", shell)
 		return truncated, flags
 	}
 
