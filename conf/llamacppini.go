@@ -120,6 +120,7 @@ func addValue(out *bytes.Buffer, val string) {
 	case (val[1] == '"' && val[len(val)-1] == '"') ||
 		(val[1] == '\'' && val[len(val)-1] == '\''):
 		val = " " + val[2:len(val)-1]
+	default:
 	}
 	out.WriteString(val)
 }

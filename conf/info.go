@@ -38,7 +38,7 @@ type (
 )
 
 const (
-	paramsYML = "params.yml"
+	paramsYML     = "params.yml"
 	notConfigured = "file present but not configured in llama-swap.yml"
 	D_            = "D_"
 	A_            = "A_"
