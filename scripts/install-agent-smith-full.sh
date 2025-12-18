@@ -17,6 +17,7 @@ npm i -g --prefer-online --no-audit --no-fund \
     @agent-smith/feat-git@latest \
     @agent-smith/feat-inference@latest \
     @agent-smith/feat-lang@latest \
+    @agent-smith/feat-vision@latest \
     @agent-smith/jobs@latest \
     @agent-smith/lmtask@latest \
     @agent-smith/smem@latest \
@@ -36,7 +37,6 @@ npm i -g --prefer-online --no-audit --no-fund \
 
 # outdated:
 #    @agent-smith/feat-search@latest
-#    @agent-smith/feat-vision@latest
 #
 # removed:
 #   @agent-smith/feat-models@latest
