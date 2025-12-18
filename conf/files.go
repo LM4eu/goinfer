@@ -199,6 +199,113 @@ func nameWithDir(root, truncated, name string) string {
 	return grp + "/" + name
 }
 
+// extractModelNameAndFlags search for a llama-server command line
+// and extract the model path (flag -m or --model) and the flags after -m|--model.
+func extractModelNameAndFlags(fsys fs.FS, shellPath string) (modelPath, flags []byte) {
+	//	shellPath = filepath.Clean(shellPath)
+	script, err := fs.ReadFile(fsys, shellPath)
+	if err != nil {
+		return nil, nil
+	}
+
+	script = searchLlamaServer(script)
+	if script == nil {
+		return nil, nil
+	}
+
+	script = searchModelFlag(script)
+	if script == nil {
+		return nil, nil
+	}
+
+	// trim any leading whitespace character
+	script = bytes.TrimSpace(script)
+	pos := bytes.IndexAny(script, " \t")
+	if pos < 0 {
+		modelPath = script
+	} else {
+		modelPath = script[:pos]
+		flags = oneLine(script[pos+1:])
+	}
+
+	slog.Info("Found", "from file", shellPath, "flags", flags)
+
+	return modelPath, flags
+}
+
+// searchLlamaServer searches for a llama-server command line.
+func searchLlamaServer(script []byte) []byte {
+	for {
+		var before []byte
+		var found bool
+		before, script, found = bytes.Cut(script, []byte("/llama-server"))
+		if !found {
+			return nil
+		}
+
+		// check space after "llama-server"
+		if len(script) == 0 {
+			return nil
+		}
+
+		if script[0] != ' ' && script[0] != '\t' {
+			continue
+		}
+
+		// rewind to the beginning of the line
+		pos := bytes.LastIndexByte(before, '\n')
+		if pos >= 0 {
+			before = before[pos+1:]
+		}
+
+		// skip commented lines except shebang (#!)
+		if len(before) == 0 || before[0] != '#' || (len(before) > 1 && before[1] == '!') {
+			return script[1:]
+		}
+	}
+}
+
+// searchModelFlag searches for the flag: --model or -m.
+func searchModelFlag(script []byte) []byte {
+	for {
+		before, after, found := bytes.Cut(script, []byte("--model"))
+		if !found {
+			before, after, found = bytes.Cut(script, []byte("-m"))
+			if !found {
+				return nil
+			}
+		}
+		script = after
+
+		if len(script) == 0 {
+			return nil
+		}
+
+		if script[0] != ' ' && script[0] != '\t' {
+			continue
+		}
+
+		if len(before) == 0 {
+			return script
+		}
+
+		if before[len(before)-1] != ' ' && before[len(before)-1] != '\t' {
+			continue
+		}
+
+		// rewind to the beginning of the line
+		pos := bytes.LastIndexByte(before, '\n')
+		if pos >= 0 {
+			before = before[pos+1:]
+		}
+
+		// skip commented lines
+		if before[0] != '#' {
+			return script[1:]
+		}
+	}
+}
+
 // extractFlags returns the truncated path and the llama-server flags from a file path.
 // It first checks for a companion ".sh" file; if present, its contents are used as flags.
 // Otherwise, it parses flags encoded in the filename after an '&' delimiter.
@@ -255,7 +362,7 @@ func oneLine(input []byte) []byte {
 			continue // Skip empty lines
 		}
 
-		if line[len(line)-1] == '\'' {
+		if line[len(line)-1] == '\\' {
 			line = line[:len(line)-1] // Remove trailing backslash
 		}
 
@@ -265,8 +372,10 @@ func oneLine(input []byte) []byte {
 			continue
 		}
 
+		if len(keep) > 0 {
+			keep = append(keep, ' ')
+		}
 		keep = append(keep, line...)
-		keep = append(keep, ' ')
 	}
 
 	return keep

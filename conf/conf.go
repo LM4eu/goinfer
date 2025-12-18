@@ -32,6 +32,7 @@ type (
 		ModelsDir    string                `toml:"models_dir"     yaml:"models_dir"     comment:"\nGoinfer recursively searches GGUF files in one or multiple folders separated by ':'\nList your GGUF dirs with: locate .gguf | sed -e 's,/[^/]*$,,' | uniq\nenv. var: GI_MODELS_DIR"`
 		DefaultModel string                `toml:"default_model"  yaml:"default_model"  comment:"\nThe default model name to load at startup\nCan also be set with: ./goinfer -start <model-name>"`
 		Addr         string                `toml:"addr"           yaml:"addr"           comment:"address can be 'host:port' or 'ip:por' or simply ':port' (for host = localhost)"`
+		Shells       []*ModelInfo          `toml:"-"              yaml:"-"`
 	}
 
 	// Llama holds the inference engine settings.

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/fstest"
 
 	"github.com/LM4eu/goinfer/proxy/config"
 )
@@ -238,6 +239,64 @@ func Test_nameWithGGUF(t *testing.T) {
 			got := nameWithGGUF(tt.in)
 			if got != tt.want {
 				t.Errorf("nameWithGGUF(%s) -> %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+const (
+	script1 = "/path/to/llama-server --host 0.0.0.0 --port 5800 --verbose-prompt --no-warmup " +
+		"	-m /path/model.gguf " +
+		`	--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' ` +
+		"	--reasoning-format auto -c 10240 " + " #	--no-context-shift"
+
+	script2 = `#!/bin/sh
+/path/to/llama-server --host 0.0.0.0 --port 5800 --verbose-prompt \
+	--no-warmup --model /path/model.gguf --no-mmap \
+	--chat-template-kwargs '{"reasoning_effort": "high"}' \
+	--reasoning-format auto -c 10240 \
+#	--no-context-shift
+`
+	script3 = `#!/path/to/llama-server --host 0.0.0.0 --port 5800 \
+	--verbose-prompt --no-warmup -m /path/model.gguf \
+	--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' \
+	--reasoning-format auto -c 10240 \
+#	--no-context-shift
+`
+)
+
+func Test_extractModelNameAndFlags(t *testing.T) {
+	t.Parallel()
+
+	testFS := fstest.MapFS{
+		"0.sh": &fstest.MapFile{Data: []byte("")},
+		"1.sh": &fstest.MapFile{Data: []byte(script1)},
+		"2.sh": &fstest.MapFile{Data: []byte(script2)},
+		"3.sh": &fstest.MapFile{Data: []byte(script3)},
+		"4.sh": &fstest.MapFile{Data: []byte("/path/to/llama-server --models-preset ~/bin/goinfer/models.ini")},
+		"5.sh": &fstest.MapFile{Data: []byte("llama-server --model ~/model.gguf")},
+		"6.sh": &fstest.MapFile{Data: []byte("/llama-server --model ~/model.gguf")},
+		"7.sh": &fstest.MapFile{Data: []byte("/llama-server\t-m\t~/model.gguf\t-c\t0")},
+	}
+
+	tests := []struct{ path, wantModel, wantFlags string }{
+		{"1.sh", "/path/model.gguf", `--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' 	--reasoning-format auto -c 10240  #	--no-context-shift`},
+		{"2.sh", "/path/model.gguf", `--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' --reasoning-format auto -c 10240`},
+		{"3.sh", "/path/model.gguf", `--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' --reasoning-format auto -c 10240`},
+		{"4.sh", "", ""},
+		{"5.sh", "", ""},
+		{"6.sh", "~/model.gguf", ""},
+		{"7.sh", "~/model.gguf", "-c\t0"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			t.Parallel()
+			gotModel, gotFlags := extractModelNameAndFlags(testFS, tt.path)
+			if string(gotModel) != tt.wantModel {
+				t.Errorf("extractModelNameAndFlags(%s) = %s, want %s", tt.path, gotModel, tt.wantModel)
+			}
+			if string(gotFlags) != tt.wantFlags {
+				t.Errorf("extractModelNameAndFlags(%s) = %s, want %s", tt.path, gotFlags, tt.wantFlags)
 			}
 		})
 	}

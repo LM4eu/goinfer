@@ -159,6 +159,7 @@ func (cfg *Cfg) updateInfo() {
 // cfg.Info. It validates each file using validateFile and warns about errors (logs).
 func (cfg *Cfg) search(params map[string]ModelParams, root string) error {
 	return filepath.WalkDir(root, func(path string, dir fs.DirEntry, err error) error {
+		fsys := os.DirFS(root)
 		switch {
 		case err != nil:
 			if dir == nil {
@@ -172,8 +173,10 @@ func (cfg *Cfg) search(params map[string]ModelParams, root string) error {
 			if err != nil {
 				slog.Warn("skip params file", "path", path, "err", err)
 			}
-		case strings.HasSuffix(path, ".gguf"):
+		case filepath.Ext(path) == ".gguf":
 			cfg.keepGUFF(root, path)
+		case filepath.Ext(path) == ".sh":
+			cfg.keepFlags(fsys, path[len(root):])
 		default:
 		}
 		return nil
@@ -230,4 +233,29 @@ func (cfg *Cfg) keepGUFF(root, path string) {
 		mi.Error = "two files have same model name (must be unique)"
 	}
 	cfg.Info[name] = &mi
+}
+
+func (cfg *Cfg) keepFlags(fsys fs.FS, path string) {
+	modelPath, args := extractModelNameAndFlags(fsys, path)
+	if modelPath == nil {
+		return
+	}
+
+	flags := replaceDIR(path, string(args))
+
+	mi := ModelInfo{Params: nil, Flags: flags, Path: string(modelPath), Origin: path}
+	if cfg.Shells == nil {
+		slog.Debug("Found first", "shell", path)
+		cfg.Shells = []*ModelInfo{&mi}
+		return
+	}
+
+	for _, mm := range cfg.Shells {
+		if mm.Origin == mi.Origin {
+			slog.Debug("Already present", "shell", path)
+			return
+		}
+	}
+
+	cfg.Shells = append(cfg.Shells, &mi)
 }
