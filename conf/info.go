@@ -38,6 +38,7 @@ type (
 )
 
 const (
+	paramsYML = "params.yml"
 	notConfigured = "file present but not configured in llama-swap.yml"
 	D_            = "D_"
 	A_            = "A_"
@@ -104,20 +105,20 @@ func (cfg *Cfg) getInfo() map[string]*ModelInfo {
 	return cfg.Info
 }
 
-// updateInfo search template.yml and *.gguf model files recursively
+// updateInfo search params.yml and *.gguf model files recursively
 // in the directories listed in cfg.ModelsDir (colon-separated).
 // It aggregates matching files, and updates info.
 func (cfg *Cfg) updateInfo() {
-	templates := map[string]ModelParams{}
+	params := map[string]ModelParams{}
 	if cfg.Info == nil {
 		cfg.Info = make(map[string]*ModelInfo, 16)
 	} else {
 		clear(cfg.Info)
 	}
 
-	// collect templates.yml and GUFF files
+	// collect params.yml and GUFF files
 	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
-		err := cfg.search(templates, strings.TrimSpace(root))
+		err := cfg.search(params, strings.TrimSpace(root))
 		if err != nil {
 			slog.Warn("cannot search files in", "root", root, "err", err)
 			// should we continue?
@@ -142,8 +143,8 @@ func (cfg *Cfg) updateInfo() {
 		}
 	}
 
-	// Put the TemplateInfo in the corresponding ModelInfo
-	for name, ti := range templates {
+	// Put the ModelParams in the corresponding ModelInfo
+	for name, ti := range params {
 		mi := cfg.Info[name]
 		mi.Params = &ti
 		if mi.Flags != "" {
@@ -156,7 +157,7 @@ func (cfg *Cfg) updateInfo() {
 
 // search walks the given root directory and appends any valid *.gguf model file to
 // cfg.Info. It validates each file using validateFile and warns about errors (logs).
-func (cfg *Cfg) search(templates map[string]ModelParams, root string) error {
+func (cfg *Cfg) search(params map[string]ModelParams, root string) error {
 	return filepath.WalkDir(root, func(path string, dir fs.DirEntry, err error) error {
 		switch {
 		case err != nil:
@@ -166,10 +167,10 @@ func (cfg *Cfg) search(templates map[string]ModelParams, root string) error {
 			return gie.Wrap(err, gie.NotFound, "filepath.WalkDir", "dir", dir.Name())
 		case dir.IsDir():
 			// => step into this directory
-		case filepath.Base(path) == "templates.yml":
-			err = keepTemplates(templates, root, path)
+		case filepath.Base(path) == paramsYML:
+			err = keepParams(params, root, path)
 			if err != nil {
-				slog.Warn("skip template file", "path", path, "err", err)
+				slog.Warn("skip params file", "path", path, "err", err)
 			}
 		case strings.HasSuffix(path, ".gguf"):
 			cfg.keepGUFF(root, path)
@@ -179,18 +180,18 @@ func (cfg *Cfg) search(templates map[string]ModelParams, root string) error {
 	})
 }
 
-func keepTemplates(templates map[string]ModelParams, root, path string) error {
+func keepParams(params map[string]ModelParams, root, path string) error {
 	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return gie.Wrap(err, gie.ConfigErr, "os.ReadFile", "file", path)
 	}
 
 	if len(data) == 0 {
-		slog.Info("Empty template", "file", path)
+		slog.Info("Empty params", "file", path)
 		return nil
 	}
 
-	slog.Debug("Found", "template", path)
+	slog.Debug("Found params", "file", path)
 
 	var tpl map[string]ModelParams
 	err = json.Unmarshal(data, &tpl)
@@ -199,12 +200,12 @@ func keepTemplates(templates map[string]ModelParams, root, path string) error {
 	}
 
 	for name, ti := range tpl {
-		if old, ok := templates[name]; ok {
-			slog.Warn("Duplicated templates", "dir", root, "name", name, "old", old, "new", ti)
+		if old, ok := params[name]; ok {
+			slog.Warn("Duplicated params", "dir", root, "name", name, "old", old, "new", ti)
 			ti.Error = "two files have same model name (must be unique)"
 		}
 		ti.Flags = replaceDIR(path, ti.Flags)
-		templates[name] = ti
+		params[name] = ti
 	}
 
 	return nil

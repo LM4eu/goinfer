@@ -21,7 +21,6 @@ import (
 type Query struct {
 	ModelField
 
-	Template string `json:"template,omitempty" yaml:"template,omitempty"`
 	Completion
 	Ctx     int `json:"ctx,omitempty"     yaml:"ctx,omitempty"`
 	Timeout int `json:"timeout,omitempty" yaml:"timeout,omitempty"`
@@ -55,7 +54,6 @@ func (inf *Infer) completionHandler(c echo.Context) error {
 		return err
 	}
 
-	// use the template from the query or from the config if any
 	// replace {prompt} by the prompt from the query
 	prompt := gjson.GetBytes(body, "prompt")
 	if prompt.Type != gjson.String { // TODO support []string
