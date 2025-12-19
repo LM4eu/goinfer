@@ -121,7 +121,7 @@ func (cfg *Cfg) updateInfo() {
 	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
 		rootFS := NewRoot(strings.TrimSpace(root))
 		var err error
-		params, err = cfg.search(rootFS)
+		params, _, err = cfg.search(rootFS)
 		if err != nil {
 			slog.Warn("cannot search files in", "root", root, "err", err)
 			// should we continue?
@@ -160,8 +160,9 @@ func (cfg *Cfg) updateInfo() {
 
 // search walks the given root directory and appends any valid *.gguf model file to
 // cfg.Info. It validates each file using validateFile and warns about errors (logs).
-func (cfg *Cfg) search(root Root) (map[string]ModelParams, error) {
+func (cfg *Cfg) search(root Root) (map[string]ModelParams, []*ModelInfo, error) {
 	params := map[string]ModelParams{}
+	var shells []*ModelInfo
 	err := fs.WalkDir(root.FS, ".", func(path string, dir fs.DirEntry, err error) error {
 		switch {
 		case err != nil:
@@ -179,12 +180,12 @@ func (cfg *Cfg) search(root Root) (map[string]ModelParams, error) {
 		case filepath.Ext(path) == ".gguf":
 			cfg.keepGUFF(root, path)
 		case filepath.Ext(path) == ".sh":
-			cfg.keepFlags(root, path)
+			keepFlags(shells, root, path)
 		default:
 		}
 		return nil
 	})
-	return params, err
+	return params, shells, err
 }
 
 func keepParams(params map[string]ModelParams, root, path string) error {
@@ -244,7 +245,7 @@ func (cfg *Cfg) keepGUFF(root Root, path string) {
 	cfg.Info[name] = &mi
 }
 
-func (cfg *Cfg) keepFlags(root Root, path string) {
+func keepFlags(shells []*ModelInfo, root Root, path string) {
 	modelPath, args := extractModelNameAndFlags(root, path)
 	if modelPath == nil {
 		return
@@ -257,18 +258,18 @@ func (cfg *Cfg) keepFlags(root Root, path string) {
 		Path:   string(modelPath),
 		Origin: root.FullPath(path),
 	}
-	if cfg.Shells == nil {
+	if shells == nil {
 		slog.Debug("Found first", "shell", path)
-		cfg.Shells = []*ModelInfo{&mi}
+		shells = []*ModelInfo{&mi}
 		return
 	}
 
-	for _, mm := range cfg.Shells {
+	for _, mm := range shells {
 		if mm.Origin == mi.Origin {
-			slog.Debug("Already present", "shell", path)
+			slog.Warn("Already present", "shell", path)
 			return
 		}
 	}
 
-	cfg.Shells = append(cfg.Shells, &mi)
+	shells = append(shells, &mi)
 }
