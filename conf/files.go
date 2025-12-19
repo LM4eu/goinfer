@@ -258,7 +258,7 @@ func extractModelNameAndFlags(root Root, shellPath string) (modelPath, flags []b
 		flags = oneLine(script[pos+1:])
 	}
 
-	slog.Info("Found shell", "root", root.Path, "file", shellPath, "flags", flags)
+	slog.Info("Find shell", "root", root.Path, "file", shellPath, "model", modelPath, "flags", flags)
 
 	return modelPath, flags
 }

@@ -294,25 +294,25 @@ func (cfg *Cfg) keepGUFF(root Root, path string) {
 }
 
 func keepFlags(shells *[]*ModelInfo, root Root, path string) {
-	modelPath, args := extractModelNameAndFlags(root, path)
+	modelPath, flags := extractModelNameAndFlags(root, path)
 	if modelPath == nil {
 		return
 	}
 
-	flags := replaceDIR(path, string(args))
+	origin := root.FullPath(path)
 
-	mi := ModelInfo{
-		Flags:  flags,
-		Path:   string(modelPath),
-		Origin: root.FullPath(path),
-	}
-
-	for _, mm := range *shells {
-		if mm.Origin == mi.Origin {
+	for _, mi := range *shells {
+		if mi.Origin == origin {
 			slog.Warn("Already present", "shell", path)
 			return
 		}
 	}
 
-	*shells = append(*shells, &mi)
+	*shells = append(*shells, &ModelInfo{
+		Flags:  replaceDIR(path, string(flags)),
+		Path:   string(modelPath),
+		Origin: origin,
+	})
+
+	slog.Debug("Add", "shell", origin, "total", len(*shells))
 }
