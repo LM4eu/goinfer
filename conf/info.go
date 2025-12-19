@@ -109,17 +109,19 @@ func (cfg *Cfg) getInfo() map[string]*ModelInfo {
 // in the directories listed in cfg.ModelsDir (colon-separated).
 // It aggregates matching files, and updates info.
 func (cfg *Cfg) updateInfo() {
-	params := map[string]ModelParams{}
 	if cfg.Info == nil {
 		cfg.Info = make(map[string]*ModelInfo, 16)
 	} else {
 		clear(cfg.Info)
 	}
 
+	var params map[string]ModelParams
+
 	// collect params.yml and GUFF files
 	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
 		rootFS := NewRoot(strings.TrimSpace(root))
-		err := cfg.search(params, rootFS)
+		var err error
+		params, err = cfg.search(rootFS)
 		if err != nil {
 			slog.Warn("cannot search files in", "root", root, "err", err)
 			// should we continue?
@@ -158,8 +160,9 @@ func (cfg *Cfg) updateInfo() {
 
 // search walks the given root directory and appends any valid *.gguf model file to
 // cfg.Info. It validates each file using validateFile and warns about errors (logs).
-func (cfg *Cfg) search(params map[string]ModelParams, root Root) error {
-	return fs.WalkDir(root.FS, ".", func(path string, dir fs.DirEntry, err error) error {
+func (cfg *Cfg) search(root Root) (map[string]ModelParams, error) {
+	params := map[string]ModelParams{}
+	err := fs.WalkDir(root.FS, ".", func(path string, dir fs.DirEntry, err error) error {
 		switch {
 		case err != nil:
 			if dir == nil {
@@ -181,6 +184,7 @@ func (cfg *Cfg) search(params map[string]ModelParams, root Root) error {
 		}
 		return nil
 	})
+	return params, err
 }
 
 func keepParams(params map[string]ModelParams, root, path string) error {
