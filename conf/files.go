@@ -270,13 +270,18 @@ func searchLlamaServer(script []byte) []byte {
 			return nil
 		}
 
-		// check space after "llama-server"
 		if len(script) == 0 {
 			return nil
 		}
 
-		if script[0] != ' ' && script[0] != '\t' {
+		// "/llama-server" must be followed by a space
+		justAfter := script[0]
+		if justAfter != ' ' && justAfter != '\t' {
 			continue
+		}
+
+		if len(before) == 0 {
+			return script[1:] // skip the justAfter (a space)
 		}
 
 		// rewind to the beginning of the line
@@ -286,13 +291,15 @@ func searchLlamaServer(script []byte) []byte {
 		}
 
 		// skip commented lines except shebang (#!)
-		if len(before) == 0 || before[0] != '#' || (len(before) > 1 && before[1] == '!') {
-			return script[1:]
+		if before[0] != '#' || (pos < 0 && len(before) > 1 && before[1] == '!') {
+			return script[1:] // skip the justAfter (a space)
 		}
 	}
 }
 
 // searchModelFlag searches for the flag: --model or -m.
+//
+//nolint:revive // function is easy to understand
 func searchModelFlag(script []byte) []byte {
 	for {
 		before, after, found := bytes.Cut(script, []byte("--model"))
@@ -308,15 +315,19 @@ func searchModelFlag(script []byte) []byte {
 			return nil
 		}
 
-		if script[0] != ' ' && script[0] != '\t' {
+		// --model must be followed by a space
+		justAfter := script[0]
+		if justAfter != ' ' && justAfter != '\t' {
 			continue
 		}
 
 		if len(before) == 0 {
-			return script
+			return script[1:] // skip the justAfter (a space)
 		}
 
-		if before[len(before)-1] != ' ' && before[len(before)-1] != '\t' {
+		// --model must be preceded by a space
+		justBefore := before[len(before)-1]
+		if justBefore != ' ' && justBefore != '\t' {
 			continue
 		}
 
@@ -328,7 +339,7 @@ func searchModelFlag(script []byte) []byte {
 
 		// skip commented lines
 		if before[0] != '#' {
-			return script[1:]
+			return script[1:] // skip the justAfter (a space)
 		}
 	}
 }
