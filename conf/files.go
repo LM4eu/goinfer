@@ -18,27 +18,31 @@ import (
 )
 
 type Root struct {
-	Path string
 	FS   fs.FS
+	Path string
 }
 
 func NewRoot(path string) Root {
-	return Root{path, os.DirFS(path)}
+	return Root{os.DirFS(path), path}
 }
 
-func (root *Root) Open(name string) (fs.File, error) {
-	return root.FS.Open(name)
+func (r *Root) Open(name string) (fs.File, error) {
+	return r.FS.Open(name)
 }
 
-func (root *Root) ReadFile(fullPath string) ([]byte, error) {
-	relativePath, err := filepath.Rel(root.Path, fullPath)
+func (r *Root) FullPath(relPath string) string {
+	return filepath.Join(r.Path, relPath)
+}
+
+func (r *Root) RelativePath(fullPath string) (string, error) {
+	relativePath, err := filepath.Rel(r.Path, fullPath)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	if !filepath.IsLocal(relativePath) {
-		return nil, gie.New(gie.Invalid, "not local", "full", fullPath, "root", root.Path)
+		return "", gie.New(gie.Invalid, "not local", "full", fullPath, "root", r.Path)
 	}
-	return fs.ReadFile(root.FS, filepath.Clean(relativePath))
+	return filepath.Clean(relativePath), err
 }
 
 // replaceDIR in flags by the current dir of he file.
@@ -226,8 +230,7 @@ func nameWithDir(root, truncated, name string) string {
 // extractModelNameAndFlags search for a llama-server command line
 // and extract the model path (flag -m or --model) and the flags after -m|--model.
 func extractModelNameAndFlags(root Root, shellPath string) (modelPath, flags []byte) {
-	//	shellPath = filepath.Clean(shellPath)
-	script, err := root.ReadFile(shellPath)
+	script, err := fs.ReadFile(root.FS, shellPath)
 	if err != nil {
 		return nil, nil
 	}
@@ -252,7 +255,7 @@ func extractModelNameAndFlags(root Root, shellPath string) (modelPath, flags []b
 		flags = oneLine(script[pos+1:])
 	}
 
-	slog.Info("Found", "from file", shellPath, "flags", flags)
+	slog.Info("Found shell", "root", root.Path, "file", shellPath, "flags", flags)
 
 	return modelPath, flags
 }
@@ -424,10 +427,10 @@ func (cfg *Cfg) ValidateSwap() error {
 
 	for i := range cfg.Swap.Models {
 		var previous string
-		for arg := range strings.SplitSeq(cfg.Swap.Models[i].Cmd, " ") {
+		for arg := range strings.FieldsSeq(cfg.Swap.Models[i].Cmd) {
 			if previous == "-m" || previous == "--model" {
 				modelFile := arg // the argument after -m|--model is the GUFF file
-				_, err := verify(modelFile)
+				_, err := verify(NewRoot("/"), "."+modelFile)
 				if err != nil {
 					return err
 				}
@@ -442,16 +445,18 @@ func (cfg *Cfg) ValidateSwap() error {
 // verify that the given GUFF file is an existing,
 // readable, and sufficiently large *.gguf file.
 // It also normalizes the path and checks for series files.
-func verify(path string) (int64, error) {
+func verify(root Root, path string) (int64, error) {
 	cleaned := filepath.Clean(path)
 	if cleaned != path {
 		slog.Warn("Malformed", "current", path, "better", cleaned)
 		path = cleaned
 	}
 
-	info, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		slog.Warn("Model file does not exist", "path", path)
+	info, err := fs.Stat(root.FS, path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			slog.Warn("Model does not exist", "path", path)
+		}
 		return 0, err
 	}
 
@@ -462,15 +467,15 @@ func verify(path string) (int64, error) {
 	}
 
 	// Check if the file is readable
-	file, err := os.Open(path)
+	file, err := root.FS.Open(path)
 	if err != nil {
-		slog.Warn("Model file is not readable", "path", path)
+		slog.Warn("Model is not readable", "path", path)
 		return 0, err
 	}
 
 	err = file.Close()
 	if err != nil {
-		slog.Warn("Model file fails closing", "path", path)
+		slog.Warn("Model Close() fails", "path", path)
 		return 0, err
 	}
 

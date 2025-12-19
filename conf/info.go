@@ -118,7 +118,8 @@ func (cfg *Cfg) updateInfo() {
 
 	// collect params.yml and GUFF files
 	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
-		err := cfg.search(params, strings.TrimSpace(root))
+		rootFS := NewRoot(strings.TrimSpace(root))
+		err := cfg.search(params, rootFS)
 		if err != nil {
 			slog.Warn("cannot search files in", "root", root, "err", err)
 			// should we continue?
@@ -157,9 +158,8 @@ func (cfg *Cfg) updateInfo() {
 
 // search walks the given root directory and appends any valid *.gguf model file to
 // cfg.Info. It validates each file using validateFile and warns about errors (logs).
-func (cfg *Cfg) search(params map[string]ModelParams, root string) error {
-	rootFS := NewRoot(root)
-	return filepath.WalkDir(root, func(path string, dir fs.DirEntry, err error) error {
+func (cfg *Cfg) search(params map[string]ModelParams, root Root) error {
+	return fs.WalkDir(root.FS, ".", func(path string, dir fs.DirEntry, err error) error {
 		switch {
 		case err != nil:
 			if dir == nil {
@@ -169,14 +169,14 @@ func (cfg *Cfg) search(params map[string]ModelParams, root string) error {
 		case dir.IsDir():
 			// => step into this directory
 		case filepath.Base(path) == paramsYML:
-			err = keepParams(params, root, path)
+			err = keepParams(params, root.Path, path)
 			if err != nil {
 				slog.Warn("skip params file", "path", path, "err", err)
 			}
 		case filepath.Ext(path) == ".gguf":
 			cfg.keepGUFF(root, path)
 		case filepath.Ext(path) == ".sh":
-			cfg.keepFlags(rootFS, path[len(root):])
+			cfg.keepFlags(root, path)
 		default:
 		}
 		return nil
@@ -204,7 +204,7 @@ func keepParams(params map[string]ModelParams, root, path string) error {
 
 	for name, ti := range tpl {
 		if old, ok := params[name]; ok {
-			slog.Warn("Duplicated params", "dir", root, "name", name, "old", old, "new", ti)
+			slog.Warn("Duplicated params", "root", root, "name", name, "old", old, "new", ti)
 			ti.Error = "two files have same model name (must be unique)"
 		}
 		ti.Flags = replaceDIR(path, ti.Flags)
@@ -214,22 +214,27 @@ func keepParams(params map[string]ModelParams, root, path string) error {
 	return nil
 }
 
-func (cfg *Cfg) keepGUFF(root, path string) {
-	size, err := verify(path)
+func (cfg *Cfg) keepGUFF(root Root, path string) {
+	size, err := verify(root, path)
 	if err != nil {
-		slog.Debug("skip", "GGUF", path, "err", err)
+		slog.Debug("skip GGUF", "root", root.Path, "file", path, "err", err)
 		return
 	}
 
-	slog.Debug("Found", "model", path)
+	slog.Debug("Found model", "root", root.Path, "file", path)
 
-	name, flags, origin := getNameAndFlags(root, path)
+	name, flags, origin := getNameAndFlags(root.Path, path)
 
-	flags = replaceDIR(path, flags)
+	fullPath := root.FullPath(path)
 
-	mi := ModelInfo{Params: nil, Flags: flags, Path: path, Error: "", Size: size, Origin: origin}
+	mi := ModelInfo{
+		Flags:  replaceDIR(fullPath, flags),
+		Path:   fullPath,
+		Size:   size,
+		Origin: root.FullPath(origin),
+	}
 	if old, ok := cfg.Info[name]; ok {
-		slog.Debug("WARN Duplicated models", "dir", root, "name", name, "old", old, "new", mi)
+		slog.Debug("WARN Duplicated models", "root", root.Path, "name", name, "old", old, "new", mi)
 		mi.Error = "two files have same model name (must be unique)"
 	}
 	cfg.Info[name] = &mi
@@ -243,7 +248,11 @@ func (cfg *Cfg) keepFlags(root Root, path string) {
 
 	flags := replaceDIR(path, string(args))
 
-	mi := ModelInfo{Params: nil, Flags: flags, Path: string(modelPath), Origin: path}
+	mi := ModelInfo{
+		Flags:  flags,
+		Path:   string(modelPath),
+		Origin: root.FullPath(path),
+	}
 	if cfg.Shells == nil {
 		slog.Debug("Found first", "shell", path)
 		cfg.Shells = []*ModelInfo{&mi}

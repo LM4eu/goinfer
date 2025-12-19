@@ -88,7 +88,7 @@ func Test_ExtractFlags_FromShell(t *testing.T) {
 	tmp := t.TempDir()
 
 	// .sh file present
-	modelPath := createGGUFFile(t, tmp, "model1.gguf", 2048)
+	modelPath := createGGUFFile(t, tmp, "model1.gguf", 2000)
 	shPath := strings.TrimSuffix(modelPath, ".gguf") + ".sh"
 	err := os.WriteFile(shPath, []byte("-foo bar -baz qux"), 0o600)
 	if err != nil {
@@ -161,11 +161,16 @@ func TestGetNameAndFlags(t *testing.T) {
 
 func TestValidateFile(t *testing.T) {
 	t.Parallel()
-	tmp := t.TempDir()
+
+	root := Root{Path: "/home/me/models", FS: fstest.MapFS{
+		"valid.gguf":                &fstest.MapFile{Data: make([]byte, 2048)},
+		"small.gguf":                &fstest.MapFile{Data: make([]byte, 64)},
+		"model-00001-of-00003.gguf": &fstest.MapFile{Data: make([]byte, 1000)},
+		"model-00002-of-00003.gguf": &fstest.MapFile{Data: make([]byte, 1000)},
+	}}
 
 	// valid
-	valid := createGGUFFile(t, tmp, "valid.gguf", 2048)
-	size, err := verify(valid)
+	size, err := verify(root, "valid.gguf")
 	if err != nil {
 		t.Errorf("validateFile(valid) error: %v", err)
 	}
@@ -174,22 +179,19 @@ func TestValidateFile(t *testing.T) {
 	}
 
 	// too small
-	small := createGGUFFile(t, tmp, "small.gguf", 64)
-	_, err = verify(small)
+	_, err = verify(root, "small.gguf")
 	if err == nil {
 		t.Errorf("validateFile(small) expected error")
 	}
 
 	// series first part
-	firstSeries := createGGUFFile(t, tmp, "model-00001-of-00003.gguf", 2048)
-	_, err = verify(firstSeries)
+	_, err = verify(root, "model-00001-of-00003.gguf")
 	if err != nil {
 		t.Errorf("validateFile(firstSeries) error: %v", err)
 	}
 
 	// series non-first part
-	secondSeries := createGGUFFile(t, tmp, "model-00002-of-00003.gguf", 2048)
-	_, err = verify(secondSeries)
+	_, err = verify(root, "model-00002-of-00003.gguf")
 	if err == nil {
 		t.Errorf("validateFile(secondSeries) expected error")
 	}
@@ -244,31 +246,31 @@ func Test_nameWithGGUF(t *testing.T) {
 	}
 }
 
-const (
-	script1 = "/path/to/llama-server --host 0.0.0.0 --port 5800 --verbose-prompt --no-warmup " +
-		"	-m /path/model.gguf " +
-		`	--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' ` +
-		"	--reasoning-format auto -c 10240 " + " #	--no-context-shift"
+func Test_extractModelNameAndFlags(t *testing.T) {
+	t.Parallel()
 
-	script2 = `#!/bin/sh
+	const (
+		script1 = "/path/to/llama-server --host 0.0.0.0 --port 5800 --verbose-prompt --no-warmup " +
+			"	-m /path/model.gguf " +
+			`	--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' ` +
+			"	--reasoning-format auto -c 10240 " + " #	--no-context-shift"
+
+		script2 = `#!/bin/sh
 /path/to/llama-server --host 0.0.0.0 --port 5800 --verbose-prompt \
 	--no-warmup --model /path/model.gguf --no-mmap \
 	--chat-template-kwargs '{"reasoning_effort": "high"}' \
 	--reasoning-format auto -c 10240 \
 #	--no-context-shift
 `
-	script3 = `#!/path/to/llama-server --host 0.0.0.0 --port 5800 \
+		script3 = `#!/path/to/llama-server --host 0.0.0.0 --port 5800 \
 	--verbose-prompt --no-warmup -m /path/model.gguf \
 	--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' \
 	--reasoning-format auto -c 10240 \
 #	--no-context-shift
 `
-)
+	)
 
-func Test_extractModelNameAndFlags(t *testing.T) {
-	// t.Parallel()
-
-	root := Root{"/home/me/models", fstest.MapFS{
+	root := Root{Path: "/home/me/models", FS: fstest.MapFS{
 		"0.sh": &fstest.MapFile{Data: []byte("")},
 		"1.sh": &fstest.MapFile{Data: []byte(script1)},
 		"2.sh": &fstest.MapFile{Data: []byte(script2)},
@@ -280,17 +282,17 @@ func Test_extractModelNameAndFlags(t *testing.T) {
 	}}
 
 	tests := []struct{ path, wantModel, wantFlags string }{
-		{"/home/me/models/1.sh", "/path/model.gguf", `--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' 	--reasoning-format auto -c 10240  #	--no-context-shift`},
-		{"/home/me/models/2.sh", "/path/model.gguf", `--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' --reasoning-format auto -c 10240`},
-		{"/home/me/models/3.sh", "/path/model.gguf", `--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' --reasoning-format auto -c 10240`},
-		{"/home/me/models/4.sh", "", ""},
-		{"/home/me/models/5.sh", "", ""},
-		{"/home/me/models/6.sh", "~/model.gguf", ""},
-		{"/home/me/models/7.sh", "~/model.gguf", "-c\t0"},
+		{"1.sh", "/path/model.gguf", `--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' 	--reasoning-format auto -c 10240  #	--no-context-shift`},
+		{"2.sh", "/path/model.gguf", `--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' --reasoning-format auto -c 10240`},
+		{"3.sh", "/path/model.gguf", `--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' --reasoning-format auto -c 10240`},
+		{"4.sh", "", ""},
+		{"5.sh", "", ""},
+		{"6.sh", "~/model.gguf", ""},
+		{"7.sh", "~/model.gguf", "-c\t0"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			// t.Parallel()
+			t.Parallel()
 			gotModel, gotFlags := extractModelNameAndFlags(root, tt.path)
 			if string(gotModel) != tt.wantModel {
 				t.Errorf("extractModelNameAndFlags(%s) = %s, want %s", tt.path, gotModel, tt.wantModel)

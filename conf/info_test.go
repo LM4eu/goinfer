@@ -33,12 +33,9 @@ func createGGUFFile(t *testing.T, dir, name string, size int64) string {
 
 func TestListModels(t *testing.T) {
 	t.Parallel()
-	tmp := t.TempDir()
-	// model on disk
-	_ = createGGUFFile(t, tmp, "disk-model.gguf", 2048)
 
 	cfg := &Cfg{
-		ModelsDir: tmp,
+		ModelsDir: "/home/me/models",
 		Swap: &config.Config{
 			Models: map[string]config.ModelConfig{
 				"disk-model":  {Cmd: "llama-server -flag", Unlisted: false},
