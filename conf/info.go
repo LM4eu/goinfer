@@ -24,7 +24,7 @@ type (
 		Path   string       `json:"path,omitempty"            yaml:"path,omitempty"`
 		Flags  string       `json:"cmd,omitempty"             yaml:"cmd,omitempty"`
 		Origin string       `json:"origin,omitempty"          yaml:"origin,omitempty"`
-		Error  string       `json:"error,omitempty"           yaml:"error,omitempty"`
+		Issue  string       `json:"error,omitempty"           yaml:"error,omitempty"`
 		Size   int64        `json:"size,omitempty"            yaml:"size,omitempty"`
 	}
 
@@ -32,7 +32,7 @@ type (
 	ModelParams struct {
 		Name  string `json:"name,omitempty"  yaml:"name,omitempty"`
 		Flags string `json:"flags,omitempty" yaml:"flags,omitempty"`
-		Error string `json:"error,omitempty" yaml:"error,omitempty"`
+		Issue string `json:"error,omitempty" yaml:"error,omitempty"`
 		Ctx   int    `json:"ctx,omitempty"   yaml:"ctx,omitempty"`
 	}
 )
@@ -50,8 +50,8 @@ const (
 func (cfg *Cfg) ListModels() map[string]*ModelInfo {
 	info := cfg.getInfo()
 	for name, mi := range info {
-		if info[name].Error == "" {
-			mi.Error = notConfigured
+		if info[name].Issue == "" {
+			mi.Issue = notConfigured
 			info[name] = mi
 		}
 	}
@@ -71,8 +71,8 @@ func (cfg *Cfg) ListModels() map[string]*ModelInfo {
 func (cfg *Cfg) refineModelInfo(name string) {
 	mi, ok := cfg.Info[name]
 	if ok {
-		if mi.Error == notConfigured {
-			mi.Error = "" // OK: model is both present in FS and configured in llama-swap.yml
+		if mi.Issue == notConfigured {
+			mi.Issue = "" // OK: model is both present in FS and configured in llama-swap.yml
 		}
 		cfg.Info[name] = mi
 		return
@@ -88,11 +88,11 @@ func (cfg *Cfg) refineModelInfo(name string) {
 		mi.Flags = flags
 		if ok {
 			mi.Path = path
-			mi.Error = "file absent but configured in llama-swap.yml"
+			mi.Issue = "file absent but configured in llama-swap.yml"
 		}
 	} else {
 		slog.Debug("WARN missing space characters", "cmd", cfg.Swap.Models[name].Cmd)
-		mi.Error = "missing space characters in cmd=" + cfg.Swap.Models[name].Cmd
+		mi.Issue = "missing space characters in cmd=" + cfg.Swap.Models[name].Cmd
 	}
 	cfg.Info[name] = mi
 }
@@ -116,12 +116,13 @@ func (cfg *Cfg) updateInfo() {
 	}
 
 	var params map[string]ModelParams
+	var shells []*ModelInfo
 
 	// collect params.yml and GUFF files
 	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
 		rootFS := NewRoot(strings.TrimSpace(root))
 		var err error
-		params, _, err = cfg.search(rootFS)
+		params, shells, err = cfg.search(rootFS)
 		if err != nil {
 			slog.Warn("cannot search files in", "root", root, "err", err)
 			// should we continue?
@@ -131,9 +132,9 @@ func (cfg *Cfg) updateInfo() {
 		var errStr string
 
 		for _, mi := range cfg.Info {
-			if mi.Error != "" {
+			if mi.Issue != "" {
 				count++
-				errStr = mi.Error
+				errStr = mi.Issue
 			}
 		}
 
@@ -156,13 +157,37 @@ func (cfg *Cfg) updateInfo() {
 		}
 		cfg.Info[name] = mi
 	}
+
+	// Reuse the shell scripts
+	for _, sh := range shells {
+		modelBase := filepath.Base(sh.Path)
+		for _, mi := range cfg.Info {
+			if modelBase != filepath.Base(mi.Path) {
+				continue
+			}
+			sh.Size = mi.Size
+			name := filepath.Base(sh.Origin)
+			if old, ok := cfg.Info[name]; ok {
+				slog.Debug("WARN Duplicated models (new is from shell)", "name", name, "old", old, "new", sh)
+				mi.Issue = "two ModelInfo have same model name (skip " + old.Path
+				if old.Origin != "" {
+					mi.Issue += " origin=" + old.Origin
+				}
+				mi.Issue += ")"
+				if old.Issue != "" {
+					mi.Issue += " " + old.Issue
+				}
+			}
+			cfg.Info[name] = sh
+		}
+	}
 }
 
 // search walks the given root directory and appends any valid *.gguf model file to
 // cfg.Info. It validates each file using validateFile and warns about errors (logs).
 func (cfg *Cfg) search(root Root) (map[string]ModelParams, []*ModelInfo, error) {
 	params := map[string]ModelParams{}
-	var shells []*ModelInfo
+	shells := []*ModelInfo{}
 	err := fs.WalkDir(root.FS, ".", func(path string, dir fs.DirEntry, err error) error {
 		switch {
 		case err != nil:
@@ -180,7 +205,7 @@ func (cfg *Cfg) search(root Root) (map[string]ModelParams, []*ModelInfo, error) 
 		case filepath.Ext(path) == ".gguf":
 			cfg.keepGUFF(root, path)
 		case filepath.Ext(path) == ".sh":
-			keepFlags(shells, root, path)
+			keepFlags(&shells, root, path)
 		default:
 		}
 		return nil
@@ -201,19 +226,22 @@ func keepParams(params map[string]ModelParams, root, path string) error {
 
 	slog.Debug("Found params", "file", path)
 
-	var tpl map[string]ModelParams
-	err = json.Unmarshal(data, &tpl)
+	var mp map[string]ModelParams
+	err = json.Unmarshal(data, &mp)
 	if err != nil {
 		return gie.Wrap(err, gie.ConfigErr, "json.Unmarshal", "file", path, "100FirsBytes", string(data[:100]))
 	}
 
-	for name, ti := range tpl {
+	for name, p := range mp {
 		if old, ok := params[name]; ok {
-			slog.Warn("Duplicated params", "root", root, "name", name, "old", old, "new", ti)
-			ti.Error = "two files have same model name (must be unique)"
+			slog.Warn("Duplicated params", "root", root, "name", name, "old", old, "new", p)
+			p.Issue = "two ModelParams have same model name (skip " + old.Flags + ")"
+			if old.Issue != "" {
+				p.Issue += " " + old.Issue
+			}
 		}
-		ti.Flags = replaceDIR(path, ti.Flags)
-		params[name] = ti
+		p.Flags = replaceDIR(path, p.Flags)
+		params[name] = p
 	}
 
 	return nil
@@ -240,12 +268,19 @@ func (cfg *Cfg) keepGUFF(root Root, path string) {
 	}
 	if old, ok := cfg.Info[name]; ok {
 		slog.Debug("WARN Duplicated models", "root", root.Path, "name", name, "old", old, "new", mi)
-		mi.Error = "two files have same model name (must be unique)"
+		mi.Issue = "two ModelInfo have same model name (skip " + old.Path
+		if old.Origin != "" {
+			mi.Issue += " origin=" + old.Origin
+		}
+		mi.Issue += ")"
+		if old.Issue != "" {
+			mi.Issue += " " + old.Issue
+		}
 	}
 	cfg.Info[name] = &mi
 }
 
-func keepFlags(shells []*ModelInfo, root Root, path string) {
+func keepFlags(shells *[]*ModelInfo, root Root, path string) {
 	modelPath, args := extractModelNameAndFlags(root, path)
 	if modelPath == nil {
 		return
@@ -258,18 +293,13 @@ func keepFlags(shells []*ModelInfo, root Root, path string) {
 		Path:   string(modelPath),
 		Origin: root.FullPath(path),
 	}
-	if shells == nil {
-		slog.Debug("Found first", "shell", path)
-		shells = []*ModelInfo{&mi}
-		return
-	}
 
-	for _, mm := range shells {
+	for _, mm := range *shells {
 		if mm.Origin == mi.Origin {
 			slog.Warn("Already present", "shell", path)
 			return
 		}
 	}
 
-	shells = append(shells, &mi)
+	*shells = append(*shells, &mi)
 }

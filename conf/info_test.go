@@ -45,10 +45,10 @@ func TestListModels(t *testing.T) {
 		},
 	}
 	models := cfg.ListModels()
-	if info, ok := models["disk-model"]; !ok || info.Error != "" {
+	if info, ok := models["disk-model"]; !ok || info.Issue != "" {
 		t.Errorf("disk-model missing or error: %v", info)
 	}
-	if info, ok := models["missing"]; !ok || !strings.Contains(info.Error, "file absent") {
+	if info, ok := models["missing"]; !ok || !strings.Contains(info.Issue, "file absent") {
 		t.Errorf("missing entry error not as expected: %v", info)
 	}
 	if _, ok := models[A_+"hidden"]; ok {

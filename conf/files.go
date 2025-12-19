@@ -31,6 +31,9 @@ func (r *Root) Open(name string) (fs.File, error) {
 }
 
 func (r *Root) FullPath(relPath string) string {
+	if relPath == "" {
+		return ""
+	}
 	return filepath.Join(r.Path, relPath)
 }
 

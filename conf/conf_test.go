@@ -139,7 +139,7 @@ func TestListModelsIntegration(t *testing.T) {
 		Swap:      &config.Config{Models: map[string]config.ModelConfig{"model1": {Cmd: "", Unlisted: false}}},
 	}
 	models := cfg.ListModels()
-	if info, ok := models["model1"]; !ok || info.Error != "" {
+	if info, ok := models["model1"]; !ok || info.Issue != "" {
 		t.Fatalf("expected model1 to be listed without error, got %v", info)
 	}
 }
