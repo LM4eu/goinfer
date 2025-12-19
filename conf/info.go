@@ -165,8 +165,8 @@ func (cfg *Cfg) updateInfo() {
 			if modelBase != filepath.Base(mi.Path) {
 				continue
 			}
-			sh.Size = mi.Size
 			name := filepath.Base(sh.Origin)
+			name = strings.TrimSuffix(name, ".sh")
 			if old, ok := cfg.Info[name]; ok {
 				slog.Debug("WARN Duplicated models (new is from shell)", "name", name, "old", old, "new", sh)
 				mi.Issue = "two ModelInfo have same model name (skip " + old.Path
@@ -177,7 +177,10 @@ func (cfg *Cfg) updateInfo() {
 				if old.Issue != "" {
 					mi.Issue += " " + old.Issue
 				}
+			} else {
+				slog.Debug("add from shell", "name", name, "model", sh.Path, "origin", sh.Origin)
 			}
+			sh.Size = mi.Size
 			cfg.Info[name] = sh
 		}
 	}
