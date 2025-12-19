@@ -122,7 +122,7 @@ func (cfg *Cfg) updateInfo() {
 	for root := range strings.SplitSeq(cfg.ModelsDir, ":") {
 		rootFS := NewRoot(strings.TrimSpace(root))
 		var err error
-		params, shells, err = cfg.search(rootFS)
+		err = cfg.search(params, &shells, rootFS)
 		if err != nil {
 			slog.Warn("cannot search files in", "root", root, "err", err)
 			// should we continue?
@@ -198,9 +198,7 @@ func (cfg *Cfg) updateInfo() {
 
 // search walks the given root directory and appends any valid *.gguf model file to
 // cfg.Info. It validates each file using validateFile and warns about errors (logs).
-func (cfg *Cfg) search(root Root) (map[string]ModelParams, []*ModelInfo, error) {
-	params := map[string]ModelParams{}
-	shells := []*ModelInfo{}
+func (cfg *Cfg) search(params map[string]ModelParams, shells *[]*ModelInfo, root Root) error {
 	err := fs.WalkDir(root.FS, ".", func(path string, dir fs.DirEntry, err error) error {
 		switch {
 		case err != nil:
@@ -218,12 +216,12 @@ func (cfg *Cfg) search(root Root) (map[string]ModelParams, []*ModelInfo, error) 
 		case filepath.Ext(path) == ".gguf":
 			cfg.keepGUFF(root, path)
 		case filepath.Ext(path) == ".sh":
-			keepFlags(&shells, root, path)
+			keepFlags(shells, root, path)
 		default:
 		}
 		return nil
 	})
-	return params, shells, err
+	return err
 }
 
 func keepParams(params map[string]ModelParams, root, path string) error {
@@ -246,14 +244,19 @@ func keepParams(params map[string]ModelParams, root, path string) error {
 	}
 
 	for name, p := range mp {
-		if old, ok := params[name]; ok {
+		p.Flags = replaceDIR(path, p.Flags)
+		if params == nil {
+			params = map[string]ModelParams{name: p}
+			continue
+		}
+		old, ok := params[name]
+		if ok {
 			slog.Warn("Duplicated params", "root", root, "name", name, "old", old, "new", p)
 			p.Issue = "two ModelParams have same model name (skip " + old.Flags + ")"
 			if old.Issue != "" {
 				p.Issue += " " + old.Issue
 			}
 		}
-		p.Flags = replaceDIR(path, p.Flags)
 		params[name] = p
 	}
 
@@ -300,19 +303,25 @@ func keepFlags(shells *[]*ModelInfo, root Root, path string) {
 	}
 
 	origin := root.FullPath(path)
+	mi := &ModelInfo{
+		Flags:  replaceDIR(path, string(flags)),
+		Path:   string(modelPath),
+		Origin: origin,
+	}
+
+	if *shells == nil {
+		*shells = []*ModelInfo{mi}
+		slog.Debug("Add", "shell", origin, "total", len(*shells))
+		return
+	}
 
 	for _, mi := range *shells {
 		if mi.Origin == origin {
-			slog.Warn("Already present", "shell", path)
+			slog.Warn("Already present", "shell", path, "total", len(*shells))
 			return
 		}
 	}
 
-	*shells = append(*shells, &ModelInfo{
-		Flags:  replaceDIR(path, string(flags)),
-		Path:   string(modelPath),
-		Origin: origin,
-	})
-
+	*shells = append(*shells, mi)
 	slog.Debug("Add", "shell", origin, "total", len(*shells))
 }
