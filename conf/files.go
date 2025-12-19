@@ -17,6 +17,30 @@ import (
 	"github.com/LM4eu/goinfer/gie"
 )
 
+type Root struct {
+	Path string
+	FS   fs.FS
+}
+
+func NewRoot(path string) Root {
+	return Root{path, os.DirFS(path)}
+}
+
+func (root *Root) Open(name string) (fs.File, error) {
+	return root.FS.Open(name)
+}
+
+func (root *Root) ReadFile(fullPath string) ([]byte, error) {
+	relativePath, err := filepath.Rel(root.Path, fullPath)
+	if err != nil {
+		return nil, err
+	}
+	if !filepath.IsLocal(relativePath) {
+		return nil, gie.New(gie.Invalid, "not local", "full", fullPath, "root", root.Path)
+	}
+	return fs.ReadFile(root.FS, filepath.Clean(relativePath))
+}
+
 // replaceDIR in flags by the current dir of he file.
 // When using models like GPT OSS, we need to provide a grammar file.
 // See: github.com/ggml-org/llama.cpp/discussions/15396#discussioncomment-14145537
@@ -201,9 +225,9 @@ func nameWithDir(root, truncated, name string) string {
 
 // extractModelNameAndFlags search for a llama-server command line
 // and extract the model path (flag -m or --model) and the flags after -m|--model.
-func extractModelNameAndFlags(fsys fs.FS, shellPath string) (modelPath, flags []byte) {
+func extractModelNameAndFlags(root Root, shellPath string) (modelPath, flags []byte) {
 	//	shellPath = filepath.Clean(shellPath)
-	script, err := fs.ReadFile(fsys, shellPath)
+	script, err := root.ReadFile(shellPath)
 	if err != nil {
 		return nil, nil
 	}

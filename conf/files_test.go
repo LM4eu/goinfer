@@ -266,9 +266,9 @@ const (
 )
 
 func Test_extractModelNameAndFlags(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 
-	testFS := fstest.MapFS{
+	root := Root{"/home/me/models", fstest.MapFS{
 		"0.sh": &fstest.MapFile{Data: []byte("")},
 		"1.sh": &fstest.MapFile{Data: []byte(script1)},
 		"2.sh": &fstest.MapFile{Data: []byte(script2)},
@@ -277,21 +277,21 @@ func Test_extractModelNameAndFlags(t *testing.T) {
 		"5.sh": &fstest.MapFile{Data: []byte("llama-server --model ~/model.gguf")},
 		"6.sh": &fstest.MapFile{Data: []byte("/llama-server --model ~/model.gguf")},
 		"7.sh": &fstest.MapFile{Data: []byte("/llama-server\t-m\t~/model.gguf\t-c\t0")},
-	}
+	}}
 
 	tests := []struct{ path, wantModel, wantFlags string }{
-		{"1.sh", "/path/model.gguf", `--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' 	--reasoning-format auto -c 10240  #	--no-context-shift`},
-		{"2.sh", "/path/model.gguf", `--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' --reasoning-format auto -c 10240`},
-		{"3.sh", "/path/model.gguf", `--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' --reasoning-format auto -c 10240`},
-		{"4.sh", "", ""},
-		{"5.sh", "", ""},
-		{"6.sh", "~/model.gguf", ""},
-		{"7.sh", "~/model.gguf", "-c\t0"},
+		{"/home/me/models/1.sh", "/path/model.gguf", `--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' 	--reasoning-format auto -c 10240  #	--no-context-shift`},
+		{"/home/me/models/2.sh", "/path/model.gguf", `--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' --reasoning-format auto -c 10240`},
+		{"/home/me/models/3.sh", "/path/model.gguf", `--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' --reasoning-format auto -c 10240`},
+		{"/home/me/models/4.sh", "", ""},
+		{"/home/me/models/5.sh", "", ""},
+		{"/home/me/models/6.sh", "~/model.gguf", ""},
+		{"/home/me/models/7.sh", "~/model.gguf", "-c\t0"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			t.Parallel()
-			gotModel, gotFlags := extractModelNameAndFlags(testFS, tt.path)
+			// t.Parallel()
+			gotModel, gotFlags := extractModelNameAndFlags(root, tt.path)
 			if string(gotModel) != tt.wantModel {
 				t.Errorf("extractModelNameAndFlags(%s) = %s, want %s", tt.path, gotModel, tt.wantModel)
 			}

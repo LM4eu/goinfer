@@ -158,8 +158,8 @@ func (cfg *Cfg) updateInfo() {
 // search walks the given root directory and appends any valid *.gguf model file to
 // cfg.Info. It validates each file using validateFile and warns about errors (logs).
 func (cfg *Cfg) search(params map[string]ModelParams, root string) error {
+	rootFS := NewRoot(root)
 	return filepath.WalkDir(root, func(path string, dir fs.DirEntry, err error) error {
-		fsys := os.DirFS(root)
 		switch {
 		case err != nil:
 			if dir == nil {
@@ -176,7 +176,7 @@ func (cfg *Cfg) search(params map[string]ModelParams, root string) error {
 		case filepath.Ext(path) == ".gguf":
 			cfg.keepGUFF(root, path)
 		case filepath.Ext(path) == ".sh":
-			cfg.keepFlags(fsys, path[len(root):])
+			cfg.keepFlags(rootFS, path[len(root):])
 		default:
 		}
 		return nil
@@ -235,8 +235,8 @@ func (cfg *Cfg) keepGUFF(root, path string) {
 	cfg.Info[name] = &mi
 }
 
-func (cfg *Cfg) keepFlags(fsys fs.FS, path string) {
-	modelPath, args := extractModelNameAndFlags(fsys, path)
+func (cfg *Cfg) keepFlags(root Root, path string) {
+	modelPath, args := extractModelNameAndFlags(root, path)
 	if modelPath == nil {
 		return
 	}
