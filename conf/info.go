@@ -159,31 +159,41 @@ func (cfg *Cfg) updateInfo() {
 	}
 
 	// Reuse the shell scripts
+	slog.Debug("parse ", "shells", len(shells), "model-presets", len(cfg.Info))
 	for _, sh := range shells {
+		var mi *ModelInfo
 		modelBase := filepath.Base(sh.Path)
-		for _, mi := range cfg.Info {
+		for _, mi = range cfg.Info {
 			if modelBase != filepath.Base(mi.Path) {
-				continue
+				break
 			}
-			name := filepath.Base(sh.Origin)
-			name = strings.TrimSuffix(name, ".sh")
-			if old, ok := cfg.Info[name]; ok {
-				slog.Debug("WARN Duplicated models (new is from shell)", "name", name, "old", old, "new", sh)
-				mi.Issue = "two ModelInfo have same model name (skip " + old.Path
-				if old.Origin != "" {
-					mi.Issue += " origin=" + old.Origin
-				}
-				mi.Issue += ")"
-				if old.Issue != "" {
-					mi.Issue += " " + old.Issue
-				}
-			} else {
-				slog.Debug("add from shell", "name", name, "model", sh.Path, "origin", sh.Origin)
-			}
-			sh.Size = mi.Size
-			cfg.Info[name] = sh
 		}
+
+		if mi == nil {
+			slog.Debug("WARN model from shell not found", "shell", sh.Origin, "model", sh.Path)
+			continue
+		}
+
+		name := filepath.Base(sh.Origin)
+		name = strings.TrimSuffix(name, ".sh")
+		if old, ok := cfg.Info[name]; ok {
+			slog.Debug("WARN Duplicated models (new is from shell)", "name", name, "old", old, "new", sh)
+			mi.Issue = "two ModelInfo have same model name (skip " + old.Path
+			if old.Origin != "" {
+				mi.Issue += " origin=" + old.Origin
+			}
+			mi.Issue += ")"
+			if old.Issue != "" {
+				mi.Issue += " " + old.Issue
+			}
+		} else {
+			slog.Debug("add from shell", "name", name, "model", sh.Path, "origin", sh.Origin)
+		}
+		sh.Size = mi.Size
+		cfg.Info[name] = sh
 	}
+
+	slog.Debug("registered ", "model-presets", len(cfg.Info))
 }
 
 // search walks the given root directory and appends any valid *.gguf model file to
