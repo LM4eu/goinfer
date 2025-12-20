@@ -8,7 +8,7 @@ Built on top of [llama.cpp](https://github.com/ggml-org/llama.cpp) and [llama-sw
 
 ## Problem: remote access to office/home-hosted LLM
 
-⚠️ **Not yet implemented. Please contribute. Contact us team@LM4.eu** ⚠️
+⚠️ **Not yet implemented. Please contribute. Contact us <team@LM4.eu>** ⚠️
 
 Local-LLM enthusiasts often hit a wall when they try to expose a model to the Internet:
 
@@ -89,20 +89,23 @@ go build .
 ```
 
 Goinfer listens on the port defined in `goinfer.ini`.
-Default port is `8080` using OpenAI-compatible API.
+Default port is `8080` using:
 
-```sh
-# use the default model
-curl -X POST localhost:8080/completions -d '{"prompt":"Hello"}'
+- specific llama-server API (e.g. `/completions`)
+- OpenAI-compatible API (e.g. `/v1/chat/completions`)
 
-# list the models
+```json
+# // use the default model
+curl -X POST localhost:8080/completions -d '{"model":"qwen32b-vl","prompt":"Hello"}'
+
+# // list the models
 curl -X GET localhost:8080/models | jq
 
-# pick up a model and prompt
+# // pick up a model and prompt
 curl -X POST localhost:8080/completion \
   -d '{ "model":"qwen-3b", "prompt":"Hello AI" }'
 
-# OpenAI API fashion
+# // OpenAI API fashion
 curl -X POST localhost:8080/v1/chat/completions \
   -d '{ "model": "qwen-3b",                     \
         "messages": [ {"role":"user",           \
@@ -403,7 +406,7 @@ requiring full inference control (e.g. no default Jinja template).
 
 ## Server/Client mode
 
-⚠️ **Not yet implemented. Please contribute. Contact us team@LM4.eu** ⚠️
+⚠️ **Not yet implemented. Please contribute. Contact us <team@LM4.eu>** ⚠️
 
 ### Design
 
@@ -509,11 +512,12 @@ Any      | Home GPU rig | Access to another home GPU rig that forbids external T
 Integrate a Web UI to select the model(s) to enable.
 
 Optimizer of the [`llama-server` command line](https://github.com/ggml-org/llama.cpp/tree/master/tools/server#usage): finding the best `--gpu-layers --override-tensor --n-cpu-moe --ctx-size ...` by iterating of GPU allocation error and benching. Timeline of llama.cpp optimization:
+
 - Apr 2024 llama.cpp [PR `-ngl auto`](https://github.com/ggml-org/llama.cpp/pull/6502) (Draft)
-- Jan 2025 [study](https://github.com/robbiemu/llama-gguf-optimize
+- Jan 2025 [study](<https://github.com/robbiemu/llama-gguf-optimize>
 - Mar 2025 [Python script determining `-ngl`](https://github.com/fredlas/optimize_llamacpp_ngl)
 - Jun 2025 llama.cpp [another PR](https://github.com/ggml-org/llama.cpp/pull/14067) (Draft) based on these [ideas](https://github.com/ggml-org/llama.cpp/issues/13860)
-- Jun 2025 [Python script running `llama-bench` for best `-b -ub -fa -t -ngl -ot`](https://github.com/BrunoArsioli/llama-optimus) ([maybe integrated in llamap.cpp](https://github.com/ggml-org/llama.cpp/discussions/14191)) 
+- Jun 2025 [Python script running `llama-bench` for best `-b -ub -fa -t -ngl -ot`](https://github.com/BrunoArsioli/llama-optimus) ([maybe integrated in llamap.cpp](https://github.com/ggml-org/llama.cpp/discussions/14191))
 
 This last Python script `llama-optimus` is nice and could also be used for `ik_llama.cpp`. Its [README](https://github.com/BrunoArsioli/llama-optimus?tab=readme-ov-file#coments-about-other-llamacpp-flags) explains:
 
