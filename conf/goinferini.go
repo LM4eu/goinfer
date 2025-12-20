@@ -87,16 +87,16 @@ func parseGoinferINI(data []byte, noAPIKey bool, extra, start string) (*Cfg, err
 
 // WriteGoinferINI populates the configuration with defaults, applies environment variables,
 // writes the resulting configuration to the given file.
-func (cfg *Cfg) WriteGoinferINI(debug, noAPIKey bool) error {
+func (cfg *Cfg) WriteGoinferINI(debug, noAPIKey bool) (bool, error) {
 	data, err := cfg.GenGoinferINI(debug, noAPIKey)
-	er := writeWithHeader(GoinferINI, "# Configuration of https://github.com/LM4eu/goinfer\n\n", data)
+	wrote, er := writeWithHeader(GoinferINI, "# Configuration of https://github.com/LM4eu/goinfer\n\n", data)
 	if er != nil {
 		if err != nil {
-			return errors.Join(err, er)
+			return wrote, errors.Join(err, er)
 		}
-		return er
+		return wrote, er
 	}
-	return err
+	return wrote, err
 }
 
 // GenGoinferINI sets the API keys, reads the environment variables,
@@ -222,7 +222,7 @@ func (cfg *Cfg) trimParamValues() {
 
 // writeWithHeader verifies if the file contains the same data,
 // else write the header followed by the body.
-func writeWithHeader(path, header string, body []byte) error {
+func writeWithHeader(path, header string, body []byte) (bool, error) {
 	path = filepath.Clean(path)
 	data := make([]byte, 0, len(header)+len(body))
 	data = append(data, []byte(header)...)
@@ -231,15 +231,15 @@ func writeWithHeader(path, header string, body []byte) error {
 	// prevent writing the same data
 	read, err := os.ReadFile(GoinferINI)
 	if err == nil && bytes.Equal(read, data) {
-		return nil
+		return false, nil
 	}
 
 	err = os.WriteFile(path, data, 0o400)
 	if err != nil {
-		return gie.Wrap(err, gie.ConfigErr, "failed to write", "file", path)
+		return false, gie.Wrap(err, gie.ConfigErr, "failed to write", "file", path)
 	}
 
-	return nil
+	return true, nil
 }
 
 func (cfg *Cfg) setAPIKey(debug, noAPIKey bool) {

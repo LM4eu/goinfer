@@ -20,7 +20,7 @@ func TestWriteWithHeader(t *testing.T) {
 	header := "# Test Header\n\n"
 	data := []byte("key: value\nanother: line\n")
 
-	err := writeWithHeader(filePath, header, data)
+	_, err := writeWithHeader(filePath, header, data)
 	require.NoError(t, err)
 
 	// Read back the file and verify contents.
