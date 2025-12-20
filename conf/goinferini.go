@@ -230,11 +230,21 @@ func writeWithHeader(path, header string, body []byte) (bool, error) {
 
 	// prevent writing the same data
 	read, err := os.ReadFile(GoinferINI)
-	if err == nil && bytes.Equal(read, data) {
-		return false, nil
+	if err == nil {
+		if bytes.Equal(read, data) {
+			return false, nil
+		}
+
+		backup := path + ".backup"
+		slog.Info("backup", "file", path, "backup", backup)
+		_ = os.Remove(backup) // removing it because write protected
+		err = os.Rename(path, backup)
+		if err != nil {
+			return false, gie.Wrap(err, gie.ConfigErr, "failed to backup", "file", path, "backup", backup)
+		}
 	}
 
-	err = os.WriteFile(path, data, 0o400)
+	err = os.WriteFile(path, data, 0o400) // read only
 	if err != nil {
 		return false, gie.Wrap(err, gie.ConfigErr, "failed to write", "file", path)
 	}
