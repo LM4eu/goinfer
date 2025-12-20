@@ -181,9 +181,9 @@ func writeLlamaIni(cfg *conf.Cfg) {
 	if err != nil {
 		slog.Warn("Failed writing the llama.cpp config", "file", conf.ModelsINI, "error", err)
 	} else if wrote {
-		slog.Info("Wrote llama.cpp config", "file", conf.ModelsINI, "models", len(cfg.Swap.Models))
+		slog.Info("Wrote llama.cpp config", "file", conf.ModelsINI, "presets", len(cfg.Info))
 	} else {
-		slog.Info("Unchanged content => do not write llama.cpp config", "file", conf.ModelsINI, "models", len(cfg.Swap.Models))
+		slog.Info("Unchanged content => do not write llama.cpp config", "file", conf.ModelsINI, "presets", len(cfg.Info))
 	}
 }
 
