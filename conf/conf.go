@@ -76,7 +76,7 @@ func DefaultCfg() *Cfg {
 		Llama: Llama{
 			Exe:     "/home/me/llama.cpp/build/bin/llama-server",
 			Verbose: "--verbose-prompt",
-			Debug:   "--verbosity 3",
+			Debug:   "--log-verbosity 4",
 			// --webui-config defaults: llama.cpp/tools/server/webui/src/lib/constants/settings-config.ts
 			Common:  `--prio 2 --prio-batch 2 --cpu-strict 1 --props --no-warmup --no-mmap --webui-config '{"keepStatsVisible":true,"showToolCalls":true,"pasteLongTextToFileLen":4444,"disableAutoScroll":true,"renderUserContentAsMarkdown":true}'`,
 			Goinfer: "--jinja --chat-template-file " + TemplateJinja,
