@@ -31,8 +31,8 @@ func getCfg() *conf.Cfg {
 	debug := flag.Bool("debug", false, "debug mode (set debug ABI keys in "+conf.GoinferINI+" with -overwrite-all)")
 	writeAll := flag.Bool("overwrite-all", false, "write config files: "+conf.GoinferINI+" "+conf.TemplateJinja+" "+conf.ModelsINI)
 	writeSwap := flag.Bool("write-swap", false, "write the llama-swap config file "+conf.LlamaSwapYML+" (this file is not used by goinfer)")
-	writeModelsINI := flag.Bool("write", false, "write only the llama.cpp config file "+conf.ModelsINI+" (do not modify "+conf.GoinferINI+" )")
-	run := flag.Bool("run", false, "run the server, to be used with -write (or -overwrite-all)")
+	writeModelsINI := flag.Bool("update-models-ini", false, "write only the llama.cpp config file "+conf.ModelsINI+" (do not modify "+conf.GoinferINI+" )")
+	run := flag.Bool("run", false, "run the server, to be used with -update-models-ini (or -overwrite-all)")
 	extra := flag.String("hf", "", "configure the given extra_models and load the first one (start llama-server)")
 	start := flag.String("start", "", "set the default_model and load it (start llama-server)")
 	noAPIKey := flag.Bool("no-api-key", false, "disable API key check (set a warning-fake API key in "+conf.GoinferINI+" with -overwrite-all)")
@@ -75,7 +75,7 @@ func getCfg() *conf.Cfg {
 		return nil
 	}
 	if *writeModelsINI && !*run {
-		slog.Info("flag -write without any -run -hf -start => stop here")
+		slog.Info("flag -update-models-ini without any -run -hf -start => stop here")
 		return nil
 	}
 	if *writeSwap && !*run {

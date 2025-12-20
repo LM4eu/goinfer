@@ -66,7 +66,7 @@ export GI_LLAMA_EXE=/home/me/bin/llama-server
 go run . -no-api-key
 
 # later: update only models.ini (model presets) and start llama-server
-go run . -write -run
+go run . -update-models-ini -run
 ```
 
 More control:
@@ -85,7 +85,7 @@ go build .
 ./goinfer -overwrite-all -no-api-key
 
 # update models.ini and start llama-server (using the API key in config if any)
-./goinfer -write -run
+./goinfer -update-models-ini -run
 ```
 
 Goinfer listens on the port defined in `goinfer.ini`.
