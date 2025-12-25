@@ -10,7 +10,7 @@ set -xe
 
 # --prefer-offline = use cache first, else download for internet
 # --prefer-online = download for internet, except 
-npm i -g --prefer-online --no-audit --no-fund \
+npm install --global --prefer-online --no-audit --no-fund \
     @agent-smith/body@latest \
     @agent-smith/brain@latest \
     @agent-smith/cli@latest \
