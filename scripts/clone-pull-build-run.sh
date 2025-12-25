@@ -115,7 +115,7 @@ clone_checkout_pull() {
     then
       build_reason="new commit: $(git log -1 --pretty=format:%f)"
       ( lop "$build_reason"; git pull --ff-only ) || 
-      ( lop "discard local changes"; git reset --hard )
+      ( lop "discard local changes"; git reset --hard origin/"$branch" )
     fi
   fi
 
