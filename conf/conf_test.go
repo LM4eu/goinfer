@@ -84,7 +84,7 @@ func TestWriteMainCfg(t *testing.T) {
 	t.Setenv("GI_MODELS_DIR", modelsDir)
 	t.Setenv("GI_LLAMA_EXE", llamaExe)
 
-	data, err := cfg.GenGoinferINI(false, true)
+	data, err := cfg.genGoinferINI(false, true)
 	if err != nil {
 		t.Fatalf("WriteMainCfg failed: %v", err)
 	}

@@ -31,7 +31,7 @@ func getCfg() *conf.Cfg {
 	debug := flag.Bool("debug", false, "debug mode (set debug ABI keys in "+conf.GoinferINI+" with -overwrite-all)")
 	writeAll := flag.Bool("overwrite-all", false, "write config files: "+conf.GoinferINI+" "+conf.TemplateJinja+" "+conf.ModelsINI)
 	writeSwap := flag.Bool("write-swap", false, "write the llama-swap config file "+conf.LlamaSwapYML+" (this file is not used by goinfer)")
-	writeModelsINI := flag.Bool("update-models-ini", false, "write only the llama.cpp config file "+conf.ModelsINI+" (do not modify "+conf.GoinferINI+" )")
+	updateModelsINI := flag.Bool("update-models-ini", false, "write only the llama.cpp config file "+conf.ModelsINI+" (do not modify "+conf.GoinferINI+" )")
 	run := flag.Bool("run", false, "run the server, to be used with -update-models-ini (or -overwrite-all)")
 	extra := flag.String("hf", "", "configure the given extra_models and load the first one (start llama-server)")
 	start := flag.String("start", "", "set the default_model and load it (start llama-server)")
@@ -45,7 +45,7 @@ func getCfg() *conf.Cfg {
 		*run = true
 	}
 	if *writeAll {
-		*writeModelsINI = true
+		*updateModelsINI = true
 	}
 
 	switch {
@@ -65,15 +65,15 @@ func getCfg() *conf.Cfg {
 
 	doLlamaSwapYML(cfg, *writeSwap, verbose, *debug)
 
-	if *writeModelsINI {
-		writeLlamaIni(cfg)
+	if *updateModelsINI {
+		doModelsINI(cfg)
 	}
 
 	if *writeAll && !*run {
 		slog.Info("flag -overwrite-all without any -run -hf -start => stop here")
 		return nil
 	}
-	if *writeModelsINI && !*run {
+	if *updateModelsINI && !*run {
 		slog.Info("flag -update-models-ini without any -run -hf -start => stop here")
 		return nil
 	}
@@ -92,14 +92,14 @@ func doGoinferINI(debug, writeAll, run, noAPIKey bool, extra, start string) *con
 		switch {
 		case writeAll:
 			slog.Info("Write a fresh new config file, may contain issues: "+
-				"please verify the config.", "file", conf.GoinferINI, "error", err)
+				"please verify the config.", "file", conf.GoinferINI, "err", err)
 		case run:
 			slog.Error("Error config. To auto-fix it use the flag -overwrite-all "+
-				"(note: flags -run -start -hf preserve the config)", "file", conf.GoinferINI, "error", err)
+				"(note: flags -run -start -hf preserve the config)", "file", conf.GoinferINI, "err", err)
 			os.Exit(1)
 		default:
 			slog.Info("Error config => Write a new one using default values, env vars and flags. "+
-				"May contain issues: please verify the config.", "file", conf.GoinferINI, "error", err)
+				"May contain issues: please verify the config.", "file", conf.GoinferINI, "err", err)
 		}
 		writeAll = true
 	}
@@ -108,7 +108,7 @@ func doGoinferINI(debug, writeAll, run, noAPIKey bool, extra, start string) *con
 		slog.Info("Write", "file", conf.TemplateJinja)
 		err = os.WriteFile(conf.TemplateJinja, []byte("{{- messages[0].content -}}"), 0o600)
 		if err != nil {
-			slog.Error("Cannot write", "file", conf.TemplateJinja, "error", err)
+			slog.Error("Cannot write", "file", conf.TemplateJinja, "err", err)
 		}
 
 		wrote, er := cfg.WriteGoinferINI(debug, noAPIKey)
@@ -127,7 +127,7 @@ func doGoinferINI(debug, writeAll, run, noAPIKey bool, extra, start string) *con
 		slog.Info("Verify the written config by reading/parsing it", "file", conf.GoinferINI)
 		cfg, er = conf.ReadGoinferINI(noAPIKey, "", "")
 		if er != nil {
-			slog.Warn("Please review", "file", conf.GoinferINI, "error", er)
+			slog.Warn("Please review", "file", conf.GoinferINI, "err", er)
 			os.Exit(1)
 		}
 
@@ -151,14 +151,14 @@ func doGoinferINI(debug, writeAll, run, noAPIKey bool, extra, start string) *con
 func doLlamaSwapYML(cfg *conf.Cfg, writeSwap, verbose, debug bool) {
 	yml, err := cfg.GenLlamaSwapYAML(verbose, debug)
 	if err != nil {
-		slog.Error("Failed generating a valid llama-swap config", "error", err)
+		slog.Error("Failed generating a valid llama-swap config", "err", err)
 		os.Exit(1)
 	}
 
 	if writeSwap {
 		wrote, err := conf.WriteLlamaSwapYML(yml)
 		if err != nil {
-			slog.Warn("Failed writing the llama-swap config", "file", conf.LlamaSwapYML, "error", err)
+			slog.Warn("Failed writing the llama-swap config", "file", conf.LlamaSwapYML, "err", err)
 		} else if wrote {
 			slog.Info("Wrote llama-swap config", "file", conf.LlamaSwapYML, "models", len(cfg.Swap.Models))
 		} else {
@@ -169,17 +169,16 @@ func doLlamaSwapYML(cfg *conf.Cfg, writeSwap, verbose, debug bool) {
 	reader := bytes.NewReader(yml)
 	err = cfg.ReadSwapFromReader(reader)
 	if err != nil {
-		slog.Error("Invalid llama-swap config. Use flag -write-swap to investigate", "file", conf.LlamaSwapYML, "error", err)
+		slog.Error("Invalid llama-swap config. Use flag -write-swap to investigate", "file", conf.LlamaSwapYML, "err", err)
 		os.Exit(1)
 	}
 }
 
-func writeLlamaIni(cfg *conf.Cfg) {
+func doModelsINI(cfg *conf.Cfg) {
 	ini := cfg.GenModelsINI()
-	// always write models.ini
 	wrote, err := conf.WriteModelsINI(ini)
 	if err != nil {
-		slog.Warn("Failed writing the llama.cpp config", "file", conf.ModelsINI, "error", err)
+		slog.Warn("Failed writing the llama.cpp config", "file", conf.ModelsINI, "err", err)
 	} else if wrote {
 		slog.Info("Wrote llama.cpp config", "file", conf.ModelsINI, "presets", len(cfg.Info))
 	} else {

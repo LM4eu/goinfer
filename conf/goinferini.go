@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"unsafe"
 
 	"github.com/LM4eu/goinfer/gie"
 	"github.com/pelletier/go-toml/v2"
@@ -88,7 +89,7 @@ func parseGoinferINI(data []byte, noAPIKey bool, extra, start string) (*Cfg, err
 // WriteGoinferINI populates the configuration with defaults, applies environment variables,
 // writes the resulting configuration to the given file.
 func (cfg *Cfg) WriteGoinferINI(debug, noAPIKey bool) (bool, error) {
-	data, err := cfg.GenGoinferINI(debug, noAPIKey)
+	data, err := cfg.genGoinferINI(debug, noAPIKey)
 	wrote, er := writeWithHeader(GoinferINI, "# Configuration of https://github.com/LM4eu/goinfer\n\n", data)
 	if er != nil {
 		if err != nil {
@@ -99,9 +100,9 @@ func (cfg *Cfg) WriteGoinferINI(debug, noAPIKey bool) (bool, error) {
 	return wrote, err
 }
 
-// GenGoinferINI sets the API keys, reads the environment variables,
+// genGoinferINI sets the API keys, reads the environment variables,
 // fix some settings and writes the result config to a buffer.
-func (cfg *Cfg) GenGoinferINI(debug, noAPIKey bool) ([]byte, error) {
+func (cfg *Cfg) genGoinferINI(debug, noAPIKey bool) ([]byte, error) {
 	cfg.setAPIKey(debug, noAPIKey)
 	cfg.applyEnvVars()
 	cfg.trimParamValues()
