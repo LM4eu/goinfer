@@ -115,11 +115,11 @@ func (cfg *Cfg) Print() {
 
 	yml, err := yaml.Marshal(&cfg)
 	if err != nil {
-		slog.Error("Failed yaml.Marshal", "error", err.Error(), "input struct", &cfg)
+		slog.Error("Failed yaml.Marshal", "err", err.Error(), "input struct", &cfg)
 		return
 	}
 
-	_, _ = os.Stdout.Write(yml)
+	os.Stdout.Write(yml)
 
 	slog.Info("-------------------------------------------")
 }

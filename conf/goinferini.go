@@ -273,7 +273,7 @@ func gen64HexDigits() string {
 	buf := make([]byte, 32)
 	_, err := rand.Read(buf)
 	if err != nil {
-		slog.Warn("Failed to rand.Read", "error", err)
+		slog.Warn("Failed to rand.Read", "err", err)
 		return ""
 	}
 

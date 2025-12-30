@@ -168,7 +168,7 @@ func (inf *Infer) abortInference() error {
 func (inf *Infer) abortHandler(c echo.Context) error {
 	err := inf.abortInference()
 	if err != nil {
-		slog.ErrorContext(c.Request().Context(), "abortInference", "error", err)
+		slog.ErrorContext(c.Request().Context(), "abortInference", "err", err)
 		return c.NoContent(http.StatusAccepted)
 	}
 

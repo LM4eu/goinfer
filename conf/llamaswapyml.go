@@ -28,7 +28,7 @@ func (cfg *Cfg) ReadSwapFromReader(r io.Reader) error {
 	var err error
 	cfg.Swap, err = config.LoadConfigFromReader(r)
 	if err != nil {
-		slog.Error("Cannot load llama-swap config", "file", LlamaSwapYML, "error", err)
+		slog.Error("Cannot load llama-swap config", "file", LlamaSwapYML, "err", err)
 		os.Exit(1)
 	}
 	return cfg.ValidateSwap()
