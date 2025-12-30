@@ -110,9 +110,9 @@ func (cfg *Cfg) genGoinferINI(debug, noAPIKey bool) ([]byte, error) {
 
 	err := cfg.validate(noAPIKey)
 
-	data, er := toml.Marshal(&cfg)
+	data, er := toml.Marshal(cfg)
 	if er != nil {
-		er = gie.Wrap(err, gie.ConfigErr, "failed to yaml.Marshal", "cfg", cfg)
+		er = gie.Wrap(err, gie.ConfigErr, "failed to toml.Marshal", "cfg", cfg)
 		if err != nil {
 			return data, errors.Join(err, er)
 		}
@@ -129,7 +129,7 @@ func (cfg *Cfg) parse(fileData []byte) error {
 
 	err := toml.Unmarshal(fileData, &cfg)
 	if err != nil {
-		return gie.Wrap(err, gie.ConfigErr, "Failed to yaml.Unmarshal", "invalid TOML", string(fileData))
+		return gie.Wrap(err, gie.ConfigErr, "Failed to toml.Unmarshal", "invalid TOML", string(fileData))
 	}
 
 	return nil
