@@ -226,7 +226,7 @@ func (cfg *Cfg) trimParamValues() {
 func writeWithHeader(path, header string, body []byte) (bool, error) {
 	path = filepath.Clean(path)
 	data := make([]byte, 0, len(header)+len(body))
-	data = append(data, []byte(header)...)
+	data = append(data, unsafe.Slice(unsafe.StringData(header), len(header))...)
 	data = append(data, body...)
 
 	// prevent writing the same data

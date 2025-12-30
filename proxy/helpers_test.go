@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"sync"
 	"testing"
+	"unsafe"
 
 	"github.com/LM4eu/goinfer/proxy/config"
 	"github.com/gin-gonic/gin"
@@ -82,7 +83,7 @@ proxy: "http://127.0.0.1:%d"
 `, simpleResponderPath, port, expectedMessage, port)
 
 	var cfg config.ModelConfig
-	err := yaml.Unmarshal([]byte(yamlStr), &cfg)
+	err := yaml.Unmarshal(unsafe.Slice(unsafe.StringData(yamlStr), len(yamlStr)), &cfg)
 	if err != nil {
 		panic(fmt.Sprintf("failed to unmarshal test config: %v in [%s]", err, yamlStr))
 	}

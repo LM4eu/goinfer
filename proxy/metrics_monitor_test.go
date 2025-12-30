@@ -11,6 +11,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"unsafe"
 
 	"github.com/LM4eu/goinfer/event"
 	"github.com/gin-gonic/gin"
@@ -181,7 +182,7 @@ func TestMetricsMonitor_WrapHandler(t *testing.T) {
 		nextHandler := func(modelID string, w http.ResponseWriter, r *http.Request) error {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(responseBody))
+			w.Write(unsafe.Slice(unsafe.StringData(responseBody), len(responseBody)))
 			return nil
 		}
 
@@ -217,7 +218,7 @@ func TestMetricsMonitor_WrapHandler(t *testing.T) {
 		nextHandler := func(modelID string, w http.ResponseWriter, r *http.Request) error {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(responseBody))
+			w.Write(unsafe.Slice(unsafe.StringData(responseBody), len(responseBody)))
 			return nil
 		}
 
@@ -256,7 +257,7 @@ data: [DONE]
 		nextHandler := func(modelID string, w http.ResponseWriter, r *http.Request) error {
 			w.Header().Set("Content-Type", "text/event-stream")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(responseBody))
+			w.Write(unsafe.Slice(unsafe.StringData(responseBody), len(responseBody)))
 			return nil
 		}
 
@@ -362,7 +363,7 @@ data: [DONE]
 		nextHandler := func(modelID string, w http.ResponseWriter, r *http.Request) error {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(responseBody))
+			w.Write(unsafe.Slice(unsafe.StringData(responseBody), len(responseBody)))
 			return nil
 		}
 
@@ -513,7 +514,7 @@ func TestMetricsMonitor_ParseMetrics(t *testing.T) {
 		nextHandler := func(modelID string, w http.ResponseWriter, r *http.Request) error {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(responseBody))
+			w.Write(unsafe.Slice(unsafe.StringData(responseBody), len(responseBody)))
 			return nil
 		}
 
@@ -548,7 +549,7 @@ func TestMetricsMonitor_ParseMetrics(t *testing.T) {
 		nextHandler := func(modelID string, w http.ResponseWriter, r *http.Request) error {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(responseBody))
+			w.Write(unsafe.Slice(unsafe.StringData(responseBody), len(responseBody)))
 			return nil
 		}
 
@@ -583,7 +584,7 @@ data: [DONE]
 		nextHandler := func(modelID string, w http.ResponseWriter, r *http.Request) error {
 			w.Header().Set("Content-Type", "text/event-stream")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(responseBody))
+			w.Write(unsafe.Slice(unsafe.StringData(responseBody), len(responseBody)))
 			return nil
 		}
 
@@ -612,7 +613,7 @@ data: [DONE]
 		nextHandler := func(modelID string, w http.ResponseWriter, r *http.Request) error {
 			w.Header().Set("Content-Type", "text/event-stream")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(responseBody))
+			w.Write(unsafe.Slice(unsafe.StringData(responseBody), len(responseBody)))
 			return nil
 		}
 
@@ -635,7 +636,7 @@ data: [DONE]
 		nextHandler := func(modelID string, w http.ResponseWriter, r *http.Request) error {
 			w.Header().Set("Content-Type", "text/event-stream")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(responseBody))
+			w.Write(unsafe.Slice(unsafe.StringData(responseBody), len(responseBody)))
 			return nil
 		}
 
