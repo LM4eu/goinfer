@@ -14,8 +14,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/LM4eu/goinfer/gie"
-	"github.com/LM4eu/goinfer/proxy/config"
+	"github.com/LynxAIeu/goinfer/gie"
+	"github.com/LynxAIeu/goinfer/proxy/config"
 	"github.com/goccy/go-yaml"
 )
 

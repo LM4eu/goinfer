@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/LM4eu/goinfer/gie"
+	"github.com/LynxAIeu/goinfer/gie"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"

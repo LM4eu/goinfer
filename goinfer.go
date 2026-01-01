@@ -11,10 +11,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/LM4eu/garcon/vv"
-	"github.com/LM4eu/goinfer/proxy"
+	"github.com/LynxAIeu/garcon/vv"
+	"github.com/LynxAIeu/goinfer/proxy"
 
-	"github.com/LM4eu/goinfer/conf"
+	"github.com/LynxAIeu/goinfer/conf"
 )
 
 func main() {

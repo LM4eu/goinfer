@@ -13,7 +13,7 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/LM4eu/goinfer/proxy/config"
+	"github.com/LynxAIeu/goinfer/proxy/config"
 	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-yaml"
 )

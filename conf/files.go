@@ -14,7 +14,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/LM4eu/goinfer/gie"
+	"github.com/LynxAIeu/goinfer/gie"
 )
 
 type Root struct {

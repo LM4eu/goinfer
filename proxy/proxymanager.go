@@ -18,9 +18,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/LM4eu/goinfer/conf"
-	"github.com/LM4eu/goinfer/event"
-	"github.com/LM4eu/goinfer/gie"
+	"github.com/LynxAIeu/goinfer/conf"
+	"github.com/LynxAIeu/goinfer/event"
+	"github.com/LynxAIeu/goinfer/gie"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"

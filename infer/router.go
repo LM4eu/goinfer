@@ -12,9 +12,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/LM4eu/goinfer/conf"
-	"github.com/LM4eu/goinfer/gie"
-	"github.com/LM4eu/goinfer/proxy"
+	"github.com/LynxAIeu/goinfer/conf"
+	"github.com/LynxAIeu/goinfer/gie"
+	"github.com/LynxAIeu/goinfer/proxy"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"

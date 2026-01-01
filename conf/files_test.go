@@ -11,7 +11,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/LM4eu/goinfer/proxy/config"
+	"github.com/LynxAIeu/goinfer/proxy/config"
 )
 
 func Test_beautifyModelName(t *testing.T) {

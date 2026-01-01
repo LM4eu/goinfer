@@ -22,8 +22,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/LM4eu/goinfer/event"
-	"github.com/LM4eu/goinfer/proxy/config"
+	"github.com/LynxAIeu/goinfer/event"
+	"github.com/LynxAIeu/goinfer/proxy/config"
 )
 
 type ProcessState string

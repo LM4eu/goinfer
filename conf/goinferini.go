@@ -16,7 +16,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/LM4eu/goinfer/gie"
+	"github.com/LynxAIeu/goinfer/gie"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -90,7 +90,7 @@ func parseGoinferINI(data []byte, noAPIKey bool, extra, start string) (*Cfg, err
 // writes the resulting configuration to the given file.
 func (cfg *Cfg) WriteGoinferINI(debug, noAPIKey bool) (bool, error) {
 	data, err := cfg.genGoinferINI(debug, noAPIKey)
-	wrote, er := writeWithHeader(GoinferINI, "# Configuration of https://github.com/LM4eu/goinfer\n\n", data)
+	wrote, er := writeWithHeader(GoinferINI, "# Configuration of https://github.com/LynxAIeu/goinfer\n\n", data)
 	if er != nil {
 		if err != nil {
 			return wrote, errors.Join(err, er)

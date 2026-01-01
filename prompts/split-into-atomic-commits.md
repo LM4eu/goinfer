@@ -42,8 +42,8 @@ Ensure the message is clear enough for future maintainers to understand the “w
 Create the commit using the predetermined identity values:  
 
 ```bash
-GIT_AUTHOR_NAME="Oliver" GIT_AUTHOR_EMAIL="oliver@LM4eu.eu" \
-GIT_COMMITTER_NAME="GPT OSS 120B RooCode" GIT_COMMITTER_EMAIL="g120r@LM4eu.eu" \
+GIT_AUTHOR_NAME="Oliver" GIT_AUTHOR_EMAIL="oliver@LynxAIeu.eu" \
+GIT_COMMITTER_NAME="GPT OSS 120B RooCode" GIT_COMMITTER_EMAIL="g120r@LynxAIeu.eu" \
 git commit -m "$commit_message"
 ```
 

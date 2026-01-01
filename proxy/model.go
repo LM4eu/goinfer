@@ -8,8 +8,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/LM4eu/goinfer/conf"
-	"github.com/LM4eu/goinfer/gie"
+	"github.com/LynxAIeu/goinfer/conf"
+	"github.com/LynxAIeu/goinfer/gie"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )

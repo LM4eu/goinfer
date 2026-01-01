@@ -13,7 +13,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/LM4eu/goinfer/event"
+	"github.com/LynxAIeu/goinfer/event"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )

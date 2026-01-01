@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/LM4eu/goinfer/proxy/config"
+	"github.com/LynxAIeu/goinfer/proxy/config"
 	"github.com/goccy/go-yaml"
 	"github.com/pelletier/go-toml/v2"
 )

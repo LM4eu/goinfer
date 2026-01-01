@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/LM4eu/goinfer/proxy/config"
+	"github.com/LynxAIeu/goinfer/proxy/config"
 	"github.com/stretchr/testify/assert"
 )
 

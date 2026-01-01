@@ -19,9 +19,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/LM4eu/goinfer/conf"
-	"github.com/LM4eu/goinfer/event"
-	"github.com/LM4eu/goinfer/proxy/config"
+	"github.com/LynxAIeu/goinfer/conf"
+	"github.com/LynxAIeu/goinfer/event"
+	"github.com/LynxAIeu/goinfer/proxy/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
 )

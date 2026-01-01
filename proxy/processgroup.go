@@ -10,7 +10,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/LM4eu/goinfer/proxy/config"
+	"github.com/LynxAIeu/goinfer/proxy/config"
 )
 
 type ProcessGroup struct {

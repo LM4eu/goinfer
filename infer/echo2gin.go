@@ -11,7 +11,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/LM4eu/goinfer/gie"
+	"github.com/LynxAIeu/goinfer/gie"
 	"github.com/gin-gonic/gin"
 	"github.com/labstack/echo/v4"
 )
