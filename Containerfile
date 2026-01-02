@@ -93,10 +93,10 @@ ENV GOPATH=/root/go
 # GOAMD64=v3 --> https://go.dev/wiki/MinimumRequirements#amd64
 RUN --mount=type=cache,target=${GOPATH}        \
     ls -lShA . server/dist                    ;\
-    case "$(grep flags -m1 /proc/cpuinfo)" in ;\
-        *" avx512f "*)  export GOAMD64=v4;;   ;\
-        *" avx2 "*)     export GOAMD64=v3;;   ;\
-        *" sse2 "*)     export GOAMD64=v2;;   ;\
+    case "$(grep flags -m1 /proc/cpuinfo)" in  \
+        *" avx512f "*)  export GOAMD64=v4;;    \
+        *" avx2 "*)     export GOAMD64=v3;;    \
+        *" sse2 "*)     export GOAMD64=v2;;    \
     esac                                      ;\
     CGO_ENABLED=0                              \
     GOFLAGS="-trimpath -modcacherw"            \
