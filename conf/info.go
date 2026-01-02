@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/LynxAIeu/goinfer/gie"
+	"github.com/LynxAIeu/garcon/gerr"
 )
 
 type (
@@ -203,9 +203,9 @@ func (cfg *Cfg) search(params map[string]ModelParams, shells *[]*ModelInfo, root
 		switch {
 		case err != nil:
 			if dir == nil {
-				return gie.Wrap(err, gie.NotFound, "filepath.WalkDir")
+				return gerr.Wrap(err, gerr.NotFound, "filepath.WalkDir")
 			}
-			return gie.Wrap(err, gie.NotFound, "filepath.WalkDir", "dir", dir.Name())
+			return gerr.Wrap(err, gerr.NotFound, "filepath.WalkDir", "dir", dir.Name())
 		case dir.IsDir():
 			// => step into this directory
 		case filepath.Base(path) == paramsYML:
@@ -227,7 +227,7 @@ func (cfg *Cfg) search(params map[string]ModelParams, shells *[]*ModelInfo, root
 func keepParams(params map[string]ModelParams, root, path string) error {
 	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
-		return gie.Wrap(err, gie.ConfigErr, "os.ReadFile", "file", path)
+		return gerr.Wrap(err, gerr.ConfigErr, "os.ReadFile", "file", path)
 	}
 
 	if len(data) == 0 {
@@ -240,7 +240,7 @@ func keepParams(params map[string]ModelParams, root, path string) error {
 	var mp map[string]ModelParams
 	err = json.Unmarshal(data, &mp)
 	if err != nil {
-		return gie.Wrap(err, gie.ConfigErr, "json.Unmarshal", "file", path, "100FirsBytes", string(data[:100]))
+		return gerr.Wrap(err, gerr.ConfigErr, "json.Unmarshal", "file", path, "100FirsBytes", string(data[:100]))
 	}
 
 	for name, p := range mp {

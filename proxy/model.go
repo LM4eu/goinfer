@@ -8,8 +8,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/LynxAIeu/garcon/gerr"
 	"github.com/LynxAIeu/goinfer/conf"
-	"github.com/LynxAIeu/goinfer/gie"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
@@ -24,7 +24,7 @@ func (pm *ProxyManager) getSetModel(body io.ReadCloser, download, agentSmith boo
 ) {
 	bodyJsonBytes, err = io.ReadAll(body)
 	if err != nil {
-		return nil, "", true, true, gie.Wrap(err, gie.Invalid, "cannot io.ReadAll(request body)")
+		return nil, "", true, true, gerr.Wrap(err, gerr.Invalid, "cannot io.ReadAll(request body)")
 	}
 
 	// model name from the request
@@ -39,7 +39,7 @@ func (pm *ProxyManager) getSetModel(body io.ReadCloser, download, agentSmith boo
 		if useModelName != "" && useModelName != requested {
 			bodyJsonBytes, err = sjson.SetBytes(bodyJsonBytes, "model", useModelName)
 			if err != nil {
-				return nil, "", true, true, gie.Wrap(err, gie.Invalid,
+				return nil, "", true, true, gerr.Wrap(err, gerr.Invalid,
 					"cannot rewrite model name in JSON",
 					"originalModel", requested, "newModel", useModelName)
 			}

@@ -370,7 +370,6 @@ groups:
 - GUFF files discovery: `Search()` in [`models.go`](go/conf/models.go)
 - Graceful shutdown handling: `handleShutdown()` in [`goinfer.go`](go/goinfer.go)
 - API-key authentication per service: `configureAPIKeyAuth()` in [`router.go`](go/infer/router.go)
-- Comprehensive error handling: `gie` package in [`errors.go`](go/gie/errors.go)
 
 ## API endpoints
 

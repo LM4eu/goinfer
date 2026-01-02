@@ -3,11 +3,11 @@ module github.com/LynxAIeu/goinfer
 go 1.25.5
 
 require (
-	github.com/LynxAIeu/garcon v0.40.0
+	github.com/LynxAIeu/garcon v0.60.0
 	github.com/billziss-gh/golib v0.2.0
 	github.com/gin-gonic/gin v1.11.0
-	github.com/goccy/go-yaml v1.19.0
-	github.com/labstack/echo/v4 v4.14.0
+	github.com/goccy/go-yaml v1.19.1
+	github.com/labstack/echo/v4 v4.15.0
 	github.com/labstack/gommon v0.4.2
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/stretchr/testify v1.11.1
@@ -16,7 +16,7 @@ require (
 )
 
 require (
-	github.com/LynxAIeu/emo v0.0.0-20250927010905-4655469361e2 // indirect
+	github.com/LynxAIeu/emo v0.0.0-20260102000151-bd606f39cc08 // indirect
 	github.com/acmacalister/skittles v0.0.0-20160609003031-7423546701e1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.14.2 // indirect

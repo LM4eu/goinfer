@@ -11,7 +11,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/LynxAIeu/goinfer/gie"
+	"github.com/LynxAIeu/garcon/gerr"
 	"github.com/gin-gonic/gin"
 	"github.com/labstack/echo/v4"
 )
@@ -90,14 +90,14 @@ func (w *responseWriter) Written() bool {
 // Hijack implements the http.Hijacker interface.
 func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if w.Written() {
-		return nil, nil, gie.New(gie.InferErr, "response already written")
+		return nil, nil, gerr.New(gerr.InferErr, "response already written")
 	}
 	if w.size < 0 {
 		w.size = 0
 	}
 	hijacker, ok := w.ResponseWriter.(http.Hijacker)
 	if !ok {
-		return nil, nil, gie.New(gie.ServerErr, "w.ResponseWriter is not http.Hijacker")
+		return nil, nil, gerr.New(gerr.ServerErr, "w.ResponseWriter is not http.Hijacker")
 	}
 	return hijacker.Hijack()
 }

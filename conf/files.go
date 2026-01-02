@@ -14,7 +14,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/LynxAIeu/goinfer/gie"
+	"github.com/LynxAIeu/garcon/gerr"
 )
 
 type Root struct {
@@ -43,7 +43,7 @@ func (r *Root) RelativePath(fullPath string) (string, error) {
 		return "", err
 	}
 	if !filepath.IsLocal(relativePath) {
-		return "", gie.New(gie.Invalid, "not local", "full", fullPath, "root", r.Path)
+		return "", gerr.New(gerr.Invalid, "not local", "full", fullPath, "root", r.Path)
 	}
 	return filepath.Clean(relativePath), err
 }
@@ -433,7 +433,7 @@ func (cfg *Cfg) ValidateSwap() error {
 	if len(cfg.Swap.Models) == 0 {
 		n := len(cfg.getInfo())
 		if n == 0 {
-			return gie.New(gie.ConfigErr, "No *.gguf files found", "dir", cfg.ModelsDir)
+			return gerr.New(gerr.ConfigErr, "No *.gguf files found", "dir", cfg.ModelsDir)
 		}
 		slog.Warn("No model configured => Restart Goinfer to refresh llama-swap.yml", "models", n)
 		return nil
@@ -477,7 +477,7 @@ func verify(root Root, path string) (int64, error) {
 	// is empty?
 	size := info.Size()
 	if size < 1000 {
-		return 0, gie.New(gie.ConfigErr, "Model file is empty (or too small)", "path", path, "size", size)
+		return 0, gerr.New(gerr.ConfigErr, "Model file is empty (or too small)", "path", path, "size", size)
 	}
 
 	// Check if the file is readable
@@ -503,7 +503,7 @@ func verify(root Root, path string) (int64, error) {
 
 	if path[pos-len(first):pos] != first {
 		slog.Debug("KO Model file is part of a series, but only the first one is referenced", "path", path)
-		return 0, gie.New(gie.ConfigErr, "Model file is part of a series, but only the first one is referenced, file="+path)
+		return 0, gerr.New(gerr.ConfigErr, "Model file is part of a series, but only the first one is referenced, file="+path)
 	}
 
 	slog.Debug("OK Model file is the first of a series", "path", path)

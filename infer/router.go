@@ -12,8 +12,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/LynxAIeu/garcon/gerr"
 	"github.com/LynxAIeu/goinfer/conf"
-	"github.com/LynxAIeu/goinfer/gie"
 	"github.com/LynxAIeu/goinfer/proxy"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -67,7 +67,7 @@ func (inf *Infer) NewEcho() *echo.Echo {
 		return func(c echo.Context) error {
 			err := next(c)
 			if err != nil {
-				return gie.HandleErrorMiddleware(err, c)
+				return handleErrorMiddleware(err, c)
 			}
 			return nil
 		}
@@ -112,6 +112,13 @@ func (inf *Infer) NewEcho() *echo.Echo {
 	grp.GET("favicon.svg", func(c echo.Context) error { return c.Blob(http.StatusOK, "image/svg+xml", favicon) })
 
 	return e
+}
+
+// handleErrorMiddleware is a centralized error handler for Echo middleware.
+func handleErrorMiddleware(err error, c echo.Context) error {
+	c.Logger().Error(err) // Log the error for debugging
+	statusCode, gErr := gerr.HttpError(err)
+	return c.JSON(statusCode, gErr)
 }
 
 // PrintRoutes creates a new Echo server configured with Goinfer routes and middleware.

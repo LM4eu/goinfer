@@ -12,7 +12,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/LynxAIeu/goinfer/gie"
+	"github.com/LynxAIeu/garcon/gerr"
 	"github.com/LynxAIeu/goinfer/proxy/config"
 	"github.com/goccy/go-yaml"
 )
@@ -98,7 +98,7 @@ func (cfg *Cfg) GenLlamaSwapYAML(verbose, debug bool) ([]byte, error) {
 
 	yml, er := yaml.Marshal(&cfg.Swap)
 	if er != nil {
-		return nil, gie.Wrap(er, gie.ConfigErr, "failed to marshal the llama-swap config")
+		return nil, gerr.Wrap(er, gerr.ConfigErr, "failed to marshal the llama-swap config")
 	}
 
 	return yml, nil

@@ -1,7 +1,6 @@
 *
 !conf
 !event
-!gie
 !go.mod
 !go.sum
 !goinfer.go

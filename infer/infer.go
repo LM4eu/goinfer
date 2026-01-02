@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/LynxAIeu/goinfer/gie"
+	"github.com/LynxAIeu/garcon/gerr"
 	"github.com/labstack/echo/v4"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -57,12 +57,12 @@ func (inf *Infer) completionHandler(c echo.Context) error {
 	// replace {prompt} by the prompt from the query
 	prompt := gjson.GetBytes(body, "prompt")
 	if prompt.Type != gjson.String { // TODO support []string
-		return gie.New(gie.Invalid, "only support string for prompt (TODO support []string)", "the issue is in this /completions request", msg)
+		return gerr.New(gerr.Invalid, "only support string for prompt (TODO support []string)", "the issue is in this /completions request", msg)
 	}
 
 	// prompt parameter is mandatory
 	if prompt.Str == "" {
-		return gie.New(gie.Invalid, "mandatory prompt is empty", "the issue is in this /completions request", msg)
+		return gerr.New(gerr.Invalid, "mandatory prompt is empty", "the issue is in this /completions request", msg)
 	}
 
 	var timeout int64
@@ -71,7 +71,7 @@ func (inf *Infer) completionHandler(c echo.Context) error {
 		timeout = timeoutJSON.Int()
 		body, err = sjson.DeleteBytes(body, "timeout")
 		if err != nil {
-			return gie.Wrap(err, gie.Invalid, "cannot delete the timeout field in the JSON", "the issue is in this request body", body)
+			return gerr.Wrap(err, gerr.Invalid, "cannot delete the timeout field in the JSON", "the issue is in this request body", body)
 		}
 	}
 
@@ -155,7 +155,7 @@ func (inf *Infer) abortInference() error {
 	inf.mu.Lock()
 	defer inf.mu.Unlock()
 	if !inf.isInferring {
-		return gie.New(gie.InferErr, "no inference running, nothing to abort")
+		return gerr.New(gerr.InferErr, "no inference running, nothing to abort")
 	}
 
 	slog.Debug("Aborting inference")

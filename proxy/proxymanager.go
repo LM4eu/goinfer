@@ -18,9 +18,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/LynxAIeu/garcon/gerr"
 	"github.com/LynxAIeu/goinfer/conf"
 	"github.com/LynxAIeu/goinfer/event"
-	"github.com/LynxAIeu/goinfer/gie"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -605,13 +605,13 @@ func (pm *ProxyManager) ProxyOAIHandler(c *gin.Context, download, agentSmith boo
 		return
 	}
 	if realModelName == "" {
-		c.JSON(http.StatusBadRequest, gie.New(gie.Invalid, "no model provided and no model loaded"))
+		c.JSON(http.StatusBadRequest, gerr.New(gerr.Invalid, "no model provided and no model loaded"))
 		return
 	}
 
 	processGroup, realModelName, err := pm.swapProcessGroup(realModelName)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gie.Wrap(err, gie.Invalid, "error swapping process group", "model", realModelName))
+		c.JSON(http.StatusInternalServerError, gerr.Wrap(err, gerr.Invalid, "error swapping process group", "model", realModelName))
 		return
 	}
 

@@ -16,7 +16,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/LynxAIeu/goinfer/gie"
+	"github.com/LynxAIeu/garcon/gerr"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -28,7 +28,7 @@ const GoinferINI = "goinfer.ini"
 func ReadGoinferINI(noAPIKey bool, extra, start string) (*Cfg, error) {
 	data, err := os.ReadFile(GoinferINI)
 	if err != nil {
-		err = gie.Wrap(err, gie.ConfigErr, "Cannot read", "file", GoinferINI)
+		err = gerr.Wrap(err, gerr.ConfigErr, "Cannot read", "file", GoinferINI)
 		slog.Warn("Skip " + GoinferINI + " => Use default settings and env. vars")
 	}
 
@@ -112,7 +112,7 @@ func (cfg *Cfg) genGoinferINI(debug, noAPIKey bool) ([]byte, error) {
 
 	data, er := toml.Marshal(cfg)
 	if er != nil {
-		er = gie.Wrap(err, gie.ConfigErr, "failed to toml.Marshal", "cfg", cfg)
+		er = gerr.Wrap(err, gerr.ConfigErr, "failed to toml.Marshal", "cfg", cfg)
 		if err != nil {
 			return data, errors.Join(err, er)
 		}
@@ -124,12 +124,12 @@ func (cfg *Cfg) genGoinferINI(debug, noAPIKey bool) ([]byte, error) {
 // load the configuration file (if filename not empty).
 func (cfg *Cfg) parse(fileData []byte) error {
 	if len(fileData) == 0 {
-		return gie.New(gie.ConfigErr, "empty", "file", GoinferINI)
+		return gerr.New(gerr.ConfigErr, "empty", "file", GoinferINI)
 	}
 
 	err := toml.Unmarshal(fileData, &cfg)
 	if err != nil {
-		return gie.Wrap(err, gie.ConfigErr, "Failed to toml.Unmarshal", "invalid TOML", string(fileData))
+		return gerr.Wrap(err, gerr.ConfigErr, "Failed to toml.Unmarshal", "invalid TOML", string(fileData))
 	}
 
 	return nil
@@ -241,13 +241,13 @@ func writeWithHeader(path, header string, body []byte) (bool, error) {
 		_ = os.Remove(backup) // removing it because write protected
 		err = os.Rename(path, backup)
 		if err != nil {
-			return false, gie.Wrap(err, gie.ConfigErr, "failed to backup", "file", path, "backup", backup)
+			return false, gerr.Wrap(err, gerr.ConfigErr, "failed to backup", "file", path, "backup", backup)
 		}
 	}
 
 	err = os.WriteFile(path, data, 0o400) // read only
 	if err != nil {
-		return false, gie.Wrap(err, gie.ConfigErr, "failed to write", "file", path)
+		return false, gerr.Wrap(err, gerr.ConfigErr, "failed to write", "file", path)
 	}
 
 	return true, nil

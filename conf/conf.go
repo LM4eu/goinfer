@@ -14,7 +14,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/LynxAIeu/goinfer/gie"
+	"github.com/LynxAIeu/garcon/gerr"
 	"github.com/LynxAIeu/goinfer/proxy/config"
 	"github.com/goccy/go-yaml"
 )
@@ -148,26 +148,26 @@ func (cfg *Cfg) validate(noAPIKey bool) error {
 	for dir := range strings.SplitSeq(cfg.ModelsDir, ":") {
 		info, er := os.Stat(dir)
 		if errors.Is(er, fs.ErrNotExist) {
-			return gie.New(gie.ConfigErr, "Verify GI_MODELS_DIR or 'models_dir' in "+GoinferINI, "does not exist", dir)
+			return gerr.New(gerr.ConfigErr, "Verify GI_MODELS_DIR or 'models_dir' in "+GoinferINI, "does not exist", dir)
 		}
 		if er != nil {
-			return gie.Wrap(er, gie.ConfigErr, "Verify GI_MODELS_DIR or 'models_dir' in "+GoinferINI, "problem with", dir)
+			return gerr.Wrap(er, gerr.ConfigErr, "Verify GI_MODELS_DIR or 'models_dir' in "+GoinferINI, "problem with", dir)
 		}
 		if !info.IsDir() {
-			return gie.New(gie.ConfigErr, "Verify GI_MODELS_DIR or 'models_dir' in "+GoinferINI, "must be a directory", dir)
+			return gerr.New(gerr.ConfigErr, "Verify GI_MODELS_DIR or 'models_dir' in "+GoinferINI, "must be a directory", dir)
 		}
 	}
 
 	// GI_LLAMA_EXE
 	info, err := os.Stat(cfg.Llama.Exe)
 	if errors.Is(err, fs.ErrNotExist) {
-		return gie.New(gie.ConfigErr, "GI_LLAMA_EXE or 'exe' in goinfer.ini: file does not exist", "exe", cfg.Llama.Exe)
+		return gerr.New(gerr.ConfigErr, "GI_LLAMA_EXE or 'exe' in goinfer.ini: file does not exist", "exe", cfg.Llama.Exe)
 	}
 	if err != nil {
-		return gie.Wrap(err, gie.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.ini", "exe", cfg.Llama.Exe)
+		return gerr.Wrap(err, gerr.ConfigErr, "GI_MODELS_DIR or 'models_dir' in goinfer.ini", "exe", cfg.Llama.Exe)
 	}
 	if info.IsDir() {
-		return gie.New(gie.ConfigErr, "GI_LLAMA_EXE or 'exe' in goinfer.ini: must be a file, not a directory", "exe", cfg.Llama.Exe)
+		return gerr.New(gerr.ConfigErr, "GI_LLAMA_EXE or 'exe' in goinfer.ini: must be a file, not a directory", "exe", cfg.Llama.Exe)
 	}
 
 	// API key
@@ -176,7 +176,7 @@ func (cfg *Cfg) validate(noAPIKey bool) error {
 		return nil
 	}
 	if cfg.APIKey == "" || strings.Contains(cfg.APIKey, "Please") {
-		return gie.New(gie.ConfigErr, "API key not set, please set your private API key")
+		return gerr.New(gerr.ConfigErr, "API key not set, please set your private API key")
 	}
 	if cfg.APIKey == debugAPIKey {
 		slog.Warn("API key is DEBUG => security threat")
@@ -197,7 +197,7 @@ func (cfg *Cfg) validateAddr() error {
 	if slices.Contains(badPorts, port) {
 		const msg = "Chrome/Firefox block the bad ports"
 		slog.Error(msg, "port", port, "reference", "https://fetch.spec.whatwg.org/#port-blocking")
-		return gie.New(gie.ConfigErr, msg, "port", port, "reference", "https://fetch.spec.whatwg.org/#port-blocking")
+		return gerr.New(gerr.ConfigErr, msg, "port", port, "reference", "https://fetch.spec.whatwg.org/#port-blocking")
 	}
 	return nil
 }

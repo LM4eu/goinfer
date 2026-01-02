@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/LynxAIeu/goinfer/gie"
+	"github.com/LynxAIeu/garcon/gerr"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -69,7 +69,7 @@ func (m *anyBody) SetModel(model string) {
 func setModelIfMissing[T ModelRequest](inf *Infer, msg T, bodyReader io.ReadCloser) ([]byte, error) {
 	body, err := io.ReadAll(bodyReader)
 	if err != nil {
-		return nil, gie.Wrap(err, gie.Invalid, "cannot io.ReadAll(request body)")
+		return nil, gerr.Wrap(err, gerr.Invalid, "cannot io.ReadAll(request body)")
 	}
 
 	model := gjson.GetBytes(body, "model").String()
@@ -87,7 +87,7 @@ func setModelIfMissing[T ModelRequest](inf *Infer, msg T, bodyReader io.ReadClos
 		}
 	}
 	if model == "" {
-		return nil, gie.New(gie.Invalid,
+		return nil, gerr.New(gerr.Invalid,
 			"no model loaded and no default_model in goinfer.ini => specify the field model in the request")
 	}
 
@@ -99,18 +99,18 @@ func setModelIfMissing[T ModelRequest](inf *Infer, msg T, bodyReader io.ReadClos
 		// to convert back the Go struct into aJSON bytes.
 		err = json.Unmarshal(body, &msg)
 		if err != nil {
-			return nil, gie.Wrap(err, gie.Invalid, "invalid or malformed JSON", "received body", string(body))
+			return nil, gerr.Wrap(err, gerr.Invalid, "invalid or malformed JSON", "received body", string(body))
 		}
 		msg.SetModel(model)
 
 		body, err = json.Marshal(msg)
 		if err != nil {
-			return nil, gie.Wrap(err, gie.Invalid, "error json.Marshal back the body", "input msg", msg)
+			return nil, gerr.Wrap(err, gerr.Invalid, "error json.Marshal back the body", "input msg", msg)
 		}
 	} else {
 		body, err = sjson.SetBytes(body, "model", model)
 		if err != nil {
-			return nil, gie.Wrap(err, gie.Invalid, "cannot update model in JSON body", "body", body, "new model", model)
+			return nil, gerr.Wrap(err, gerr.Invalid, "cannot update model in JSON body", "body", body, "new model", model)
 		}
 	}
 
@@ -138,7 +138,7 @@ func selectModel(inf *Infer) (string, error) {
 
 	err := json.Unmarshal(body, &response)
 	if err != nil {
-		return inf.Cfg.DefaultModel, gie.Wrap(err, gie.InferErr, "invalid or malformed JSON", "received response body from /running", string(body))
+		return inf.Cfg.DefaultModel, gerr.Wrap(err, gerr.InferErr, "invalid or malformed JSON", "received response body from /running", string(body))
 	}
 
 	// Check for ready models first
