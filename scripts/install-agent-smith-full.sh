@@ -30,10 +30,11 @@ npm install --global --prefer-online --no-audit --no-fund \
     termollama@latest \
     \
     @intrinsicai/gbnfgen@latest \
-    \
-    npm-check-updates@latest \
     ;
 
+# to install npm-check-updates@latest
+# prefer your distro packet manager:
+# sudo pacman -S npm-check-updates
 
 # outdated:
 #    @agent-smith/feat-search@latest
