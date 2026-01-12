@@ -37,7 +37,7 @@ func TestListModels(t *testing.T) {
 	cfg := &Cfg{
 		ModelsDir: "/home/me/models",
 		Swap: &config.Config{
-			Models: map[string]config.ModelConfig{
+			Models: map[string]*config.ModelConfig{
 				"disk-model":  {Cmd: "llama-server -flag", Unlisted: false},
 				"missing":     {Cmd: "llama-server -flag -m missing.gguf", Unlisted: false},
 				A_ + "hidden": {Cmd: "llama-server -flag -m mistral.gguf", Unlisted: true},

@@ -41,12 +41,9 @@ models:
 `
 	cfg, err := LoadConfigFromReader(strings.NewReader(content))
 	assert.NoError(t, err)
-	if cfg == nil {
-		return
-	}
 	for modelId, modelConfig := range cfg.Models {
 		t.Run("Testing macros in filters for model "+modelId, func(t *testing.T) {
-			assert.Equal(t, "model, top_k, temperature, top_p, ,", modelConfig.Filters.StripParams)
+			assert.Equal(t, "model, top_k, top_k, temperature, temperature, top_p, , ,", modelConfig.Filters.StripParams)
 			sanitized, err := modelConfig.Filters.SanitizedStripParams()
 			if assert.NoError(t, err) {
 				// model has been removed

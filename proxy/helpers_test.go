@@ -11,7 +11,6 @@ import (
 	"runtime"
 	"sync"
 	"testing"
-	"unsafe"
 
 	"github.com/LynxAIeu/goinfer/proxy/config"
 	"github.com/gin-gonic/gin"
@@ -71,11 +70,11 @@ func getTestPort() int {
 	return port
 }
 
-func getTestSimpleResponderConfig(expectedMessage string) config.ModelConfig {
+func getTestSimpleResponderConfig(expectedMessage string) *config.ModelConfig {
 	return getTestSimpleResponderConfigPort(expectedMessage, getTestPort())
 }
 
-func getTestSimpleResponderConfigPort(expectedMessage string, port int) config.ModelConfig {
+func getTestSimpleResponderConfigPort(expectedMessage string, port int) *config.ModelConfig {
 	// Create a YAML string with just the values we want to set
 	yamlStr := fmt.Sprintf(`
 cmd: '%s --port %d --silent --respond %s'
@@ -83,10 +82,10 @@ proxy: "http://127.0.0.1:%d"
 `, simpleResponderPath, port, expectedMessage, port)
 
 	var cfg config.ModelConfig
-	err := yaml.Unmarshal(unsafe.Slice(unsafe.StringData(yamlStr), len(yamlStr)), &cfg)
+	err := yaml.Unmarshal([]byte(yamlStr), &cfg)
 	if err != nil {
 		panic(fmt.Sprintf("failed to unmarshal test config: %v in [%s]", err, yamlStr))
 	}
 
-	return cfg
+	return &cfg
 }

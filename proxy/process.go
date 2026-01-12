@@ -46,48 +46,30 @@ const (
 )
 
 type Process struct {
-	lastRequestHandled time.Time
-
-	processLogger *LogMonitor
-	proxyLogger   *LogMonitor
-
-	cmd          *exec.Cmd
-	reverseProxy *httputil.ReverseProxy
-
-	// for managing concurrency limits
+	lastRequestHandled        time.Time
+	config                    *config.ModelConfig
+	cmd                       *exec.Cmd
+	reverseProxy              *httputil.ReverseProxy
 	concurrencyLimitSemaphore chan struct{}
-
-	cancelUpstream context.CancelFunc
-
-	// closed when command exits
-	cmdWaitChan chan struct{}
-
-	state            ProcessState
-	ID               string
-	config           config.ModelConfig
-	inFlightRequests sync.WaitGroup
-
-	// used to block on multiple start() calls
-	waitStarting sync.WaitGroup
-
-	healthCheckLoopInterval time.Duration
-	healthCheckTimeout      int
-
-	// used for testing to override the default value
-	gracefulStopTimeout time.Duration
-
-	// track the number of failed starts
-	failedStartCount int
-
-	lastRequestHandledMutex sync.RWMutex
-	stateMutex              sync.RWMutex
-
-	// PR #155 called to cancel the upstream process
-	cmdMutex              sync.RWMutex
-	inFlightRequestsCount atomic.Int32
+	cancelUpstream            context.CancelFunc
+	cmdWaitChan               chan struct{}
+	processLogger             *LogMonitor
+	proxyLogger               *LogMonitor
+	ID                        string
+	state                     ProcessState
+	inFlightRequests          sync.WaitGroup
+	waitStarting              sync.WaitGroup
+	healthCheckLoopInterval   time.Duration
+	healthCheckTimeout        int
+	gracefulStopTimeout       time.Duration
+	failedStartCount          int
+	lastRequestHandledMutex   sync.RWMutex
+	stateMutex                sync.RWMutex
+	cmdMutex                  sync.RWMutex
+	inFlightRequestsCount     atomic.Int32
 }
 
-func NewProcess(id string, healthCheckTimeout int, config config.ModelConfig, processLogger, proxyLogger *LogMonitor) *Process {
+func NewProcess(id string, healthCheckTimeout int, config *config.ModelConfig, processLogger, proxyLogger *LogMonitor) *Process {
 	concurrentLimit := 10
 	if config.ConcurrencyLimit > 0 {
 		concurrentLimit = config.ConcurrencyLimit
@@ -152,7 +134,7 @@ func (p *Process) getLastRequestHandled() time.Time {
 	return p.lastRequestHandled
 }
 
-// custom error types for swapping state.
+// custom error types for swapping state
 var (
 	ErrExpectedStateMismatch  = errors.New("expected state mismatch")
 	ErrInvalidStateTransition = errors.New("invalid state transition")
@@ -187,7 +169,7 @@ func (p *Process) swapState(expectedState, newState ProcessState) (ProcessState,
 	return p.state, nil
 }
 
-// Helper function to encapsulate transition rules.
+// Helper function to encapsulate transition rules
 func isValidTransition(from, to ProcessState) bool {
 	switch from {
 	case StateStopped:
@@ -232,8 +214,7 @@ func (p *Process) start() error {
 		return fmt.Errorf("unable to get sanitized command: %w", err)
 	}
 
-	curState, err := p.swapState(StateStopped, StateStarting)
-	if err != nil {
+	if curState, err := p.swapState(StateStopped, StateStarting); err != nil {
 		if errors.Is(err, ErrExpectedStateMismatch) {
 			// already starting, just wait for it to complete and expect
 			// it to be in the Ready start after. If not, return an error
@@ -262,6 +243,7 @@ func (p *Process) start() error {
 	p.cmd.Env = append(p.cmd.Environ(), p.config.Env...)
 	p.cmd.Cancel = p.cmdStopUpstreamProcess
 	p.cmd.WaitDelay = p.gracefulStopTimeout
+	setProcAttributes(p.cmd)
 
 	p.cmdMutex.Lock()
 	p.cancelUpstream = ctxCancelUpstream
@@ -278,10 +260,10 @@ func (p *Process) start() error {
 	p.proxyLogger.Infof("<%s> CMD: %v", p.ID, args)
 	p.proxyLogger.Infof("<%s> ----------------------------------------", p.ID)
 	err = p.cmd.Start()
+
 	// Set process state to failed
 	if err != nil {
-		curState, swapErr := p.swapState(StateStarting, StateStopped)
-		if swapErr != nil {
+		if curState, swapErr := p.swapState(StateStarting, StateStopped); swapErr != nil {
 			p.forceState(StateStopped) // force it into a stopped state
 			return fmt.Errorf(
 				"failed to start command '%s' and state swap failed. command error: %w, current state: %v, state swap error: %w",
@@ -370,8 +352,7 @@ func (p *Process) start() error {
 		}()
 	}
 
-	curState, err = p.swapState(StateStarting, StateReady)
-	if err != nil {
+	if curState, err := p.swapState(StateStarting, StateReady); err != nil {
 		return fmt.Errorf("failed to set Process state to ready: current state: %v, error: %w", curState, err)
 	} else {
 		p.failedStartCount = 0
@@ -427,6 +408,9 @@ func (p *Process) stopCommand() {
 	stopStartTime := time.Now()
 	defer func() {
 		p.proxyLogger.Debugf("<%s> stopCommand took %v", p.ID, time.Since(stopStartTime))
+
+		// free the buffer in processLogger so the memory can be recovered
+		p.processLogger.Clear()
 	}()
 
 	p.cmdMutex.RLock()
@@ -518,7 +502,10 @@ func (p *Process) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 		// add a sync so the streaming client only runs when the goroutine has exited
 
 		isStreaming, _ := r.Context().Value(proxyCtxKey("streaming")).(bool)
-		if p.config.SendLoadingState != nil && *p.config.SendLoadingState && isStreaming {
+
+		// PR #417 (no support for anthropic v1/messages yet)
+		isChatCompletions := strings.HasPrefix(r.URL.Path, "/v1/chat/completions")
+		if p.config.SendLoadingState != nil && *p.config.SendLoadingState && isStreaming && isChatCompletions {
 			srw = newStatusResponseWriter(p, w)
 			go srw.statusUpdates(swapCtx)
 		} else {
@@ -550,8 +537,7 @@ func (p *Process) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 	// recover from http.ErrAbortHandler panics that can occur when the client
 	// disconnects before the response is sent
 	defer func() {
-		r := recover()
-		if r != nil {
+		if r := recover(); r != nil {
 			err, ok := r.(error)
 			if ok && errors.Is(http.ErrAbortHandler, err) {
 				p.proxyLogger.Infof("<%s> recovered from client disconnection during streaming", p.ID)
@@ -577,31 +563,30 @@ func (p *Process) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 		p.ID, r.RequestURI, startDuration, totalTime)
 }
 
-// waitForCmd waits for the command to exit and handles exit conditions depending on current state.
+// waitForCmd waits for the command to exit and handles exit conditions depending on current state
 func (p *Process) waitForCmd() {
 	exitErr := p.cmd.Wait()
 	p.proxyLogger.Debugf("<%s> cmd.Wait() returned error: %v", p.ID, exitErr)
 
 	if exitErr != nil {
 		var errno syscall.Errno
-		var exitError *exec.ExitError
 		if errors.As(exitErr, &errno) {
 			p.proxyLogger.Errorf("<%s> errno >> %v", p.ID, errno)
 		} else {
-			exitError = &exec.ExitError{}
-		}
-		if errors.As(exitErr, &exitError) {
-			str := exitError.String()
-			switch {
-			case strings.Contains(str, "signal: terminated"):
-				p.proxyLogger.Debugf("<%s> Process stopped OK", p.ID)
-			case strings.Contains(str, "signal: interrupt"):
-				p.proxyLogger.Debugf("<%s> Process interrupted OK", p.ID)
-			default:
-				p.proxyLogger.Warnf("<%s> ExitError >> %v, exit code: %d", p.ID, exitError, exitError.ExitCode())
+			exitError := &exec.ExitError{}
+			if errors.As(exitErr, &exitError) {
+				if strings.Contains(exitError.String(), "signal: terminated") {
+					p.proxyLogger.Debugf("<%s> Process stopped OK", p.ID)
+				} else if strings.Contains(exitError.String(), "signal: interrupt") {
+					p.proxyLogger.Debugf("<%s> Process interrupted OK", p.ID)
+				} else {
+					p.proxyLogger.Warnf("<%s> ExitError >> %v, exit code: %d", p.ID, exitError, exitError.ExitCode())
+				}
+			} else {
+				if exitErr.Error() != "context canceled" /* this is normal */ {
+					p.proxyLogger.Errorf("<%s> Process exited >> %v", p.ID, exitErr)
+				}
 			}
-		} else if exitErr.Error() != "context canceled" /* this is normal */ {
-			p.proxyLogger.Errorf("<%s> Process exited >> %v", p.ID, exitErr)
 		}
 	}
 
@@ -622,7 +607,7 @@ func (p *Process) waitForCmd() {
 	p.cmdMutex.Unlock()
 }
 
-// cmdStopUpstreamProcess attempts to stop the upstream process gracefully.
+// cmdStopUpstreamProcess attempts to stop the upstream process gracefully
 func (p *Process) cmdStopUpstreamProcess() error {
 	p.processLogger.Debugf("<%s> cmdStopUpstreamProcess() initiating graceful stop of upstream process", p.ID)
 
@@ -645,6 +630,7 @@ func (p *Process) cmdStopUpstreamProcess() error {
 		stopCmd := exec.Command(stopArgs[0], stopArgs[1:]...)
 		stopCmd.Stdout = p.processLogger
 		stopCmd.Stderr = p.processLogger
+		setProcAttributes(stopCmd)
 		stopCmd.Env = p.cmd.Env
 
 		if err := stopCmd.Run(); err != nil {
@@ -660,6 +646,11 @@ func (p *Process) cmdStopUpstreamProcess() error {
 	}
 
 	return nil
+}
+
+// Logger returns the logger for this process.
+func (p *Process) Logger() *LogMonitor {
+	return p.processLogger
 }
 
 var loadingRemarks = []string{
@@ -729,7 +720,7 @@ type statusResponseWriter struct {
 	start      time.Time
 	writer     http.ResponseWriter
 	process    *Process
-	wg         sync.WaitGroup // Track goroutine completion
+	wg         sync.WaitGroup
 	hasWritten bool
 }
 
@@ -749,7 +740,7 @@ func newStatusResponseWriter(p *Process, w http.ResponseWriter) *statusResponseW
 	return s
 }
 
-// statusUpdates sends status updates to the client while the model is loading.
+// statusUpdates sends status updates to the client while the model is loading
 func (s *statusResponseWriter) statusUpdates(ctx context.Context) {
 	s.wg.Add(1)
 	defer s.wg.Done()
@@ -807,7 +798,7 @@ func (s *statusResponseWriter) statusUpdates(ctx context.Context) {
 	}
 }
 
-// waitForCompletion waits for the statusUpdates goroutine to finish.
+// waitForCompletion waits for the statusUpdates goroutine to finish
 func (s *statusResponseWriter) waitForCompletion(timeout time.Duration) bool {
 	done := make(chan struct{})
 	go func() {

@@ -73,7 +73,7 @@ func TestConfig_FindConfig(t *testing.T) {
 	// TODO?
 	// make this shared between the different tests
 	cfg := &Config{
-		Models: map[string]ModelConfig{
+		Models: map[string]*ModelConfig{
 			"model1": {
 				Cmd:           "python model1.py",
 				Proxy:         "http://localhost:8080",
@@ -113,7 +113,7 @@ func TestConfig_FindConfig(t *testing.T) {
 	modelConfig, modelId, found = cfg.FindConfig("model3")
 	assert.False(t, found)
 	assert.Empty(t, modelId)
-	assert.Equal(t, ModelConfig{}, modelConfig)
+	assert.Nil(t, modelConfig)
 }
 
 func TestConfig_AutomaticPortAssignments(t *testing.T) {
@@ -552,11 +552,11 @@ models:
 	assert.NotNil(t, meta)
 
 	// Verify direct substitution preserves types
-	assert.Equal(t, 10001, meta["port"])
+	assert.Equal(t, uint64(10001), meta["port"])
 	assert.Equal(t, 0.7, meta["temperature"])
 	assert.Equal(t, true, meta["enabled"])
 	assert.Equal(t, "llama model", meta["model_name"])
-	assert.Equal(t, 16384, meta["context"])
+	assert.Equal(t, uint64(16384), meta["context"])
 
 	// Verify string interpolation converts to string
 	assert.Equal(t, "Running on port 10001 with temp 0.7 and context 16384", meta["note"])
@@ -758,6 +758,54 @@ models:
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestConfig_APIKeys_Invalid(t *testing.T) {
+	tests := []struct {
+		name        string
+		content     string
+		expectedErr string
+	}{
+		{
+			name:        "empty string",
+			content:     `apiKeys: [""]`,
+			expectedErr: "empty api key found in apiKeys",
+		},
+		{
+			name:        "blank spaces only",
+			content:     `apiKeys: ["   "]`,
+			expectedErr: "api key cannot contain spaces: `   `",
+		},
+		{
+			name:        "contains leading space",
+			content:     `apiKeys: [" key123"]`,
+			expectedErr: "api key cannot contain spaces: ` key123`",
+		},
+		{
+			name:        "contains trailing space",
+			content:     `apiKeys: ["key123 "]`,
+			expectedErr: "api key cannot contain spaces: `key123 `",
+		},
+		{
+			name:        "contains middle space",
+			content:     `apiKeys: ["key 123"]`,
+			expectedErr: "api key cannot contain spaces: `key 123`",
+		},
+		{
+			name:        "empty in list with valid keys",
+			content:     `apiKeys: ["valid-key", "", "another-key"]`,
+			expectedErr: "empty api key found in apiKeys",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := LoadConfigFromReader(strings.NewReader(tt.content))
+			if assert.Error(t, err) {
+				assert.Equal(t, tt.expectedErr, err.Error())
 			}
 		})
 	}

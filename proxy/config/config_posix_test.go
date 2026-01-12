@@ -148,11 +148,11 @@ groups:
       - "model4"
 `
 
-	if err := os.WriteFile(tempFile, []byte(content), 0o600); err != nil {
+	if err := os.WriteFile(tempFile, []byte(content), 0o644); err != nil {
 		t.Fatalf("Failed to write temporary file: %v", err)
 	}
 
-	// Load the cfg and verify
+	// Load the config and verify
 	cfg, err := LoadConfig(tempFile)
 	if err != nil {
 		t.Fatalf("Failed to load config: %v", err)
@@ -160,9 +160,10 @@ groups:
 
 	modelLoadingState := false
 
-	expected := Config{
+	expected := &Config{
 		LogLevel:      "info",
 		LogTimeFormat: "",
+		LogToStdout:   LogToStdoutProxy,
 		StartPort:     5800,
 		Macros: MacroList{
 			{"svr-path", "path/to/server"},
@@ -173,7 +174,7 @@ groups:
 			},
 		},
 		SendLoadingState: false,
-		Models: map[string]ModelConfig{
+		Models: map[string]*ModelConfig{
 			"model1": {
 				Cmd:              "path/to/cmd --arg1 one",
 				Proxy:            "http://localhost:8080",

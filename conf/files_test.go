@@ -218,7 +218,7 @@ func TestValidateModelFiles_WithSwapModels(t *testing.T) {
 	cfg := &Cfg{
 		ModelsDir: tmp,
 		Swap: &config.Config{
-			Models: map[string]config.ModelConfig{
+			Models: map[string]*config.ModelConfig{
 				"ref": {Cmd: "--model " + modelPath, Unlisted: false},
 			},
 		},

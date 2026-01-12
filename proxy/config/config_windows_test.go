@@ -147,7 +147,7 @@ groups:
 		t.Fatalf("Failed to write temporary file: %v", err)
 	}
 
-	// Load the cfg and verify
+	// Load the config and verify
 	cfg, err := LoadConfig(tempFile)
 	if err != nil {
 		t.Fatalf("Failed to load config: %v", err)
@@ -158,12 +158,13 @@ groups:
 	expected := Config{
 		LogLevel:      "info",
 		LogTimeFormat: "",
+		LogToStdout:   LogToStdoutProxy,
 		StartPort:     5800,
 		Macros: MacroList{
 			{"svr-path", "path/to/server"},
 		},
 		SendLoadingState: false,
-		Models: map[string]ModelConfig{
+		Models: map[string]*ModelConfig{
 			"model1": {
 				Cmd:              "path/to/cmd --arg1 one",
 				CmdStop:          "taskkill /f /t /pid ${PID}",

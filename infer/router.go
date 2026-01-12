@@ -90,20 +90,20 @@ func (inf *Infer) NewEcho() *echo.Echo {
 	// ----- /completion --------------
 	grp.POST("completion", inf.completionHandler)  // llama.cpp API (legacy)
 	grp.POST("completions", inf.completionHandler) // llama.cpp API
-	grp.POST("v1/audio/speech", inf.proxyOAIHandler)
+	grp.POST("v1/audio/speech", inf.proxyInferenceHandler)
 	grp.POST("v1/audio/transcriptions", inf.proxyOAIPostFormHandler)
 	grp.POST("v1/chat/completions", inf.chatCompletionsHandler) // OpenAI API
-	grp.POST("v1/completions", inf.proxyOAIHandler)
+	grp.POST("v1/completions", inf.proxyInferenceHandler)
 
 	// ----- /rerank ------------------
-	grp.POST("rerank", inf.proxyOAIHandler)
-	grp.POST("reranking", inf.proxyOAIHandler)
-	grp.POST("v1/rerank", inf.proxyOAIHandler)
-	grp.POST("v1/reranking", inf.proxyOAIHandler)
+	grp.POST("rerank", inf.proxyInferenceHandler)
+	grp.POST("reranking", inf.proxyInferenceHandler)
+	grp.POST("v1/rerank", inf.proxyInferenceHandler)
+	grp.POST("v1/reranking", inf.proxyInferenceHandler)
 
 	// ----- /infill -----------------
-	grp.POST("infill", inf.proxyOAIHandler)
-	grp.POST("v1/embeddings", inf.proxyOAIHandler)
+	grp.POST("infill", inf.proxyInferenceHandler)
+	grp.POST("v1/embeddings", inf.proxyInferenceHandler)
 
 	// ---- /abort --------------
 	grp.GET("abort", inf.abortHandler) // abort any running inference

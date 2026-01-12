@@ -91,7 +91,7 @@ func TestProcess_WaitOnMultipleStarts(t *testing.T) {
 // test that the automatic start returns the expected error type.
 func TestProcess_BrokenModelConfig(t *testing.T) {
 	// Create a process configuration
-	cfg := config.ModelConfig{
+	cfg := &config.ModelConfig{
 		Cmd:           "nonexistent-command",
 		Proxy:         "http://127.0.0.1:9913",
 		CheckEndpoint: "/health",
@@ -324,7 +324,7 @@ func TestProcess_ExitInterruptsHealthCheck(t *testing.T) {
 
 	// should run and exit but interrupt the long checkHealthTimeout
 	checkHealthTimeout := 5
-	cfg := config.ModelConfig{
+	cfg := &config.ModelConfig{
 		Cmd:           "sleep 1",
 		Proxy:         "http://127.0.0.1:9913",
 		CheckEndpoint: "/health",
@@ -393,6 +393,10 @@ func TestProcess_StopImmediately(t *testing.T) {
 // Test that SIGKILL is sent when gracefulStopTimeout is reached and properly terminates
 // the upstream command.
 func TestProcess_ForceStopWithKill(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping slow test")
+	}
+
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping SIGTERM test on Windows ")
 	}
@@ -401,7 +405,7 @@ func TestProcess_ForceStopWithKill(t *testing.T) {
 	binaryPath := getSimpleResponderPath()
 	port := getTestPort()
 
-	conf := config.ModelConfig{
+	conf := &config.ModelConfig{
 		// note --ignore-sig-term which ignores the SIGTERM signal so a SIGKILL must be sent
 		// to force the process to exit
 		Cmd:           fmt.Sprintf("%s --port %d --respond %s --silent --ignore-sig-term", binaryPath, port, expectedMessage),

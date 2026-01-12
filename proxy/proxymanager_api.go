@@ -20,12 +20,14 @@ type Model struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	State       string `json:"state"`
+	PeerID      string `json:"peerID"`
 	Unlisted    bool   `json:"unlisted"`
 }
 
 func addApiHandlers(pm *ProxyManager) {
 	// Add API endpoints for React to consume
-	apiGroup := pm.ginEngine.Group("/api")
+	// Protected with API key authentication
+	apiGroup := pm.ginEngine.Group("/api", pm.apiKeyAuth())
 	apiGroup.POST("/models/unload", pm.apiUnloadAllModels)
 	apiGroup.POST("/models/unload/*model", pm.apiUnloadSingleModelHandler)
 	apiGroup.GET("/events", pm.apiSendEvents)
@@ -83,6 +85,18 @@ func (pm *ProxyManager) getModelStatus() []Model {
 		})
 	}
 
+	// Iterate over the peer models
+	if pm.peerProxy != nil {
+		for peerID, peer := range pm.peerProxy.ListPeers() {
+			for _, modelID := range peer.Models {
+				models = append(models, Model{
+					Id:     modelID,
+					PeerID: peerID,
+				})
+			}
+		}
+	}
+
 	return models
 }
 
@@ -138,7 +152,7 @@ func (pm *ProxyManager) apiSendEvents(c *gin.Context) {
 		}
 	}
 
-	sendMetrics := func(metrics []*TokenMetrics) {
+	sendMetrics := func(metrics []TokenMetrics) {
 		jsonData, err := json.Marshal(metrics)
 		if err == nil {
 			select {
@@ -174,7 +188,7 @@ func (pm *ProxyManager) apiSendEvents(c *gin.Context) {
 	 * Send Metrics data
 	 */
 	defer event.On(func(e TokenMetricsEvent) {
-		sendMetrics([]*TokenMetrics{e.Metrics})
+		sendMetrics([]TokenMetrics{e.Metrics})
 	})()
 
 	// send initial batch of data

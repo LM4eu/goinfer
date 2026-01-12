@@ -25,12 +25,12 @@ const (
 
 // ReadSwapFromReader uses the LoadConfigFromReader() from llama-swap project.
 func (cfg *Cfg) ReadSwapFromReader(r io.Reader) error {
-	var err error
-	cfg.Swap, err = config.LoadConfigFromReader(r)
+	swap, err := config.LoadConfigFromReader(r)
 	if err != nil {
 		slog.Error("Cannot load llama-swap config", "file", LlamaSwapYML, "err", err)
 		os.Exit(1)
 	}
+	cfg.Swap = swap
 	return cfg.ValidateSwap()
 }
 
@@ -80,9 +80,9 @@ func (cfg *Cfg) GenLlamaSwapYAML(verbose, debug bool) ([]byte, error) {
 		// we cannot reuse a macro in another macro,
 		// because the MacroList order is not guaranteed by the YAML marshaling
 		// (the method MacroList.MarshalYAML writes a map)
-		{Name: "cmd-fim", Value: cfg.Llama.Exe + commonArgs},
-		{Name: "cmd-common", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT}"},
-		{Name: "cmd-goinfer", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT} " + cfg.Llama.Goinfer},
+		config.MacroEntry{Name: "cmd-fim", Value: cfg.Llama.Exe + commonArgs},
+		config.MacroEntry{Name: "cmd-common", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT}"},
+		config.MacroEntry{Name: "cmd-goinfer", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT} " + cfg.Llama.Goinfer},
 	}
 
 	if useModelPresets {
@@ -193,12 +193,12 @@ func (cfg *Cfg) setModelPresets() {
 		cfg.Swap = &config.Config{}
 	}
 	if cfg.Swap.Models == nil {
-		cfg.Swap.Models = make(map[string]config.ModelConfig, 1)
+		cfg.Swap.Models = make(map[string]*config.ModelConfig, 1)
 	} else {
 		clear(cfg.Swap.Models)
 	}
 
-	cfg.Swap.Models["use-models-preset"] = config.ModelConfig{
+	cfg.Swap.Models["use-models-preset"] = &config.ModelConfig{
 		Cmd:           "${cmd-common} --models-preset " + ModelsINI,
 		CheckEndpoint: "/health",
 		Proxy:         "http://localhost:${PORT}",
@@ -215,7 +215,7 @@ func (cfg *Cfg) setSwapModels() {
 		cfg.Swap = &config.Config{}
 	}
 	if cfg.Swap.Models == nil {
-		cfg.Swap.Models = make(map[string]config.ModelConfig, 2*len(info)+9)
+		cfg.Swap.Models = make(map[string]*config.ModelConfig, 2*len(info)+9)
 	}
 
 	commonMC := config.ModelConfig{Proxy: "http://localhost:${PORT}", CheckEndpoint: "/health"}
@@ -277,9 +277,9 @@ func (cfg *Cfg) addModelCfg(model, cmd, flags string, mc *config.ModelConfig) {
 	model = strings.Replace(model, "-GGUF", "", 1)
 	old, ok := cfg.Swap.Models[model]
 	if ok {
-		merge(&old, &nMC, flags)
+		merge(old, &nMC, flags)
 	}
-	cfg.Swap.Models[model] = nMC
+	cfg.Swap.Models[model] = &nMC
 }
 
 // Add the model settings within the llama-swap configuration.

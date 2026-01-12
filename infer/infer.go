@@ -83,7 +83,7 @@ func (inf *Infer) completionHandler(c echo.Context) error {
 		ginCtx.Request = ginCtx.Request.WithContext(ctx)
 	}
 
-	inf.ProxyMan.ProxyOAIHandler(ginCtx, false, false)
+	inf.ProxyMan.ProxyInferenceHandler(ginCtx)
 	return nil
 }
 
@@ -97,11 +97,11 @@ func (inf *Infer) chatCompletionsHandler(c echo.Context) error {
 	}
 
 	ginCtx := echo2ginWithBody(c, body)
-	inf.ProxyMan.ProxyOAIHandler(ginCtx, false, false)
+	inf.ProxyMan.ProxyInferenceHandler(ginCtx)
 	return nil
 }
 
-func (inf *Infer) proxyOAIHandler(c echo.Context) error {
+func (inf *Infer) proxyInferenceHandler(c echo.Context) error {
 	var msg anyBody
 	body, err := setModelIfMissing(inf, &msg, c.Request().Body)
 	if err != nil {
@@ -109,7 +109,7 @@ func (inf *Infer) proxyOAIHandler(c echo.Context) error {
 	}
 
 	ginCtx := echo2ginWithBody(c, body)
-	inf.ProxyMan.ProxyOAIHandler(ginCtx, false, false)
+	inf.ProxyMan.ProxyInferenceHandler(ginCtx)
 	return nil
 }
 
@@ -121,7 +121,7 @@ func (inf *Infer) proxyOAIPostFormHandler(c echo.Context) error {
 	}
 
 	ginCtx := echo2ginWithBody(c, body)
-	inf.ProxyMan.ProxyOAIHandler(ginCtx, false, false)
+	inf.ProxyMan.ProxyInferenceHandler(ginCtx)
 	return nil
 }
 

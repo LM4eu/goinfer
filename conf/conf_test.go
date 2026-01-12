@@ -136,7 +136,7 @@ func TestListModelsIntegration(t *testing.T) {
 	}
 	cfg := &Cfg{
 		ModelsDir: tmp,
-		Swap:      &config.Config{Models: map[string]config.ModelConfig{"model1": {Cmd: "", Unlisted: false}}},
+		Swap:      &config.Config{Models: map[string]*config.ModelConfig{"model1": {Cmd: "", Unlisted: false}}},
 	}
 	models := cfg.ListModels()
 	if info, ok := models["model1"]; !ok || info.Issue != "" {

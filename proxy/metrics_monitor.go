@@ -6,6 +6,8 @@ package proxy
 
 import (
 	"bytes"
+	"compress/flate"
+	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"io"
@@ -34,7 +36,7 @@ type TokenMetrics struct {
 
 // TokenMetricsEvent represents a token metrics event.
 type TokenMetricsEvent struct {
-	Metrics *TokenMetrics
+	Metrics TokenMetrics
 }
 
 func (e TokenMetricsEvent) Type() uint32 {
@@ -44,7 +46,7 @@ func (e TokenMetricsEvent) Type() uint32 {
 // metricsMonitor parses llama-server output for token statistics.
 type metricsMonitor struct {
 	logger     *LogMonitor
-	metrics    []*TokenMetrics
+	metrics    []TokenMetrics
 	maxMetrics int
 	nextID     int
 	mu         sync.RWMutex
@@ -60,7 +62,7 @@ func newMetricsMonitor(logger *LogMonitor, maxMetrics int) *metricsMonitor {
 }
 
 // addMetrics adds a new metric to the collection and publishes an event.
-func (mp *metricsMonitor) addMetrics(metric *TokenMetrics) {
+func (mp *metricsMonitor) addMetrics(metric TokenMetrics) {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
 
@@ -74,11 +76,11 @@ func (mp *metricsMonitor) addMetrics(metric *TokenMetrics) {
 }
 
 // getMetrics returns a copy of the current metrics.
-func (mp *metricsMonitor) getMetrics() []*TokenMetrics {
+func (mp *metricsMonitor) getMetrics() []TokenMetrics {
 	mp.mu.RLock()
 	defer mp.mu.RUnlock()
 
-	result := make([]*TokenMetrics, len(mp.metrics))
+	result := make([]TokenMetrics, len(mp.metrics))
 	copy(result, mp.metrics)
 	return result
 }
@@ -100,6 +102,12 @@ func (mp *metricsMonitor) wrapHandler(
 	next func(modelID string, w http.ResponseWriter, r *http.Request) error,
 ) error {
 	recorder := newBodyCopier(writer)
+
+	// Filter Accept-Encoding to only include encodings we can decompress for metrics
+	if ae := request.Header.Get("Accept-Encoding"); ae != "" {
+		request.Header.Set("Accept-Encoding", filterAcceptEncoding(ae))
+	}
+
 	err := next(modelID, recorder, request)
 	if err != nil {
 		return err
@@ -113,36 +121,60 @@ func (mp *metricsMonitor) wrapHandler(
 		return nil
 	}
 
+	// Initialize default metrics - these will always be recorded
+	tm := TokenMetrics{
+		Timestamp:  time.Now(),
+		Model:      modelID,
+		DurationMs: int(time.Since(recorder.StartTime()).Milliseconds()),
+	}
+
 	body := recorder.body.Bytes()
 	if len(body) == 0 {
-		mp.logger.Warn("metrics skipped, empty body")
+		mp.logger.Warn("metrics: empty body, recording minimal metrics")
+		mp.addMetrics(tm)
 		return nil
 	}
 
-	if strings.Contains(recorder.Header().Get("Content-Type"), "text/event-stream") {
-		tm, err := processStreamingResponse(modelID, recorder.StartTime(), body)
+	// Decompress if needed
+	if encoding := recorder.Header().Get("Content-Encoding"); encoding != "" {
+		var err error
+		body, err = decompressBody(body, encoding)
 		if err != nil {
-			mp.logger.Warnf("error processing streaming response: %v, path=%s", err, request.URL.Path)
-		} else {
+			mp.logger.Warnf("metrics: decompression failed: %v, path=%s, recording minimal metrics", err, request.URL.Path)
 			mp.addMetrics(tm)
-		}
-	} else {
-		if gjson.ValidBytes(body) {
-			tm, err := parseMetrics(modelID, recorder.StartTime(), gjson.ParseBytes(body))
-			if err != nil {
-				mp.logger.Warnf("error parsing metrics: %v, path=%s", err, request.URL.Path)
-			} else {
-				mp.addMetrics(tm)
-			}
-		} else {
-			mp.logger.Warnf("metrics skipped, invalid JSON in response body path=%s", request.URL.Path)
+			return nil
 		}
 	}
 
+	if strings.Contains(recorder.Header().Get("Content-Type"), "text/event-stream") {
+		if parsed, err := processStreamingResponse(modelID, recorder.StartTime(), body); err != nil {
+			mp.logger.Warnf("error processing streaming response: %v, path=%s, recording minimal metrics", err, request.URL.Path)
+		} else {
+			tm = parsed
+		}
+	} else {
+		if gjson.ValidBytes(body) {
+			parsed := gjson.ParseBytes(body)
+			usage := parsed.Get("usage")
+			timings := parsed.Get("timings")
+
+			if usage.Exists() || timings.Exists() {
+				if parsedMetrics, err := parseMetrics(modelID, recorder.StartTime(), usage, timings); err != nil {
+					mp.logger.Warnf("error parsing metrics: %v, path=%s, recording minimal metrics", err, request.URL.Path)
+				} else {
+					tm = parsedMetrics
+				}
+			}
+		} else {
+			mp.logger.Warnf("metrics: invalid JSON in response body path=%s, recording minimal metrics", request.URL.Path)
+		}
+	}
+
+	mp.addMetrics(tm)
 	return nil
 }
 
-func processStreamingResponse(modelID string, start time.Time, body []byte) (*TokenMetrics, error) {
+func processStreamingResponse(modelID string, start time.Time, body []byte) (TokenMetrics, error) {
 	// Iterate **backwards** through the body looking for the data payload with
 	// usage data. This avoids allocating a slice of all lines via bytes.Split.
 
@@ -181,19 +213,20 @@ func processStreamingResponse(modelID string, start time.Time, body []byte) (*To
 		}
 
 		if gjson.ValidBytes(data) {
-			return parseMetrics(modelID, start, gjson.ParseBytes(data))
+			parsed := gjson.ParseBytes(data)
+			usage := parsed.Get("usage")
+			timings := parsed.Get("timings")
+
+			if usage.Exists() || timings.Exists() {
+				return parseMetrics(modelID, start, usage, timings)
+			}
 		}
 	}
 
-	return nil, errors.New("no valid JSON data found in stream")
+	return TokenMetrics{}, errors.New("no valid JSON data found in stream")
 }
 
-func parseMetrics(modelID string, start time.Time, jsonData gjson.Result) (*TokenMetrics, error) {
-	usage := jsonData.Get("usage")
-	timings := jsonData.Get("timings")
-	if !usage.Exists() && !timings.Exists() {
-		return nil, errors.New("no usage or timings data found")
-	}
+func parseMetrics(modelID string, start time.Time, usage, timings gjson.Result) (TokenMetrics, error) {
 	// default values
 	cachedTokens := -1 // unknown or missing data
 	outputTokens := 0
@@ -205,24 +238,40 @@ func parseMetrics(modelID string, start time.Time, jsonData gjson.Result) (*Toke
 	durationMs := int(time.Since(start).Milliseconds())
 
 	if usage.Exists() {
-		outputTokens = int(jsonData.Get("usage.completion_tokens").Int())
-		inputTokens = int(jsonData.Get("usage.prompt_tokens").Int())
+		if pt := usage.Get("prompt_tokens"); pt.Exists() {
+			// v1/chat/completions
+			inputTokens = int(pt.Int())
+		} else if it := usage.Get("input_tokens"); it.Exists() {
+			// v1/messages
+			inputTokens = int(it.Int())
+		}
+
+		if ct := usage.Get("completion_tokens"); ct.Exists() {
+			// v1/chat/completions
+			outputTokens = int(ct.Int())
+		} else if ot := usage.Get("output_tokens"); ot.Exists() {
+			outputTokens = int(ot.Int())
+		}
+
+		if ct := usage.Get("cache_read_input_tokens"); ct.Exists() {
+			cachedTokens = int(ct.Int())
+		}
 	}
 
 	// use llama-server's timing data for tok/sec and duration as it is more accurate
 	if timings.Exists() {
-		inputTokens = int(jsonData.Get("timings.prompt_n").Int())
-		outputTokens = int(jsonData.Get("timings.predicted_n").Int())
-		promptPerSecond = jsonData.Get("timings.prompt_per_second").Float()
-		tokensPerSecond = jsonData.Get("timings.predicted_per_second").Float()
-		durationMs = int(jsonData.Get("timings.prompt_ms").Float() + jsonData.Get("timings.predicted_ms").Float())
+		inputTokens = int(timings.Get("prompt_n").Int())
+		outputTokens = int(timings.Get("predicted_n").Int())
+		promptPerSecond = timings.Get("prompt_per_second").Float()
+		tokensPerSecond = timings.Get("predicted_per_second").Float()
+		durationMs = int(timings.Get("prompt_ms").Float() + timings.Get("predicted_ms").Float())
 
-		if cachedValue := jsonData.Get("timings.cache_n"); cachedValue.Exists() {
+		if cachedValue := timings.Get("cache_n"); cachedValue.Exists() {
 			cachedTokens = int(cachedValue.Int())
 		}
 	}
 
-	return &TokenMetrics{
+	return TokenMetrics{
 		Timestamp:       time.Now(),
 		Model:           modelID,
 		CachedTokens:    cachedTokens,
@@ -232,6 +281,25 @@ func parseMetrics(modelID string, start time.Time, jsonData gjson.Result) (*Toke
 		TokensPerSecond: tokensPerSecond,
 		DurationMs:      durationMs,
 	}, nil
+}
+
+// decompressBody decompresses the body based on Content-Encoding header.
+func decompressBody(body []byte, encoding string) ([]byte, error) {
+	switch strings.ToLower(strings.TrimSpace(encoding)) {
+	case "gzip":
+		reader, err := gzip.NewReader(bytes.NewReader(body))
+		if err != nil {
+			return nil, err
+		}
+		defer reader.Close()
+		return io.ReadAll(reader)
+	case "deflate":
+		reader := flate.NewReader(bytes.NewReader(body))
+		defer reader.Close()
+		return io.ReadAll(reader)
+	default:
+		return body, nil // Return as-is for unknown/no encoding
+	}
 }
 
 // responseBodyCopier records the response body and writes to the original response writer
@@ -271,4 +339,26 @@ func (w *responseBodyCopier) Header() http.Header {
 
 func (w *responseBodyCopier) StartTime() time.Time {
 	return w.start
+}
+
+// filterAcceptEncoding filters the Accept-Encoding header to only include
+// encodings we can decompress (gzip, deflate). This respects the client's
+// preferences while ensuring we can parse response bodies for metrics.
+func filterAcceptEncoding(acceptEncoding string) string {
+	if acceptEncoding == "" {
+		return ""
+	}
+
+	supported := map[string]bool{"gzip": true, "deflate": true}
+	var filtered []string
+
+	for part := range strings.SplitSeq(acceptEncoding, ",") {
+		// Parse encoding and optional quality value (e.g., "gzip;q=1.0")
+		encoding := strings.TrimSpace(strings.Split(part, ";")[0])
+		if supported[strings.ToLower(encoding)] {
+			filtered = append(filtered, strings.TrimSpace(part))
+		}
+	}
+
+	return strings.Join(filtered, ", ")
 }

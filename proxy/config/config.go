@@ -21,10 +21,16 @@ import (
 )
 
 const DEFAULT_GROUP_ID = "(default)"
+const (
+	LogToStdoutProxy    = "proxy"
+	LogToStdoutUpstream = "upstream"
+	LogToStdoutBoth     = "both"
+	LogToStdoutNone     = "none"
+)
 
 type MacroEntry struct {
-	Value any
 	Name  string
+	Value any
 }
 
 type MacroList []MacroEntry
@@ -38,22 +44,18 @@ func (ml *MacroList) UnmarshalYAML(value []byte) error {
 		return err
 	}
 
-	// Clear the existing list
-	*ml = MacroList{}
-
 	// Convert the MapSlice to MacroList
+	entries := make([]MacroEntry, 0, len(mapSlice))
 	for _, item := range mapSlice {
-		key, ok := item.Key.(string)
+		name, ok := item.Key.(string)
 		if !ok {
-			return errors.New("map key is not a string")
+			return fmt.Errorf("macro name is not a string: %s", name)
 		}
 
-		*ml = append(*ml, MacroEntry{
-			Name:  key,
-			Value: item.Value,
-		})
+		entries = append(entries, MacroEntry{Name: name, Value: item.Value})
 	}
 
+	*ml = entries
 	return nil
 }
 
@@ -116,15 +118,20 @@ type HookOnStartup struct {
 }
 
 type Config struct {
-	Models   map[string]ModelConfig `yaml:"models"` /* key is model ID */
-	Profiles map[string][]string    `yaml:"profiles"`
-	Groups   map[string]GroupConfig `yaml:"groups"` /* key is group ID */
+	Models   map[string]*ModelConfig `yaml:"models"` /* key is model ID */
+	Profiles map[string][]string     `yaml:"profiles"`
+	Groups   map[string]GroupConfig  `yaml:"groups"` /* key is group ID */
 
 	// map aliases to actual model IDs
 	aliases map[string]string
 
+	Peers PeerDictionaryConfig `yaml:"peers"`
+
+	LogToStdout   string `yaml:"logToStdout"`
 	LogLevel      string `yaml:"logLevel"`
 	LogTimeFormat string `yaml:"logTimeFormat"`
+
+	RequiredAPIKeys []string `yaml:"apiKeys"`
 
 	// for key/value replacements in model's cmd, cmdStop, proxy, checkEndPoint
 	Macros MacroList `yaml:"macros"`
@@ -156,9 +163,9 @@ func (cfg *Config) RealModelName(search string) (string, bool) {
 	}
 }
 
-func (cfg *Config) FindConfig(modelName string) (ModelConfig, string, bool) {
+func (cfg *Config) FindConfig(modelName string) (*ModelConfig, string, bool) {
 	if realName, found := cfg.RealModelName(modelName); !found {
-		return ModelConfig{}, "", false
+		return nil, "", false
 	} else {
 		return cfg.Models[realName], realName, true
 	}
@@ -180,14 +187,15 @@ func LoadConfigFromReader(r io.Reader) (*Config, error) {
 	}
 
 	// default configuration values
-	cfg := Config{
+	cfg := &Config{
 		HealthCheckTimeout: 120,
 		StartPort:          5800,
 		LogLevel:           "info",
 		LogTimeFormat:      "",
+		LogToStdout:        LogToStdoutProxy,
 		MetricsMaxInMemory: 1000,
 	}
-	err = yaml.Unmarshal(data, &cfg)
+	err = yaml.Unmarshal(data, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -199,6 +207,12 @@ func LoadConfigFromReader(r io.Reader) (*Config, error) {
 
 	if cfg.StartPort < 1 {
 		return nil, errors.New("startPort must be greater than 1")
+	}
+
+	switch cfg.LogToStdout {
+	case LogToStdoutProxy, LogToStdoutUpstream, LogToStdoutBoth, LogToStdoutNone:
+	default:
+		return nil, errors.New("logToStdout must be one of: proxy, upstream, both, none")
 	}
 
 	// Populate the aliases map
@@ -379,8 +393,7 @@ func LoadConfigFromReader(r io.Reader) (*Config, error) {
 		cfg.Models[modelId] = modelConfig
 	}
 
-	cfg.AddDefaultGroup()
-
+	cfg.AddDefaultGroupToConfig()
 	// check that members are all unique in the groups
 	memberUsage := make(map[string]string) // maps member to group it appears in
 	for groupID, groupConfig := range cfg.Groups {
@@ -408,19 +421,30 @@ func LoadConfigFromReader(r io.Reader) (*Config, error) {
 			if modelID == "" {
 				continue
 			}
-			if realName, found := cfg.RealModelName(modelID); found {
-				toPreload = append(toPreload, realName)
+			if real, found := cfg.RealModelName(modelID); found {
+				toPreload = append(toPreload, real)
 			}
 		}
 
 		cfg.Hooks.OnStartup.Preload = toPreload
 	}
 
-	return &cfg, nil
+	// check api keys validatity
+	for _, apikey := range cfg.RequiredAPIKeys {
+		if apikey == "" {
+			return nil, errors.New("empty api key found in apiKeys")
+		}
+
+		if strings.Contains(apikey, " ") {
+			return nil, fmt.Errorf("api key cannot contain spaces: `%s`", apikey)
+		}
+	}
+
+	return cfg, nil
 }
 
-// AddDefaultGroup rewrites the yaml to include a default group with any orphaned models.
-func (cfg *Config) AddDefaultGroup() {
+// rewrites the yaml to include a default group with any orphaned models.
+func (cfg *Config) AddDefaultGroupToConfig() {
 	if cfg.Groups == nil {
 		cfg.Groups = make(map[string]GroupConfig)
 	}
