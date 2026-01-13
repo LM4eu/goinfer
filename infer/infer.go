@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/LynxAIeu/garcon/gerr"
 	"github.com/labstack/echo/v4"
+	"github.com/lynxai-team/garcon/gerr"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )

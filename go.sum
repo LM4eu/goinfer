@@ -1,7 +1,7 @@
-github.com/LynxAIeu/emo v0.0.0-20260102000151-bd606f39cc08 h1:/tw/okk9azyQAiKvzePnMRIXD3YfnGFKhLnaKvTIq4g=
-github.com/LynxAIeu/emo v0.0.0-20260102000151-bd606f39cc08/go.mod h1:3vKhMxicGf/cyniNeX6jRfcxUKcdY6Ls2h9kocc1Qzk=
-github.com/LynxAIeu/garcon v0.60.0 h1:eWdHrvthR8vorAp3fWBOU9BWJfhpzAg3npF85RpflrM=
-github.com/LynxAIeu/garcon v0.60.0/go.mod h1:ObhRMp2t9ZWBL5gl4uRcEMJUG7W4jkfMIImSfYFdXYs=
+github.com/lynxai-team/emo v0.0.0-20260102000151-bd606f39cc08 h1:/tw/okk9azyQAiKvzePnMRIXD3YfnGFKhLnaKvTIq4g=
+github.com/lynxai-team/emo v0.0.0-20260102000151-bd606f39cc08/go.mod h1:3vKhMxicGf/cyniNeX6jRfcxUKcdY6Ls2h9kocc1Qzk=
+github.com/lynxai-team/garcon v0.60.0 h1:eWdHrvthR8vorAp3fWBOU9BWJfhpzAg3npF85RpflrM=
+github.com/lynxai-team/garcon v0.60.0/go.mod h1:ObhRMp2t9ZWBL5gl4uRcEMJUG7W4jkfMIImSfYFdXYs=
 github.com/acmacalister/skittles v0.0.0-20160609003031-7423546701e1 h1:RKnVV4C7qoN/sToLX2y1dqH7T6kKLMHcwRJlgwb9Ggk=
 github.com/acmacalister/skittles v0.0.0-20160609003031-7423546701e1/go.mod h1:gI5CyA/CEnS6eqNV22rqs4dG3aGfaSbXgPORIlwr2r0=
 github.com/billziss-gh/golib v0.2.0 h1:NyvcAQdfvM8xokKkKotiligKjKXzuQD4PPykg1nKc/8=

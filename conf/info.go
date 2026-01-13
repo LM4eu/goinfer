@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/LynxAIeu/garcon/gerr"
+	"github.com/lynxai-team/garcon/gerr"
 )
 
 type (

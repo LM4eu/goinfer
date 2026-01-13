@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/LynxAIeu/goinfer/proxy/config"
+	"github.com/lynxai-team/goinfer/proxy/config"
 )
 
 type peerProxyMember struct {

@@ -12,8 +12,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/LynxAIeu/garcon/gerr"
 	"github.com/gin-gonic/gin"
+	"github.com/lynxai-team/garcon/gerr"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )

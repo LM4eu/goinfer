@@ -12,9 +12,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/LynxAIeu/goinfer/proxy/config"
 	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-yaml"
+	"github.com/lynxai-team/goinfer/proxy/config"
 )
 
 var (

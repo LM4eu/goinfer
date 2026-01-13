@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/LynxAIeu/goinfer/event"
+	"github.com/lynxai-team/goinfer/event"
 )
 
 // circularBuffer is a fixed-size circular byte buffer that overwrites

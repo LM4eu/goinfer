@@ -11,8 +11,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/LynxAIeu/goinfer/event"
 	"github.com/gin-gonic/gin"
+	"github.com/lynxai-team/goinfer/event"
 )
 
 type Model struct {

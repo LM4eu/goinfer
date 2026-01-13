@@ -14,7 +14,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/LynxAIeu/garcon/gerr"
+	"github.com/lynxai-team/garcon/gerr"
 )
 
 type Root struct {

@@ -8,7 +8,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/LynxAIeu/goinfer/conf"
+	"github.com/lynxai-team/goinfer/conf"
 )
 
 func TestNewEcho(t *testing.T) {

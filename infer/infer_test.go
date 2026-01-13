@@ -12,9 +12,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/LynxAIeu/goinfer/conf"
-	"github.com/LynxAIeu/goinfer/proxy"
 	"github.com/labstack/echo/v4"
+	"github.com/lynxai-team/goinfer/conf"
+	"github.com/lynxai-team/goinfer/proxy"
 	"github.com/stretchr/testify/require"
 )
 

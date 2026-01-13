@@ -11,9 +11,9 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/LynxAIeu/garcon/gerr"
 	"github.com/gin-gonic/gin"
 	"github.com/labstack/echo/v4"
+	"github.com/lynxai-team/garcon/gerr"
 )
 
 type responseWriter struct {

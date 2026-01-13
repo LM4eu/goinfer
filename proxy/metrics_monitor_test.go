@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/LynxAIeu/goinfer/event"
 	"github.com/gin-gonic/gin"
+	"github.com/lynxai-team/goinfer/event"
 	"github.com/stretchr/testify/assert"
 )
 

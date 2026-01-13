@@ -12,12 +12,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/LynxAIeu/garcon/gerr"
-	"github.com/LynxAIeu/goinfer/conf"
-	"github.com/LynxAIeu/goinfer/proxy"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
+	"github.com/lynxai-team/garcon/gerr"
+	"github.com/lynxai-team/goinfer/conf"
+	"github.com/lynxai-team/goinfer/proxy"
 )
 
 // Infer manages proxying requests to the backend LLM engine.

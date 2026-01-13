@@ -14,9 +14,9 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/LynxAIeu/garcon/gerr"
-	"github.com/LynxAIeu/goinfer/proxy/config"
 	"github.com/goccy/go-yaml"
+	"github.com/lynxai-team/garcon/gerr"
+	"github.com/lynxai-team/goinfer/proxy/config"
 )
 
 type (

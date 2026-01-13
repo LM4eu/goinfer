@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/LynxAIeu/goinfer/proxy/config"
+	"github.com/lynxai-team/goinfer/proxy/config"
 )
 
 // createGGUFFile creates a temporary .gguf file of the given size (bytes).

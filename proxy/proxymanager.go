@@ -20,9 +20,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/LynxAIeu/goinfer/conf"
-	"github.com/LynxAIeu/goinfer/event"
-	"github.com/LynxAIeu/goinfer/proxy/config"
+	"github.com/lynxai-team/goinfer/conf"
+	"github.com/lynxai-team/goinfer/event"
+	"github.com/lynxai-team/goinfer/proxy/config"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
