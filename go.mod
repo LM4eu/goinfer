@@ -3,12 +3,12 @@ module github.com/lynxai-team/goinfer
 go 1.25.5
 
 require (
-	github.com/lynxai-team/garcon v0.60.0
 	github.com/billziss-gh/golib v0.2.0
 	github.com/gin-gonic/gin v1.11.0
 	github.com/goccy/go-yaml v1.19.2
 	github.com/labstack/echo/v4 v4.15.0
 	github.com/labstack/gommon v0.4.2
+	github.com/lynxai-team/garcon v0.61.0
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/gjson v1.18.0
@@ -16,7 +16,6 @@ require (
 )
 
 require (
-	github.com/lynxai-team/emo v0.0.0-20260102000151-bd606f39cc08 // indirect
 	github.com/acmacalister/skittles v0.0.0-20160609003031-7423546701e1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.14.2 // indirect
@@ -36,6 +35,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/lynxai-team/emo v0.0.0-20260113172255-0caed9b0de17 // indirect
 	github.com/mailru/easyjson v0.9.1 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -52,8 +52,8 @@ require (
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	go.uber.org/mock v0.6.0 // indirect
 	golang.org/x/arch v0.23.0 // indirect
-	golang.org/x/crypto v0.46.0 // indirect
-	golang.org/x/net v0.48.0 // indirect
+	golang.org/x/crypto v0.47.0 // indirect
+	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
