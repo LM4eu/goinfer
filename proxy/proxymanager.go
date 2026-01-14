@@ -20,10 +20,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/lynxai-team/goinfer/conf"
 	"github.com/lynxai-team/goinfer/event"
 	"github.com/lynxai-team/goinfer/proxy/config"
-	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )

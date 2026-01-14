@@ -134,7 +134,7 @@ func (p *Process) getLastRequestHandled() time.Time {
 	return p.lastRequestHandled
 }
 
-// custom error types for swapping state
+// custom error types for swapping state.
 var (
 	ErrExpectedStateMismatch  = errors.New("expected state mismatch")
 	ErrInvalidStateTransition = errors.New("invalid state transition")
@@ -169,7 +169,7 @@ func (p *Process) swapState(expectedState, newState ProcessState) (ProcessState,
 	return p.state, nil
 }
 
-// Helper function to encapsulate transition rules
+// Helper function to encapsulate transition rules.
 func isValidTransition(from, to ProcessState) bool {
 	switch from {
 	case StateStopped:
@@ -260,7 +260,6 @@ func (p *Process) start() error {
 	p.proxyLogger.Infof("<%s> CMD: %v", p.ID, args)
 	p.proxyLogger.Infof("<%s> ----------------------------------------", p.ID)
 	err = p.cmd.Start()
-
 	// Set process state to failed
 	if err != nil {
 		if curState, swapErr := p.swapState(StateStarting, StateStopped); swapErr != nil {
@@ -563,7 +562,7 @@ func (p *Process) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 		p.ID, r.RequestURI, startDuration, totalTime)
 }
 
-// waitForCmd waits for the command to exit and handles exit conditions depending on current state
+// waitForCmd waits for the command to exit and handles exit conditions depending on current state.
 func (p *Process) waitForCmd() {
 	exitErr := p.cmd.Wait()
 	p.proxyLogger.Debugf("<%s> cmd.Wait() returned error: %v", p.ID, exitErr)
@@ -607,7 +606,7 @@ func (p *Process) waitForCmd() {
 	p.cmdMutex.Unlock()
 }
 
-// cmdStopUpstreamProcess attempts to stop the upstream process gracefully
+// cmdStopUpstreamProcess attempts to stop the upstream process gracefully.
 func (p *Process) cmdStopUpstreamProcess() error {
 	p.processLogger.Debugf("<%s> cmdStopUpstreamProcess() initiating graceful stop of upstream process", p.ID)
 
@@ -740,7 +739,7 @@ func newStatusResponseWriter(p *Process, w http.ResponseWriter) *statusResponseW
 	return s
 }
 
-// statusUpdates sends status updates to the client while the model is loading
+// statusUpdates sends status updates to the client while the model is loading.
 func (s *statusResponseWriter) statusUpdates(ctx context.Context) {
 	s.wg.Add(1)
 	defer s.wg.Done()
@@ -798,7 +797,7 @@ func (s *statusResponseWriter) statusUpdates(ctx context.Context) {
 	}
 }
 
-// waitForCompletion waits for the statusUpdates goroutine to finish
+// waitForCompletion waits for the statusUpdates goroutine to finish.
 func (s *statusResponseWriter) waitForCompletion(timeout time.Duration) bool {
 	done := make(chan struct{})
 	go func() {
