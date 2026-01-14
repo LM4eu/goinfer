@@ -44,32 +44,51 @@ version = 1
 	info := cfg.getInfo()
 	for _, model := range slices.Sorted(maps.Keys(info)) {
 		mi := info[model]
-		genModel(out, model, mi.Path, mi.Flags)
-		out.WriteString("# size = " + strconv.FormatInt(mi.Size, 10))
-		if mi.Flags != "" {
-			out.WriteString("\n# args = " + mi.Flags)
-		}
-		if mi.Origin != "" {
-			out.WriteString("\n# args origin = " + mi.Origin)
-		}
-		if mi.Issue != "" {
-			out.WriteString("\n# issue = " + mi.Issue)
-		}
-		genModel(out, model+PLUS_A, mi.Path, cfg.Llama.Goinfer+" "+mi.Flags)
+		cfg.genModel(out, model, mi, false)
+		genComment(out, mi)
+		cfg.genModel(out, model, mi, true)
 	}
 
 	return out.Bytes()
 }
 
 // Add the model settings within the llama-swap configuration.
-func genModel(out *bytes.Buffer, name, path, flags string) {
+func genComment(out *bytes.Buffer, mi *ModelInfo) {
+	out.WriteString("# size = " + strconv.FormatInt(mi.Size, 10))
+	if mi.Flags != "" {
+		out.WriteString("\n" + "# args = " + mi.Flags)
+	}
+	if mi.Origin != "" {
+		out.WriteString("\n" + "# args origin = " + mi.Origin)
+	}
+	if mi.Issue != "" {
+		out.WriteString("\n" + "# issue = " + mi.Issue)
+	}
+}
+
+// Add the model settings within the llama-swap configuration.
+func (cfg *Cfg) genModel(out *bytes.Buffer, model string, mi *ModelInfo, as bool) {
+	if as {
+		model += PLUS_A
+	}
+
 	out.WriteString(`
-[` + name + `]
-model = ` + path)
+[` + model + `]
+model = ` + mi.Path)
+
+	if model == cfg.DefaultModel {
+		out.WriteString("\n" + "load-on-startup = true")
+	}
 
 	var val string
 	firstLoop := true
-	for arg := range strings.FieldsSeq(flags) {
+	if as {
+		for arg := range strings.FieldsSeq(cfg.Llama.Goinfer) {
+			val = genParam(out, val, arg, firstLoop)
+			firstLoop = false
+		}
+	}
+	for arg := range strings.FieldsSeq(mi.Flags) {
 		val = genParam(out, val, arg, firstLoop)
 		firstLoop = false
 	}
