@@ -11,6 +11,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/goccy/go-yaml"
 	"github.com/lynxai-team/garcon/gerr"
@@ -54,10 +55,16 @@ func (cfg *Cfg) GenLlamaSwapYAML(verbose, debug bool) ([]byte, error) {
 	switch {
 	case debug:
 		cfg.Swap.LogLevel = "debug"
+		cfg.Swap.LogToStdout = config.LogToStdoutBoth
+		cfg.Swap.LogTimeFormat = "2006-01-02 15:04:05.999"
 	case verbose:
 		cfg.Swap.LogLevel = "info"
+		cfg.Swap.LogToStdout = config.LogToStdoutBoth
+		cfg.Swap.LogTimeFormat = time.DateTime
 	default:
-		cfg.Swap.LogLevel = "warn"
+		cfg.Swap.LogLevel = "info"
+		cfg.Swap.LogToStdout = config.LogToStdoutUpstream
+		cfg.Swap.LogTimeFormat = time.DateTime
 	}
 
 	// HealthCheckTimeout has some limitations:
