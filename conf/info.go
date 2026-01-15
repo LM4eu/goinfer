@@ -209,7 +209,7 @@ func (cfg *Cfg) search(params map[string]ModelParams, shells *[]*ModelInfo, root
 		case dir.IsDir():
 			// => step into this directory
 		case filepath.Base(path) == paramsYML:
-			err = keepParams(params, root.Path, path)
+			err = keepParams(params, root, path)
 			if err != nil {
 				slog.Warn("skip params file", "path", path, "err", err)
 			}
@@ -224,7 +224,7 @@ func (cfg *Cfg) search(params map[string]ModelParams, shells *[]*ModelInfo, root
 	return err
 }
 
-func keepParams(params map[string]ModelParams, root, path string) error {
+func keepParams(params map[string]ModelParams, root Root, path string) error {
 	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return gerr.Wrap(err, gerr.ConfigErr, "os.ReadFile", "file", path)
@@ -244,14 +244,14 @@ func keepParams(params map[string]ModelParams, root, path string) error {
 	}
 
 	for name, p := range mp {
-		p.Flags = replaceDIR(path, p.Flags)
+		p.Flags = replaceDIR(root.FullPath(path), p.Flags)
 		if params == nil {
 			params = map[string]ModelParams{name: p}
 			continue
 		}
 		old, ok := params[name]
 		if ok {
-			slog.Warn("Duplicated params", "root", root, "name", name, "old", old, "new", p)
+			slog.Warn("Duplicated params", "root", root.Path, "name", name, "old", old, "new", p)
 			p.Issue = "two ModelParams have same model name (skip " + old.Flags + ")"
 			if old.Issue != "" {
 				p.Issue += " " + old.Issue
@@ -304,7 +304,7 @@ func keepFlags(shells *[]*ModelInfo, root Root, path string) {
 
 	origin := root.FullPath(path)
 	mi := &ModelInfo{
-		Flags:  replaceDIR(path, string(flags)),
+		Flags:  replaceDIR(root.FullPath(path), string(flags)),
 		Path:   string(modelPath),
 		Origin: origin,
 	}
@@ -324,4 +324,15 @@ func keepFlags(shells *[]*ModelInfo, root Root, path string) {
 
 	*shells = append(*shells, mi)
 	slog.Debug("Add", "shell", origin, "total", len(*shells))
+}
+
+// replaceDIR in flags by the current dir of he file.
+// When using models like GPT OSS, we need to provide a grammar file.
+// See: github.com/ggml-org/llama.cpp/discussions/15396#discussioncomment-14145537
+// We want the possibility to keep both model and grammar files in the same folder.
+// But we also want to be free to move that folder
+// without having to update the path within tho command line arguments.
+// Thus, we use $DIR as a placeholder for the folder.
+func replaceDIR(path, flags string) string {
+	return strings.ReplaceAll(flags, "$DIR", filepath.Dir(path))
 }
