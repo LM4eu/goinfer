@@ -40,9 +40,8 @@ type (
 const (
 	paramsYML     = "params.yml"
 	notConfigured = "file present but not configured in llama-swap.yml"
-	D_            = "D_"
-	A_            = "A_"
-	PLUS_A        = "+A"
+	plusA         = "+A"
+	agentSmith    = false // true => add suffixed models for Agent-Smith compliance
 )
 
 // ListModels returns the model names from the config and from the models_dir.
@@ -57,11 +56,11 @@ func (cfg *Cfg) ListModels() map[string]*ModelInfo {
 	}
 
 	if cfg.Swap != nil {
-		for name := range cfg.Swap.Models {
-			if len(name) > len(A_) && name[:len(A_)] == A_ && cfg.Swap.Models[name].Unlisted {
+		for model := range cfg.Swap.Models {
+			if agentSmith && strings.HasSuffix(model, plusA) && cfg.Swap.Models[model].Unlisted {
 				continue // do not report models for /completion endpoint
 			}
-			cfg.refineModelInfo(name)
+			cfg.refineModelInfo(model)
 		}
 	}
 

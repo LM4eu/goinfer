@@ -260,7 +260,7 @@ exe = '/home/me/llama.cpp/build/bin/llama-server'
 # common args used for every model
 common = '--props --no-warmup --no-mmap'
 # extra args to let tools like Agent-Smith doing the templating (/completions endpoint)
-goinfer = '--jinja --chat-template-file template.jinja'
+smith = '--jinja --chat-template-file template.jinja'
 # extra llama-server flag when ./goinfer is used without the -q flag
 verbose = '--verbose-prompt'
 # extra llama-server flag for ./goinfer -debug
@@ -290,7 +290,7 @@ startPort: 6000           # first ${PORT} incremented for each model
 macros:  # macros to reduce common conf settings
     cmd-fim: /home/me/llama.cpp/build/bin/llama-server --props --no-warmup --no-mmap --verbose-prompt
     cmd-common: ${cmd-fim} --jinja --port ${PORT}
-    cmd-goinfer: ${cmd-common} --chat-template-file template.jinja
+    cmd-smith: ${cmd-common} --chat-template-file template.jinja
 
 models:
 
@@ -313,9 +313,9 @@ models:
       # useful for preventing overriding of default server params by requests
       strip_params: "temperature,top_p,top_k"
 
-  # A_ prefix for Agent-Smith compatibility
-  A_ggml-org/Qwen2.5-Coder-0.5B-Q8_0-GGUF_qwen2.5-coder-0.5b-q8_0:
-      cmd: ${cmd-goinfer}  -m /home/c/.cache/llama.cpp/ggml-org_Qwen2.5-Coder-0.5B-Q8_0-GGUF_qwen2.5-coder-0.5b-q8_0.gguf
+  # +A suffix for Agent-Smith compatibility
+  ggml-org/Qwen2.5-Coder-0.5B-Q8_0-GGUF_qwen2.5-coder-0.5b-q8_0+A:
+      cmd: ${cmd-smith}  -m /home/c/.cache/llama.cpp/ggml-org_Qwen2.5-Coder-0.5B-Q8_0-GGUF_qwen2.5-coder-0.5b-q8_0.gguf
       proxy: http://localhost:${PORT}
       checkEndpoint: /health
       unlisted: true   # hide model name in /v1/models and /upstream responses

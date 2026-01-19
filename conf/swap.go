@@ -89,7 +89,7 @@ func (cfg *Cfg) GenLlamaSwapYAML(verbose, debug bool) ([]byte, error) {
 		// (the method MacroList.MarshalYAML writes a map)
 		config.MacroEntry{Name: "cmd-fim", Value: cfg.Llama.Exe + commonArgs},
 		config.MacroEntry{Name: "cmd-common", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT}"},
-		config.MacroEntry{Name: "cmd-goinfer", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT} " + cfg.Llama.Goinfer},
+		config.MacroEntry{Name: "cmd-smith", Value: cfg.Llama.Exe + commonArgs + " --port ${PORT} " + cfg.Llama.Smith},
 	}
 
 	if useModelPresets {
@@ -247,7 +247,7 @@ func (cfg *Cfg) setSwapModels() {
 		cfg.addModelCfg(model, "${cmd-common}", flags, mc)
 		if gi {
 			goinferMC.UseModelName = model // overrides the model name that is sent to /upstream server
-			cfg.addModelCfg(A_+model, "${cmd-goinfer}", flags, &goinferMC)
+			cfg.addModelCfg(model+plusA, "${cmd-smith}", flags, &goinferMC)
 		}
 	}
 
@@ -257,8 +257,8 @@ func (cfg *Cfg) setSwapModels() {
 	for model, mi := range info {
 		goinferMC.UseModelName = model // overrides the model name that is sent to /upstream server
 		flags := mi.Flags + " -m " + mi.Path
-		cfg.addModelCfg(model, "${cmd-common}", flags, &commonMC)      // API for Cline, RooCode, RolePlay...
-		cfg.addModelCfg(A_+model, "${cmd-goinfer}", flags, &goinferMC) // API for Agent-Smith...
+		cfg.addModelCfg(model, "${cmd-common}", flags, &commonMC)       // API for Cline, RooCode, RolePlay...
+		cfg.addModelCfg(model+plusA, "${cmd-smith}", flags, &goinferMC) // API for Agent-Smith...
 	}
 
 	// when Goinfer starts, llama-server is started with the DefaultModel

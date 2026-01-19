@@ -597,15 +597,6 @@ func (pm *ProxyManager) proxyToUpstream(c *gin.Context) {
 }
 
 func (pm *ProxyManager) ProxyInferenceHandler(c *gin.Context) {
-	const download, agentSmith = false, false
-	if download || agentSmith {
-		if c.Request.URL.Path[2] == '/' {
-			c.Request.URL.Path = c.Request.URL.Path[2:]
-		} else {
-			c.Request.URL.Path = "/v" + c.Request.URL.Path[2:]
-		}
-	}
-
 	bodyBytes, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		pm.sendErrorResponse(c, http.StatusBadRequest, "could not ready request body")

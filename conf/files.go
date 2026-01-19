@@ -415,17 +415,13 @@ func oneLine(input []byte) []byte {
 // that each model referenced in the swap configuration exists on disk.
 // It logs warnings and errors as appropriate.
 func (cfg *Cfg) ValidateSwap() error {
-	if cfg.Swap == nil {
-		return nil // nothing to validate
-	}
-
-	if len(cfg.Swap.Models) == 0 {
+	if cfg.Swap == nil || len(cfg.Swap.Models) == 0 {
 		n := len(cfg.getInfo())
 		if n == 0 {
 			return gerr.New(gerr.ConfigErr, "No *.gguf files found", "dir", cfg.ModelsDir)
 		}
-		slog.Warn("No model configured => Restart Goinfer to refresh llama-swap.yml", "models", n)
-		return nil
+		slog.Warn("Zero model in configuration but", "GGUF-files", n, "dir", cfg.ModelsDir)
+		return nil // nothing to validate
 	}
 
 	for i := range cfg.Swap.Models {

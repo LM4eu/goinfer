@@ -9,6 +9,13 @@ import (
 	"testing"
 )
 
+func onlyIfAS(txt string) string {
+	if agentSmith {
+		return txt
+	}
+	return ""
+}
+
 func TestCfg_GenModelsINI(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -25,24 +32,24 @@ n-gpu-layers = 99
 no-jinja = true
 context-switch = true
 # size = 0
-# args =   -c   0   --n-gpu-layers 99  --no-jinja 	--context-switch  
-[flags` + PLUS_A + `]
+# args =   -c   0   --n-gpu-layers 99  --no-jinja 	--context-switch` + onlyIfAS(`
+[flags`+plusA+`]
 model = /path/flags.gguf
 jinja = true
-chat-template-file = ` + TemplateJinja + `
+chat-template-file = `+TemplateJinja+`
 c = 0
 n-gpu-layers = 99
 no-jinja = true
-context-switch = true`},
+context-switch = true`)},
 		{"no-flags", "", `version = 1
 
 [no-flags]
 model = /path/no-flags.gguf
-# size = 0
-[no-flags` + PLUS_A + `]
+# size = 0` + onlyIfAS(`
+[no-flags`+plusA+`]
 model = /path/no-flags.gguf
 jinja = true
-chat-template-file = ` + TemplateJinja},
+chat-template-file = `+TemplateJinja)},
 		{"quote", `--chat-template-kwargs '{"reasoning_effort": "high"}' -ot "blk\.1.\.ffn_.*=CPU"`, `version = 1
 
 [quote]
@@ -50,13 +57,13 @@ model = /path/quote.gguf
 chat-template-kwargs = {"reasoning_effort": "high"}
 ot = blk\.1.\.ffn_.*=CPU
 # size = 0
-# args = --chat-template-kwargs '{"reasoning_effort": "high"}' -ot "blk\.1.\.ffn_.*=CPU"
-[quote` + PLUS_A + `]
+# args = --chat-template-kwargs '{"reasoning_effort": "high"}' -ot "blk\.1.\.ffn_.*=CPU"` + onlyIfAS(`
+[quote`+plusA+`]
 model = /path/quote.gguf
 jinja = true
-chat-template-file = ` + TemplateJinja + `
+chat-template-file = `+TemplateJinja+`
 chat-template-kwargs = {"reasoning_effort": "high"}
-ot = blk\.1.\.ffn_.*=CPU`},
+ot = blk\.1.\.ffn_.*=CPU`)},
 		{"negative", `--treads -1`, `
 version = 1
 
@@ -64,12 +71,12 @@ version = 1
 model = /path/negative.gguf
 treads = -1
 # size = 0
-# args = --treads -1
-[negative` + PLUS_A + `]
+# args = --treads -1` + onlyIfAS(`
+[negative`+plusA+`]
 model = /path/negative.gguf
 jinja = true
-chat-template-file = ` + TemplateJinja + `
-treads = -1`},
+chat-template-file = `+TemplateJinja+`
+treads = -1`)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

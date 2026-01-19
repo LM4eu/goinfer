@@ -38,7 +38,7 @@ type (
 	Llama struct {
 		Exe     string `toml:"exe"     yaml:"exe"     comment:"path of llama-server"`
 		Common  string `toml:"common"  yaml:"common"  comment:"common args used for every model"`
-		Goinfer string `toml:"goinfer" yaml:"goinfer" comment:"extra args to let tools like Agent-Smith doing the templating (/completions endpoint)"`
+		Smith   string `toml:"smith"   yaml:"smith"   comment:"extra args to let tools like Agent-Smith doing the templating (/completions endpoint)"`
 		Verbose string `toml:"verbose" yaml:"verbose" comment:"extra llama-server flag when ./goinfer is used without the -q flag"`
 		Debug   string `toml:"debug"   yaml:"debug"   comment:"extra llama-server flag for ./goinfer -debug"`
 	}
@@ -78,8 +78,8 @@ func DefaultCfg() *Cfg {
 			Verbose: "--verbose-prompt",
 			Debug:   "--log-verbosity 4",
 			// --webui-config defaults: llama.cpp/tools/server/webui/src/lib/constants/settings-config.ts
-			Common:  `--prio 2 --prio-batch 2 --cpu-strict 1 --props --no-warmup --no-mmap --webui-config '{"keepStatsVisible":true,"showToolCalls":true,"pasteLongTextToFileLen":4444,"disableAutoScroll":true,"renderUserContentAsMarkdown":true}'`,
-			Goinfer: "--jinja --chat-template-file " + TemplateJinja,
+			Common: `--prio 2 --prio-batch 2 --cpu-strict 1 --props --no-warmup --no-mmap --webui-config '{"keepStatsVisible":true,"showToolCalls":true,"pasteLongTextToFileLen":4444,"disableAutoScroll":true,"renderUserContentAsMarkdown":true}'`,
+			Smith:  "--jinja --chat-template-file " + TemplateJinja,
 		},
 		ExtraModels: map[string]string{ // Output of `llama-server -h` contains:
 			// github.com/ggml-org/llama.cpp/blob/master/common/arg.cpp#L3000

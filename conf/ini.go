@@ -218,7 +218,7 @@ func (cfg *Cfg) trimParamValues() {
 	cfg.Llama.Verbose = strings.TrimSpace(cfg.Llama.Verbose)
 	cfg.Llama.Debug = strings.TrimSpace(cfg.Llama.Debug)
 	cfg.Llama.Common = strings.TrimSpace(cfg.Llama.Common)
-	cfg.Llama.Goinfer = strings.TrimSpace(cfg.Llama.Goinfer)
+	cfg.Llama.Smith = strings.TrimSpace(cfg.Llama.Smith)
 }
 
 // writeWithHeader verifies if the file contains the same data,
