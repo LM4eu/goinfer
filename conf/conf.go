@@ -77,25 +77,27 @@ func DefaultCfg() *Cfg {
 			Exe:     "/home/me/llama.cpp/build/bin/llama-server",
 			Verbose: "--verbose-prompt",
 			Debug:   "--log-verbosity 4",
+			Common: `--prio 2 --prio-batch 2 --cpu-strict 1 --props --no-warmup --verbose-prompt ` +
+				`--no-mmap -fitc 32768 -ngl all --chat-template-kwargs '{"reasoning_effort":"high"}' ` +
+				`--webui-config '{"keepStatsVisible":true,"showToolCalls":true,"pasteLongTextToFileLen":4444,"disableAutoScroll":true,"renderUserContentAsMarkdown":true}'`,
 			// --webui-config defaults: llama.cpp/tools/server/webui/src/lib/constants/settings-config.ts
-			Common: `--prio 2 --prio-batch 2 --cpu-strict 1 --props --no-warmup --no-mmap --webui-config '{"keepStatsVisible":true,"showToolCalls":true,"pasteLongTextToFileLen":4444,"disableAutoScroll":true,"renderUserContentAsMarkdown":true}'`,
-			Smith:  "--jinja --chat-template-file " + TemplateJinja,
+			Smith: "--jinja --chat-template-file " + TemplateJinja,
 		},
-		ExtraModels: map[string]string{ // Output of `llama-server -h` contains:
-			// github.com/ggml-org/llama.cpp/blob/master/common/arg.cpp#L3000
-			"OuteAI/OuteTTS-0.2-500M-GGUF+ggml-org/WavTokenizer": "--tts-oute-default",
-			"ggml-org/embeddinggemma-300M-qat-q4_0-GGUF":         "--embd-gemma-default",
-			"ggml-org/Qwen2.5-Coder-1.5B-Q8_0-GGUF":              "--fim-qwen-1.5b-default",
-			"ggml-org/Qwen2.5-Coder-3B-Q8_0-GGUF":                "--fim-qwen-3b-default",
-			"ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF":                "--fim-qwen-7b-default",
-			"ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF+0.5B-draft":     "--fim-qwen-7b-spec",
-			"ggml-org/Qwen2.5-Coder-14B-Q8_0-GGUF+0.5B-draft":    "--fim-qwen-14b-spec",
-			"ggml-org/Qwen3-Coder-30B-A3B-Instruct-Q8_0-GGUF":    "--fim-qwen-30b-default",
-			"ggml-org/gpt-oss-20b-GGUF":                          "--gpt-oss-20b-default",
-			"ggml-org/gpt-oss-120b-GGUF":                         "--gpt-oss-120b-default",
-			"ggml-org/gemma-3-4b-it-qat-GGUF":                    "--vision-gemma-4b-default",
-			"ggml-org/gemma-3-12b-it-qat-GGUF":                   "--vision-gemma-12b-default",
-		},
+		// ExtraModels: map[string]string{ // Output of `llama-server -h` contains:
+		// 	// github.com/ggml-org/llama.cpp/blob/master/common/arg.cpp#L3000
+		// 	"OuteAI/OuteTTS-0.2-500M-GGUF+ggml-org/WavTokenizer": "--tts-oute-default",
+		// 	"ggml-org/embeddinggemma-300M-qat-q4_0-GGUF":         "--embd-gemma-default",
+		// 	"ggml-org/Qwen2.5-Coder-1.5B-Q8_0-GGUF":              "--fim-qwen-1.5b-default",
+		// 	"ggml-org/Qwen2.5-Coder-3B-Q8_0-GGUF":                "--fim-qwen-3b-default",
+		// 	"ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF":                "--fim-qwen-7b-default",
+		// 	"ggml-org/Qwen2.5-Coder-7B-Q8_0-GGUF+0.5B-draft":     "--fim-qwen-7b-spec",
+		// 	"ggml-org/Qwen2.5-Coder-14B-Q8_0-GGUF+0.5B-draft":    "--fim-qwen-14b-spec",
+		// 	"ggml-org/Qwen3-Coder-30B-A3B-Instruct-Q8_0-GGUF":    "--fim-qwen-30b-default",
+		// 	"ggml-org/gpt-oss-20b-GGUF":                          "--gpt-oss-20b-default",
+		// 	"ggml-org/gpt-oss-120b-GGUF":                         "--gpt-oss-120b-default",
+		// 	"ggml-org/gemma-3-4b-it-qat-GGUF":                    "--vision-gemma-4b-default",
+		// 	"ggml-org/gemma-3-12b-it-qat-GGUF":                   "--vision-gemma-12b-default",
+		// },
 	}
 }
 
