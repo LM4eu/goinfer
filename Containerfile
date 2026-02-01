@@ -86,21 +86,21 @@ COPY goinfer.go .
 
 COPY --from=infergui-builder  dist  server/dist
 
-# Reuse Go cache (download...)
-ENV GOPATH=/root/go
-
+# --mount=type -> https://docs.docker.com/build/cache/optimize/#use-cache-mounts
 # Go build flags: "-s -w" removes all debug symbols: https://pkg.go.dev/cmd/link
 # GOAMD64=v3 --> https://go.dev/wiki/MinimumRequirements#amd64
-RUN --mount=type=cache,target=${GOPATH}        \
-    ls -lShA . server/dist                    ;\
-    case "$(grep flags -m1 /proc/cpuinfo)" in  \
-        *" avx512f "*)  export GOAMD64=v4;;    \
-        *" avx2 "*)     export GOAMD64=v3;;    \
-        *" sse2 "*)     export GOAMD64=v2;;    \
-    esac                                      ;\
-    CGO_ENABLED=0                              \
-    GOFLAGS="-trimpath -modcacherw"            \
-    GOLDFLAGS="-d -s -w -extldflags=-static"   \
+RUN --mount=type=cache,target=/go/pkg/mod           \
+    --mount=type=cache,target=/root/.cache/go-build \
+    set -ex                                        ;\
+    ls -lShA . server/dist                         ;\
+    case "$(grep flags -m1 /proc/cpuinfo)" in       \
+        *" avx512f "*)  export GOAMD64=v4;;         \
+        *" avx2 "*)     export GOAMD64=v3;;         \
+        *" sse2 "*)     export GOAMD64=v2;;         \
+    esac                                           ;\
+    CGO_ENABLED=0                                   \
+    GOFLAGS="-trimpath -modcacherw"                 \
+    GOLDFLAGS="-d -s -w -extldflags=-static"        \
     go build -a -v  .
 
 # smoke test
