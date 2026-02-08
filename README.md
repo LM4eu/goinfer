@@ -6,6 +6,8 @@
 
 Built on top of [llama.cpp](https://github.com/ggml-org/llama.cpp) and [llama-swap](https://github.com/mostlygeek/llama-swap), Goinfer is designed to be DevOps-friendly, easily deployable/monitored on remote computers with the minimum manual operations (inspired by [llamactl](https://github.com/lordmathis/llamactl)), and meaningful logs.
 
+![logo](./ui/public/social-media-preview-1280x640.avif)
+
 ## Problem: remote access to office/home-hosted LLM
 
 ⚠️ **Not yet implemented. Please contribute. Contact us <hello@lynxai.team>** ⚠️
