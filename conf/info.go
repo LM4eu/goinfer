@@ -304,7 +304,7 @@ func keepFlags(shells *[]*ModelInfo, root Root, path string) {
 	origin := root.FullPath(path)
 	mi := &ModelInfo{
 		Flags:  replaceDIR(root.FullPath(path), string(flags)),
-		Path:   string(modelPath),
+		Path:   replaceDIR(root.FullPath(path), string(modelPath)),
 		Origin: origin,
 	}
 
