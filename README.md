@@ -264,7 +264,7 @@ common = '--props --no-warmup --no-mmap'
 # extra args to let tools like Agent-Smith doing the templating (/completions endpoint)
 smith = '--jinja --chat-template-file template.jinja'
 # extra llama-server flag when ./goinfer is used without the -q flag
-verbose = '--verbose-prompt'
+verbose = ''
 # extra llama-server flag for ./goinfer -debug
 debug = '--verbosity 3'
 # address can be 'host:port' or 'ip:por' or simply ':port' (for host = localhost)
@@ -290,7 +290,7 @@ metricsMaxInMemory: 1000  # maximum number of metrics to keep in memory
 startPort: 6000           # first ${PORT} incremented for each model
 
 macros:  # macros to reduce common conf settings
-    cmd-fim: /home/me/llama.cpp/build/bin/llama-server --props --no-warmup --no-mmap --verbose-prompt
+    cmd-fim: /home/me/llama.cpp/build/bin/llama-server --props --no-warmup --no-mmap
     cmd-common: ${cmd-fim} --jinja --port ${PORT}
     cmd-smith: ${cmd-common} --chat-template-file template.jinja
 

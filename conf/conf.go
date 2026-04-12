@@ -76,11 +76,11 @@ func DefaultCfg() *Cfg {
 		Addr:         ":8080",
 		Llama: Llama{
 			Exe:     "/home/me/llama.cpp/build/bin/llama-server",
-			Verbose: "--verbose-prompt",
+			Verbose: "",
 			Debug:   "--log-verbosity 4",
-			Common: `--prio 2 --prio-batch 2 --cpu-strict 1 --props --no-warmup --verbose-prompt ` +
-				`--no-mmap -fitc 32768 -ngl all --chat-template-kwargs '{"reasoning_effort":"high"}' ` +
-				`--webui-config '{"keepStatsVisible":true,"showToolCalls":true,"pasteLongTextToFileLen":4444,"disableAutoScroll":true,"renderUserContentAsMarkdown":true}'`,
+			Common: `--no-mmap --mlock --prio 2 --prio-batch 2 --cpu-strict 1 --props --no-warmup ` +
+				`--chat-template-kwargs '{"reasoning_effort":"high"}' ` +
+				`--webui-config '{"keepStatsVisible":true,"showToolCalls":true,"pasteLongTextToFileLen":5555,"disableAutoScroll":false,"renderUserContentAsMarkdown":true}'`,
 			// --webui-config defaults: llama.cpp/tools/server/webui/src/lib/constants/settings-config.ts
 			Smith: "--jinja --chat-template-file " + TemplateJinja,
 		},

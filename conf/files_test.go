@@ -250,20 +250,20 @@ func Test_extractModelNameAndFlags(t *testing.T) {
 	t.Parallel()
 
 	const (
-		script1 = "/path/to/llama-server --host 0.0.0.0 --port 5800 --verbose-prompt --no-warmup " +
+		script1 = "/path/to/llama-server --host 0.0.0.0 --port 5800 --no-warmup " +
 			"	-m /path/model.gguf " +
 			`	--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' ` +
 			"	--reasoning-format auto -c 10240 " + " #	--no-context-shift"
 
 		script2 = `#!/bin/sh
-/path/to/llama-server --host 0.0.0.0 --port 5800 --verbose-prompt \
+/path/to/llama-server --host 0.0.0.0 --port 5800 \
 	--no-warmup --model /path/model.gguf --no-mmap \
 	--chat-template-kwargs '{"reasoning_effort": "high"}' \
 	--reasoning-format auto -c 10240 \
 #	--no-context-shift
 `
 		script3 = `#!/path/to/llama-server --host 0.0.0.0 --port 5800 \
-	--verbose-prompt --no-warmup -m /path/model.gguf \
+	--no-warmup -m /path/model.gguf \
 	--no-mmap --chat-template-kwargs '{"reasoning_effort": "high"}' \
 	--reasoning-format auto -c 10240 \
 #	--no-context-shift
