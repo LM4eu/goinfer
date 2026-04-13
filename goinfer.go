@@ -65,7 +65,7 @@ func getCfg() *conf.Cfg {
 
 	doLlamaSwapYML(cfg, *writeSwap, verbose, *debug)
 
-	if *updateModelsINI {
+	if *updateModelsINI || isNotExist(conf.ModelsINI) {
 		doModelsINI(cfg)
 	}
 
@@ -206,4 +206,9 @@ func url(addr string) string {
 		return "http://localhost" + addr
 	}
 	return "http://" + addr
+}
+
+func isNotExist(path string) bool {
+	_, err := os.Stat(path)
+	return os.IsNotExist(err)
 }
