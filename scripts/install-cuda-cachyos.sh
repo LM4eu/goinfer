@@ -25,9 +25,6 @@ sudo=${sudo-sudo}
 (
 set -x # Print command lines
 
-# Remove Nvidia modules from mkinitcpio?
-$sudo sudo chwd -r nvidia-open-dkms || true
-
 # Install required packages for llama.cpp on a server
 $sudo pacman -Syu --noconfirm  \
                                \
@@ -137,8 +134,14 @@ do
 done
 
 (
-    set -x               # Print command lines
-    $sudo limine-update  # Update bootloader config
+    # Print command lines
+    set -x
+
+    # Ensure latest Nvidia modules
+    $sudo sudo chwd -i nvidia-open-dkms || true
+
+    # Update bootloader config
+    $sudo limine-update
 )
 
 echo "
