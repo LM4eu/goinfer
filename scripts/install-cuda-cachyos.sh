@@ -37,6 +37,7 @@ $sudo pacman -Syu --noconfirm  \
     cudnn                      \
     nccl                       \
     nvidia-container-toolkit   \
+    nvidia-utils               \
     nvtop                      \
                                \
     ccache                     \
@@ -65,11 +66,6 @@ for pkg in                              \
     default-cursors                     \
     desktop-file-utils                  \
     dosfstools                          \
-    egl-gbm                             \
-    egl-wayland                         \
-    egl-wayland2                        \
-    egl-x11                             \
-    eglexternalplatform                 \
     exfatprogs                          \
     f2fs-tools                          \
     gsettings-desktop-schemas           \
