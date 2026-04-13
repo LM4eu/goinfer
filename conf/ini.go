@@ -271,12 +271,7 @@ func (cfg *Cfg) setAPIKey(debug, noAPIKey bool) {
 
 func gen64HexDigits() string {
 	buf := make([]byte, 32)
-	_, err := rand.Read(buf)
-	if err != nil {
-		slog.Warn("Failed to rand.Read", "err", err)
-		return ""
-	}
-
+	rand.Read(buf)
 	key := make([]byte, 64)
 	hex.Encode(key, buf)
 	return string(key)
