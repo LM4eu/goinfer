@@ -1,20 +1,21 @@
 #!/bin/bash
 
-set -xe
+# If you are already root, set empty sudo variable: export sudo=""
+sudo=${sudo-sudo}
 
-# This script has been heavily inspired from
+# This script has been inspired from
 # https://github.com/rourken/ubuntu-gpu-ml-setup/blob/main/INSTALL.md
 
 # This script installs the required Nvidia CUDA libraries and tool required by
-# for llama-server = https://github.com/ggml-org/llama.cpp/tree/master/tools/server
-# (Goinfer requires llama-server)
+# llama-server = https://github.com/ggml-org/llama.cpp/tree/master/tools/server
 
 # The goal is a good balance between:
 # - stable environment in production
 # - recent Nvidia CUDA libs & tool that officially support Ubuntu-24.04
 
-# If you are already root, unset this sudo variable
-sudo=${sudo:-sudo}
+
+(
+set -xe
 
 $sudo apt-get update
 $sudo apt-get dist-upgrade --yes
@@ -135,6 +136,8 @@ export CUDA_TOOLKIT_ROOT_DIR=$CUDA_HOME
 export PATH=$CUDA_HOME/bin${PATH:+:${PATH}}
 export LD_LIBRARY_PATH=$CUDA_HOME/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
 ' >> ~/.profile
+
+)
 
 echo "
 Verify the file ~/.profile 
