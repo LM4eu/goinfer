@@ -56,7 +56,7 @@ RUN set -ex                         ;\
 
 # --------------------------------------------------------------------
 # https://hub.docker.com/_/golang
-FROM docker.io/golang:1.25 AS goinfer-builder
+FROM docker.io/golang:1.26 AS goinfer-builder
 
 ARG uid
 
@@ -101,7 +101,7 @@ RUN --mount=type=cache,target=/go/pkg/mod           \
     CGO_ENABLED=0                                   \
     GOFLAGS="-trimpath -modcacherw"                 \
     GOLDFLAGS="-d -s -w -extldflags=-static"        \
-    go build -a -v  .
+    go build -a -v -ldflags=-linkmode=internal .
 
 # smoke test
 RUN ./goinfer -help

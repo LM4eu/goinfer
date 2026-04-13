@@ -1,6 +1,6 @@
 module github.com/lynxai-team/goinfer
 
-go 1.25.5
+go 1.26.2
 
 require (
 	github.com/billziss-gh/golib v0.2.0
