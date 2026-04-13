@@ -235,13 +235,9 @@ func writeWithHeader(path, header string, body []byte) (bool, error) {
 		if bytes.Equal(read, data) {
 			return false, nil
 		}
-
-		backup := path + ".backup"
-		slog.Info("backup", "file", path, "backup", backup)
-		_ = os.Remove(backup) // removing it because write protected
-		err = os.Rename(path, backup)
+		err = backup(path)
 		if err != nil {
-			return false, gerr.Wrap(err, gerr.ConfigErr, "failed to backup", "file", path, "backup", backup)
+			return false, err
 		}
 	}
 
@@ -251,6 +247,28 @@ func writeWithHeader(path, header string, body []byte) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func backup(path string) error {
+	backup := path + ".backup"
+
+	// remove in case the file is write-protected
+	err := os.Remove(backup)
+	if os.IsNotExist(err) {
+		return nil
+	}
+
+	err = os.Rename(path, backup)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return gerr.Wrap(err, gerr.ConfigErr, "failed to backup", "file", path, "backup", backup)
+	}
+
+	slog.Info("backup", "file", path, "backup", backup)
+
+	return nil
 }
 
 func (cfg *Cfg) setAPIKey(debug, noAPIKey bool) {
