@@ -6,30 +6,134 @@
 # If you are already root, set empty sudo variable: export sudo=""
 sudo=${sudo-sudo}
 
+
+
+# https://wiki.cachyos.org/features/kernel
+# linux-cachyos-server
+# Tuned for server workloads compared to desktop usage.
+# - 300Hz tickrate
+# - No preemption
+# - Stock EEVDF
+# linux-cachyos-server       Compiled with GCC
+# linux-cachyos-hardened-lto Compiled with Clang, ThinLTO and AutoFDO https://github.com/CachyOS/cachyos-benchmarker/blob/master/kernel-autofdo.sh
+
+
 (
 set -xe
 
-$sudo pacman -Syu --noconfirm \
-                              \
-    cmake                     \
-    ninja                     \
-    ccache                    \
-    npm                       \
-    go                        \
-                              \
-    cuda                      \
-    cudnn                     \
-    nccl                      \
-    nvidia-utils              \
-    nvidia-container-toolkit  \
-    nvidia-cg-toolkit         \
-    nvidia-settings           \
-                              \
-    wget                      \
-    git                       \
-    screen                    \
-    btop                      \
-    htop                      \
+# Remove Nvidia modules from mkinitcpio?
+$sudo sudo chwd -r nvidia-open-dkms
+
+# Install required packages for llama.cpp on a server
+$sudo pacman -Syu --noconfirm  \
+                               \
+    linux-cachyos-hardened-lto \
+                               \
+    cuda                       \
+    cudnn                      \
+    nccl                       \
+    nvidia-container-toolkit   \
+    nvtop                      \
+                               \
+    ccache                     \
+    cmake                      \
+    git                        \
+    go                         \
+    ninja                      \
+    npm                        \
+                               \
+    btop                       \
+    htop                       \
+    screen                     \
+    tree                       \
+    wget                       \
+
+# Remove Desktop-related packages
+for pkg in                              \
+    adwaita-fonts                       \
+    adwaita-icon-theme-                 \
+    at-spi2-core                        \
+    btrfs-assistant                     \
+    cachyos-plymouth-bootanimation      \
+    cachyos-plymouth-theme              \
+    default-cursors                     \
+    desktop-file-utils                  \
+    dosfstools                          \
+    egl-gbm                             \
+    egl-wayland                         \
+    egl-wayland2                        \
+    egl-x11                             \
+    eglexternalplatform                 \
+    exfatprogs                          \
+    f2fs-tools                          \
+    gsettings-desktop-schemas           \
+    gsettings-system-schemas            \
+    gst-plugins-bad-libs                \
+    gst-plugins-base-libs               \
+    gstreamer                           \
+    gtk-update-icon-cache               \
+    gtk3                                \
+    gtk4                                \
+    hicolor-icon-theme                  \
+    lib32-libdrm                        \
+    lib32-libglvnd                      \
+    lib32-libglvnd                      \
+    lib32-libxxf86vm                    \
+    lib32-mesa                          \
+    lib32-mesa                          \
+    lib32-nvidia-utils                  \
+    lib32-opencl-nvidia                 \
+    lib32-vulkan-icd-loader             \
+    lib32-wayland                       \
+    libcolord                           \
+    libcups                             \
+    libdecor                            \
+    libepoxy                            \
+    libglvnd                            \
+    libinput                            \
+    libva                               \
+    libva-nvidia-driver                 \
+    libxcomposite                       \
+    libxcursor                          \
+    libxdamage                          \
+    libxinerama                         \
+    libxnvctrl                          \
+    libxrandr                           \
+    libxtst                             \
+    libxv                               \
+    linux-cachyos                       \
+    linux-cachyos-headers               \
+    linux-cachyos-lts                   \
+    linux-cachyos-lts-headers           \
+    linux-cachyos-lts-nvidia-open       \
+    linux-cachyos-lts-nvidia-open       \
+    linux-cachyos-nvidia-open           \
+    linux-cachyos-nvidia-open           \
+    linux-firmware-radeon               \
+    mesa                                \
+    mesa-utils                          \
+    nvidia-cg-toolkit                   \
+    nvidia-settings                     \
+    nvidia-utils                        \
+    nvidia-utils                        \
+    plymouth                            \
+    qt6-base                            \
+    qt6-svg                             \
+    qt6-translations                    \
+    shelly                              \
+    vmaf                                \
+    vulkan-icd-loader                   \
+    wayland                             \
+    xorg-xprop                          \
+    ;
+do
+    pacman -Qtq | rg -sq "^$pkg\$" &&
+        $sudo pacman -Rcsun "$pkg"
+done
+
+# Update bootloader config
+$sudo limine-update
+
 )
 
 echo "
