@@ -1,12 +1,17 @@
 #!/bin/bash
 
+# Safe bash
+set -e                   # stop the script if any command returns a non‑zero status
+set -u                   # unset variable is an error => exit
+set -o pipefail          # pipeline fails if any of its components fails
+set -o noclobber         # prevent accidental file overwriting with > redirection
+shopt -s inherit_errexit # apply these restrictions to $(command substitution)
+
 # Install the required Nvidia CUDA libs and tools for llama-server
 # https://github.com/ggml-org/llama.cpp/tree/master/tools/server
 
 # If you are already root, set empty sudo variable: export sudo=""
 sudo=${sudo-sudo}
-
-
 
 # https://wiki.cachyos.org/features/kernel
 # linux-cachyos-server
@@ -17,17 +22,16 @@ sudo=${sudo-sudo}
 # linux-cachyos-server       Compiled with GCC
 # linux-cachyos-hardened-lto Compiled with Clang, ThinLTO and AutoFDO https://github.com/CachyOS/cachyos-benchmarker/blob/master/kernel-autofdo.sh
 
-
 (
-set -xe
+set -x # Print command lines
 
 # Remove Nvidia modules from mkinitcpio?
-$sudo sudo chwd -r nvidia-open-dkms
+$sudo sudo chwd -r nvidia-open-dkms || true
 
 # Install required packages for llama.cpp on a server
 $sudo pacman -Syu --noconfirm  \
                                \
-    linux-cachyos-hardened-lto \
+    linux-cachyos-server-lto   \
                                \
     cuda                       \
     cudnn                      \
@@ -47,6 +51,8 @@ $sudo pacman -Syu --noconfirm  \
     screen                     \
     tree                       \
     wget                       \
+
+)
 
 # Remove Desktop-related packages
 for pkg in                              \
@@ -128,12 +134,15 @@ for pkg in                              \
     ;
 do
     pacman -Qtq | rg -sq "^$pkg\$" &&
-        $sudo pacman -Rcsun "$pkg"
+        (
+            set -x # Print command lines
+            $sudo pacman -Rcsun "$pkg"
+        )
 done
 
-# Update bootloader config
-$sudo limine-update
-
+(
+    set -x               # Print command lines
+    $sudo limine-update  # Update bootloader config
 )
 
 echo "
