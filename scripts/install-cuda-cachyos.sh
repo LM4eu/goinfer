@@ -12,7 +12,7 @@ set -xe
 $sudo pacman -Syu --noconfirm \
                               \
     cmake                     \
-    mimja                     \
+    ninja                     \
     ccache                    \
     npm                       \
     go                        \
