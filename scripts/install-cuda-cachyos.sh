@@ -23,33 +23,33 @@ sudo=${sudo-sudo}
 # linux-cachyos-hardened-lto   Clang + ThinLTO + AutoFDO https://github.com/CachyOS/cachyos-benchmarker/blob/master/kernel-autofdo.sh
 
 (
-# Print command lines
-set -x
+    # Print command lines
+    set -x
 
-# Install required packages for llama.cpp on a server
-$sudo pacman -Syu --noconfirm            \
-                                         \
-    linux-cachyos-server-lto-nvidia-open \
-                                         \
-    cuda                                 \
-    cudnn                                \
-    nccl                                 \
-    nvidia-container-toolkit             \
-    nvidia-utils                         \
-    nvtop                                \
-                                         \
-    ccache                               \
-    cmake                                \
-    git                                  \
-    go                                   \
-    ninja                                \
-    npm                                  \
-                                         \
-    btop                                 \
-    htop                                 \
-    screen                               \
-    tree                                 \
-    wget                                 \
+    # Install required packages for llama.cpp on a server
+    $sudo pacman -Syu --noconfirm            \
+                                             \
+        linux-cachyos-server-lto-nvidia-open \
+                                             \
+        cuda                                 \
+        cudnn                                \
+        nccl                                 \
+        nvidia-container-toolkit             \
+        nvidia-utils                         \
+        nvtop                                \
+                                             \
+        ccache                               \
+        cmake                                \
+        git                                  \
+        go                                   \
+        ninja                                \
+        npm                                  \
+                                             \
+        btop                                 \
+        htop                                 \
+        screen                               \
+        tree                                 \
+        wget                                 \
 
 )
 
@@ -77,9 +77,7 @@ for pkg in                              \
     hicolor-icon-theme                  \
     lib32-libdrm                        \
     lib32-libglvnd                      \
-    lib32-libglvnd                      \
     lib32-libxxf86vm                    \
-    lib32-mesa                          \
     lib32-mesa                          \
     lib32-nvidia-utils                  \
     lib32-opencl-nvidia                 \
@@ -106,8 +104,6 @@ for pkg in                              \
     linux-cachyos-lts                   \
     linux-cachyos-lts-headers           \
     linux-cachyos-lts-nvidia-open       \
-    linux-cachyos-lts-nvidia-open       \
-    linux-cachyos-nvidia-open           \
     linux-cachyos-nvidia-open           \
     linux-cachyos-server                \
     linux-firmware-radeon               \
@@ -115,7 +111,6 @@ for pkg in                              \
     mesa-utils                          \
     nvidia-cg-toolkit                   \
     nvidia-settings                     \
-    nvidia-utils                        \
     nvidia-utils                        \
     plymouth                            \
     qt6-base                            \
@@ -136,18 +131,32 @@ do
 done
 
 (
+    if [[ ! -e /swapfile ]] 
+    then
+        set -x
+        sudo swapoff -a
+        sudo btrfs filesystem mkswapfile --size 128G /swapfile
+        echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+        sudo swapon -a
+    fi
+
     # Print command lines
     set -x
 
     # Ensure latest Nvidia modules
     $sudo sudo chwd -i nvidia-open-dkms || true
 
+    # Disable zram, enable zswap
+    $sudo sed 's/KERNEL_CMDLINE.* rw /KERNEL_CMDLINE[default]+="systemd.zram=0 zswap.enabled=1 nomodset nowatchdog rw /' /etc/default/limine --in-place=.backup
+
     # Update bootloader config
     $sudo limine-update
 )
 
 echo "
-You may want to reboot:
+Please verify the packages, settings and /etc/default/limine
+
+After, you may want to reboot:
 
     $sudo reboot
 "
