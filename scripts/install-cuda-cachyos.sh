@@ -19,36 +19,37 @@ sudo=${sudo-sudo}
 # - 300Hz tickrate
 # - No preemption
 # - Stock EEVDF
-# linux-cachyos-server       Compiled with GCC
-# linux-cachyos-hardened-lto Compiled with Clang, ThinLTO and AutoFDO https://github.com/CachyOS/cachyos-benchmarker/blob/master/kernel-autofdo.sh
+# linux-cachyos-server         GCC
+# linux-cachyos-hardened-lto   Clang + ThinLTO + AutoFDO https://github.com/CachyOS/cachyos-benchmarker/blob/master/kernel-autofdo.sh
 
 (
-set -x # Print command lines
+# Print command lines
+set -x
 
 # Install required packages for llama.cpp on a server
-$sudo pacman -Syu --noconfirm  \
-                               \
-    linux-cachyos-server-lto   \
-                               \
-    cuda                       \
-    cudnn                      \
-    nccl                       \
-    nvidia-container-toolkit   \
-    nvidia-utils               \
-    nvtop                      \
-                               \
-    ccache                     \
-    cmake                      \
-    git                        \
-    go                         \
-    ninja                      \
-    npm                        \
-                               \
-    btop                       \
-    htop                       \
-    screen                     \
-    tree                       \
-    wget                       \
+$sudo pacman -Syu --noconfirm            \
+                                         \
+    linux-cachyos-server-lto-nvidia-open \
+                                         \
+    cuda                                 \
+    cudnn                                \
+    nccl                                 \
+    nvidia-container-toolkit             \
+    nvidia-utils                         \
+    nvtop                                \
+                                         \
+    ccache                               \
+    cmake                                \
+    git                                  \
+    go                                   \
+    ninja                                \
+    npm                                  \
+                                         \
+    btop                                 \
+    htop                                 \
+    screen                               \
+    tree                                 \
+    wget                                 \
 
 )
 
@@ -108,6 +109,7 @@ for pkg in                              \
     linux-cachyos-lts-nvidia-open       \
     linux-cachyos-nvidia-open           \
     linux-cachyos-nvidia-open           \
+    linux-cachyos-server                \
     linux-firmware-radeon               \
     mesa                                \
     mesa-utils                          \
