@@ -147,7 +147,7 @@ done
     $sudo sudo chwd -i nvidia-open-dkms || true
 
     # Disable zram, enable zswap
-    $sudo sed 's/KERNEL_CMDLINE.* rw /KERNEL_CMDLINE[default]+="systemd.zram=0 zswap.enabled=1 nomodset nowatchdog rw /' /etc/default/limine --in-place=.backup
+    $sudo sed 's/KERNEL_CMDLINE.* rw /KERNEL_CMDLINE[default]+="systemd.zram=0 zswap.enabled=1 zswap.shrinker_enabled=1 zswap.compressor=lzo zswap.max_pool_percent=5 nomodset nowatchdog rw /' /etc/default/limine --in-place=.backup
 
     # Update bootloader config
     $sudo limine-update
