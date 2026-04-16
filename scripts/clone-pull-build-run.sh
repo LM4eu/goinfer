@@ -57,9 +57,9 @@ set -E
 trap 'set +x; s=$?; err "status=$? at ${BASH_SOURCE[0]}:$LINENO" >&2; exit $s' ERR
 
 # Git repositories
-goinfer_dir="$(  cd "${BASH_SOURCE[0]%/*}/.."  &&  pwd)"
-root_dir="$(     cd "${goinfer_dir}/.."        &&  pwd)"
-llamaCpp_dir="$( cd "${root_dir}/llama.cpp"    &&  pwd)"
+goinfer_dir="$(cd "${BASH_SOURCE[0]%/*}/.."  &&  pwd)"
+root_dir="$(   cd "${goinfer_dir}/.."        &&  pwd)"
+llamaCpp_dir="${root_dir}/llama.cpp"
 
 # CPU flags used to build both llama.cpp and goinfer
 flags="$(grep "^flags" -wm1 /proc/cpuinfo) " # trailing space required
